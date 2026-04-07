@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('ordres/{ordre}/approuver', [MissionController::class, 'approuver']);
     Route::post('ordres/{ordre}/rejeter', [MissionController::class, 'rejeter']);
     Route::get('ordres/{ordre}/pdf', [MissionController::class, 'pdf']);
+    Route::get('ordres/{ordre}/pdf/download', [MissionController::class, 'pdfDownload']);
     Route::get('ordres/{ordre}/historique', [MissionController::class, 'historique']);
 
     // Paiements

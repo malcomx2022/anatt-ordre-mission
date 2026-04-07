@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateOrdreMissionRequest;
 use App\Http\Resources\OrdreMissionResource;
 use App\Models\OrdreMission;
 use App\Services\MissionService;
+use App\Services\PdfGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,7 @@ class MissionController extends Controller
 {
     public function __construct(
         private readonly MissionService $missionService,
+        private readonly PdfGenerator $pdfGenerator,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -135,10 +137,20 @@ class MissionController extends Controller
 
     public function pdf(OrdreMission $ordre): JsonResponse
     {
+        $filename = $this->pdfGenerator->genererOrdreMission($ordre);
+
         return response()->json([
-            'data' => ['url' => "/api/ordres/{$ordre->id}/pdf/download"],
+            'data' => [
+                'url' => "/api/ordres/{$ordre->id}/pdf/download",
+                'fichier' => $filename,
+            ],
             'message' => 'PDF genere.',
         ]);
+    }
+
+    public function pdfDownload(OrdreMission $ordre)
+    {
+        return $this->pdfGenerator->telecharger($ordre);
     }
 
     public function historique(OrdreMission $ordre): JsonResponse
