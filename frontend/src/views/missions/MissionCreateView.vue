@@ -444,7 +444,178 @@ const stepSubLabels = ['Details de la mission', 'Selection agents', 'Validation 
 
     <!-- ============ STEP 3: RECAPITULATIF (E4+E5) ============ -->
     <div v-if="step === 3" class="animate-fade-up">
-      <p class="text-center text-gray-400 py-12 font-body">Step 3 - A venir (E4+E5)</p>
+      <!-- Info banner -->
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+        <svg class="w-5 h-5 text-blue-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <p class="text-sm text-blue-700 font-body">Verifiez attentivement toutes les informations avant de soumettre. L'ordre de mission sera envoye au validateur pour approbation.</p>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+          <!-- Informations mission -->
+          <AppCard>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-display font-bold text-gray-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-anatt-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                Informations de la mission
+              </h2>
+              <button class="text-xs text-anatt-600 hover:underline font-display font-semibold flex items-center gap-1" @click="step = 1">
+                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                Modifier
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div><p class="text-gray-400 text-xs font-body mb-1">Reference</p><p class="font-body font-semibold">OM-2026-000795</p></div>
+              <div><p class="text-gray-400 text-xs font-body mb-1">Ref. SEMO</p><p class="font-body font-semibold font-mono">{{ form.semo }}</p></div>
+              <div class="col-span-2"><p class="text-gray-400 text-xs font-body mb-1">Objet</p><p class="font-body font-semibold">{{ form.objet }}</p></div>
+              <div><p class="text-gray-400 text-xs font-body mb-1">Itineraire</p><p class="font-body font-semibold">{{ form.lieu_depart }} → {{ form.destination }}</p></div>
+              <div><p class="text-gray-400 text-xs font-body mb-1">Transport</p><p class="font-body font-semibold">{{ transports.find(t => t.value === form.transport)?.label || '--' }}</p></div>
+              <div><p class="text-gray-400 text-xs font-body mb-1">Periode</p><p class="font-body font-semibold">{{ form.date_depart }} au {{ form.date_retour }}</p></div>
+              <div><p class="text-gray-400 text-xs font-body mb-1">Duree</p><p class="font-body font-semibold text-anatt-600">{{ nbJours }} jour(s)</p></div>
+            </div>
+          </AppCard>
+
+          <!-- Tableau beneficiaires -->
+          <AppCard>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-display font-bold text-gray-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-anatt-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Beneficiaires et montants
+              </h2>
+              <button class="text-xs text-anatt-600 hover:underline font-display font-semibold flex items-center gap-1" @click="step = 2">
+                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                Modifier
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase font-display">
+                    <th class="px-4 py-3">Agent</th>
+                    <th class="px-4 py-3">Categorie</th>
+                    <th class="px-4 py-3">1 Repas</th>
+                    <th class="px-4 py-3">2 Repas</th>
+                    <th class="px-4 py-3">Nuitees</th>
+                    <th class="px-4 py-3">Total</th>
+                    <th class="px-4 py-3">Operateur</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                  <tr v-for="b in beneficiaires" :key="b.id">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-display font-bold" :class="`bg-${b.color}-100 text-${b.color}-600`">{{ b.initiales }}</div>
+                        <div><p class="font-display font-medium text-gray-800">{{ b.nom }}</p><p class="text-[10px] text-gray-400 font-body">{{ b.telephone }}</p></div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3"><span class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg font-display">{{ b.categorie }}</span></td>
+                    <td class="px-4 py-3 font-body"><span class="text-xs text-gray-400">{{ b.jours_1_repas }}j x {{ formatMontant(getTaux(b.categorie).repas1) }}</span><br><strong>{{ formatMontant(b.jours_1_repas * getTaux(b.categorie).repas1) }}</strong></td>
+                    <td class="px-4 py-3 font-body"><span class="text-xs text-gray-400">{{ b.jours_2_repas }}j x {{ formatMontant(getTaux(b.categorie).repas2) }}</span><br><strong>{{ formatMontant(b.jours_2_repas * getTaux(b.categorie).repas2) }}</strong></td>
+                    <td class="px-4 py-3 font-body"><span class="text-xs text-gray-400">{{ b.nuitees }}n x {{ formatMontant(getTaux(b.categorie).nuitee) }}</span><br><strong>{{ formatMontant(b.nuitees * getTaux(b.categorie).nuitee) }}</strong></td>
+                    <td class="px-4 py-3 font-display font-bold text-anatt-700">{{ formatMontant(beneficiaireTotal(b)) }} F</td>
+                    <td class="px-4 py-3">
+                      <select v-model="b.operateur" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-display font-medium focus:outline-none focus:border-anatt-500">
+                        <option value="MTN">MTN MoMo</option>
+                        <option value="MOOV">MOOV Flooz</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="bg-anatt-50 font-bold">
+                    <td colspan="5" class="px-4 py-3 text-right text-anatt-700 font-display">TOTAL GENERAL</td>
+                    <td class="px-4 py-3 text-anatt-700 text-lg font-display">{{ formatMontant(totalGeneral) }} F</td>
+                    <td class="px-4 py-3"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </AppCard>
+
+          <!-- Avance / Reliquat -->
+          <AppCard>
+            <h2 class="text-base font-display font-bold text-gray-800 mb-4">Repartition Avance / Reliquat</h2>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-gray-50 rounded-xl p-4 text-center">
+                <p class="text-xs text-gray-500 font-body mb-1">Total mission</p>
+                <p class="text-xl font-display font-bold text-gray-800">{{ formatMontant(totalGeneral) }} F</p>
+              </div>
+              <div class="bg-blue-50 rounded-xl p-4 text-center">
+                <p class="text-xs text-blue-600 font-body mb-1">Avance (33%)</p>
+                <p class="text-xl font-display font-bold text-blue-700">{{ formatMontant(avance) }} F</p>
+              </div>
+              <div class="bg-anatt-50 rounded-xl p-4 text-center">
+                <p class="text-xs text-anatt-600 font-body mb-1">Reliquat (67%)</p>
+                <p class="text-xl font-display font-bold text-anatt-700">{{ formatMontant(reliquat) }} F</p>
+              </div>
+            </div>
+          </AppCard>
+        </div>
+
+        <!-- Sidebar Step 3 -->
+        <div class="space-y-6">
+          <!-- Resume financier -->
+          <div class="bg-gradient-to-br from-anatt-600 to-anatt-800 rounded-2xl p-5 text-white">
+            <h3 class="text-sm font-display font-bold mb-4">Resume financier</h3>
+            <div class="space-y-2 text-sm font-body">
+              <div class="flex justify-between"><span class="text-anatt-200">Beneficiaires</span><span class="font-display font-bold">{{ beneficiaires.length }}</span></div>
+              <div class="flex justify-between"><span class="text-anatt-200">Duree</span><span class="font-display font-bold">{{ nbJours }} jour(s)</span></div>
+              <div class="border-t border-white/20 pt-2 mt-2">
+                <div class="flex justify-between"><span class="text-anatt-200">Total</span><span class="font-display font-bold text-xl">{{ formatMontant(totalGeneral) }} F</span></div>
+                <div class="flex justify-between mt-1"><span class="text-anatt-200">Avance</span><span class="font-display font-semibold">{{ formatMontant(avance) }} F</span></div>
+                <div class="flex justify-between"><span class="text-anatt-200">Reliquat</span><span class="font-display font-semibold">{{ formatMontant(reliquat) }} F</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checklist validation -->
+          <AppCard>
+            <h3 class="text-sm font-display font-bold text-gray-800 mb-4">Checklist de validation</h3>
+            <div class="space-y-2">
+              <div v-for="check in checklist" :key="check.label" class="flex items-center gap-2">
+                <svg v-if="check.ok" class="w-4 h-4 text-anatt-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                <svg v-else class="w-4 h-4 text-red-400 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                <span class="text-xs font-body" :class="check.ok ? 'text-gray-700' : 'text-red-500'">{{ check.label }}</span>
+              </div>
+            </div>
+          </AppCard>
+
+          <!-- Actions -->
+          <div class="space-y-3">
+            <AppButton class="w-full" :loading="loading" :disabled="!allChecksOk" @click="handleSubmit">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+              Soumettre l'ordre de mission
+            </AppButton>
+            <AppButton class="w-full" variant="outline" @click="handleSaveDraft">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+              Sauvegarder en brouillon
+            </AppButton>
+            <AppButton class="w-full" variant="ghost" @click="prevStep">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+              Retour aux beneficiaires
+            </AppButton>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Modal succes -->
+    <AppModal :show="showSuccessModal" title="Ordre de mission cree" @close="router.push('/ordres')">
+      <div class="text-center py-4">
+        <div class="w-16 h-16 bg-anatt-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <svg class="w-8 h-8 text-anatt-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Ordre soumis avec succes !</h3>
+        <p class="text-sm text-gray-500 font-body mb-4">L'ordre de mission <strong>OM-2026-000795</strong> a ete soumis pour validation. Le chef de service sera notifie.</p>
+        <div class="bg-gray-50 rounded-xl p-4 text-sm font-body space-y-1">
+          <div class="flex justify-between"><span class="text-gray-500">Montant total</span><span class="font-display font-bold text-anatt-600">{{ formatMontant(totalGeneral) }} FCFA</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Beneficiaires</span><span class="font-display font-bold">{{ beneficiaires.length }}</span></div>
+        </div>
+      </div>
+      <template #footer>
+        <AppButton variant="outline" @click="router.push('/ordres')">Voir la liste</AppButton>
+        <AppButton @click="router.push('/ordres')">Fermer</AppButton>
+      </template>
+    </AppModal>
   </AppLayout>
 </template>
