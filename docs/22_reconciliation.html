@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Réconciliation Paiements</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}.drop-zone{border:2px dashed #d1d5db;transition:all .3s}.drop-zone:hover,.drop-zone.dragover{border-color:#009639;background:#f0fdf4}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="21_detail_lot.html" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Réconciliation Paiements</h1><p class="text-xs text-gray-500">LOT-2025-0046 · MOOV Flooz · Rapprochement avec le relevé opérateur</p></div>
+                </div>
+                <button onclick="applyReconciliation()" class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-check-double"></i>Appliquer la Réconciliation</button>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <!-- Two-column layout: Upload + Matching -->
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <!-- Upload Zone -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-upload text-purple-600"></i>Fichier Retour Opérateur</h3>
+                    <div id="dropzone" class="drop-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" class="hidden" accept=".csv,.xlsx" onchange="handleFile()">
+                        <div id="upload-placeholder">
+                            <div class="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><i class="fas fa-cloud-upload-alt text-purple-500 text-2xl"></i></div>
+                            <p class="text-sm font-semibold text-gray-700 mb-1">Déposer le fichier retour ici</p>
+                            <p class="text-xs text-gray-400 mb-3">Format CSV ou Excel (.xlsx)</p>
+                            <span class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold">Parcourir les fichiers</span>
+                        </div>
+                        <div id="upload-success" class="hidden">
+                            <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><i class="fas fa-file-check text-green-500 text-2xl"></i></div>
+                            <p class="text-sm font-semibold text-green-700 mb-1">retour_moov_20250214.csv</p>
+                            <p class="text-xs text-gray-400">18 transactions · 2.4 KB</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 bg-blue-50 rounded-xl p-3">
+                        <p class="text-xs text-blue-700 flex items-start gap-2"><i class="fas fa-info-circle mt-0.5"></i><span>Le fichier retour doit contenir les colonnes : numéro téléphone, montant, statut, ID transaction. Il sera automatiquement rapproché avec les données du lot.</span></p>
+                    </div>
+                </div>
+
+                <!-- Matching Summary -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.1s">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-balance-scale text-purple-600"></i>Résultat du Rapprochement</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                            <div class="flex items-center gap-3"><div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-link text-green-600"></i></div><div><p class="text-sm font-semibold text-green-800">Correspondances exactes</p><p class="text-xs text-green-600">Numéro + montant identiques</p></div></div>
+                            <span class="text-2xl font-bold text-green-700">13</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                            <div class="flex items-center gap-3"><div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><i class="fas fa-exclamation-triangle text-amber-600"></i></div><div><p class="text-sm font-semibold text-amber-800">Écarts détectés</p><p class="text-xs text-amber-600">Montant ou statut différent</p></div></div>
+                            <span class="text-2xl font-bold text-amber-700">2</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                            <div class="flex items-center gap-3"><div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center"><i class="fas fa-unlink text-red-500"></i></div><div><p class="text-sm font-semibold text-red-700">Non trouvés</p><p class="text-xs text-red-500">Absents du fichier retour</p></div></div>
+                            <span class="text-2xl font-bold text-red-600">3</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                            <div class="flex items-center gap-3"><div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center"><i class="fas fa-question-circle text-gray-500"></i></div><div><p class="text-sm font-semibold text-gray-700">Entrées supplémentaires</p><p class="text-xs text-gray-500">Dans le retour mais pas dans le lot</p></div></div>
+                            <span class="text-2xl font-bold text-gray-600">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs for review -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden fade-in" style="animation-delay:.2s">
+                <div class="border-b border-gray-100 px-6">
+                    <div class="flex gap-6">
+                        <button onclick="showTab('matched')" class="tab-btn py-3.5 text-sm font-semibold border-b-2 border-anatt-600 text-anatt-700" id="tab-matched">
+                            <i class="fas fa-check-circle mr-1.5"></i>Correspondances <span class="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full ml-1">13</span>
+                        </button>
+                        <button onclick="showTab('discrepancies')" class="tab-btn py-3.5 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-gray-600" id="tab-discrepancies">
+                            <i class="fas fa-exclamation-triangle mr-1.5"></i>Écarts <span class="bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded-full ml-1">2</span>
+                        </button>
+                        <button onclick="showTab('missing')" class="tab-btn py-3.5 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-gray-600" id="tab-missing">
+                            <i class="fas fa-unlink mr-1.5"></i>Non trouvés <span class="bg-red-50 text-red-600 text-xs px-2 py-0.5 rounded-full ml-1">3</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Matched Tab -->
+                <div id="panel-matched">
+                    <table class="w-full">
+                        <thead><tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Bénéficiaire</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Téléphone</th>
+                            <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Montant Envoyé</th>
+                            <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Montant Retour</th>
+                            <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut Opérateur</th>
+                            <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Action</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-sm font-medium text-gray-800">ADJOVI Kossi Pierre</td><td class="px-5 py-3 text-sm text-gray-600">95 12 34 56</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-right text-sm font-semibold text-green-700">152 000 F</td><td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">SUCCESS</span></td><td class="px-5 py-3 text-center"><span class="text-xs text-green-600 font-medium"><i class="fas fa-check mr-1"></i>Validé auto</span></td></tr>
+                            <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-sm font-medium text-gray-800">BOKO Grâce Annick</td><td class="px-5 py-3 text-sm text-gray-600">96 45 67 89</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-right text-sm font-semibold text-green-700">152 000 F</td><td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">SUCCESS</span></td><td class="px-5 py-3 text-center"><span class="text-xs text-green-600 font-medium"><i class="fas fa-check mr-1"></i>Validé auto</span></td></tr>
+                            <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-sm font-medium text-gray-800">GANDONOU Estelle</td><td class="px-5 py-3 text-sm text-gray-600">95 23 45 67</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-right text-sm font-semibold text-green-700">152 000 F</td><td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">SUCCESS</span></td><td class="px-5 py-3 text-center"><span class="text-xs text-green-600 font-medium"><i class="fas fa-check mr-1"></i>Validé auto</span></td></tr>
+                        </tbody>
+                    </table>
+                    <div class="px-5 py-3 text-center text-xs text-gray-400 border-t border-gray-100">Affichage de 3 sur 13 correspondances</div>
+                </div>
+
+                <!-- Discrepancies Tab -->
+                <div id="panel-discrepancies" class="hidden">
+                    <table class="w-full">
+                        <thead><tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Bénéficiaire</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Téléphone</th>
+                            <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Montant Lot</th>
+                            <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Montant Retour</th>
+                            <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Écart</th>
+                            <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Résolution</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr class="bg-amber-50/30"><td class="px-5 py-3 text-sm font-medium text-gray-800">HOUNSA Michel</td><td class="px-5 py-3 text-sm text-gray-600">96 11 22 33</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-right text-sm font-semibold text-amber-700">150 000 F</td><td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-bold">-2 000 F</span></td>
+                                <td class="px-5 py-3 text-center"><select class="px-2 py-1 border border-amber-200 rounded-lg text-xs bg-white"><option>-- Choisir --</option><option>Accepter retour</option><option>Garder lot</option><option>Marquer litige</option></select></td></tr>
+                            <tr class="bg-amber-50/30"><td class="px-5 py-3 text-sm font-medium text-gray-800">TOSSOU Raoul</td><td class="px-5 py-3 text-sm text-gray-600">95 44 55 66</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-right text-sm font-semibold text-amber-700">152 000 F</td><td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold">STATUT: FAILED</span></td>
+                                <td class="px-5 py-3 text-center"><select class="px-2 py-1 border border-amber-200 rounded-lg text-xs bg-white"><option>-- Choisir --</option><option>Marquer échoué</option><option>Relancer paiement</option><option>Marquer litige</option></select></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Missing Tab -->
+                <div id="panel-missing" class="hidden">
+                    <table class="w-full">
+                        <thead><tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Bénéficiaire</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Téléphone</th>
+                            <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Montant</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Raison Probable</th>
+                            <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Action</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr class="bg-red-50/30"><td class="px-5 py-3 text-sm font-medium text-gray-800">HOUNKPATIN Joël</td><td class="px-5 py-3 text-sm text-gray-600">96 34 56 78</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-xs text-red-600">Non traité par l'opérateur</td>
+                                <td class="px-5 py-3 text-center"><button class="px-3 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-semibold hover:bg-orange-100"><i class="fas fa-redo mr-1"></i>Relancer</button></td></tr>
+                            <tr class="bg-red-50/30"><td class="px-5 py-3 text-sm font-medium text-gray-800">MENSAH Adeline</td><td class="px-5 py-3 text-sm text-gray-600">95 77 88 99</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-xs text-red-600">Timeout de traitement</td>
+                                <td class="px-5 py-3 text-center"><button class="px-3 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-semibold hover:bg-orange-100"><i class="fas fa-redo mr-1"></i>Relancer</button></td></tr>
+                            <tr class="bg-red-50/30"><td class="px-5 py-3 text-sm font-medium text-gray-800">SOSSOU Arnaud</td><td class="px-5 py-3 text-sm text-gray-600">96 00 11 22</td><td class="px-5 py-3 text-right text-sm text-gray-700">152 000 F</td><td class="px-5 py-3 text-xs text-red-600">Numéro non reconnu</td>
+                                <td class="px-5 py-3 text-center"><button class="px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-xs font-semibold hover:bg-gray-100"><i class="fas fa-edit mr-1"></i>Corriger</button></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    function showTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b=>{b.className='tab-btn py-3.5 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-gray-600'});
+        document.getElementById('tab-'+tab).className='tab-btn py-3.5 text-sm font-semibold border-b-2 border-anatt-600 text-anatt-700';
+        ['matched','discrepancies','missing'].forEach(p=>{document.getElementById('panel-'+p).classList.toggle('hidden',p!==tab)});
+    }
+    function handleFile(){
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        document.getElementById('upload-success').classList.remove('hidden');
+    }
+    function applyReconciliation(){
+        alert('Réconciliation appliquée avec succès !\n\n• 13 transactions validées\n• 2 écarts en attente de résolution\n• 3 transactions à relancer');
+    }
+    </script>
+</body>
+</html>

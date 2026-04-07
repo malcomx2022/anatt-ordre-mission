@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Paramètres Système</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}.toggle{width:44px;height:24px;border-radius:9999px;position:relative;cursor:pointer;transition:background .3s}.toggle::after{content:'';width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:transform .3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.toggle.on{background:#009639}.toggle.on::after{transform:translateX(20px)}.toggle.off{background:#d1d5db}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="33_gestion_roles.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-key w-5 text-center"></i>Rôles</a>
+            <a href="34_parametres.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div><h1 class="text-lg font-bold text-gray-800">Paramètres du Système</h1><p class="text-xs text-gray-500">Configuration générale de l'application</p></div>
+                <button class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-save"></i>Enregistrer tout</button>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <div class="flex gap-6">
+                <!-- Sidebar tabs -->
+                <div class="w-56 shrink-0">
+                    <nav class="bg-white rounded-2xl border border-gray-100 p-2 space-y-1 sticky top-20">
+                        <a href="#general" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-anatt-50 text-anatt-700"><i class="fas fa-building w-5 text-center"></i>Général</a>
+                        <a href="#paiements" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-credit-card w-5 text-center"></i>Paiements</a>
+                        <a href="#notifications" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-bell w-5 text-center"></i>Notifications</a>
+                        <a href="#email" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-envelope w-5 text-center"></i>Email (SMTP)</a>
+                        <a href="#securite" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-shield-alt w-5 text-center"></i>Sécurité</a>
+                        <a href="#maintenance" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-tools w-5 text-center"></i>Maintenance</a>
+                    </nav>
+                </div>
+
+                <!-- Settings Content -->
+                <div class="flex-1 space-y-6">
+                    <!-- General -->
+                    <div id="general" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in">
+                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-building mr-2 text-anatt-600"></i>Paramètres généraux</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Nom de l'application</label><input type="text" value="Système de Paiement des Missions - ANaTT" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Version</label><input type="text" value="2.1.0" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Année fiscale en cours</label><select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none"><option>2025</option><option>2024</option></select></div>
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Devise</label><input type="text" value="FCFA (XOF)" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500"></div>
+                            </div>
+                            <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Fuseau horaire</label><select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none"><option>Africa/Porto-Novo (UTC+1)</option></select></div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Settings -->
+                    <div id="paiements" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.1s">
+                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-credit-card mr-2 text-anatt-600"></i>Configuration des paiements</h3>
+                        <div class="space-y-5">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <div><p class="text-sm font-semibold text-gray-800">MTN Mobile Money</p><p class="text-[11px] text-gray-500">API de paiement MTN MoMo</p></div>
+                                <div class="flex items-center gap-3"><span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded-full">Connecté</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <div><p class="text-sm font-semibold text-gray-800">MOOV Money</p><p class="text-[11px] text-gray-500">API de paiement MOOV Africa</p></div>
+                                <div class="flex items-center gap-3"><span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded-full">Connecté</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Taille max. d'un lot</label><input type="number" value="100" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Délai de réconciliation (jours)</label><input type="number" value="7" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                                <div><p class="text-sm font-semibold text-gray-800">Double validation requise</p><p class="text-[11px] text-gray-500">Exiger deux validations pour les lots > 5 000 000 FCFA</p></div>
+                                <div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div id="notifications" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.2s">
+                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-bell mr-2 text-anatt-600"></i>Notifications</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Nouvel ordre de mission</p><p class="text-[11px] text-gray-500">Notifier les validateurs</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Validation effectuée</p><p class="text-[11px] text-gray-500">Notifier le créateur de l'OM</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Paiement effectué</p><p class="text-[11px] text-gray-500">Notifier l'agent par SMS</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Échec de paiement</p><p class="text-[11px] text-gray-500">Alerter les administrateurs</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Rapport mensuel auto</p><p class="text-[11px] text-gray-500">Générer et envoyer le 1er de chaque mois</p></div><div class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Security -->
+                    <div id="securite" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.3s">
+                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-shield-alt mr-2 text-anatt-600"></i>Sécurité</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Durée de session (minutes)</label><input type="number" value="30" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
+                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Max tentatives connexion</label><input type="number" value="5" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Forcer HTTPS</p><p class="text-[11px] text-gray-500">Rediriger toutes les requêtes vers HTTPS</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Journaliser les connexions</p><p class="text-[11px] text-gray-500">Enregistrer toutes les tentatives de connexion</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Maintenance -->
+                    <div id="maintenance" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.4s">
+                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-tools mr-2 text-anatt-600"></i>Maintenance</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <div><p class="text-sm font-semibold text-gray-800">Mode maintenance</p><p class="text-[11px] text-amber-700"><i class="fas fa-exclamation-triangle mr-1"></i>Rend le système inaccessible aux non-admins</p></div>
+                                <div class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors"><p class="text-sm font-semibold text-gray-800"><i class="fas fa-database mr-2 text-blue-500"></i>Sauvegarder la base</p><p class="text-[11px] text-gray-500">Dernière sauvegarde : 15/01/2025 02:00</p></button>
+                                <button class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors"><p class="text-sm font-semibold text-gray-800"><i class="fas fa-broom mr-2 text-amber-500"></i>Nettoyer le cache</p><p class="text-[11px] text-gray-500">Taille actuelle : 124 MB</p></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

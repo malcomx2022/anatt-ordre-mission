@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Modification OM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.fade-in{animation:fadeIn .4s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="15_detail_om.html" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Modifier OM-2024-000791</h1><p class="text-xs text-gray-500">SEMO-4519 • Statut: En attente</p></div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>En attente</span>
+            </div>
+        </header>
+        <div class="p-6 fade-in max-w-4xl">
+            <!-- Alerte audit -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+                <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
+                <div><p class="text-sm font-semibold text-amber-800">Modifications traçées</p><p class="text-xs text-amber-600 mt-1">Toute modification sera enregistrée dans le journal d'audit avec l'identité du modificateur et l'horodatage.</p></div>
+            </div>
+
+            <!-- Références -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-info-circle text-anatt-600"></i>Références</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Référence SEMO <span class="text-red-500">*</span></label><input type="text" value="SEMO-4519" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Objet de la mission <span class="text-red-500">*</span></label><input type="text" value="Contrôle des permis zone sud" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
+                </div>
+            </div>
+
+            <!-- Itinéraire -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-map-marked-alt text-anatt-600"></i>Itinéraire</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Lieu de départ</label><input type="text" value="Cotonou" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Destination</label><input type="text" value="Abomey" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
+                </div>
+            </div>
+
+            <!-- Période -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-calendar-alt text-anatt-600"></i>Période</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Date de début</label><input type="date" value="2024-12-10" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" onchange="calculateDuration()"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Date de fin</label><input type="date" value="2024-12-12" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" onchange="calculateDuration()"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Durée</label><div class="flex items-center gap-2 px-4 py-2.5 bg-anatt-50 border border-anatt-200 rounded-xl"><i class="fas fa-clock text-anatt-600"></i><span class="text-sm font-bold text-anatt-700">3 jours</span></div></div>
+                </div>
+            </div>
+
+            <!-- Bénéficiaire existant -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-users text-anatt-600"></i>Bénéficiaire</h2>
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xs font-bold text-purple-600">DM</div>
+                            <div><p class="font-semibold text-gray-800">DOSSA Marie</p><p class="text-[11px] text-gray-400">Chef Service • 650 000 FCFA • 400-800K</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div><label class="text-[11px] text-gray-500 block mb-1">Jours 1 repas</label><input type="number" value="1" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-anatt-600"><span class="text-[11px] text-gray-400 ml-2">× 12 000 F</span></div>
+                            <div><label class="text-[11px] text-gray-500 block mb-1">Jours 2 repas</label><input type="number" value="1" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-anatt-600"><span class="text-[11px] text-gray-400 ml-2">× 20 000 F</span></div>
+                            <div><label class="text-[11px] text-gray-500 block mb-1">Nuitées</label><input type="number" value="2" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-anatt-600"><span class="text-[11px] text-gray-400 ml-2">× 35 000 F</span></div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-gray-200 flex justify-end"><span class="text-sm font-bold text-anatt-700 bg-anatt-50 px-3 py-1.5 rounded-lg">Total: 102 000 FCFA</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des modifications -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-history text-anatt-600"></i>Historique des modifications</h2>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-edit text-amber-600 text-xs"></i></div>
+                        <div><p class="text-sm font-medium text-gray-800">Destination modifiée: Porto-Novo → Abomey</p><p class="text-[11px] text-gray-400">Par Gislain A. • 09 Déc 2024 à 11:30</p></div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-plus text-gray-500 text-xs"></i></div>
+                        <div><p class="text-sm font-medium text-gray-800">OM créé</p><p class="text-[11px] text-gray-400">Par Gislain A. • 08 Déc 2024 à 09:00</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between">
+                <a href="15_detail_om.html" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"><i class="fas fa-times mr-2"></i>Annuler</a>
+                <div class="flex gap-3">
+                    <button class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"><i class="fas fa-save mr-2"></i>Sauvegarder</button>
+                    <button onclick="alert('OM modifié et resoumis pour validation !')" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-paper-plane"></i>Sauvegarder et resoumettre</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

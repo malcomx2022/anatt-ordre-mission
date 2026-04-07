@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Export Rapports</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}.format-card{transition:all .3s;cursor:pointer}.format-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.1)}.format-card.selected{ring:2px;border-color:#009639;background:#f0fdf4}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.pulse{animation:pulse 2s infinite}@keyframes slideDown{from{opacity:0;max-height:0}to{opacity:1;max-height:500px}}.slide-down{animation:slideDown .4s ease-out both}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="25_rapports.html" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Export des Rapports</h1><p class="text-xs text-gray-500">Générer et télécharger les rapports dans différents formats</p></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 max-w-4xl mx-auto">
+            <!-- Step 1: Report Type -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-8 h-8 bg-anatt-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">1</div>
+                    <h2 class="text-base font-bold text-gray-800">Type de rapport</h2>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <label class="format-card selected border-2 border-anatt-600 bg-anatt-50 rounded-2xl p-5 text-center">
+                        <input type="radio" name="report_type" value="mensuel" checked class="hidden">
+                        <div class="w-12 h-12 bg-anatt-100 rounded-xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-calendar-alt text-anatt-600 text-xl"></i></div>
+                        <p class="font-semibold text-sm text-gray-800">Rapport Mensuel</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Synthèse mensuelle des missions et paiements</p>
+                    </label>
+                    <label class="format-card border-2 border-gray-200 rounded-2xl p-5 text-center">
+                        <input type="radio" name="report_type" value="personnel" class="hidden">
+                        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-user text-blue-600 text-xl"></i></div>
+                        <p class="font-semibold text-sm text-gray-800">Rapport Personnel</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Fiche individuelle par agent</p>
+                    </label>
+                    <label class="format-card border-2 border-gray-200 rounded-2xl p-5 text-center">
+                        <input type="radio" name="report_type" value="financier" class="hidden">
+                        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-coins text-purple-600 text-xl"></i></div>
+                        <p class="font-semibold text-sm text-gray-800">Rapport Financier</p>
+                        <p class="text-[11px] text-gray-500 mt-1">État récapitulatif des dépenses</p>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Step 2: Period & Filters -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in" style="animation-delay:.1s">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-8 h-8 bg-anatt-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">2</div>
+                    <h2 class="text-base font-bold text-gray-800">Période et filtres</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Période de début</label>
+                        <input type="month" value="2025-01" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Période de fin</label>
+                        <input type="month" value="2025-01" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Direction</label>
+                        <select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
+                            <option>Toutes les directions</option><option>Direction Générale</option><option>Direction Technique</option><option>Direction Administrative</option><option>Direction Financière</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1.5">Statut paiement</label>
+                        <select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
+                            <option>Tous les statuts</option><option>Payé</option><option>En attente</option><option>Échoué</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Format Selection -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in" style="animation-delay:.2s">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-8 h-8 bg-anatt-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">3</div>
+                    <h2 class="text-base font-bold text-gray-800">Format d'export</h2>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <label class="format-card selected border-2 border-anatt-600 bg-anatt-50 rounded-2xl p-5 text-center">
+                        <input type="radio" name="format" value="pdf" checked class="hidden">
+                        <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-file-pdf text-red-500 text-2xl"></i></div>
+                        <p class="font-bold text-sm text-gray-800">PDF</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Mise en page professionnelle avec en-tête ANaTT</p>
+                        <span class="inline-block mt-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded-full">Recommandé</span>
+                    </label>
+                    <label class="format-card border-2 border-gray-200 rounded-2xl p-5 text-center">
+                        <input type="radio" name="format" value="excel" class="hidden">
+                        <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-file-excel text-green-600 text-2xl"></i></div>
+                        <p class="font-bold text-sm text-gray-800">Excel (.xlsx)</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Feuilles de calcul avec formules intégrées</p>
+                    </label>
+                    <label class="format-card border-2 border-gray-200 rounded-2xl p-5 text-center">
+                        <input type="radio" name="format" value="csv" class="hidden">
+                        <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3"><i class="fas fa-file-csv text-blue-500 text-2xl"></i></div>
+                        <p class="font-bold text-sm text-gray-800">CSV</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Données brutes pour import dans d'autres systèmes</p>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in" style="animation-delay:.3s">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-8 h-8 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center text-sm font-bold"><i class="fas fa-sliders-h text-xs"></i></div>
+                    <h2 class="text-base font-bold text-gray-800">Options supplémentaires</h2>
+                </div>
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" checked class="w-4 h-4 text-anatt-600 rounded border-gray-300">
+                        <div><p class="text-sm font-medium text-gray-800">Inclure les graphiques</p><p class="text-[11px] text-gray-500">Ajouter les visualisations statistiques au rapport</p></div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" checked class="w-4 h-4 text-anatt-600 rounded border-gray-300">
+                        <div><p class="text-sm font-medium text-gray-800">Page de garde</p><p class="text-[11px] text-gray-500">Ajouter une page de titre avec le logo ANaTT</p></div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-4 h-4 text-anatt-600 rounded border-gray-300">
+                        <div><p class="text-sm font-medium text-gray-800">Détail par agent</p><p class="text-[11px] text-gray-500">Ajouter une annexe avec le détail individuel</p></div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-4 h-4 text-anatt-600 rounded border-gray-300">
+                        <div><p class="text-sm font-medium text-gray-800">Envoyer par email</p><p class="text-[11px] text-gray-500">Envoyer une copie aux destinataires sélectionnés</p></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Preview & Action -->
+            <div class="bg-gradient-to-r from-anatt-600 to-anatt-700 rounded-2xl p-6 fade-in" style="animation-delay:.4s">
+                <div class="flex items-center justify-between">
+                    <div class="text-white">
+                        <h3 class="font-bold text-base">Prêt à exporter</h3>
+                        <p class="text-sm text-anatt-100 mt-1"><i class="fas fa-info-circle mr-1"></i>Rapport mensuel · Janvier 2025 · Format PDF · ~45 pages estimées</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="px-5 py-3 bg-white/20 text-white rounded-xl text-sm font-semibold hover:bg-white/30 flex items-center gap-2"><i class="fas fa-eye"></i>Aperçu</button>
+                        <button onclick="showExportProgress()" class="px-5 py-3 bg-gold-500 text-anatt-900 rounded-xl text-sm font-bold hover:bg-gold-400 flex items-center gap-2 shadow-lg"><i class="fas fa-download"></i>Exporter</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export History -->
+            <div class="mt-8 fade-in" style="animation-delay:.5s">
+                <h3 class="text-sm font-bold text-gray-700 mb-4"><i class="fas fa-history mr-2 text-gray-400"></i>Exports récents</h3>
+                <div class="space-y-2">
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between hover:shadow-sm transition-shadow">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center"><i class="fas fa-file-pdf text-red-500"></i></div>
+                            <div><p class="text-sm font-semibold text-gray-800">Rapport_Mensuel_Dec2024.pdf</p><p class="text-[11px] text-gray-500">Exporté le 05/01/2025 à 14:32 · 2.4 MB</p></div>
+                        </div>
+                        <button class="px-3 py-1.5 text-anatt-600 border border-anatt-200 rounded-lg text-xs font-semibold hover:bg-anatt-50"><i class="fas fa-download mr-1"></i>Retélécharger</button>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between hover:shadow-sm transition-shadow">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-file-excel text-green-600"></i></div>
+                            <div><p class="text-sm font-semibold text-gray-800">Export_Personnel_Nov2024.xlsx</p><p class="text-[11px] text-gray-500">Exporté le 02/12/2024 à 09:15 · 856 KB</p></div>
+                        </div>
+                        <button class="px-3 py-1.5 text-anatt-600 border border-anatt-200 rounded-lg text-xs font-semibold hover:bg-anatt-50"><i class="fas fa-download mr-1"></i>Retélécharger</button>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between hover:shadow-sm transition-shadow">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><i class="fas fa-file-csv text-blue-500"></i></div>
+                            <div><p class="text-sm font-semibold text-gray-800">Donnees_Brutes_Q3_2024.csv</p><p class="text-[11px] text-gray-500">Exporté le 15/10/2024 à 16:50 · 324 KB</p></div>
+                        </div>
+                        <button class="px-3 py-1.5 text-anatt-600 border border-anatt-200 rounded-lg text-xs font-semibold hover:bg-anatt-50"><i class="fas fa-download mr-1"></i>Retélécharger</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Export Progress Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+            <div class="w-16 h-16 bg-anatt-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-cog fa-spin text-anatt-600 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Génération en cours...</h3>
+            <p class="text-sm text-gray-500 mb-6">Préparation du rapport mensuel au format PDF</p>
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                <div id="progressBar" class="bg-gradient-to-r from-anatt-600 to-anatt-500 h-2 rounded-full transition-all duration-1000" style="width:0%"></div>
+            </div>
+            <p id="progressText" class="text-xs text-gray-500">Compilation des données...</p>
+        </div>
+    </div>
+
+    <script>
+    document.querySelectorAll('.format-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const group = this.querySelector('input[type=radio]').name;
+            document.querySelectorAll(`input[name="${group}"]`).forEach(r => {
+                r.closest('.format-card').classList.remove('selected','border-anatt-600','bg-anatt-50');
+                r.closest('.format-card').classList.add('border-gray-200');
+            });
+            this.classList.add('selected','border-anatt-600','bg-anatt-50');
+            this.classList.remove('border-gray-200');
+            this.querySelector('input[type=radio]').checked = true;
+        });
+    });
+
+    function showExportProgress() {
+        const modal = document.getElementById('exportModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        const bar = document.getElementById('progressBar');
+        const text = document.getElementById('progressText');
+        const steps = [{w:'25%',t:'Compilation des données...'},{w:'50%',t:'Génération des graphiques...'},{w:'75%',t:'Mise en page du document...'},{w:'100%',t:'Finalisation...'}];
+        steps.forEach((s,i) => setTimeout(() => {bar.style.width=s.w;text.textContent=s.t;}, (i+1)*800));
+        setTimeout(() => {
+            modal.innerHTML = '<div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center"><div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-check text-green-600 text-2xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2">Export terminé !</h3><p class="text-sm text-gray-500 mb-6">Rapport_Mensuel_Jan2025.pdf · 2.8 MB</p><div class="flex gap-3 justify-center"><button onclick="document.getElementById(\'exportModal\').classList.add(\'hidden\')" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50">Fermer</button><button class="px-5 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700"><i class="fas fa-download mr-2"></i>Télécharger</button></div></div>';
+        }, 4000);
+    }
+    </script>
+</body>
+</html>

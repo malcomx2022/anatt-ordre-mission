@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Génération Fichiers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div><h1 class="text-lg font-bold text-gray-800">Génération Fichiers Paiement</h1><p class="text-xs text-gray-500">Créer des fichiers MTN (.xlsx) et MOOV (.csv) pour paiements de masse</p></div>
+                <a href="20_lots_paiement.html" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-history"></i>Historique Lots</a>
+            </div>
+        </header>
+        <div class="p-6">
+            <!-- Stepper -->
+            <div class="flex items-center justify-center mb-8 fade-in">
+                <div class="flex items-center gap-3">
+                    <div id="step1-icon" class="w-10 h-10 bg-anatt-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                    <span id="step1-label" class="text-sm font-medium text-anatt-700">Filtrage</span>
+                    <div class="w-16 h-0.5 bg-gray-200" id="line1"></div>
+                    <div id="step2-icon" class="w-10 h-10 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                    <span id="step2-label" class="text-sm font-medium text-gray-400">Sélection</span>
+                    <div class="w-16 h-0.5 bg-gray-200" id="line2"></div>
+                    <div id="step3-icon" class="w-10 h-10 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                    <span id="step3-label" class="text-sm font-medium text-gray-400">Génération</span>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 1 : Filtrage -->
+            <div id="step1" class="fade-in">
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h3 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-filter text-anatt-600"></i>Critères de Filtrage</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Opérateur <span class="text-red-500">*</span></label>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-2 px-4 py-3 border-2 border-yellow-400 bg-yellow-50 rounded-xl cursor-pointer flex-1" id="op-mtn">
+                                    <input type="radio" name="operateur" value="MTN" checked onchange="updateOperator()"><span class="text-sm font-bold text-yellow-800">MTN MoMo</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 flex-1" id="op-moov">
+                                    <input type="radio" name="operateur" value="MOOV" onchange="updateOperator()"><span class="text-sm font-bold text-gray-700">MOOV Flooz</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Type de Paiement <span class="text-red-500">*</span></label>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-2 px-4 py-3 border-2 border-anatt-400 bg-anatt-50 rounded-xl cursor-pointer flex-1">
+                                    <input type="radio" name="type" value="AVANCE" checked><span class="text-sm font-medium text-anatt-800">Avance (1/3)</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-green-50 flex-1">
+                                    <input type="radio" name="type" value="RELIQUAT"><span class="text-sm font-medium text-gray-700">Reliquat (2/3)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Période du</label>
+                            <input type="date" value="2024-12-01" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Au</label>
+                            <input type="date" value="2024-12-31" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600">
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center gap-2">
+                        <input type="checkbox" id="validOnly" checked class="rounded border-gray-300 text-anatt-600">
+                        <label for="validOnly" class="text-sm text-gray-700">Uniquement les OMs validés</label>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button onclick="goToStep(2)" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 transition-colors flex items-center gap-2 shadow-lg shadow-anatt-600/30"><i class="fas fa-search"></i>Rechercher les paiements</button>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 2 : Sélection -->
+            <div id="step2" class="hidden">
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-list-check text-anatt-600"></i>Résultats — <span class="text-anatt-600">12 paiements trouvés</span></h3>
+                        <div class="flex gap-2">
+                            <button class="text-xs px-3 py-1.5 bg-anatt-50 text-anatt-700 rounded-lg hover:bg-anatt-100" onclick="selectAll()">Tout sélectionner</button>
+                            <button class="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200" onclick="deselectAll()">Tout désélectionner</button>
+                        </div>
+                    </div>
+                    <!-- Alertes -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                        <span class="text-sm text-amber-700">1 doublon détecté — <strong>OM-2024-000795</strong> (même numéro que OM-000793)</span>
+                        <button class="ml-auto text-xs px-3 py-1 bg-amber-200 text-amber-800 rounded-lg hover:bg-amber-300">Exclure doublons</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead><tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                                <th class="pb-3 pr-3"><input type="checkbox" checked class="rounded border-gray-300 text-anatt-600" id="checkAll" onchange="toggleAll()"></th>
+                                <th class="pb-3 pr-3">Réf OM</th><th class="pb-3 pr-3">Agent</th><th class="pb-3 pr-3">Montant</th><th class="pb-3 pr-3">Téléphone</th><th class="pb-3 pr-3">Opérateur</th><th class="pb-3">Statut</th>
+                            </tr></thead>
+                            <tbody class="divide-y divide-gray-50">
+                                <tr class="hover:bg-gray-50"><td class="py-3 pr-3"><input type="checkbox" checked class="cb rounded border-gray-300 text-anatt-600"></td><td class="py-3 pr-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-000793</span></td><td class="py-3 pr-3 font-medium">MAGBE Victorin</td><td class="py-3 pr-3 font-semibold">20 000</td><td class="py-3 pr-3 font-mono text-xs">22999707480</td><td class="py-3 pr-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3"><span class="text-green-600 text-xs"><i class="fas fa-check-circle"></i> OK</span></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="py-3 pr-3"><input type="checkbox" checked class="cb rounded border-gray-300 text-anatt-600"></td><td class="py-3 pr-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-000791</span></td><td class="py-3 pr-3 font-medium">SAOSSI Paterne</td><td class="py-3 pr-3 font-semibold">29 333</td><td class="py-3 pr-3 font-mono text-xs">22997123456</td><td class="py-3 pr-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3"><span class="text-green-600 text-xs"><i class="fas fa-check-circle"></i> OK</span></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="py-3 pr-3"><input type="checkbox" checked class="cb rounded border-gray-300 text-anatt-600"></td><td class="py-3 pr-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-000790</span></td><td class="py-3 pr-3 font-medium">KONE Jean-Baptiste</td><td class="py-3 pr-3 font-semibold">13 333</td><td class="py-3 pr-3 font-mono text-xs">22996456789</td><td class="py-3 pr-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3"><span class="text-green-600 text-xs"><i class="fas fa-check-circle"></i> OK</span></td></tr>
+                                <tr class="hover:bg-gray-50"><td class="py-3 pr-3"><input type="checkbox" checked class="cb rounded border-gray-300 text-anatt-600"></td><td class="py-3 pr-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-000788</span></td><td class="py-3 pr-3 font-medium">GOUDJO Félicien</td><td class="py-3 pr-3 font-semibold">16 667</td><td class="py-3 pr-3 font-mono text-xs">22999887766</td><td class="py-3 pr-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3"><span class="text-green-600 text-xs"><i class="fas fa-check-circle"></i> OK</span></td></tr>
+                                <tr class="hover:bg-red-50 bg-red-50/50"><td class="py-3 pr-3"><input type="checkbox" class="cb rounded border-gray-300 text-anatt-600"></td><td class="py-3 pr-3"><span class="font-mono text-xs bg-red-100 text-red-700 px-2 py-1 rounded">OM-000795</span></td><td class="py-3 pr-3 font-medium text-red-700">AHOUANSOU Éric</td><td class="py-3 pr-3 font-semibold">15 000</td><td class="py-3 pr-3 font-mono text-xs text-red-600">22999707480</td><td class="py-3 pr-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3"><span class="text-red-600 text-xs"><i class="fas fa-exclamation-triangle"></i> Doublon</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Récapitulatif -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in">
+                    <h3 class="text-base font-bold text-gray-800 mb-4"><i class="fas fa-calculator text-anatt-600 mr-2"></i>Récapitulatif</h3>
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        <div class="bg-anatt-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-anatt-700" id="nbSelected">4</p><p class="text-xs text-anatt-600">Bénéficiaires sélectionnés</p></div>
+                        <div class="bg-blue-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-blue-700" id="totalAmount">79 333</p><p class="text-xs text-blue-600">Montant total (FCFA)</p></div>
+                        <div class="bg-yellow-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-yellow-700">MTN</p><p class="text-xs text-yellow-600">Format : Excel (.xlsx)</p></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <button onclick="goToStep(1)" class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"><i class="fas fa-arrow-left mr-2"></i>Retour filtrage</button>
+                    <button onclick="goToStep(3)" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 flex items-center gap-2 shadow-lg shadow-anatt-600/30"><i class="fas fa-file-export"></i>Générer le fichier MTN</button>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 3 : Génération réussie -->
+            <div id="step3" class="hidden">
+                <div class="max-w-lg mx-auto text-center fade-in">
+                    <div class="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
+                        <div class="w-20 h-20 bg-green-100 rounded-full mx-auto mb-5 flex items-center justify-center"><i class="fas fa-check text-3xl text-green-600"></i></div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">Fichier généré avec succès !</h2>
+                        <p class="text-sm text-gray-500 mb-6">Le lot de paiement a été créé et le fichier est prêt au téléchargement.</p>
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6 text-left space-y-2">
+                            <div class="flex justify-between text-sm"><span class="text-gray-500">Référence lot :</span><span class="font-mono font-bold text-gray-800">LOT-MTN-20241205-001</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-gray-500">Opérateur :</span><span class="font-bold text-yellow-700">MTN MoMo</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-gray-500">Type :</span><span class="font-medium">Avance (1/3)</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-gray-500">Bénéficiaires :</span><span class="font-bold">4</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-gray-500">Montant total :</span><span class="font-bold text-anatt-700">79 333 FCFA</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-gray-500">Format :</span><span class="font-medium">Excel (.xlsx)</span></div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="flex-1 px-4 py-3 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 flex items-center justify-center gap-2"><i class="fas fa-download"></i>Télécharger le fichier</button>
+                            <a href="21_detail_lot.html" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"><i class="fas fa-eye"></i>Voir le lot</a>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 justify-center">
+                        <button onclick="goToStep(1)" class="px-5 py-2.5 text-sm text-anatt-600 font-medium hover:text-anatt-700"><i class="fas fa-plus mr-1"></i>Générer un autre fichier</button>
+                        <a href="20_lots_paiement.html" class="px-5 py-2.5 text-sm text-gray-500 font-medium hover:text-gray-700"><i class="fas fa-list mr-1"></i>Voir tous les lots</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    function goToStep(n){
+        document.querySelectorAll('[id^="step"]').forEach(el=>{if(el.id.match(/^step\d$/))el.classList.add('hidden');});
+        document.getElementById('step'+n).classList.remove('hidden');
+        for(let i=1;i<=3;i++){
+            const icon=document.getElementById('step'+i+'-icon');
+            const label=document.getElementById('step'+i+'-label');
+            if(i<n){icon.className='w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold';icon.innerHTML='<i class="fas fa-check text-xs"></i>';label.className='text-sm font-medium text-green-600';}
+            else if(i===n){icon.className='w-10 h-10 bg-anatt-600 text-white rounded-full flex items-center justify-center text-sm font-bold';icon.textContent=i;label.className='text-sm font-medium text-anatt-700';}
+            else{icon.className='w-10 h-10 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold';icon.textContent=i;label.className='text-sm font-medium text-gray-400';}
+        }
+        if(n>1)document.getElementById('line1').className='w-16 h-0.5 bg-green-400';else document.getElementById('line1').className='w-16 h-0.5 bg-gray-200';
+        if(n>2)document.getElementById('line2').className='w-16 h-0.5 bg-green-400';else document.getElementById('line2').className='w-16 h-0.5 bg-gray-200';
+    }
+    function selectAll(){document.querySelectorAll('.cb').forEach(c=>c.checked=true);}
+    function deselectAll(){document.querySelectorAll('.cb').forEach(c=>c.checked=false);}
+    function toggleAll(){const v=document.getElementById('checkAll').checked;document.querySelectorAll('.cb').forEach(c=>c.checked=v);}
+    function updateOperator(){
+        const mtn=document.querySelector('input[value="MTN"]').checked;
+        document.getElementById('op-mtn').className=mtn?'flex items-center gap-2 px-4 py-3 border-2 border-yellow-400 bg-yellow-50 rounded-xl cursor-pointer flex-1':'flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-yellow-50 flex-1';
+        document.getElementById('op-moov').className=mtn?'flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 flex-1':'flex items-center gap-2 px-4 py-3 border-2 border-blue-400 bg-blue-50 rounded-xl cursor-pointer flex-1';
+    }
+    </script>
+</body>
+</html>

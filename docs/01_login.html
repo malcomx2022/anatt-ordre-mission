@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Connexion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: {
+                    anatt: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c' },
+                    gold: { 400:'#facc15',500:'#FCD116',600:'#d4a90e' },
+                    danger: { 500:'#EF3340',600:'#dc2626' }
+                },
+                fontFamily: { sans:['Plus Jakarta Sans','sans-serif'] }
+            }}
+        }
+    </script>
+    <style>
+        .bg-pattern{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+        .login-card{animation:slideUp .6s ease-out}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        .float-anim{animation:float 6s ease-in-out infinite}
+    </style>
+</head>
+<body class="font-sans min-h-screen bg-gradient-to-br from-anatt-800 via-anatt-700 to-anatt-900 bg-pattern flex items-center justify-center p-4">
+    <div class="fixed top-0 left-0 right-0 h-1.5 flex z-50">
+        <div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div>
+    </div>
+    <div class="w-full max-w-md login-card">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center float-anim border border-white/20">
+                <i class="fas fa-bus-alt text-3xl text-gold-500"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">ANaTT</h1>
+            <p class="text-anatt-200 text-sm mt-1">Système de Gestion des Paiements de Missions</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Connexion</h2>
+                <p class="text-gray-500 text-sm mt-1">Accédez à votre espace de travail</p>
+            </div>
+            <div id="alertError" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                <div class="flex items-center gap-2"><i class="fas fa-exclamation-circle text-red-500"></i><span class="text-sm text-red-700">Identifiants incorrects.</span></div>
+            </div>
+            <form onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Adresse e-mail</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-envelope text-gray-400 text-sm"></i></div>
+                        <input type="email" placeholder="votre.email@anatt.bj" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20 transition-all" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400 text-sm"></i></div>
+                        <input type="password" id="pwd" placeholder="••••••••" class="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20 transition-all" required>
+                        <button type="button" onclick="let p=document.getElementById('pwd');p.type=p.type==='password'?'text':'password'" class="absolute inset-y-0 right-0 pr-3.5 flex items-center"><i class="fas fa-eye text-gray-400 hover:text-gray-600 text-sm"></i></button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4 text-anatt-600 rounded border-gray-300"><span class="text-sm text-gray-600">Se souvenir</span></label>
+                    <a href="02_mot_de_passe_oublie.html" class="text-sm text-anatt-600 hover:text-anatt-700 font-medium">Mot de passe oublié ?</a>
+                </div>
+                <button type="submit" id="btnLogin" class="w-full bg-anatt-600 hover:bg-anatt-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-anatt-600/30">
+                    <span id="btnText">Se connecter</span><i id="btnSpinner" class="fas fa-spinner fa-spin hidden"></i><i id="btnArrow" class="fas fa-arrow-right text-sm"></i>
+                </button>
+            </form>
+        </div>
+        <p class="text-center text-anatt-200 text-xs mt-6">© 2024 ANaTT - Agence Nationale des Transports Terrestres • Bénin</p>
+    </div>
+    <script>
+    function handleLogin(e){
+        e.preventDefault();
+        document.getElementById('btnText').textContent='Connexion...';
+        document.getElementById('btnSpinner').classList.remove('hidden');
+        document.getElementById('btnArrow').classList.add('hidden');
+        document.getElementById('btnLogin').disabled=true;
+        setTimeout(()=>window.location.href='04_dashboard.html',1200);
+    }
+    </script>
+</body>
+</html>

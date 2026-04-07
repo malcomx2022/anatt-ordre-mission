@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Nouveau Personnel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="17_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="19_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1"><p class="text-sm font-medium">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="05_personnel_liste.html" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"><i class="fas fa-arrow-left text-gray-600 text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Nouveau Personnel</h1><p class="text-xs text-gray-500">Ajouter un agent au système</p></div>
+                </div>
+            </div>
+        </header>
+        <div class="p-6 max-w-4xl">
+            <form onsubmit="handleSave(event)">
+                <!-- Informations personnelles -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-user text-anatt-600"></i>Informations Personnelles</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Matricule <span class="text-red-500">*</span></label>
+                            <input type="text" placeholder="MAT-XXXX" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Grade <span class="text-red-500">*</span></label>
+                            <select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 text-gray-700" required>
+                                <option value="">Sélectionner un grade</option><option>Directeur Général</option><option>Directeur</option><option>Chef Service</option><option>Chef Division</option><option>Cadre</option><option>Agent</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Nom <span class="text-red-500">*</span></label>
+                            <input type="text" placeholder="Nom de famille" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Prénom(s) <span class="text-red-500">*</span></label>
+                            <input type="text" placeholder="Prénom(s)" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Salaire de base (FCFA) <span class="text-red-500">*</span></label>
+                            <input type="number" id="salaireInput" placeholder="Ex: 850000" oninput="updateCategorie()" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Catégorie salariale</label>
+                            <div id="categorieDisplay" class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500">Calculé automatiquement</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations téléphoniques -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-phone text-anatt-600"></i>Informations Téléphoniques</h3>
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
+                        <p class="text-sm text-amber-700"><i class="fas fa-exclamation-triangle mr-1"></i> Les numéros doivent être au format international béninois (229XXXXXXXX)</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded mr-1">MTN</span> Numéro MTN MoMo</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-sm text-gray-400">+229</span>
+                                <input type="tel" placeholder="XX XX XX XX" maxlength="11" class="w-full pl-14 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded mr-1">MOOV</span> Numéro MOOV Flooz</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-sm text-gray-400">+229</span>
+                                <input type="tel" placeholder="XX XX XX XX" maxlength="11" class="w-full pl-14 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Opérateur principal <span class="text-red-500">*</span></label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors flex-1">
+                                    <input type="radio" name="operateur" value="MTN" class="text-yellow-600" required>
+                                    <span class="text-sm font-medium text-gray-700"><i class="fas fa-circle text-yellow-500 text-xs mr-1"></i>MTN MoMo</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors flex-1">
+                                    <input type="radio" name="operateur" value="MOOV" class="text-blue-600">
+                                    <span class="text-sm font-medium text-gray-700"><i class="fas fa-circle text-blue-500 text-xs mr-1"></i>MOOV Flooz</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Statut</label>
+                            <select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 text-gray-700">
+                                <option>Actif</option><option>Inactif</option><option>Suspendu</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-between">
+                    <a href="05_personnel_liste.html" class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Annuler</a>
+                    <div class="flex gap-3">
+                        <button type="button" class="px-6 py-2.5 border border-anatt-200 text-anatt-700 rounded-xl text-sm font-medium hover:bg-anatt-50 transition-colors">Enregistrer brouillon</button>
+                        <button type="submit" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 transition-colors flex items-center gap-2 shadow-lg shadow-anatt-600/30"><i class="fas fa-check"></i>Enregistrer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Modal succès -->
+    <div id="successModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center"><i class="fas fa-check text-2xl text-green-600"></i></div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Agent enregistré !</h3>
+            <p class="text-sm text-gray-500 mb-6">L'agent a été ajouté avec succès au système.</p>
+            <div class="flex gap-3">
+                <a href="05_personnel_liste.html" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 text-center">Liste</a>
+                <button onclick="location.reload()" class="flex-1 px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700">Ajouter un autre</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function updateCategorie(){
+        const s=parseInt(document.getElementById('salaireInput').value)||0;
+        const d=document.getElementById('categorieDisplay');
+        if(s<400000){d.textContent='< 400 000 FCFA';d.className='px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 font-medium';}
+        else if(s<800000){d.textContent='400 000 - 800 000 FCFA';d.className='px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 font-medium';}
+        else{d.textContent='≥ 800 000 FCFA';d.className='px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-medium';}
+    }
+    function handleSave(e){
+        e.preventDefault();
+        document.getElementById('successModal').classList.remove('hidden');
+        document.getElementById('successModal').classList.add('flex');
+    }
+    </script>
+</body>
+</html>

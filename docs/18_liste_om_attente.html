@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - OMs en Attente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.fade-in{animation:fadeIn .4s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.08)}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">DG</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Directeur G.</p><p class="text-[10px] text-anatt-200">Directeur</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="11_liste_ordres_mission.html" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">OMs en attente de validation</h1><p class="text-xs text-gray-500">8 ordres de mission nécessitent votre attention</p></div>
+                </div>
+                <button onclick="bulkApprove()" class="px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 flex items-center gap-2"><i class="fas fa-check-double"></i>Valider la sélection</button>
+            </div>
+        </header>
+        <div class="p-6 fade-in">
+            <!-- Stats rapides -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-orange-50 rounded-xl border border-orange-200 p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center"><i class="fas fa-clock text-orange-500 text-xl"></i></div>
+                    <div><p class="text-2xl font-bold text-orange-600">8</p><p class="text-xs text-orange-500">En attente</p></div>
+                </div>
+                <div class="bg-red-50 rounded-xl border border-red-200 p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center"><i class="fas fa-exclamation-triangle text-red-500 text-xl"></i></div>
+                    <div><p class="text-2xl font-bold text-red-600">2</p><p class="text-xs text-red-500">Urgents (> 48h)</p></div>
+                </div>
+                <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-coins text-blue-500 text-xl"></i></div>
+                    <div><p class="text-2xl font-bold text-blue-600">847 000 F</p><p class="text-xs text-blue-500">Montant total</p></div>
+                </div>
+            </div>
+
+            <!-- Cards OMs -->
+            <div class="space-y-4">
+                <!-- OM urgent -->
+                <div class="bg-white rounded-2xl border-l-4 border-l-red-500 border border-gray-100 p-5 card-hover transition-all duration-300">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4">
+                            <input type="checkbox" class="rounded border-gray-300 mt-1">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">URGENT</span>
+                                    <a href="17_validation_om.html" class="font-bold text-gray-800 hover:text-anatt-600">OM-2024-000788</a>
+                                    <span class="font-mono text-xs text-gray-400">SEMO-4516</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Audit des stations de pesage — Cotonou → Malanville</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-400">
+                                    <span><i class="fas fa-user mr-1"></i>AHOUANVOEBLA Brice</span>
+                                    <span><i class="fas fa-calendar mr-1"></i>06-10 Déc 2024 (5j)</span>
+                                    <span><i class="fas fa-clock mr-1 text-red-500"></i>En attente depuis 3 jours</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-lg font-bold text-gray-800">185 000 F</p>
+                            <p class="text-[11px] text-gray-400">2 bénéficiaires</p>
+                            <a href="17_validation_om.html" class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-anatt-600 text-white rounded-lg text-xs font-medium hover:bg-anatt-700"><i class="fas fa-gavel"></i>Examiner</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OM urgent 2 -->
+                <div class="bg-white rounded-2xl border-l-4 border-l-red-500 border border-gray-100 p-5 card-hover transition-all duration-300">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4">
+                            <input type="checkbox" class="rounded border-gray-300 mt-1">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">URGENT</span>
+                                    <a href="17_validation_om.html" class="font-bold text-gray-800 hover:text-anatt-600">OM-2024-000790</a>
+                                    <span class="font-mono text-xs text-gray-400">SEMO-4518</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Formation agents de contrôle — Cotonou → Natitingou</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-400">
+                                    <span><i class="fas fa-user mr-1"></i>ADJOVI Pierre</span>
+                                    <span><i class="fas fa-calendar mr-1"></i>05-07 Déc 2024 (3j)</span>
+                                    <span><i class="fas fa-clock mr-1 text-red-500"></i>En attente depuis 2 jours</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-lg font-bold text-gray-800">45 000 F</p>
+                            <p class="text-[11px] text-gray-400">1 bénéficiaire</p>
+                            <a href="17_validation_om.html" class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-anatt-600 text-white rounded-lg text-xs font-medium hover:bg-anatt-700"><i class="fas fa-gavel"></i>Examiner</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OM normal -->
+                <div class="bg-white rounded-2xl border-l-4 border-l-orange-400 border border-gray-100 p-5 card-hover transition-all duration-300">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4">
+                            <input type="checkbox" class="rounded border-gray-300 mt-1">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <a href="17_validation_om.html" class="font-bold text-gray-800 hover:text-anatt-600">OM-2024-000791</a>
+                                    <span class="font-mono text-xs text-gray-400">SEMO-4519</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Contrôle des permis zone sud — Cotonou → Abomey</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-400">
+                                    <span><i class="fas fa-user mr-1"></i>DOSSA Marie</span>
+                                    <span><i class="fas fa-calendar mr-1"></i>10-12 Déc 2024 (3j)</span>
+                                    <span><i class="fas fa-clock mr-1"></i>En attente depuis 1 jour</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-lg font-bold text-gray-800">102 000 F</p>
+                            <p class="text-[11px] text-gray-400">1 bénéficiaire</p>
+                            <a href="17_validation_om.html" class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-anatt-600 text-white rounded-lg text-xs font-medium hover:bg-anatt-700"><i class="fas fa-gavel"></i>Examiner</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OM normal 2 -->
+                <div class="bg-white rounded-2xl border-l-4 border-l-orange-400 border border-gray-100 p-5 card-hover transition-all duration-300">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4">
+                            <input type="checkbox" class="rounded border-gray-300 mt-1">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <a href="17_validation_om.html" class="font-bold text-gray-800 hover:text-anatt-600">OM-2024-000795</a>
+                                    <span class="font-mono text-xs text-gray-400">SEMO-4523</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Contrôle technique des gares routières — Cotonou → Parakou</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-400">
+                                    <span><i class="fas fa-users mr-1"></i>MAGBE V., ADJOVI P.</span>
+                                    <span><i class="fas fa-calendar mr-1"></i>16-19 Déc 2024 (4j)</span>
+                                    <span><i class="fas fa-clock mr-1"></i>En attente depuis 2h</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-lg font-bold text-gray-800">210 000 F</p>
+                            <p class="text-[11px] text-gray-400">2 bénéficiaires</p>
+                            <a href="17_validation_om.html" class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-anatt-600 text-white rounded-lg text-xs font-medium hover:bg-anatt-700"><i class="fas fa-gavel"></i>Examiner</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plus d'OMs -->
+                <div class="bg-white rounded-2xl border-l-4 border-l-orange-400 border border-gray-100 p-5 card-hover transition-all duration-300">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4">
+                            <input type="checkbox" class="rounded border-gray-300 mt-1">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <a href="17_validation_om.html" class="font-bold text-gray-800 hover:text-anatt-600">OM-2024-000796</a>
+                                    <span class="font-mono text-xs text-gray-400">SEMO-4524</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">Sensibilisation sécurité routière — Cotonou → Kandi</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-400">
+                                    <span><i class="fas fa-users mr-1"></i>TOSSOU B., HOUNGBEDJI C.</span>
+                                    <span><i class="fas fa-calendar mr-1"></i>18-22 Déc 2024 (5j)</span>
+                                    <span><i class="fas fa-clock mr-1"></i>Soumis aujourd'hui</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-lg font-bold text-gray-800">305 000 F</p>
+                            <p class="text-[11px] text-gray-400">2 bénéficiaires</p>
+                            <a href="17_validation_om.html" class="inline-flex items-center gap-1 mt-2 px-3 py-1.5 bg-anatt-600 text-white rounded-lg text-xs font-medium hover:bg-anatt-700"><i class="fas fa-gavel"></i>Examiner</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+    function bulkApprove(){const checked=document.querySelectorAll('input[type=checkbox]:checked').length;if(checked<1){alert('Veuillez sélectionner au moins un OM.');}else{alert(checked+' OM(s) validé(s) avec succès !');}}
+    </script>
+</body>
+</html>

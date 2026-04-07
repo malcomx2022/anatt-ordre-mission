@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Création OM - Étape 3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.fade-in{animation:fadeIn .4s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="13_om_creation_etape2.html" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Nouvel Ordre de Mission</h1><p class="text-xs text-gray-500">Étape 3 sur 3 — Récapitulatif et validation</p></div>
+                </div>
+            </div>
+        </header>
+        <div class="p-6 fade-in">
+            <!-- Wizard Progress -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <div class="flex items-center justify-between max-w-2xl mx-auto">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-anatt-600 text-white rounded-xl flex items-center justify-center font-bold text-sm"><i class="fas fa-check"></i></div>
+                        <div><p class="text-sm font-semibold text-anatt-600">Informations</p><p class="text-[11px] text-gray-400">Complété</p></div>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-anatt-600 mx-4 max-w-[100px]"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-anatt-600 text-white rounded-xl flex items-center justify-center font-bold text-sm"><i class="fas fa-check"></i></div>
+                        <div><p class="text-sm font-semibold text-anatt-600">Bénéficiaires</p><p class="text-[11px] text-gray-400">Complété</p></div>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-anatt-600 mx-4 max-w-[100px]"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-anatt-600 text-white rounded-xl flex items-center justify-center font-bold text-sm">3</div>
+                        <div><p class="text-sm font-semibold text-anatt-600">Récapitulatif</p><p class="text-[11px] text-gray-400">Validation finale</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info banner -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+                <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+                <p class="text-sm text-blue-700">Vérifiez attentivement toutes les informations avant de soumettre. L'ordre de mission sera envoyé au validateur pour approbation.</p>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div class="xl:col-span-2 space-y-6">
+                    <!-- Informations mission -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-file-alt text-anatt-600"></i>Informations de la mission</h2>
+                            <a href="12_om_creation_etape1.html" class="text-xs text-anatt-600 hover:underline flex items-center gap-1"><i class="fas fa-edit"></i>Modifier</a>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div><p class="text-gray-400 text-xs mb-1">Référence</p><p class="font-semibold">OM-2024-000795</p></div>
+                            <div><p class="text-gray-400 text-xs mb-1">Réf. SEMO</p><p class="font-semibold font-mono">SEMO-4523</p></div>
+                            <div class="col-span-2"><p class="text-gray-400 text-xs mb-1">Objet</p><p class="font-semibold">Contrôle technique des gares routières</p></div>
+                            <div><p class="text-gray-400 text-xs mb-1">Itinéraire</p><p class="font-semibold">Cotonou → Parakou</p></div>
+                            <div><p class="text-gray-400 text-xs mb-1">Transport</p><p class="font-semibold">Véhicule de service</p></div>
+                            <div><p class="text-gray-400 text-xs mb-1">Période</p><p class="font-semibold">16 - 19 Décembre 2024</p></div>
+                            <div><p class="text-gray-400 text-xs mb-1">Durée</p><p class="font-semibold text-anatt-600">4 jours</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau bénéficiaires -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-users text-anatt-600"></i>Bénéficiaires et montants</h2>
+                            <a href="13_om_creation_etape2.html" class="text-xs text-anatt-600 hover:underline flex items-center gap-1"><i class="fas fa-edit"></i>Modifier</a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead><tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase">
+                                    <th class="px-4 py-3">Agent</th><th class="px-4 py-3">Catégorie</th><th class="px-4 py-3">1 Repas</th><th class="px-4 py-3">2 Repas</th><th class="px-4 py-3">Nuitées</th><th class="px-4 py-3">Total</th><th class="px-4 py-3">Opérateur</th>
+                                </tr></thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr>
+                                        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-xs font-bold text-blue-600">MV</div><div><p class="font-medium">MAGBE Victorin</p><p class="text-[10px] text-gray-400">229 99 70 74 80</p></div></div></td>
+                                        <td class="px-4 py-3"><span class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg">≥800K</span></td>
+                                        <td class="px-4 py-3"><span class="text-xs">1j × 15 000</span><br><strong>15 000</strong></td>
+                                        <td class="px-4 py-3"><span class="text-xs">1j × 25 000</span><br><strong>25 000</strong></td>
+                                        <td class="px-4 py-3"><span class="text-xs">2n × 45 000</span><br><strong>90 000</strong></td>
+                                        <td class="px-4 py-3 font-bold text-anatt-700">130 000 F</td>
+                                        <td class="px-4 py-3">
+                                            <select class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-anatt-600">
+                                                <option selected>MTN MoMo</option><option>MOOV Flooz</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-xs font-bold text-green-600">AP</div><div><p class="font-medium">ADJOVI Pierre</p><p class="text-[10px] text-gray-400">229 01 66 33 55</p></div></div></td>
+                                        <td class="px-4 py-3"><span class="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded-lg"><400K</span></td>
+                                        <td class="px-4 py-3"><span class="text-xs">2j × 10 000</span><br><strong>20 000</strong></td>
+                                        <td class="px-4 py-3"><span class="text-xs">0j × 15 000</span><br><strong>0</strong></td>
+                                        <td class="px-4 py-3"><span class="text-xs">2n × 30 000</span><br><strong>60 000</strong></td>
+                                        <td class="px-4 py-3 font-bold text-anatt-700">80 000 F</td>
+                                        <td class="px-4 py-3">
+                                            <select class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-anatt-600">
+                                                <option>MTN MoMo</option><option selected>MOOV Flooz</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-anatt-50 font-bold">
+                                        <td colspan="5" class="px-4 py-3 text-right text-anatt-700">TOTAL GÉNÉRAL</td>
+                                        <td class="px-4 py-3 text-anatt-700 text-lg">210 000 F</td>
+                                        <td class="px-4 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Répartition Avance / Reliquat -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-split text-anatt-600"></i>Répartition Avance / Reliquat</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead><tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase">
+                                    <th class="px-4 py-3">Agent</th><th class="px-4 py-3">Total</th><th class="px-4 py-3">Avance (33.33%)</th><th class="px-4 py-3">Reliquat (66.67%)</th><th class="px-4 py-3">Opérateur</th>
+                                </tr></thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr>
+                                        <td class="px-4 py-3 font-medium">MAGBE Victorin</td>
+                                        <td class="px-4 py-3 font-semibold">130 000</td>
+                                        <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold">43 333 F</span></td>
+                                        <td class="px-4 py-3"><span class="bg-green-50 text-green-700 px-2 py-1 rounded-lg text-xs font-bold">86 667 F</span></td>
+                                        <td class="px-4 py-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-lg">MTN</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3 font-medium">ADJOVI Pierre</td>
+                                        <td class="px-4 py-3 font-semibold">80 000</td>
+                                        <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold">26 667 F</span></td>
+                                        <td class="px-4 py-3"><span class="bg-green-50 text-green-700 px-2 py-1 rounded-lg text-xs font-bold">53 333 F</span></td>
+                                        <td class="px-4 py-3"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-lg">MOOV</span></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-gray-50 font-bold text-sm">
+                                        <td class="px-4 py-3">TOTAL</td>
+                                        <td class="px-4 py-3">210 000 F</td>
+                                        <td class="px-4 py-3 text-blue-700">70 000 F</td>
+                                        <td class="px-4 py-3 text-green-700">140 000 F</td>
+                                        <td class="px-4 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonne actions -->
+                <div class="space-y-6">
+                    <!-- Résumé chiffré -->
+                    <div class="bg-gradient-to-br from-anatt-600 to-anatt-800 rounded-2xl p-6 text-white">
+                        <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fas fa-receipt"></i>Résumé financier</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between"><span class="text-anatt-200 text-sm">Bénéficiaires</span><span class="font-bold text-lg">2</span></div>
+                            <div class="flex justify-between"><span class="text-anatt-200 text-sm">Montant total</span><span class="font-bold text-lg">210 000 F</span></div>
+                            <div class="border-t border-white/20 my-2"></div>
+                            <div class="flex justify-between"><span class="text-anatt-200 text-sm">Total Avance</span><span class="font-bold">70 000 F</span></div>
+                            <div class="flex justify-between"><span class="text-anatt-200 text-sm">Total Reliquat</span><span class="font-bold">140 000 F</span></div>
+                            <div class="border-t border-white/20 my-2"></div>
+                            <div class="flex justify-between text-xs"><span class="text-anatt-200">MTN MoMo (1)</span><span>130 000 F</span></div>
+                            <div class="flex justify-between text-xs"><span class="text-anatt-200">MOOV Flooz (1)</span><span>80 000 F</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Validation check -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                        <h3 class="text-sm font-bold text-gray-800 mb-3"><i class="fas fa-clipboard-check text-anatt-600 mr-2"></i>Points de contrôle</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span class="text-gray-700">Référence SEMO renseignée</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span class="text-gray-700">Dates de mission valides</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span class="text-gray-700">Au moins 1 bénéficiaire</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span class="text-gray-700">Montants calculés</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span class="text-gray-700">Opérateurs assignés</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span class="text-gray-700">Numéros téléphone valides</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Actions soumission -->
+                    <div class="space-y-3">
+                        <button onclick="submitOM()" class="w-full px-5 py-3 bg-anatt-600 text-white rounded-xl text-sm font-bold hover:bg-anatt-700 transition-colors flex items-center justify-center gap-2"><i class="fas fa-paper-plane"></i>Soumettre pour validation</button>
+                        <button class="w-full px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"><i class="fas fa-save"></i>Enregistrer comme brouillon</button>
+                        <a href="13_om_creation_etape2.html" class="w-full px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"><i class="fas fa-arrow-left"></i>Étape précédente</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Modal succès -->
+    <div id="successModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-xl text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-check text-green-600 text-2xl"></i></div>
+            <h3 class="text-xl font-bold text-gray-800">OM soumis avec succès !</h3>
+            <p class="text-sm text-gray-500 mt-2">L'ordre de mission <strong>OM-2024-000795</strong> a été soumis pour validation. Le validateur sera notifié.</p>
+            <div class="flex gap-3 mt-6">
+                <a href="11_liste_ordres_mission.html" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">Retour à la liste</a>
+                <a href="15_detail_om.html" class="flex-1 px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700">Voir le détail</a>
+            </div>
+        </div>
+    </div>
+    <script>
+    function submitOM(){document.getElementById('successModal').style.display='flex';}
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Réinitialiser le mot de passe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{500:'#FCD116'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.bg-pattern{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}.card-anim{animation:slideUp .6s ease-out}@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}</style>
+</head>
+<body class="font-sans min-h-screen bg-gradient-to-br from-anatt-800 via-anatt-700 to-anatt-900 bg-pattern flex items-center justify-center p-4">
+    <div class="fixed top-0 left-0 right-0 h-1.5 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <div class="w-full max-w-md card-anim">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/20"><i class="fas fa-shield-alt text-3xl text-gold-500"></i></div>
+            <h1 class="text-2xl font-bold text-white">Nouveau mot de passe</h1>
+            <p class="text-anatt-200 text-sm mt-1">Créez un mot de passe sécurisé</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <div id="formState">
+                <form onsubmit="handleSubmit(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Nouveau mot de passe</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400 text-sm"></i></div>
+                            <input type="password" id="newPwd" oninput="checkStrength()" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                        <!-- Indicateur de force -->
+                        <div class="mt-2 flex gap-1">
+                            <div id="s1" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                            <div id="s2" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                            <div id="s3" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                            <div id="s4" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                        </div>
+                        <p id="strengthText" class="text-xs text-gray-400 mt-1">Entrez un mot de passe</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Confirmer le mot de passe</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400 text-sm"></i></div>
+                            <input type="password" id="confirmPwd" oninput="checkMatch()" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                        <p id="matchText" class="text-xs mt-1 hidden"></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3 mb-6 text-xs text-gray-500 space-y-1">
+                        <p id="r1"><i class="fas fa-circle text-gray-300 mr-1"></i> Au moins 8 caractères</p>
+                        <p id="r2"><i class="fas fa-circle text-gray-300 mr-1"></i> Une lettre majuscule</p>
+                        <p id="r3"><i class="fas fa-circle text-gray-300 mr-1"></i> Un chiffre</p>
+                        <p id="r4"><i class="fas fa-circle text-gray-300 mr-1"></i> Un caractère spécial (@#$...)</p>
+                    </div>
+                    <button type="submit" class="w-full bg-anatt-600 hover:bg-anatt-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-anatt-600/30">
+                        <i class="fas fa-check-circle"></i> Réinitialiser
+                    </button>
+                </form>
+            </div>
+            <div id="successState" class="hidden text-center py-4">
+                <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center"><i class="fas fa-check text-2xl text-green-600"></i></div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Mot de passe modifié !</h3>
+                <p class="text-gray-500 text-sm mb-6">Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+                <a href="01_login.html" class="inline-flex items-center gap-2 bg-anatt-600 hover:bg-anatt-700 text-white font-semibold py-3 px-6 rounded-xl transition-all"><i class="fas fa-sign-in-alt"></i> Se connecter</a>
+            </div>
+        </div>
+    </div>
+    <script>
+    function checkStrength(){
+        const v=document.getElementById('newPwd').value;const bars=[document.getElementById('s1'),document.getElementById('s2'),document.getElementById('s3'),document.getElementById('s4')];
+        let s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
+        const colors=['bg-red-500','bg-orange-500','bg-yellow-500','bg-green-500'];const labels=['Faible','Moyen','Bon','Excellent'];
+        bars.forEach((b,i)=>{b.className='h-1.5 flex-1 rounded-full transition-all '+(i<s?colors[s-1]:'bg-gray-200')});
+        document.getElementById('strengthText').textContent=s>0?labels[s-1]:'Entrez un mot de passe';
+        ['r1','r2','r3','r4'].forEach((r,i)=>{
+            const ok=[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)][i];
+            document.getElementById(r).innerHTML='<i class="fas fa-'+(ok?'check-circle text-green-500':'circle text-gray-300')+' mr-1"></i> '+document.getElementById(r).textContent.replace(/^[^\s]+\s/,'');
+        });
+    }
+    function checkMatch(){
+        const m=document.getElementById('matchText');const a=document.getElementById('newPwd').value;const b=document.getElementById('confirmPwd').value;
+        m.classList.remove('hidden');if(b===''){m.classList.add('hidden');return;}
+        if(a===b){m.className='text-xs mt-1 text-green-600';m.innerHTML='<i class="fas fa-check-circle mr-1"></i>Les mots de passe correspondent';}
+        else{m.className='text-xs mt-1 text-red-500';m.innerHTML='<i class="fas fa-times-circle mr-1"></i>Les mots de passe ne correspondent pas';}
+    }
+    function handleSubmit(e){e.preventDefault();document.getElementById('formState').classList.add('hidden');document.getElementById('successState').classList.remove('hidden');}
+    </script>
+</body>
+</html>

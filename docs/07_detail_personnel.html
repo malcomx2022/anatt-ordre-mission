@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Fiche Personnel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.tab-btn{transition:all .2s}.tab-btn.active{color:#009639;border-bottom:2px solid #009639}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="17_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="19_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1"><p class="text-sm font-medium">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="05_personnel_liste.html" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"><i class="fas fa-arrow-left text-gray-600 text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Fiche Agent</h1><p class="text-xs text-gray-500">MAT-0045 • MAGBE Victorin</p></div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="08_modification_personnel.html" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-edit text-amber-500"></i>Modifier</a>
+                    <button class="px-4 py-2.5 border border-red-200 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"><i class="fas fa-user-slash"></i>Désactiver</button>
+                </div>
+            </div>
+        </header>
+        <div class="p-6">
+            <!-- En-tête profil -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-anatt-500 to-anatt-700 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-anatt-600/20">MV</div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-1">
+                            <h2 class="text-xl font-bold text-gray-800">MAGBE Victorin</h2>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>Actif</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-3">Cadre • Direction des Transports Routiers</p>
+                        <div class="flex flex-wrap gap-3 text-sm">
+                            <span class="flex items-center gap-1.5 text-gray-600"><i class="fas fa-id-badge text-anatt-600"></i>MAT-0045</span>
+                            <span class="flex items-center gap-1.5 text-gray-600"><i class="fas fa-money-bill text-anatt-600"></i>850 000 FCFA</span>
+                            <span class="flex items-center gap-1.5 text-gray-600"><i class="fas fa-chart-bar text-anatt-600"></i>≥ 800 000 FCFA</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="text-center px-4 py-3 bg-yellow-50 rounded-xl border border-yellow-200">
+                            <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span>
+                            <p class="font-mono text-sm mt-1 font-medium text-gray-800">229 99 70 74 80</p>
+                            <p class="text-[10px] text-green-600 mt-0.5"><i class="fas fa-star text-[8px]"></i> Principal</p>
+                        </div>
+                        <div class="text-center px-4 py-3 bg-blue-50 rounded-xl border border-blue-200">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded">MOOV</span>
+                            <p class="font-mono text-sm mt-1 font-medium text-gray-800">229 01 23 45 67</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Secondaire</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <div class="border-b border-gray-100 px-6 flex gap-6">
+                    <button onclick="showTab('missions')" class="tab-btn active py-4 text-sm font-medium text-gray-500 border-b-2 border-transparent" id="tab-missions">Missions (12)</button>
+                    <button onclick="showTab('paiements')" class="tab-btn py-4 text-sm font-medium text-gray-500 border-b-2 border-transparent" id="tab-paiements">Paiements (8)</button>
+                    <button onclick="showTab('historique')" class="tab-btn py-4 text-sm font-medium text-gray-500 border-b-2 border-transparent" id="tab-historique">Historique</button>
+                </div>
+
+                <!-- Tab Missions -->
+                <div id="content-missions" class="p-6">
+                    <div class="grid sm:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-blue-700">12</p><p class="text-xs text-blue-600">Total missions</p></div>
+                        <div class="bg-green-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-green-700">720 000</p><p class="text-xs text-green-600">Total FCFA</p></div>
+                        <div class="bg-purple-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-purple-700">8</p><p class="text-xs text-purple-600">Payés intégralement</p></div>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead><tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                            <th class="pb-3 pr-4">Réf OM</th><th class="pb-3 pr-4">Destination</th><th class="pb-3 pr-4">Durée</th><th class="pb-3 pr-4">Montant</th><th class="pb-3 pr-4">Avance</th><th class="pb-3 pr-4">Reliquat</th><th class="pb-3">Statut</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr class="hover:bg-gray-50"><td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000793</span></td><td class="py-3 pr-4">Parakou</td><td class="py-3 pr-4">3 jours</td><td class="py-3 pr-4 font-semibold">60 000</td><td class="py-3 pr-4 text-green-600">20 000 ✓</td><td class="py-3 pr-4 text-green-600">40 000 ✓</td><td class="py-3"><span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-lg">Payé</span></td></tr>
+                            <tr class="hover:bg-gray-50"><td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000785</span></td><td class="py-3 pr-4">Natitingou</td><td class="py-3 pr-4">5 jours</td><td class="py-3 pr-4 font-semibold">100 000</td><td class="py-3 pr-4 text-green-600">33 333 ✓</td><td class="py-3 pr-4 text-orange-600">66 667 ⏳</td><td class="py-3"><span class="bg-orange-50 text-orange-700 text-xs px-2 py-1 rounded-lg">Avance payée</span></td></tr>
+                            <tr class="hover:bg-gray-50"><td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000770</span></td><td class="py-3 pr-4">Abomey</td><td class="py-3 pr-4">2 jours</td><td class="py-3 pr-4 font-semibold">40 000</td><td class="py-3 pr-4 text-green-600">13 333 ✓</td><td class="py-3 pr-4 text-green-600">26 667 ✓</td><td class="py-3"><span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-lg">Payé</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab Paiements -->
+                <div id="content-paiements" class="p-6 hidden">
+                    <table class="w-full text-sm">
+                        <thead><tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                            <th class="pb-3 pr-4">Réf Lot</th><th class="pb-3 pr-4">Type</th><th class="pb-3 pr-4">Opérateur</th><th class="pb-3 pr-4">Montant</th><th class="pb-3 pr-4">Date</th><th class="pb-3">Statut</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr class="hover:bg-gray-50"><td class="py-3 pr-4 font-mono text-xs">LOT-MTN-20241204</td><td class="py-3 pr-4">Reliquat</td><td class="py-3 pr-4"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3 pr-4 font-semibold">40 000</td><td class="py-3 pr-4 text-gray-500">04/12/2024</td><td class="py-3"><span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-lg">Payé</span></td></tr>
+                            <tr class="hover:bg-gray-50"><td class="py-3 pr-4 font-mono text-xs">LOT-MTN-20241201</td><td class="py-3 pr-4">Avance</td><td class="py-3 pr-4"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">MTN</span></td><td class="py-3 pr-4 font-semibold">20 000</td><td class="py-3 pr-4 text-gray-500">01/12/2024</td><td class="py-3"><span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-lg">Payé</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab Historique -->
+                <div id="content-historique" class="p-6 hidden">
+                    <div class="space-y-4">
+                        <div class="flex gap-4 items-start"><div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-money-bill text-green-600 text-xs"></i></div><div><p class="text-sm font-medium text-gray-800">Paiement reliquat effectué — 40 000 FCFA</p><p class="text-xs text-gray-500">04/12/2024 à 14:30 par Admin Finances</p></div></div>
+                        <div class="flex gap-4 items-start"><div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-file-alt text-blue-600 text-xs"></i></div><div><p class="text-sm font-medium text-gray-800">OM-2024-000793 validé</p><p class="text-xs text-gray-500">02/12/2024 à 09:15 par Directeur</p></div></div>
+                        <div class="flex gap-4 items-start"><div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-edit text-purple-600 text-xs"></i></div><div><p class="text-sm font-medium text-gray-800">Numéro MTN mis à jour</p><p class="text-xs text-gray-500">28/11/2024 à 16:45 par Opérateur Saisie</p></div></div>
+                        <div class="flex gap-4 items-start"><div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-user-plus text-gray-600 text-xs"></i></div><div><p class="text-sm font-medium text-gray-800">Agent créé dans le système</p><p class="text-xs text-gray-500">15/10/2024 à 10:00 par Super Admin</p></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+    function showTab(tab){
+        document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.remove('active');b.style.color='#6b7280';b.style.borderBottom='2px solid transparent';});
+        document.querySelectorAll('[id^="content-"]').forEach(c=>c.classList.add('hidden'));
+        document.getElementById('tab-'+tab).classList.add('active');
+        document.getElementById('tab-'+tab).style.color='#009639';
+        document.getElementById('tab-'+tab).style.borderBottom='2px solid #009639';
+        document.getElementById('content-'+tab).classList.remove('hidden');
+    }
+    </script>
+</body>
+</html>

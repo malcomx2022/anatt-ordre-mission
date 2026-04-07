@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Détail Lot Paiement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="20_lots_paiement.html" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div>
+                        <div class="flex items-center gap-3"><h1 class="text-lg font-bold text-gray-800">LOT-2025-0046</h1><span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold"><i class="fas fa-spinner fa-spin text-[10px]"></i>En cours</span></div>
+                        <p class="text-xs text-gray-500">MOOV Flooz · Solde (2/3) · 14 Février 2025</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="22_reconciliation.html" class="px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 flex items-center gap-2"><i class="fas fa-sync-alt"></i>Réconcilier</a>
+                    <button class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-download"></i>Télécharger</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <!-- Progress & Summary -->
+            <div class="grid grid-cols-3 gap-6 mb-6">
+                <!-- Progress Ring -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4">Progression du Traitement</h3>
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="relative w-32 h-32">
+                            <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="52" stroke="#f3f4f6" stroke-width="8" fill="none"/>
+                                <circle cx="60" cy="60" r="52" stroke="#22c55e" stroke-width="8" fill="none" stroke-dasharray="326.7" stroke-dashoffset="80" stroke-linecap="round"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-2xl font-bold text-gray-900">75%</span><span class="text-[10px] text-gray-500">traité</span></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-xs"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 bg-green-500 rounded-full"></span>Réussis</span><span class="font-bold text-gray-800">13</span></div>
+                        <div class="flex items-center justify-between text-xs"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span>Échoués</span><span class="font-bold text-gray-800">1</span></div>
+                        <div class="flex items-center justify-between text-xs"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 bg-gray-300 rounded-full"></span>En attente</span><span class="font-bold text-gray-800">4</span></div>
+                    </div>
+                </div>
+
+                <!-- Info Lot -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.1s">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4">Informations du Lot</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Référence</span><span class="text-sm font-bold text-gray-800">LOT-2025-0046</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Opérateur</span><span class="text-sm font-semibold text-blue-700">MOOV Flooz</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Type</span><span class="text-sm text-gray-700">Solde (2/3)</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Fichier</span><span class="text-sm text-gray-700">LOT_0046_MOOV.csv</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Généré par</span><span class="text-sm text-gray-700">Gislain A.</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Soumis le</span><span class="text-sm text-gray-700">14/02/2025 09:15</span></div>
+                        <div class="flex justify-between"><span class="text-xs text-gray-500">Dernière MAJ</span><span class="text-sm text-gray-700">14/02/2025 11:42</span></div>
+                    </div>
+                </div>
+
+                <!-- Montants -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.2s">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4">Résumé Financier</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-xs text-gray-500 mb-1">Montant Total du Lot</p>
+                            <p class="text-2xl font-bold text-gray-900">2 736 000 <span class="text-sm font-normal text-gray-500">FCFA</span></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-green-50 rounded-xl p-3 text-center">
+                                <p class="text-[10px] text-green-600 font-medium">Payé</p>
+                                <p class="text-lg font-bold text-green-700">1 976 000</p>
+                            </div>
+                            <div class="bg-red-50 rounded-xl p-3 text-center">
+                                <p class="text-[10px] text-red-500 font-medium">Échoué</p>
+                                <p class="text-lg font-bold text-red-600">152 000</p>
+                            </div>
+                        </div>
+                        <div class="bg-amber-50 rounded-xl p-3 text-center">
+                            <p class="text-[10px] text-amber-600 font-medium">En attente de traitement</p>
+                            <p class="text-lg font-bold text-amber-700">608 000 <span class="text-xs font-normal">FCFA</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in" style="animation-delay:.25s">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4">Chronologie</h3>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2"><div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"><i class="fas fa-check text-white text-xs"></i></div><div><p class="text-xs font-semibold text-gray-800">Généré</p><p class="text-[10px] text-gray-400">14/02 08:30</p></div></div>
+                    <div class="flex-1 h-0.5 bg-green-500"></div>
+                    <div class="flex items-center gap-2"><div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"><i class="fas fa-check text-white text-xs"></i></div><div><p class="text-xs font-semibold text-gray-800">Validé</p><p class="text-[10px] text-gray-400">14/02 09:00</p></div></div>
+                    <div class="flex-1 h-0.5 bg-green-500"></div>
+                    <div class="flex items-center gap-2"><div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"><i class="fas fa-check text-white text-xs"></i></div><div><p class="text-xs font-semibold text-gray-800">Soumis</p><p class="text-[10px] text-gray-400">14/02 09:15</p></div></div>
+                    <div class="flex-1 h-0.5 bg-blue-400 animate-pulse"></div>
+                    <div class="flex items-center gap-2"><div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"><i class="fas fa-spinner fa-spin text-white text-xs"></i></div><div><p class="text-xs font-semibold text-blue-700">En cours</p><p class="text-[10px] text-gray-400">75%</p></div></div>
+                    <div class="flex-1 h-0.5 bg-gray-200"></div>
+                    <div class="flex items-center gap-2"><div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center"><i class="fas fa-flag text-gray-400 text-xs"></i></div><div><p class="text-xs font-semibold text-gray-400">Terminé</p><p class="text-[10px] text-gray-300">—</p></div></div>
+                </div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden fade-in" style="animation-delay:.3s">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-gray-700">Transactions (18)</h3>
+                    <div class="flex items-center gap-2">
+                        <select class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 outline-none">
+                            <option>Tous les statuts</option><option>Réussis</option><option>Échoués</option><option>En attente</option>
+                        </select>
+                        <button class="px-3 py-1.5 text-xs text-anatt-600 font-semibold hover:bg-anatt-50 rounded-lg">Exporter CSV</button>
+                    </div>
+                </div>
+                <table class="w-full">
+                    <thead><tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">#</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Bénéficiaire</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Téléphone</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Réf. OM</th>
+                        <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Montant</th>
+                        <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Transaction ID</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-xs text-gray-400">1</td><td class="px-5 py-3 text-sm font-medium text-gray-800">ADJOVI Kossi Pierre</td><td class="px-5 py-3 text-sm text-gray-600">95 12 34 56</td><td class="px-5 py-3"><a class="text-sm text-anatt-600 font-medium hover:underline" href="15_detail_om.html">OM-2025-0089</a></td><td class="px-5 py-3 text-right text-sm font-semibold text-gray-800">152 000 F</td><td class="px-5 py-3 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium"><i class="fas fa-check-circle text-[9px]"></i>Réussi</span></td><td class="px-5 py-3 text-xs text-gray-400 font-mono">TXN-8A3F2B1</td></tr>
+                        <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-xs text-gray-400">2</td><td class="px-5 py-3 text-sm font-medium text-gray-800">BOKO Grâce Annick</td><td class="px-5 py-3 text-sm text-gray-600">96 45 67 89</td><td class="px-5 py-3"><a class="text-sm text-anatt-600 font-medium hover:underline" href="15_detail_om.html">OM-2025-0091</a></td><td class="px-5 py-3 text-right text-sm font-semibold text-gray-800">152 000 F</td><td class="px-5 py-3 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium"><i class="fas fa-check-circle text-[9px]"></i>Réussi</span></td><td class="px-5 py-3 text-xs text-gray-400 font-mono">TXN-9C4D3E2</td></tr>
+                        <tr class="hover:bg-gray-50/50 bg-red-50/30"><td class="px-5 py-3 text-xs text-gray-400">3</td><td class="px-5 py-3 text-sm font-medium text-gray-800">DOSSOU Fabrice</td><td class="px-5 py-3 text-sm text-gray-600">96 78 90 12</td><td class="px-5 py-3"><a class="text-sm text-anatt-600 font-medium hover:underline" href="15_detail_om.html">OM-2025-0093</a></td><td class="px-5 py-3 text-right text-sm font-semibold text-gray-800">152 000 F</td><td class="px-5 py-3 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-medium"><i class="fas fa-times-circle text-[9px]"></i>Échoué</span></td><td class="px-5 py-3 text-xs text-red-400 font-mono">ERR: Numéro invalide</td></tr>
+                        <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-xs text-gray-400">4</td><td class="px-5 py-3 text-sm font-medium text-gray-800">GANDONOU Estelle</td><td class="px-5 py-3 text-sm text-gray-600">95 23 45 67</td><td class="px-5 py-3"><a class="text-sm text-anatt-600 font-medium hover:underline" href="15_detail_om.html">OM-2025-0095</a></td><td class="px-5 py-3 text-right text-sm font-semibold text-gray-800">152 000 F</td><td class="px-5 py-3 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium"><i class="fas fa-check-circle text-[9px]"></i>Réussi</span></td><td class="px-5 py-3 text-xs text-gray-400 font-mono">TXN-2E5F4A3</td></tr>
+                        <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-xs text-gray-400">5</td><td class="px-5 py-3 text-sm font-medium text-gray-800">HOUNKPATIN Joël</td><td class="px-5 py-3 text-sm text-gray-600">96 34 56 78</td><td class="px-5 py-3"><a class="text-sm text-anatt-600 font-medium hover:underline" href="15_detail_om.html">OM-2025-0097</a></td><td class="px-5 py-3 text-right text-sm font-semibold text-gray-800">152 000 F</td><td class="px-5 py-3 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-medium"><i class="fas fa-clock text-[9px]"></i>En attente</span></td><td class="px-5 py-3 text-xs text-gray-400 font-mono">—</td></tr>
+                        <tr class="hover:bg-gray-50/50"><td class="px-5 py-3 text-xs text-gray-400">6</td><td class="px-5 py-3 text-sm font-medium text-gray-800">KIKI Mariette</td><td class="px-5 py-3 text-sm text-gray-600">95 56 78 90</td><td class="px-5 py-3"><a class="text-sm text-anatt-600 font-medium hover:underline" href="15_detail_om.html">OM-2025-0099</a></td><td class="px-5 py-3 text-right text-sm font-semibold text-gray-800">152 000 F</td><td class="px-5 py-3 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium"><i class="fas fa-check-circle text-[9px]"></i>Réussi</span></td><td class="px-5 py-3 text-xs text-gray-400 font-mono">TXN-7G8H5B4</td></tr>
+                    </tbody>
+                </table>
+                <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-sm text-gray-500">Affichage <span class="font-semibold text-gray-700">1-6</span> sur <span class="font-semibold text-gray-700">18</span></p>
+                    <div class="flex items-center gap-1">
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400"><i class="fas fa-chevron-left text-xs"></i></button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-anatt-600 text-white text-sm font-semibold">1</button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">2</button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">3</button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"><i class="fas fa-chevron-right text-xs"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

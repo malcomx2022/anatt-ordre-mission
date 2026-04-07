@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Mot de passe oublié</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}
+    </script>
+    <style>
+        .bg-pattern{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+        .card-anim{animation:slideUp .6s ease-out}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body class="font-sans min-h-screen bg-gradient-to-br from-anatt-800 via-anatt-700 to-anatt-900 bg-pattern flex items-center justify-center p-4">
+    <div class="fixed top-0 left-0 right-0 h-1.5 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <div class="w-full max-w-md card-anim">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/20">
+                <i class="fas fa-key text-3xl text-gold-500"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">Mot de passe oublié</h1>
+            <p class="text-anatt-200 text-sm mt-1">Récupérez l'accès à votre compte</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <!-- État initial -->
+            <div id="formState">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                    <div class="flex gap-3"><i class="fas fa-info-circle text-blue-500 mt-0.5"></i><p class="text-sm text-blue-700">Entrez votre adresse e-mail. Un lien de réinitialisation vous sera envoyé.</p></div>
+                </div>
+                <form onsubmit="handleReset(event)">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Adresse e-mail</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-envelope text-gray-400 text-sm"></i></div>
+                            <input type="email" placeholder="votre.email@anatt.bj" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-anatt-600 hover:bg-anatt-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-anatt-600/30">
+                        <i class="fas fa-paper-plane text-sm"></i> Envoyer le lien
+                    </button>
+                </form>
+            </div>
+            <!-- État succès -->
+            <div id="successState" class="hidden text-center py-4">
+                <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center"><i class="fas fa-check text-2xl text-green-600"></i></div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">E-mail envoyé !</h3>
+                <p class="text-gray-500 text-sm mb-6">Un lien de réinitialisation a été envoyé à votre adresse e-mail. Vérifiez votre boîte de réception.</p>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4"><p class="text-sm text-amber-700"><i class="fas fa-clock mr-1"></i>Le lien expire dans 60 minutes</p></div>
+                <button onclick="location.reload()" class="text-anatt-600 hover:text-anatt-700 font-medium text-sm">Renvoyer l'e-mail</button>
+            </div>
+            <div class="mt-6 text-center">
+                <a href="01_login.html" class="text-sm text-gray-500 hover:text-anatt-600 font-medium"><i class="fas fa-arrow-left mr-1"></i>Retour à la connexion</a>
+            </div>
+        </div>
+    </div>
+    <script>
+    function handleReset(e){
+        e.preventDefault();
+        document.getElementById('formState').classList.add('hidden');
+        document.getElementById('successState').classList.remove('hidden');
+    }
+    </script>
+</body>
+</html>

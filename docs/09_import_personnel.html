@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Import Personnel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1"><p class="text-sm font-medium">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center gap-3">
+                <a href="05_personnel_liste.html" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"><i class="fas fa-arrow-left text-gray-600 text-sm"></i></a>
+                <div><h1 class="text-lg font-bold text-gray-800">Import du Personnel</h1><p class="text-xs text-gray-500">Importer depuis un fichier Excel</p></div>
+            </div>
+        </header>
+        <div class="p-6 max-w-4xl">
+            <!-- Étapes -->
+            <div class="flex items-center gap-4 mb-8">
+                <div id="step1ind" class="flex items-center gap-2"><div class="w-8 h-8 bg-anatt-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div><span class="text-sm font-medium text-anatt-700">Upload</span></div>
+                <div class="flex-1 h-0.5 bg-gray-200" id="line1"></div>
+                <div id="step2ind" class="flex items-center gap-2"><div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">2</div><span class="text-sm font-medium text-gray-500">Prévisualisation</span></div>
+                <div class="flex-1 h-0.5 bg-gray-200" id="line2"></div>
+                <div id="step3ind" class="flex items-center gap-2"><div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">3</div><span class="text-sm font-medium text-gray-500">Résultat</span></div>
+            </div>
+
+            <!-- Étape 1: Upload -->
+            <div id="step1" class="bg-white rounded-2xl border border-gray-100 p-6">
+                <h3 class="text-base font-bold text-gray-800 mb-2">Charger le fichier Excel</h3>
+                <p class="text-sm text-gray-500 mb-6">Formats acceptés: .xlsx, .xls • Taille max: 5 Mo</p>
+
+                <!-- Modèle téléchargeable -->
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-3"><i class="fas fa-file-excel text-green-600 text-lg"></i><div><p class="text-sm font-medium text-green-800">Modèle de fichier</p><p class="text-xs text-green-600">Téléchargez le template pour le remplir</p></div></div>
+                    <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2"><i class="fas fa-download"></i>Télécharger</button>
+                </div>
+
+                <!-- Zone de drop -->
+                <div id="dropzone" onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center cursor-pointer hover:border-anatt-500 hover:bg-anatt-50 transition-all">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" onchange="handleFile(this)">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center"><i class="fas fa-cloud-upload-alt text-2xl text-gray-400"></i></div>
+                    <p class="text-sm font-medium text-gray-700 mb-1">Glissez-déposez votre fichier ici</p>
+                    <p class="text-xs text-gray-500">ou cliquez pour sélectionner</p>
+                </div>
+
+                <!-- Fichier sélectionné -->
+                <div id="fileSelected" class="hidden mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-file-excel text-green-600"></i></div>
+                        <div><p class="text-sm font-medium text-gray-800" id="fileName">personnel_anatt.xlsx</p><p class="text-xs text-gray-500" id="fileSize">124 Ko • 45 lignes détectées</p></div>
+                    </div>
+                    <button onclick="resetFile()" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Colonnes attendues -->
+                <div class="mt-6 bg-gray-50 rounded-xl p-4">
+                    <p class="text-sm font-medium text-gray-700 mb-3"><i class="fas fa-info-circle text-anatt-600 mr-1"></i>Colonnes attendues dans le fichier</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">matricule *</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">nom *</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">prenoms *</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">grade *</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">salaire_base *</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">tel_mtn</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">tel_moov</span>
+                        <span class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center font-mono">operateur_principal *</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button onclick="goToStep2()" id="btnNext" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 transition-colors flex items-center gap-2 opacity-50 cursor-not-allowed" disabled>Suivant <i class="fas fa-arrow-right text-xs"></i></button>
+                </div>
+            </div>
+
+            <!-- Étape 2: Prévisualisation -->
+            <div id="step2" class="hidden">
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-gray-800">Prévisualisation (45 lignes)</h3>
+                        <div class="flex gap-3 text-sm">
+                            <span class="text-green-600 font-medium"><i class="fas fa-check-circle mr-1"></i>42 valides</span>
+                            <span class="text-red-600 font-medium"><i class="fas fa-exclamation-circle mr-1"></i>3 erreurs</span>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-gray-200">
+                        <table class="w-full text-xs">
+                            <thead><tr class="bg-gray-50 text-left text-gray-500 uppercase tracking-wider">
+                                <th class="px-3 py-2">#</th><th class="px-3 py-2">Statut</th><th class="px-3 py-2">Matricule</th><th class="px-3 py-2">Nom</th><th class="px-3 py-2">Prénoms</th><th class="px-3 py-2">Grade</th><th class="px-3 py-2">Salaire</th><th class="px-3 py-2">Tél MTN</th><th class="px-3 py-2">Opérateur</th>
+                            </tr></thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr class="bg-green-50/50"><td class="px-3 py-2">1</td><td class="px-3 py-2"><i class="fas fa-check-circle text-green-500"></i></td><td class="px-3 py-2 font-mono">MAT-0088</td><td class="px-3 py-2">AZONHON</td><td class="px-3 py-2">Claude</td><td class="px-3 py-2">Agent</td><td class="px-3 py-2">380 000</td><td class="px-3 py-2 font-mono">22996123456</td><td class="px-3 py-2">MTN</td></tr>
+                                <tr class="bg-green-50/50"><td class="px-3 py-2">2</td><td class="px-3 py-2"><i class="fas fa-check-circle text-green-500"></i></td><td class="px-3 py-2 font-mono">MAT-0089</td><td class="px-3 py-2">BELLO</td><td class="px-3 py-2">Fatimata</td><td class="px-3 py-2">Cadre</td><td class="px-3 py-2">750 000</td><td class="px-3 py-2 font-mono">22997654321</td><td class="px-3 py-2">MTN</td></tr>
+                                <tr class="bg-red-50"><td class="px-3 py-2">3</td><td class="px-3 py-2"><i class="fas fa-exclamation-circle text-red-500" title="Matricule déjà existant"></i></td><td class="px-3 py-2 font-mono text-red-600 font-bold">MAT-0045</td><td class="px-3 py-2">CISSE</td><td class="px-3 py-2">Moussa</td><td class="px-3 py-2">Agent</td><td class="px-3 py-2">320 000</td><td class="px-3 py-2 font-mono">22901887766</td><td class="px-3 py-2">MOOV</td></tr>
+                                <tr class="bg-green-50/50"><td class="px-3 py-2">4</td><td class="px-3 py-2"><i class="fas fa-check-circle text-green-500"></i></td><td class="px-3 py-2 font-mono">MAT-0090</td><td class="px-3 py-2">DAGA</td><td class="px-3 py-2">Irène</td><td class="px-3 py-2">Chef Division</td><td class="px-3 py-2">520 000</td><td class="px-3 py-2 font-mono">22996789012</td><td class="px-3 py-2">MTN</td></tr>
+                                <tr class="bg-red-50"><td class="px-3 py-2">5</td><td class="px-3 py-2"><i class="fas fa-exclamation-circle text-red-500" title="Numéro invalide"></i></td><td class="px-3 py-2 font-mono">MAT-0091</td><td class="px-3 py-2">EKUE</td><td class="px-3 py-2">Pascal</td><td class="px-3 py-2">Agent</td><td class="px-3 py-2">350 000</td><td class="px-3 py-2 font-mono text-red-600 font-bold">123456</td><td class="px-3 py-2">MTN</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 bg-red-50 border border-red-200 rounded-xl p-3">
+                        <p class="text-sm font-medium text-red-800 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i>Erreurs détectées (3 lignes)</p>
+                        <ul class="text-xs text-red-700 space-y-1">
+                            <li>• Ligne 3: Matricule MAT-0045 déjà existant (MAGBE Victorin)</li>
+                            <li>• Ligne 5: Numéro MTN invalide (format attendu: 229XXXXXXXX)</li>
+                            <li>• Ligne 12: Champ grade manquant</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <button onclick="goToStep(1)" class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"><i class="fas fa-arrow-left mr-2"></i>Retour</button>
+                    <div class="flex gap-3">
+                        <button class="px-4 py-2.5 border border-amber-300 text-amber-700 rounded-xl text-sm font-medium hover:bg-amber-50">Ignorer erreurs (42 lignes)</button>
+                        <button onclick="goToStep3()" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-upload"></i>Importer 42 agents</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étape 3: Résultat -->
+            <div id="step3" class="hidden bg-white rounded-2xl border border-gray-100 p-8 text-center">
+                <div class="w-20 h-20 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center"><i class="fas fa-check text-3xl text-green-600"></i></div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Import terminé !</h3>
+                <p class="text-sm text-gray-500 mb-6">42 agents ont été importés avec succès.</p>
+                <div class="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
+                    <div class="bg-green-50 rounded-xl p-4"><p class="text-2xl font-bold text-green-700">42</p><p class="text-xs text-green-600">Importés</p></div>
+                    <div class="bg-red-50 rounded-xl p-4"><p class="text-2xl font-bold text-red-700">3</p><p class="text-xs text-red-600">Ignorés</p></div>
+                    <div class="bg-blue-50 rounded-xl p-4"><p class="text-2xl font-bold text-blue-700">0</p><p class="text-xs text-blue-600">Mis à jour</p></div>
+                </div>
+                <div class="flex justify-center gap-3">
+                    <a href="10_rapport_import.html" class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-file-alt"></i>Voir rapport détaillé</a>
+                    <a href="05_personnel_liste.html" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-users"></i>Voir le personnel</a>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+    function handleFile(input){
+        if(input.files.length){
+            document.getElementById('fileSelected').classList.remove('hidden');
+            document.getElementById('fileName').textContent=input.files[0].name;
+            document.getElementById('fileSize').textContent=Math.round(input.files[0].size/1024)+' Ko • 45 lignes détectées';
+            document.getElementById('btnNext').disabled=false;
+            document.getElementById('btnNext').classList.remove('opacity-50','cursor-not-allowed');
+        }
+    }
+    function resetFile(){document.getElementById('fileSelected').classList.add('hidden');document.getElementById('btnNext').disabled=true;document.getElementById('btnNext').classList.add('opacity-50','cursor-not-allowed');}
+    function goToStep2(){document.getElementById('step1').classList.add('hidden');document.getElementById('step2').classList.remove('hidden');document.getElementById('step2ind').querySelector('div').className='w-8 h-8 bg-anatt-600 text-white rounded-full flex items-center justify-center text-sm font-bold';document.getElementById('step2ind').querySelector('span').className='text-sm font-medium text-anatt-700';document.getElementById('line1').className='flex-1 h-0.5 bg-anatt-600';}
+    function goToStep3(){document.getElementById('step2').classList.add('hidden');document.getElementById('step3').classList.remove('hidden');document.getElementById('step3ind').querySelector('div').className='w-8 h-8 bg-anatt-600 text-white rounded-full flex items-center justify-center text-sm font-bold';document.getElementById('step3ind').querySelector('span').className='text-sm font-medium text-anatt-700';document.getElementById('line2').className='flex-1 h-0.5 bg-anatt-600';}
+    function goToStep(n){if(n===1){document.getElementById('step2').classList.add('hidden');document.getElementById('step1').classList.remove('hidden');}}
+    </script>
+</body>
+</html>

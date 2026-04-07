@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Modification Barèmes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}input.rate-input{text-align:center;font-weight:600;background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 8px;transition:all .2s}input.rate-input:hover{border-color:#d1d5db;background:#f9fafb}input.rate-input:focus{border-color:#009639;background:#f0fdf4;outline:none;box-shadow:0 0 0 3px rgba(0,150,57,.15)}.modified{background:#fef9c3 !important;border-color:#facc15 !important}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="23_consultation_baremes.html" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Modification des Barèmes</h1><p class="text-xs text-gray-500">Édition des grilles tarifaires · Les modifications nécessitent une validation</p></div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="change-count" class="text-xs text-amber-600 font-semibold bg-amber-50 px-3 py-1.5 rounded-lg hidden"><i class="fas fa-pencil-alt mr-1"></i><span id="count-val">0</span> modification(s)</span>
+                    <a href="23_consultation_baremes.html" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">Annuler</a>
+                    <button onclick="saveChanges()" class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-save"></i>Enregistrer</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <!-- Warning -->
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3 fade-in">
+                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-exclamation-triangle text-amber-600"></i></div>
+                <div>
+                    <h4 class="text-sm font-bold text-amber-800">Attention : Zone sensible</h4>
+                    <p class="text-xs text-amber-700 mt-1">Toute modification des barèmes impactera le calcul automatique des indemnités pour les ordres de mission futurs. Les modifications sont enregistrées avec traçabilité complète et nécessitent la validation du Directeur Général.</p>
+                </div>
+            </div>
+
+            <!-- Decree Reference -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6 fade-in" style="animation-delay:.1s">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4">Référence Réglementaire</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">N° du Décret</label>
+                        <input type="text" value="2024-456" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Date du Décret</label>
+                        <input type="date" value="2024-01-15" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Date d'Application</label>
+                        <input type="date" value="2024-02-01" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editable Table -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-6 fade-in" style="animation-delay:.2s">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2"><i class="fas fa-edit text-anatt-600"></i>Per Diem - Missions Nationales (FCFA / jour)</h3>
+                </div>
+                <table class="w-full">
+                    <thead><tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase w-48">Catégorie</th>
+                        <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Hébergement</th>
+                        <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Restauration</th>
+                        <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Frais Divers</th>
+                        <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase bg-gold-500/10">Total Calculé</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <tr>
+                            <td class="px-5 py-3"><span class="text-sm font-bold text-gray-800">Cat. A</span><br><span class="text-[10px] text-gray-400">DG, DGA, SG</span></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="35000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="35000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="15000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="15000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="10000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="10000"></td>
+                            <td class="px-5 py-3 text-center bg-gold-500/5"><span class="total text-sm font-bold text-anatt-700">60 000</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-5 py-3"><span class="text-sm font-bold text-gray-800">Cat. B</span><br><span class="text-[10px] text-gray-400">Directeurs, CS, A1</span></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="25000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="25000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="12000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="12000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="8000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="8000"></td>
+                            <td class="px-5 py-3 text-center bg-gold-500/5"><span class="total text-sm font-bold text-anatt-700">45 000</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-5 py-3"><span class="text-sm font-bold text-gray-800">Cat. C</span><br><span class="text-[10px] text-gray-400">A2, B1, Maîtrise</span></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="20000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="20000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="10000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="10000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="5000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="5000"></td>
+                            <td class="px-5 py-3 text-center bg-gold-500/5"><span class="total text-sm font-bold text-anatt-700">35 000</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-5 py-3"><span class="text-sm font-bold text-gray-800">Cat. D</span><br><span class="text-[10px] text-gray-400">B2, C, D, Appui</span></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="15000" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="15000"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="7500" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="7500"></td>
+                            <td class="px-3 py-2 text-center"><input type="number" value="2500" class="rate-input w-28 text-sm" onchange="recalc(this)" data-orig="2500"></td>
+                            <td class="px-5 py-3 text-center bg-gold-500/5"><span class="total text-sm font-bold text-anatt-700">25 000</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Change History -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.3s">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-history text-gray-400"></i>Historique des Modifications</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div class="w-8 h-8 bg-anatt-100 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-check text-anatt-600 text-xs"></i></div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between"><p class="text-sm font-semibold text-gray-800">Mise à jour Décret 2024-456</p><span class="text-xs text-gray-400">15/01/2024</span></div>
+                            <p class="text-xs text-gray-500 mt-0.5">Cat. A hébergement : 30 000 → 35 000 · Cat. B hébergement : 22 000 → 25 000</p>
+                            <p class="text-xs text-gray-400 mt-1">Par : Admin Système · Validé par : DG HOUNSOU</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div class="w-8 h-8 bg-anatt-100 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-check text-anatt-600 text-xs"></i></div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between"><p class="text-sm font-semibold text-gray-800">Ajout zones de destination</p><span class="text-xs text-gray-400">01/06/2023</span></div>
+                            <p class="text-xs text-gray-500 mt-0.5">Création des zones 1, 2, 3 avec suppléments différenciés</p>
+                            <p class="text-xs text-gray-400 mt-1">Par : Admin Système · Validé par : DG HOUNSOU</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    let changes=0;
+    function recalc(input){
+        const row=input.closest('tr');
+        const inputs=row.querySelectorAll('input.rate-input');
+        let total=0;
+        inputs.forEach(i=>{total+=parseInt(i.value)||0;
+            if(i.value!=i.dataset.orig){i.classList.add('modified')}else{i.classList.remove('modified')}
+        });
+        row.querySelector('.total').textContent=total.toLocaleString('fr-FR');
+        changes=document.querySelectorAll('.modified').length;
+        const counter=document.getElementById('change-count');
+        if(changes>0){counter.classList.remove('hidden');document.getElementById('count-val').textContent=changes}
+        else{counter.classList.add('hidden')}
+    }
+    function saveChanges(){
+        if(changes===0){alert('Aucune modification détectée.');return}
+        alert('Modifications enregistrées avec succès !\n\n'+changes+' valeur(s) modifiée(s).\nEn attente de validation par le Directeur Général.');
+    }
+    </script>
+</body>
+</html>

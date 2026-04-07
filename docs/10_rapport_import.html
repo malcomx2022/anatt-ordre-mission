@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Rapport d'Import</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1"><p class="text-sm font-medium">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="05_personnel_liste.html" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"><i class="fas fa-arrow-left text-gray-600 text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Rapport d'Import</h1><p class="text-xs text-gray-500">Import du 04/12/2024 à 14:30</p></div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-download text-anatt-600"></i>Exporter PDF</button>
+                    <button class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-print text-gray-500"></i>Imprimer</button>
+                </div>
+            </div>
+        </header>
+        <div class="p-6 max-w-5xl">
+            <!-- Résumé -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-clipboard-check text-2xl text-green-600"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">Import réussi</h3>
+                        <p class="text-sm text-gray-500">Fichier: personnel_anatt_dec2024.xlsx • 45 lignes traitées</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="bg-gray-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-gray-800">45</p><p class="text-xs text-gray-500">Total lignes</p></div>
+                    <div class="bg-green-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-green-700">38</p><p class="text-xs text-green-600">Créés</p></div>
+                    <div class="bg-blue-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-blue-700">4</p><p class="text-xs text-blue-600">Mis à jour</p></div>
+                    <div class="bg-red-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-red-700">2</p><p class="text-xs text-red-600">Erreurs</p></div>
+                    <div class="bg-amber-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-amber-700">1</p><p class="text-xs text-amber-600">Doublons</p></div>
+                </div>
+            </div>
+
+            <!-- Barres de progression -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <h3 class="text-base font-bold text-gray-800 mb-4">Taux de réussite</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700">Agents créés</span><span class="font-bold text-green-600">38/45 (84%)</span></div>
+                        <div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-green-500 h-3 rounded-full transition-all" style="width:84%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700">Agents mis à jour</span><span class="font-bold text-blue-600">4/45 (9%)</span></div>
+                        <div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full transition-all" style="width:9%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700">Erreurs</span><span class="font-bold text-red-600">3/45 (7%)</span></div>
+                        <div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-red-500 h-3 rounded-full transition-all" style="width:7%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détail des erreurs -->
+            <div class="bg-white rounded-2xl border border-red-200 p-6 mb-6">
+                <h3 class="text-base font-bold text-red-800 mb-4 flex items-center gap-2"><i class="fas fa-exclamation-triangle text-red-500"></i>Détail des erreurs (3)</h3>
+                <div class="space-y-3">
+                    <div class="bg-red-50 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-bold text-red-800">Ligne 3 — Doublon matricule</span>
+                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg">IGNORÉ</span>
+                        </div>
+                        <p class="text-sm text-red-700">Le matricule <span class="font-mono font-bold">MAT-0045</span> est déjà attribué à <strong>MAGBE Victorin</strong>.</p>
+                        <p class="text-xs text-red-600 mt-1">Données reçues: CISSE Moussa • 320 000 FCFA • MOOV</p>
+                    </div>
+                    <div class="bg-red-50 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-bold text-red-800">Ligne 5 — Numéro invalide</span>
+                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg">IGNORÉ</span>
+                        </div>
+                        <p class="text-sm text-red-700">Le numéro MTN <span class="font-mono font-bold">123456</span> ne respecte pas le format 229XXXXXXXX.</p>
+                        <p class="text-xs text-red-600 mt-1">Données reçues: EKUE Pascal • MAT-0091 • 350 000 FCFA</p>
+                    </div>
+                    <div class="bg-red-50 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-bold text-red-800">Ligne 12 — Champ obligatoire manquant</span>
+                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg">IGNORÉ</span>
+                        </div>
+                        <p class="text-sm text-red-700">Le champ <span class="font-mono font-bold">grade</span> est vide.</p>
+                        <p class="text-xs text-red-600 mt-1">Données reçues: FANOU Georges • MAT-0092 • 450 000 FCFA</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détail des mises à jour -->
+            <div class="bg-white rounded-2xl border border-blue-200 p-6 mb-6">
+                <h3 class="text-base font-bold text-blue-800 mb-4 flex items-center gap-2"><i class="fas fa-sync-alt text-blue-500"></i>Mises à jour effectuées (4)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                            <th class="pb-3 pr-4">Agent</th><th class="pb-3 pr-4">Champ</th><th class="pb-3 pr-4">Ancienne valeur</th><th class="pb-3 pr-4">Nouvelle valeur</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr><td class="py-3 pr-4 font-medium">ADJO Mariette</td><td class="py-3 pr-4">Salaire</td><td class="py-3 pr-4 text-gray-500 line-through">420 000</td><td class="py-3 pr-4 text-blue-600 font-semibold">450 000</td></tr>
+                            <tr><td class="py-3 pr-4 font-medium">BOKO Samuel</td><td class="py-3 pr-4">Tél MTN</td><td class="py-3 pr-4 text-gray-500 line-through font-mono text-xs">22996111222</td><td class="py-3 pr-4 text-blue-600 font-mono text-xs">22996333444</td></tr>
+                            <tr><td class="py-3 pr-4 font-medium">GABA Pierre</td><td class="py-3 pr-4">Grade</td><td class="py-3 pr-4 text-gray-500 line-through">Agent</td><td class="py-3 pr-4 text-blue-600 font-semibold">Cadre</td></tr>
+                            <tr><td class="py-3 pr-4 font-medium">HOUNSA Rita</td><td class="py-3 pr-4">Opérateur</td><td class="py-3 pr-4 text-gray-500 line-through">MTN</td><td class="py-3 pr-4 text-blue-600 font-semibold">MOOV</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Métadonnées -->
+            <div class="bg-gray-100 rounded-2xl p-5 text-sm text-gray-600">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><p class="text-xs text-gray-500">Importé par</p><p class="font-medium">Gislain A.</p></div>
+                    <div><p class="text-xs text-gray-500">Date</p><p class="font-medium">04/12/2024 14:30</p></div>
+                    <div><p class="text-xs text-gray-500">Durée</p><p class="font-medium">2.3 secondes</p></div>
+                    <div><p class="text-xs text-gray-500">Fichier</p><p class="font-medium font-mono text-xs">personnel_anatt_dec2024.xlsx</p></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

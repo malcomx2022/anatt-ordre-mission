@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Validation OM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.fade-in{animation:fadeIn .4s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">DG</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Directeur G.</p><p class="text-[10px] text-anatt-200">Directeur</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="18_liste_om_attente.html" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div>
+                        <div class="flex items-center gap-3"><h1 class="text-lg font-bold text-gray-800">Validation — OM-2024-000791</h1><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 text-xs rounded-lg font-medium"><i class="fas fa-clock text-[6px]"></i>En attente</span></div>
+                        <p class="text-xs text-gray-500">SEMO-4519 • Soumis par Gislain A. le 09 Déc 2024</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="p-6 fade-in">
+            <!-- Navigation entre OMs en attente -->
+            <div class="flex items-center justify-between mb-6">
+                <button class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-chevron-left"></i>OM précédent</button>
+                <span class="text-sm text-gray-400">3 / 8 en attente</span>
+                <button class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2">OM suivant<i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div class="xl:col-span-2 space-y-6">
+                    <!-- Infos mission -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-file-alt text-anatt-600"></i>Informations de la mission</h2>
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-5 text-sm">
+                            <div><p class="text-xs text-gray-400 mb-1">Objet</p><p class="font-semibold">Contrôle des permis zone sud</p></div>
+                            <div><p class="text-xs text-gray-400 mb-1">Itinéraire</p><p class="font-semibold">Cotonou → Abomey</p></div>
+                            <div><p class="text-xs text-gray-400 mb-1">Durée</p><p class="font-semibold text-anatt-600">3 jours (10-12 Déc 2024)</p></div>
+                            <div><p class="text-xs text-gray-400 mb-1">Transport</p><p class="font-semibold">Véhicule de service</p></div>
+                            <div><p class="text-xs text-gray-400 mb-1">Soumis par</p><p class="font-semibold">Gislain A.</p></div>
+                            <div><p class="text-xs text-gray-400 mb-1">Date soumission</p><p class="font-semibold">09 Déc 2024</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Vérification bénéficiaires -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-user-check text-anatt-600"></i>Vérification des bénéficiaires</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead><tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase">
+                                    <th class="px-4 py-3">Agent</th><th class="px-4 py-3">Catégorie</th><th class="px-4 py-3">1 Repas</th><th class="px-4 py-3">2 Repas</th><th class="px-4 py-3">Nuitées</th><th class="px-4 py-3">Total</th><th class="px-4 py-3">Opérateur</th><th class="px-4 py-3">Vérif.</th>
+                                </tr></thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr>
+                                        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-xs font-bold text-purple-600">DM</div><div><p class="font-medium">DOSSA Marie</p><p class="text-[10px] text-gray-400">229 97 12 34 56</p></div></div></td>
+                                        <td class="px-4 py-3"><span class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">400-800K</span></td>
+                                        <td class="px-4 py-3">1j × 12 000<br><strong>12 000</strong></td>
+                                        <td class="px-4 py-3">1j × 20 000<br><strong>20 000</strong></td>
+                                        <td class="px-4 py-3">2n × 35 000<br><strong>70 000</strong></td>
+                                        <td class="px-4 py-3 font-bold text-anatt-700">102 000 F</td>
+                                        <td class="px-4 py-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-lg">MTN</span></td>
+                                        <td class="px-4 py-3"><i class="fas fa-check-circle text-green-500"></i></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot><tr class="bg-anatt-50 font-bold"><td colspan="5" class="px-4 py-3 text-right text-anatt-700">TOTAL</td><td class="px-4 py-3 text-anatt-700">102 000 F</td><td colspan="2"></td></tr></tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Validation montants -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-calculator text-anatt-600"></i>Vérification des montants</h2>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-gray-50 rounded-xl p-4 text-center"><p class="text-xs text-gray-500 mb-1">Total mission</p><p class="text-xl font-bold text-gray-800">102 000 F</p></div>
+                            <div class="bg-blue-50 rounded-xl p-4 text-center"><p class="text-xs text-blue-600 mb-1">Avance (33.33%)</p><p class="text-xl font-bold text-blue-700">34 000 F</p></div>
+                            <div class="bg-green-50 rounded-xl p-4 text-center"><p class="text-xs text-green-600 mb-1">Reliquat (66.67%)</p><p class="text-xl font-bold text-green-700">68 000 F</p></div>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span>Barèmes conformes (grille Oct 2022)</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span>Numéro de téléphone validé</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span>Pas de doublon détecté</span></div>
+                            <div class="flex items-center gap-2 text-sm"><i class="fas fa-check-circle text-green-500"></i><span>Personnel actif confirmé</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonne actions -->
+                <div class="space-y-6">
+                    <!-- Décision -->
+                    <div class="bg-white rounded-2xl border-2 border-anatt-200 p-6">
+                        <h3 class="text-base font-bold text-gray-800 mb-4 text-center"><i class="fas fa-gavel text-anatt-600 mr-2"></i>Votre décision</h3>
+                        <div class="space-y-3">
+                            <button onclick="approveOM()" class="w-full px-5 py-3.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"><i class="fas fa-check-circle text-lg"></i>Approuver</button>
+                            <button onclick="showRejectModal()" class="w-full px-5 py-3.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"><i class="fas fa-times-circle text-lg"></i>Rejeter</button>
+                            <button class="w-full px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2"><i class="fas fa-pause-circle"></i>Mettre en attente</button>
+                        </div>
+                    </div>
+
+                    <!-- Commentaire validateur -->
+                    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                        <h3 class="text-sm font-bold text-gray-800 mb-3"><i class="fas fa-comment text-anatt-600 mr-2"></i>Commentaire (optionnel)</h3>
+                        <textarea rows="3" placeholder="Ajoutez un commentaire..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 resize-none"></textarea>
+                    </div>
+
+                    <!-- Infos validateur -->
+                    <div class="bg-gray-50 rounded-2xl p-5">
+                        <h3 class="text-sm font-bold text-gray-600 mb-3"><i class="fas fa-shield-alt mr-2"></i>Validateur</h3>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold text-white">DG</div>
+                            <div><p class="text-sm font-medium text-gray-800">Directeur Général</p><p class="text-[11px] text-gray-400">Niveau d'approbation: Directeur</p></div>
+                        </div>
+                        <p class="text-[11px] text-gray-400">Votre décision sera notifiée au créateur de l'OM et enregistrée dans l'audit.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Modal rejet -->
+    <div id="rejectModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4"><i class="fas fa-times-circle text-red-500 text-xl"></i></div>
+            <h3 class="text-lg font-bold text-gray-800 text-center">Rejeter cet OM ?</h3>
+            <p class="text-sm text-gray-500 text-center mt-2">Veuillez indiquer le motif du rejet pour <strong>OM-2024-000791</strong>.</p>
+            <div class="mt-4">
+                <label class="text-sm font-medium text-gray-700">Motif du rejet <span class="text-red-500">*</span></label>
+                <select class="w-full mt-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 mb-3">
+                    <option value="">Sélectionnez un motif</option>
+                    <option>Dates incorrectes</option>
+                    <option>Montants non conformes</option>
+                    <option>Bénéficiaire erroné</option>
+                    <option>Information manquante</option>
+                    <option>Autre</option>
+                </select>
+                <label class="text-sm font-medium text-gray-700">Détails</label>
+                <textarea rows="3" placeholder="Précisez le motif..." class="w-full mt-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 resize-none"></textarea>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="closeRejectModal()" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">Annuler</button>
+                <button onclick="rejectOM()" class="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600">Confirmer le rejet</button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal succès -->
+    <div id="successModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-xl text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-check text-green-600 text-2xl"></i></div>
+            <h3 class="text-xl font-bold text-gray-800" id="successTitle">OM approuvé !</h3>
+            <p class="text-sm text-gray-500 mt-2" id="successMsg">L'ordre de mission a été validé. Le créateur sera notifié.</p>
+            <a href="18_liste_om_attente.html" class="inline-block mt-5 px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700">Retour aux OMs en attente</a>
+        </div>
+    </div>
+    <script>
+    function showRejectModal(){document.getElementById('rejectModal').style.display='flex';}
+    function closeRejectModal(){document.getElementById('rejectModal').style.display='none';}
+    function approveOM(){document.getElementById('successTitle').textContent='OM approuvé !';document.getElementById('successMsg').textContent="L'ordre de mission a été validé avec succès.";document.getElementById('successModal').style.display='flex';}
+    function rejectOM(){closeRejectModal();document.getElementById('successTitle').textContent='OM rejeté';document.getElementById('successMsg').textContent="L'ordre de mission a été rejeté. Le créateur sera notifié.";document.getElementById('successModal').style.display='flex';}
+    </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Journal d'Audit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}tr:hover td{background:#f8fafc}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div><h1 class="text-lg font-bold text-gray-800">Journal d'Audit</h1><p class="text-xs text-gray-500">Historique complet des actions sur le système</p></div>
+                <div class="flex items-center gap-2">
+                    <button class="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-download"></i>Exporter</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <!-- Stats -->
+            <div class="grid grid-cols-4 gap-4 mb-6 fade-in">
+                <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-list text-blue-600"></i></div><span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">Aujourd'hui</span></div>
+                    <p class="text-2xl font-bold text-gray-900">247</p><p class="text-xs text-gray-500">Actions totales</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-plus-circle text-green-600"></i></div></div>
+                    <p class="text-2xl font-bold text-gray-900">89</p><p class="text-xs text-gray-500">Créations</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center"><i class="fas fa-edit text-amber-600"></i></div></div>
+                    <p class="text-2xl font-bold text-gray-900">134</p><p class="text-xs text-gray-500">Modifications</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-5">
+                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center"><i class="fas fa-shield-alt text-red-600"></i></div></div>
+                    <p class="text-2xl font-bold text-gray-900">3</p><p class="text-xs text-gray-500">Actions critiques</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6 fade-in" style="animation-delay:.1s">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex-1 min-w-[200px] relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" placeholder="Rechercher une action, un utilisateur..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
+                    </div>
+                    <select class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
+                        <option>Toutes les actions</option><option>Création</option><option>Modification</option><option>Suppression</option><option>Validation</option><option>Connexion</option><option>Export</option>
+                    </select>
+                    <select class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
+                        <option>Tous les modules</option><option>Personnel</option><option>Ordres de Mission</option><option>Paiements</option><option>Barèmes</option><option>Utilisateurs</option><option>Système</option>
+                    </select>
+                    <select class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
+                        <option>Tous les utilisateurs</option><option>Gislain A.</option><option>Marie D.</option><option>Pierre A.</option><option>Jean-Baptiste K.</option>
+                    </select>
+                    <input type="date" value="2025-01-15" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
+                    <button class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700"><i class="fas fa-filter mr-1"></i>Filtrer</button>
+                </div>
+            </div>
+
+            <!-- Timeline / Table -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden fade-in" style="animation-delay:.2s">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Horodatage</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Utilisateur</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Module</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Détails</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">IP</th>
+                            <th class="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <tr class="group">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">14:32:05</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-anatt-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-anatt-700">GA</div><span class="text-sm text-gray-700">Gislain A.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-lg"><i class="fas fa-check mr-1"></i>Validation</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Ordres de Mission</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Validation OM <span class="font-semibold">OM-2025-0089</span></p><p class="text-[11px] text-gray-400">MAGBE Victorin · Parakou</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.45</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">14:28:17</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-purple-700">MD</div><span class="text-sm text-gray-700">Marie D.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg"><i class="fas fa-plus mr-1"></i>Création</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Ordres de Mission</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Création OM <span class="font-semibold">OM-2025-0092</span></p><p class="text-[11px] text-gray-400">DOSSA Marie · Abomey</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.22</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">13:55:42</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-anatt-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-anatt-700">GA</div><span class="text-sm text-gray-700">Gislain A.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg"><i class="fas fa-edit mr-1"></i>Modification</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Barèmes</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Modification barème <span class="font-semibold">Catégorie A</span></p><p class="text-[11px] text-gray-400">Indemnité journalière : 25 000 → 28 000 FCFA</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.45</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group bg-red-50/30">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">12:10:33</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-red-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-red-700">PA</div><span class="text-sm text-gray-700">Pierre A.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-lg"><i class="fas fa-trash mr-1"></i>Suppression</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Personnel</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Suppression agent <span class="font-semibold">HOUNTON Marc</span></p><p class="text-[11px] text-red-500"><i class="fas fa-exclamation-triangle mr-1"></i>Action critique</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.18</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">11:45:20</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-blue-700">JK</div><span class="text-sm text-gray-700">Jean-Baptiste K.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg"><i class="fas fa-file-export mr-1"></i>Export</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Paiements</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Export fichier <span class="font-semibold">LOT-2025-012</span></p><p class="text-[11px] text-gray-400">Format MTN MoMo · 45 transactions</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.30</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">10:15:08</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-purple-700">MD</div><span class="text-sm text-gray-700">Marie D.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-cyan-100 text-cyan-700 text-xs font-semibold rounded-lg"><i class="fas fa-sign-in-alt mr-1"></i>Connexion</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Système</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Connexion réussie</p><p class="text-[11px] text-gray-400">Navigateur Chrome · Windows 11</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.22</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">09:30:55</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-anatt-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-anatt-700">GA</div><span class="text-sm text-gray-700">Gislain A.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg"><i class="fas fa-edit mr-1"></i>Modification</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Utilisateurs</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Modification rôle <span class="font-semibold">Pierre A.</span></p><p class="text-[11px] text-gray-400">Rôle : Gestionnaire → Validateur</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.45</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                        <tr class="group bg-red-50/30">
+                            <td class="px-5 py-4"><p class="text-sm font-medium text-gray-800">15/01/2025</p><p class="text-[11px] text-gray-400">08:45:12</p></td>
+                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-anatt-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-anatt-700">GA</div><span class="text-sm text-gray-700">Gislain A.</span></div></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-lg"><i class="fas fa-money-bill mr-1"></i>Paiement</span></td>
+                            <td class="px-5 py-4"><span class="text-sm text-gray-600">Paiements</span></td>
+                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Marquage payé lot <span class="font-semibold">LOT-2025-011</span></p><p class="text-[11px] text-red-500"><i class="fas fa-exclamation-triangle mr-1"></i>Action critique · 12 450 000 FCFA</p></td>
+                            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">192.168.1.45</span></td>
+                            <td class="px-5 py-4 text-center"><a href="30_detail_action_audit.html" class="text-anatt-600 hover:text-anatt-700 text-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <!-- Pagination -->
+                <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-sm text-gray-500">Affichage 1-8 sur <span class="font-semibold">247</span> actions</p>
+                    <div class="flex items-center gap-1">
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400"><i class="fas fa-chevron-left text-xs"></i></button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-anatt-600 text-white text-sm font-semibold">1</button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">2</button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">3</button>
+                        <span class="text-gray-400 px-1">...</span>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">31</button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"><i class="fas fa-chevron-right text-xs"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

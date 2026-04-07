@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Personnel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <!-- SIDEBAR -->
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="17_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="19_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+    <!-- CONTENU -->
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div><h1 class="text-lg font-bold text-gray-800">Gestion du Personnel</h1><p class="text-xs text-gray-500">87 agents enregistrés</p></div>
+                <div class="flex items-center gap-3">
+                    <a href="09_import_personnel.html" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"><i class="fas fa-file-excel text-green-600"></i>Importer Excel</a>
+                    <a href="06_formulaire_personnel.html" class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 transition-colors flex items-center gap-2"><i class="fas fa-plus"></i>Ajouter</a>
+                </div>
+            </div>
+        </header>
+        <div class="p-6">
+            <!-- Filtres -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="lg:col-span-2 relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" placeholder="Rechercher par nom, matricule..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" id="searchInput" oninput="filterTable()">
+                    </div>
+                    <select class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-anatt-600" id="filterGrade" onchange="filterTable()">
+                        <option value="">Tous les grades</option><option>Directeur</option><option>Chef Service</option><option>Cadre</option><option>Agent</option>
+                    </select>
+                    <select class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-anatt-600" id="filterOp" onchange="filterTable()">
+                        <option value="">Tous opérateurs</option><option>MTN</option><option>MOOV</option>
+                    </select>
+                    <select class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-anatt-600">
+                        <option value="">Tous statuts</option><option>Actif</option><option>Inactif</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Stats mini -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-xl border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-gray-800">87</p><p class="text-xs text-gray-500">Total agents</p></div>
+                <div class="bg-white rounded-xl border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-green-600">82</p><p class="text-xs text-gray-500">Actifs</p></div>
+                <div class="bg-white rounded-xl border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-yellow-600">52</p><p class="text-xs text-gray-500">MTN MoMo</p></div>
+                <div class="bg-white rounded-xl border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-blue-600">35</p><p class="text-xs text-gray-500">MOOV Flooz</p></div>
+            </div>
+            <!-- Tableau -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="personnelTable">
+                        <thead><tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
+                            <th class="px-5 py-3"><input type="checkbox" class="rounded border-gray-300"></th>
+                            <th class="px-5 py-3">Agent</th><th class="px-5 py-3">Matricule</th><th class="px-5 py-3">Grade</th><th class="px-5 py-3">Salaire</th><th class="px-5 py-3">Opérateur</th><th class="px-5 py-3">Téléphone</th><th class="px-5 py-3">Statut</th><th class="px-5 py-3">Actions</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr class="hover:bg-gray-50 transition-colors" data-name="magbe victorin" data-grade="Cadre" data-op="MTN">
+                                <td class="px-5 py-3"><input type="checkbox" class="rounded border-gray-300"></td>
+                                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center text-xs font-bold text-blue-600">MV</div><div><p class="font-medium text-gray-800">MAGBE Victorin</p><p class="text-[11px] text-gray-500">magbe.v@anatt.bj</p></div></div></td>
+                                <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">MAT-0045</span></td>
+                                <td class="px-5 py-3">Cadre</td>
+                                <td class="px-5 py-3 font-semibold">850 000</td>
+                                <td class="px-5 py-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-lg">MTN</span></td>
+                                <td class="px-5 py-3 font-mono text-xs">229 99 70 74 80</td>
+                                <td class="px-5 py-3"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>Actif</span></td>
+                                <td class="px-5 py-3"><div class="flex gap-1"><a href="07_detail_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600" title="Voir"><i class="fas fa-eye text-sm"></i></a><a href="08_modification_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-amber-600" title="Modifier"><i class="fas fa-edit text-sm"></i></a><button onclick="confirmDelete('MAGBE Victorin')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500" title="Supprimer"><i class="fas fa-trash text-sm"></i></button></div></td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors" data-name="adjovi pierre" data-grade="Agent" data-op="MOOV">
+                                <td class="px-5 py-3"><input type="checkbox" class="rounded border-gray-300"></td>
+                                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center text-xs font-bold text-green-600">AP</div><div><p class="font-medium text-gray-800">ADJOVI Pierre</p><p class="text-[11px] text-gray-500">adjovi.p@anatt.bj</p></div></div></td>
+                                <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">MAT-0023</span></td>
+                                <td class="px-5 py-3">Agent</td>
+                                <td class="px-5 py-3 font-semibold">350 000</td>
+                                <td class="px-5 py-3"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-lg">MOOV</span></td>
+                                <td class="px-5 py-3 font-mono text-xs">229 01 66 33 55</td>
+                                <td class="px-5 py-3"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>Actif</span></td>
+                                <td class="px-5 py-3"><div class="flex gap-1"><a href="07_detail_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-eye text-sm"></i></a><a href="08_modification_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-amber-600"><i class="fas fa-edit text-sm"></i></a><button onclick="confirmDelete('ADJOVI Pierre')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-trash text-sm"></i></button></div></td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors" data-name="dossa marie" data-grade="Chef Service" data-op="MTN">
+                                <td class="px-5 py-3"><input type="checkbox" class="rounded border-gray-300"></td>
+                                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center text-xs font-bold text-purple-600">DM</div><div><p class="font-medium text-gray-800">DOSSA Marie</p><p class="text-[11px] text-gray-500">dossa.m@anatt.bj</p></div></div></td>
+                                <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">MAT-0012</span></td>
+                                <td class="px-5 py-3">Chef Service</td>
+                                <td class="px-5 py-3 font-semibold">650 000</td>
+                                <td class="px-5 py-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-lg">MTN</span></td>
+                                <td class="px-5 py-3 font-mono text-xs">229 97 12 34 56</td>
+                                <td class="px-5 py-3"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>Actif</span></td>
+                                <td class="px-5 py-3"><div class="flex gap-1"><a href="07_detail_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-eye text-sm"></i></a><a href="08_modification_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-amber-600"><i class="fas fa-edit text-sm"></i></a><button onclick="confirmDelete('DOSSA Marie')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-trash text-sm"></i></button></div></td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors" data-name="saossi paterne" data-grade="Directeur" data-op="MOOV">
+                                <td class="px-5 py-3"><input type="checkbox" class="rounded border-gray-300"></td>
+                                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center text-xs font-bold text-red-600">SP</div><div><p class="font-medium text-gray-800">SAOSSI Paterne</p><p class="text-[11px] text-gray-500">saossi.p@anatt.bj</p></div></div></td>
+                                <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">MAT-0003</span></td>
+                                <td class="px-5 py-3">Directeur</td>
+                                <td class="px-5 py-3 font-semibold">1 200 000</td>
+                                <td class="px-5 py-3"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-lg">MOOV</span></td>
+                                <td class="px-5 py-3 font-mono text-xs">229 01 98 76 54</td>
+                                <td class="px-5 py-3"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>Actif</span></td>
+                                <td class="px-5 py-3"><div class="flex gap-1"><a href="07_detail_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-eye text-sm"></i></a><a href="08_modification_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-amber-600"><i class="fas fa-edit text-sm"></i></a><button onclick="confirmDelete('SAOSSI Paterne')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-trash text-sm"></i></button></div></td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors" data-name="kone jean" data-grade="Agent" data-op="MTN">
+                                <td class="px-5 py-3"><input type="checkbox" class="rounded border-gray-300"></td>
+                                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center text-xs font-bold text-amber-600">KJ</div><div><p class="font-medium text-gray-800">KONE Jean-Baptiste</p><p class="text-[11px] text-gray-500">kone.j@anatt.bj</p></div></div></td>
+                                <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">MAT-0067</span></td>
+                                <td class="px-5 py-3">Agent</td>
+                                <td class="px-5 py-3 font-semibold">380 000</td>
+                                <td class="px-5 py-3"><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-lg">MTN</span></td>
+                                <td class="px-5 py-3 font-mono text-xs">229 96 45 67 89</td>
+                                <td class="px-5 py-3"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>Inactif</span></td>
+                                <td class="px-5 py-3"><div class="flex gap-1"><a href="07_detail_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-eye text-sm"></i></a><a href="08_modification_personnel.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-amber-600"><i class="fas fa-edit text-sm"></i></a><button onclick="confirmDelete('KONE Jean')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-trash text-sm"></i></button></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination -->
+                <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-sm text-gray-500">Affichage 1-5 sur 87 agents</p>
+                    <div class="flex items-center gap-1">
+                        <button class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400"><i class="fas fa-chevron-left text-xs"></i></button>
+                        <button class="w-9 h-9 rounded-lg bg-anatt-600 text-white flex items-center justify-center text-sm font-medium">1</button>
+                        <button class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-sm text-gray-700 hover:bg-gray-50">2</button>
+                        <button class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-sm text-gray-700 hover:bg-gray-50">3</button>
+                        <span class="text-gray-400 px-1">...</span>
+                        <button class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-sm text-gray-700 hover:bg-gray-50">18</button>
+                        <button class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-700"><i class="fas fa-chevron-right text-xs"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Suppression -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div class="text-center">
+                <div class="w-14 h-14 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center"><i class="fas fa-trash text-red-500 text-xl"></i></div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Confirmer la suppression</h3>
+                <p class="text-sm text-gray-500 mb-6">Voulez-vous vraiment supprimer <strong id="deleteName"></strong> ? Cette action est irréversible.</p>
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('deleteModal').classList.add('hidden');document.getElementById('deleteModal').classList.remove('flex')" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">Annuler</button>
+                    <button onclick="document.getElementById('deleteModal').classList.add('hidden');document.getElementById('deleteModal').classList.remove('flex')" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    function confirmDelete(name){document.getElementById('deleteName').textContent=name;document.getElementById('deleteModal').classList.remove('hidden');document.getElementById('deleteModal').classList.add('flex');}
+    function filterTable(){
+        const q=document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('#personnelTable tbody tr').forEach(r=>{
+            const name=r.getAttribute('data-name')||'';
+            r.style.display=name.includes(q)?'':'none';
+        });
+    }
+    </script>
+</body>
+</html>

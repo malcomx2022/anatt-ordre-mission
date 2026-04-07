@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANaTT - Création OM - Étape 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
+    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.fade-in{animation:fadeIn .4s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}</style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
+    <!-- SIDEBAR -->
+    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
+        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
+        <nav class="p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
+            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
+            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
+            <a href="11_liste_ordres_mission.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
+            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
+            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
+            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
+            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
+            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
+            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
+            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
+            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
+        </nav>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
+    </aside>
+    <!-- CONTENU -->
+    <main class="ml-64 pt-1 min-h-screen">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="11_liste_ordres_mission.html" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
+                    <div><h1 class="text-lg font-bold text-gray-800">Nouvel Ordre de Mission</h1><p class="text-xs text-gray-500">Étape 1 sur 3 — Informations générales</p></div>
+                </div>
+                <span class="text-xs text-gray-400">Réf. auto : OM-2024-000795</span>
+            </div>
+        </header>
+        <div class="p-6 fade-in">
+            <!-- Wizard Progress -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                <div class="flex items-center justify-between max-w-2xl mx-auto">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-anatt-600 text-white rounded-xl flex items-center justify-center font-bold text-sm">1</div>
+                        <div><p class="text-sm font-semibold text-anatt-600">Informations</p><p class="text-[11px] text-gray-400">Détails de la mission</p></div>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-gray-200 mx-4 max-w-[100px]"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-200 text-gray-400 rounded-xl flex items-center justify-center font-bold text-sm">2</div>
+                        <div><p class="text-sm font-medium text-gray-400">Bénéficiaires</p><p class="text-[11px] text-gray-300">Sélection agents</p></div>
+                    </div>
+                    <div class="flex-1 h-0.5 bg-gray-200 mx-4 max-w-[100px]"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-200 text-gray-400 rounded-xl flex items-center justify-center font-bold text-sm">3</div>
+                        <div><p class="text-sm font-medium text-gray-400">Récapitulatif</p><p class="text-[11px] text-gray-300">Validation finale</p></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Formulaire -->
+            <div class="max-w-4xl">
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-info-circle text-anatt-600"></i>Références</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Référence SEMO <span class="text-red-500">*</span></label>
+                            <input type="text" placeholder="Ex: SEMO-4523" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" value="SEMO-4523">
+                            <p class="text-[11px] text-gray-400 mt-1">Numéro du Système Électronique de Mouvement d'Ordre</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Objet de la mission <span class="text-red-500">*</span></label>
+                            <input type="text" placeholder="Ex: Inspection technique routière" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" value="Contrôle technique des gares routières">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-map-marked-alt text-anatt-600"></i>Itinéraire</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Lieu de départ <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <i class="fas fa-map-pin absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                <input type="text" placeholder="Ex: Cotonou" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" value="Cotonou">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Destination <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <i class="fas fa-map-marker-alt absolute left-3 top-1/2 -translate-y-1/2 text-anatt-600 text-sm"></i>
+                                <input type="text" placeholder="Ex: Parakou" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" value="Parakou">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-calendar-alt text-anatt-600"></i>Période de la mission</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Date de début <span class="text-red-500">*</span></label>
+                            <input type="date" id="dateDebut" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" value="2024-12-16" onchange="calculateDuration()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Date de fin <span class="text-red-500">*</span></label>
+                            <input type="date" id="dateFin" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" value="2024-12-19" onchange="calculateDuration()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Durée calculée</label>
+                            <div class="flex items-center gap-3 h-[42px]">
+                                <div id="durationDisplay" class="flex items-center gap-2 px-4 py-2.5 bg-anatt-50 border border-anatt-200 rounded-xl">
+                                    <i class="fas fa-clock text-anatt-600"></i>
+                                    <span class="text-sm font-bold text-anatt-700">4 jours</span>
+                                </div>
+                                <span class="text-[11px] text-gray-400">Calcul automatique</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-car text-anatt-600"></i>Mode de transport</h2>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="transport" value="vehicule_service" class="peer sr-only" checked>
+                            <div class="border-2 border-gray-200 peer-checked:border-anatt-600 peer-checked:bg-anatt-50 rounded-xl p-4 text-center transition-all">
+                                <i class="fas fa-car text-2xl text-gray-400 peer-checked:text-anatt-600 mb-2"></i>
+                                <p class="text-xs font-medium text-gray-700">Véhicule de service</p>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="transport" value="vehicule_perso" class="peer sr-only">
+                            <div class="border-2 border-gray-200 peer-checked:border-anatt-600 peer-checked:bg-anatt-50 rounded-xl p-4 text-center transition-all">
+                                <i class="fas fa-car-side text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-xs font-medium text-gray-700">Véhicule personnel</p>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="transport" value="transport_commun" class="peer sr-only">
+                            <div class="border-2 border-gray-200 peer-checked:border-anatt-600 peer-checked:bg-anatt-50 rounded-xl p-4 text-center transition-all">
+                                <i class="fas fa-bus text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-xs font-medium text-gray-700">Transport en commun</p>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="transport" value="avion" class="peer sr-only">
+                            <div class="border-2 border-gray-200 peer-checked:border-anatt-600 peer-checked:bg-anatt-50 rounded-xl p-4 text-center transition-all">
+                                <i class="fas fa-plane text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-xs font-medium text-gray-700">Avion</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+                    <h2 class="text-base font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-sticky-note text-anatt-600"></i>Notes supplémentaires</h2>
+                    <textarea rows="3" placeholder="Observations, précisions sur la mission..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20 resize-none"></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-between">
+                    <a href="11_liste_ordres_mission.html" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"><i class="fas fa-times mr-2"></i>Annuler</a>
+                    <div class="flex gap-3">
+                        <button class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"><i class="fas fa-save mr-2"></i>Sauvegarder brouillon</button>
+                        <a href="13_om_creation_etape2.html" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 transition-colors flex items-center gap-2">Étape suivante<i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+    function calculateDuration(){
+        const d1=new Date(document.getElementById('dateDebut').value);
+        const d2=new Date(document.getElementById('dateFin').value);
+        if(d1&&d2&&d2>=d1){
+            const diff=Math.ceil((d2-d1)/(1000*60*60*24))+1;
+            document.getElementById('durationDisplay').innerHTML='<i class="fas fa-clock text-anatt-600"></i><span class="text-sm font-bold text-anatt-700">'+diff+' jour'+(diff>1?'s':'')+'</span>';
+        }
+    }
+    </script>
+</body>
+</html>
