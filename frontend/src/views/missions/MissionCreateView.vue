@@ -286,7 +286,160 @@ const stepSubLabels = ['Details de la mission', 'Selection agents', 'Validation 
 
     <!-- ============ STEP 2: BENEFICIAIRES (E3) ============ -->
     <div v-if="step === 2" class="animate-fade-up">
-      <p class="text-center text-gray-400 py-12 font-body">Step 2 - A venir (E3)</p>
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Colonne principale -->
+        <div class="xl:col-span-2 space-y-6">
+          <!-- Recherche beneficiaire -->
+          <AppCard>
+            <h2 class="text-base font-display font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-anatt-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+              Ajouter un beneficiaire
+            </h2>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input
+                v-model="searchBeneficiaire"
+                type="text"
+                placeholder="Rechercher par nom, matricule..."
+                class="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all"
+                @focus="showSuggestions = true"
+                @blur="setTimeout(() => showSuggestions = false, 200)"
+              >
+              <!-- Autocomplete dropdown -->
+              <div v-if="showSuggestions && searchBeneficiaire.length > 0 && filteredAgents.length > 0" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-lg z-20 max-h-60 overflow-y-auto">
+                <div
+                  v-for="agent in filteredAgents"
+                  :key="agent.id"
+                  class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
+                  @mousedown.prevent="addBeneficiaire(agent)"
+                >
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-display font-bold" :class="`bg-${agent.color}-100 text-${agent.color}-600`">{{ agent.initiales }}</div>
+                  <div class="flex-1">
+                    <p class="text-sm font-display font-medium text-gray-800">{{ agent.nom }}</p>
+                    <p class="text-[11px] text-gray-400 font-body">{{ agent.matricule }} - {{ agent.role }} - {{ formatMontant(agent.salaire) }} FCFA</p>
+                  </div>
+                  <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded-lg font-body">{{ agent.categorie }}</span>
+                </div>
+              </div>
+            </div>
+          </AppCard>
+
+          <!-- Beneficiaires selectionnes -->
+          <AppCard>
+            <div class="flex items-center justify-between mb-5">
+              <h2 class="text-base font-display font-bold text-gray-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-anatt-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Beneficiaires selectionnes
+                <span class="text-xs bg-anatt-100 text-anatt-700 px-2 py-0.5 rounded-full ml-1 font-display">{{ beneficiaires.length }}</span>
+              </h2>
+            </div>
+
+            <!-- Empty state -->
+            <div v-if="beneficiaires.length === 0" class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+              <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+              <p class="text-sm text-gray-400 font-body">Recherchez et ajoutez des beneficiaires ci-dessus</p>
+            </div>
+
+            <!-- Beneficiaire cards -->
+            <div v-for="b in beneficiaires" :key="b.id" class="border border-gray-200 rounded-xl p-5 mb-4 last:mb-0">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-display font-bold" :class="`bg-${b.color}-100 text-${b.color}-600`">{{ b.initiales }}</div>
+                  <div>
+                    <p class="font-display font-semibold text-gray-800">{{ b.nom }}</p>
+                    <p class="text-[11px] text-gray-400 font-body">{{ b.role }} - {{ formatMontant(b.salaire) }} FCFA - Categorie <span class="font-semibold text-anatt-600">{{ b.categorie }}</span></p>
+                  </div>
+                </div>
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" @click="removeBeneficiaire(b.id)">
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+              <!-- Ventilation des jours -->
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-xs font-display font-semibold text-gray-500 uppercase mb-3">Ventilation des jours (mission: {{ nbJours }} jours)</p>
+                <div class="grid grid-cols-3 gap-4">
+                  <div>
+                    <label class="text-[11px] text-gray-500 font-body block mb-1">Jours 1 repas</label>
+                    <div class="flex items-center gap-2">
+                      <input v-model.number="b.jours_1_repas" type="number" min="0" :max="nbJours" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm font-body text-center focus:outline-none focus:border-anatt-500">
+                      <span class="text-[11px] text-gray-400 font-body">x {{ formatMontant(getTaux(b.categorie).repas1) }} = <strong class="text-gray-700">{{ formatMontant(b.jours_1_repas * getTaux(b.categorie).repas1) }} F</strong></span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-[11px] text-gray-500 font-body block mb-1">Jours 2 repas</label>
+                    <div class="flex items-center gap-2">
+                      <input v-model.number="b.jours_2_repas" type="number" min="0" :max="nbJours" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm font-body text-center focus:outline-none focus:border-anatt-500">
+                      <span class="text-[11px] text-gray-400 font-body">x {{ formatMontant(getTaux(b.categorie).repas2) }} = <strong class="text-gray-700">{{ formatMontant(b.jours_2_repas * getTaux(b.categorie).repas2) }} F</strong></span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-[11px] text-gray-500 font-body block mb-1">Nuitees</label>
+                    <div class="flex items-center gap-2">
+                      <input v-model.number="b.nuitees" type="number" min="0" :max="nbJours" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm font-body text-center focus:outline-none focus:border-anatt-500">
+                      <span class="text-[11px] text-gray-400 font-body">x {{ formatMontant(getTaux(b.categorie).nuitee) }} = <strong class="text-gray-700">{{ formatMontant(b.nuitees * getTaux(b.categorie).nuitee) }} F</strong></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-200 flex justify-end">
+                  <p class="text-sm font-display font-bold text-anatt-700">Total : {{ formatMontant(beneficiaireTotal(b)) }} FCFA</p>
+                </div>
+              </div>
+            </div>
+          </AppCard>
+
+          <!-- Actions Step 2 -->
+          <div class="flex items-center justify-between">
+            <AppButton variant="outline" @click="prevStep">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+              Precedent
+            </AppButton>
+            <AppButton :disabled="!step2Valid" @click="nextStep">
+              Suivant : Recapitulatif
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </AppButton>
+          </div>
+        </div>
+
+        <!-- Sidebar: Resume mission -->
+        <div class="space-y-6">
+          <AppCard>
+            <h3 class="text-sm font-display font-bold text-gray-800 mb-4">Resume de la mission</h3>
+            <div class="space-y-3 text-sm font-body">
+              <div class="flex justify-between"><span class="text-gray-500">SEMO</span><span class="font-mono font-medium">{{ form.semo }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">Itineraire</span><span class="font-medium">{{ form.lieu_depart }} → {{ form.destination }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">Duree</span><span class="font-medium text-anatt-600">{{ nbJours }} jour(s)</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">Transport</span><span class="font-medium">{{ transports.find(t => t.value === form.transport)?.label || '--' }}</span></div>
+            </div>
+          </AppCard>
+
+          <AppCard>
+            <h3 class="text-sm font-display font-bold text-gray-800 mb-4">Bareme de reference</h3>
+            <div class="space-y-2">
+              <div v-for="(rates, cat) in tauxParCategorie" :key="cat" class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs font-display font-bold text-gray-700 mb-1">{{ cat }}</p>
+                <div class="grid grid-cols-3 gap-1 text-[10px] text-gray-500 font-body">
+                  <span>1 repas: {{ formatMontant(rates.repas1) }}</span>
+                  <span>2 repas: {{ formatMontant(rates.repas2) }}</span>
+                  <span>Nuitee: {{ formatMontant(rates.nuitee) }}</span>
+                </div>
+              </div>
+            </div>
+          </AppCard>
+
+          <!-- Recap financier -->
+          <div v-if="beneficiaires.length > 0" class="bg-gradient-to-br from-anatt-600 to-anatt-800 rounded-2xl p-5 text-white">
+            <h3 class="text-sm font-display font-bold mb-4">Recap financier</h3>
+            <div class="space-y-2 text-sm font-body">
+              <div class="flex justify-between"><span class="text-anatt-200">Beneficiaires</span><span class="font-display font-bold">{{ beneficiaires.length }}</span></div>
+              <div class="flex justify-between"><span class="text-anatt-200">Total general</span><span class="font-display font-bold text-lg">{{ formatMontant(totalGeneral) }} F</span></div>
+              <div class="border-t border-white/20 pt-2 mt-2">
+                <div class="flex justify-between"><span class="text-anatt-200">Avance (33%)</span><span class="font-display font-semibold">{{ formatMontant(avance) }} F</span></div>
+                <div class="flex justify-between"><span class="text-anatt-200">Reliquat (67%)</span><span class="font-display font-semibold">{{ formatMontant(reliquat) }} F</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ============ STEP 3: RECAPITULATIF (E4+E5) ============ -->
