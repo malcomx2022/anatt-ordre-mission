@@ -31,7 +31,7 @@ class PaiementController extends Controller
             $query->where('statut', $statut);
         }
 
-        $paiements = $query->orderByDesc('created_at')->paginate($request->get('per_page', 15));
+        $paiements = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
 
         return PaiementResource::collection($paiements)->response();
     }
@@ -116,7 +116,7 @@ class PaiementController extends Controller
                   ->whereYear('created_at', $date->year);
         }
 
-        $paiements = $query->orderByDesc('created_at')->paginate($request->get('per_page', 15));
+        $paiements = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
 
         return PaiementResource::collection($paiements)->response();
     }

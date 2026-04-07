@@ -18,7 +18,7 @@ class AuditController extends Controller
     {
         $logs = $this->auditService->lister(
             $request->only(['action', 'user_id', 'date_debut', 'date_fin']),
-            $request->integer('per_page', 20),
+            $this->getPerPage($request),
         );
 
         return response()->json($logs);
