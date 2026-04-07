@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\MissionController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\TauxController;
+use App\Http\Controllers\Api\ValidationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,13 +36,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Ordres de Mission
     Route::apiResource('ordres', MissionController::class);
-    Route::post('ordres/{ordre}/soumettre', [MissionController::class, 'soumettre']);
-    Route::post('ordres/{ordre}/valider-n1', [MissionController::class, 'validerN1']);
-    Route::post('ordres/{ordre}/approuver', [MissionController::class, 'approuver']);
-    Route::post('ordres/{ordre}/rejeter', [MissionController::class, 'rejeter']);
     Route::get('ordres/{ordre}/pdf', [MissionController::class, 'pdf']);
     Route::get('ordres/{ordre}/pdf/download', [MissionController::class, 'pdfDownload']);
     Route::get('ordres/{ordre}/historique', [MissionController::class, 'historique']);
+
+    // Validation workflow
+    Route::post('ordres/{ordre}/soumettre', [ValidationController::class, 'soumettre']);
+    Route::post('ordres/{ordre}/valider-n1', [ValidationController::class, 'validerN1']);
+    Route::post('ordres/{ordre}/approuver', [ValidationController::class, 'approuver']);
+    Route::post('ordres/{ordre}/rejeter', [ValidationController::class, 'rejeter']);
 
     // Paiements
     Route::get('paiements', [PaiementController::class, 'index']);
