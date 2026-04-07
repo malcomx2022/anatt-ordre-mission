@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Storage;
 
 class MoovPaymentService
 {
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {}
+
     /**
      * Format fichier virement Moov (CSV):
      * NUMERO_TELEPHONE;MONTANT;REFERENCE;NOM_BENEFICIAIRE;MOTIF
@@ -84,12 +88,20 @@ class MoovPaymentService
                 })->where('operateur', 'MOOV')->first();
 
                 if ($paiement) {
+                    $isSuccess = strtoupper($statut) === 'SUCCESS';
                     $paiement->update([
-                        'statut' => strtoupper($statut) === 'SUCCESS' ? 'SUCCES' : 'ECHEC',
+                        'statut' => $isSuccess ? 'SUCCES' : 'ECHEC',
                         'reference_transaction' => $colonnes[6] ?? null,
                         'date_virement' => now(),
                     ]);
-                    $resultats[strtoupper($statut) === 'SUCCESS' ? 'succes' : 'echec']++;
+                    $resultats[$isSuccess ? 'succes' : 'echec']++;
+
+                    $paiement->load(['ordreMission', 'agent']);
+                    if ($isSuccess) {
+                        $this->notificationService->paiementEffectue($paiement);
+                    } else {
+                        $this->notificationService->paiementEchoue($paiement);
+                    }
                 }
             }
         }
