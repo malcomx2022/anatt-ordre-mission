@@ -77,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('rapports/mensuel', [RapportController::class, 'mensuel']);
         Route::get('rapports/agents', [RapportController::class, 'agents']);
         Route::get('rapports/export', [RapportController::class, 'export']);
+        Route::get('rapports/export/download', [RapportController::class, 'exportDownload']);
     });
 
     // Audit - DIRECTEUR uniquement
