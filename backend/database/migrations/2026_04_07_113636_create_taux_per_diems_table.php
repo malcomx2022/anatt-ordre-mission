@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('taux_per_diems', function (Blueprint $table) {
             $table->id();
+            $table->string('categorie');
+            $table->enum('destination_type', ['LOCALE', 'REGIONALE', 'INTERNATIONALE']);
+            $table->decimal('montant_journalier', 12, 2);
+            $table->integer('annee');
+            $table->boolean('actif')->default(true);
             $table->timestamps();
+
+            $table->unique(['categorie', 'destination_type', 'annee']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('taux_per_diems');
