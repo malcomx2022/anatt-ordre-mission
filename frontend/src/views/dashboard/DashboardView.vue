@@ -174,7 +174,7 @@ function paiementStatutLabel(statut: string) {
       <div
         v-for="(stat, idx) in stats"
         :key="idx"
-        class="stat-card animate-fade-in bg-white rounded-2xl p-5 border border-gray-100"
+        class="stat-card card-hover animate-fade-in bg-white rounded-2xl p-5 border border-gray-100 cursor-pointer"
         :style="{ animationDelay: `${(idx + 1) * 0.1}s` }"
       >
         <div class="flex items-start justify-between mb-3">
@@ -427,7 +427,7 @@ function paiementStatutLabel(statut: string) {
         <div
           v-for="paiement in recentPaiements"
           :key="paiement.lot"
-          class="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all"
+          class="border border-gray-100 rounded-xl p-4 card-hover cursor-pointer"
         >
           <div class="flex items-center justify-between mb-3">
             <span
