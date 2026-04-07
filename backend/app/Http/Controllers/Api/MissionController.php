@@ -40,11 +40,7 @@ class MissionController extends Controller
         }
 
         if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('numero', 'like', "%{$search}%")
-                  ->orWhere('objet', 'like', "%{$search}%")
-                  ->orWhere('destination', 'like', "%{$search}%");
-            });
+            $query->search($search);
         }
 
         $ordres = $query->orderByDesc('created_at')->paginate($request->get('per_page', 15));

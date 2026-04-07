@@ -172,3 +172,80 @@ it('respecte le workflow complet BROUILLON -> SOUMIS -> VALIDE_N1 -> APPROUVE_DG
     $this->actingAs($dg)->postJson("/api/ordres/{$ordre->id}/approuver")->assertOk();
     expect($ordre->fresh()->statut)->toBe('APPROUVE_DG');
 });
+
+// ── RECHERCHE FULL-TEXT ──
+
+it('recherche par numero OM', function () {
+    OrdreMission::factory()->create(['numero' => 'OM-2026-0042', 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['numero' => 'OM-2026-0099', 'taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=0042');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.numero'))->toBe('OM-2026-0042');
+});
+
+it('recherche par objet de mission', function () {
+    OrdreMission::factory()->create(['objet' => 'Inspection technique routiere', 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['objet' => 'Formation gestion', 'taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=Inspection');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+});
+
+it('recherche par destination', function () {
+    OrdreMission::factory()->create(['destination' => 'Parakou', 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['destination' => 'Natitingou', 'taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=Parakou');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+});
+
+it('recherche par nom agent', function () {
+    $agent1 = Agent::factory()->create(['nom' => 'KOUASSI', 'prenom' => 'Jean']);
+    $agent2 = Agent::factory()->create(['nom' => 'ADJOVI', 'prenom' => 'Sylvie']);
+    OrdreMission::factory()->create(['agent_id' => $agent1->id, 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['agent_id' => $agent2->id, 'taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=KOUASSI');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+});
+
+it('recherche par matricule agent', function () {
+    $agent = Agent::factory()->create(['matricule' => 'ANT-777']);
+    OrdreMission::factory()->create(['agent_id' => $agent->id, 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=ANT-777');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+});
+
+it('recherche multi-termes affine les resultats', function () {
+    $agent = Agent::factory()->create(['nom' => 'KOUASSI']);
+    OrdreMission::factory()->create(['agent_id' => $agent->id, 'destination' => 'Parakou', 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['agent_id' => $agent->id, 'destination' => 'Natitingou', 'taux_id' => $this->taux->id]);
+    OrdreMission::factory()->create(['destination' => 'Parakou', 'taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=KOUASSI Parakou');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+});
+
+it('recherche vide retourne tout', function () {
+    OrdreMission::factory()->count(3)->create(['taux_id' => $this->taux->id]);
+
+    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=');
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(3);
+});
