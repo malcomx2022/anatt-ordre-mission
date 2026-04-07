@@ -3,32 +3,73 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
+import AppCard from '@/components/shared/AppCard.vue'
+import AppBadge from '@/components/shared/AppBadge.vue'
+import AppModal from '@/components/shared/AppModal.vue'
 
 const router = useRouter()
 const step = ref(1)
 const loading = ref(false)
+const showSuccessModal = ref(false)
+const searchBeneficiaire = ref('')
+const showSuggestions = ref(false)
 
+// Form state
 const form = ref({
-  agent_id: '',
+  semo: 'SEMO-4523',
   objet: '',
+  lieu_depart: 'Cotonou',
   destination: '',
   date_depart: '',
   date_retour: '',
-  taux_id: '',
+  transport: '',
+  notes: '',
 })
 
-const agents = ref([
-  { id: 1, nom_complet: 'Jean KOUASSI', matricule: 'ANT-001', service: 'Direction Technique', categorie: 'A1' },
-  { id: 2, nom_complet: 'Sylvie ADJOVI', matricule: 'ANT-002', service: 'Direction Administrative', categorie: 'A2' },
-  { id: 3, nom_complet: 'Marc TOSSOU', matricule: 'ANT-003', service: 'Service Informatique', categorie: 'B' },
+// Transport modes
+const transports = [
+  { value: 'vehicule_service', label: 'Vehicule de service', icon: 'car' },
+  { value: 'location', label: 'Location', icon: 'key' },
+  { value: 'transport_public', label: 'Transport public', icon: 'bus' },
+  { value: 'avion', label: 'Avion', icon: 'plane' },
+]
+
+// Mock agents database
+const agentsDB = ref([
+  { id: 1, initiales: 'MV', nom: 'MAGBE Victorin', matricule: 'MAT-0045', role: 'Cadre', salaire: 850000, categorie: '>=800K', color: 'blue', telephone: '229 99 70 74 80' },
+  { id: 2, initiales: 'AP', nom: 'ADJOVI Pierre', matricule: 'MAT-0023', role: 'Agent', salaire: 320000, categorie: '<400K', color: 'green', telephone: '229 01 66 33 55' },
+  { id: 3, initiales: 'KJ', nom: 'KONE Jean', matricule: 'MAT-0067', role: 'Agent', salaire: 320000, categorie: '<400K', color: 'amber', telephone: '229 97 12 34 56' },
+  { id: 4, initiales: 'HC', nom: 'HOUNGBEDJI Claude', matricule: 'MAT-0034', role: 'Cadre', salaire: 900000, categorie: '>=800K', color: 'indigo', telephone: '229 96 78 90 12' },
+  { id: 5, initiales: 'TB', nom: 'TOSSOU Beatrice', matricule: 'MAT-0078', role: 'Agent', salaire: 280000, categorie: '<400K', color: 'pink', telephone: '229 95 23 45 67' },
 ])
 
-const taux = ref([
-  { id: 1, categorie: 'A1', destination_type: 'LOCALE', montant_journalier: 25000 },
-  { id: 2, categorie: 'A1', destination_type: 'REGIONALE', montant_journalier: 50000 },
-  { id: 3, categorie: 'A1', destination_type: 'INTERNATIONALE', montant_journalier: 100000 },
-])
+// Taux per diem par categorie
+const tauxParCategorie: Record<string, { repas1: number; repas2: number; nuitee: number }> = {
+  '>=800K': { repas1: 15000, repas2: 25000, nuitee: 45000 },
+  '400-800K': { repas1: 12000, repas2: 20000, nuitee: 35000 },
+  '<400K': { repas1: 10000, repas2: 15000, nuitee: 30000 },
+}
 
+// Selected beneficiaires
+interface Beneficiaire {
+  id: number
+  initiales: string
+  nom: string
+  matricule: string
+  role: string
+  salaire: number
+  categorie: string
+  color: string
+  telephone: string
+  jours_1_repas: number
+  jours_2_repas: number
+  nuitees: number
+  operateur: 'MTN' | 'MOOV'
+}
+
+const beneficiaires = ref<Beneficiaire[]>([])
+
+// Computed
 const nbJours = computed(() => {
   if (!form.value.date_depart || !form.value.date_retour) return 0
   const d1 = new Date(form.value.date_depart)
@@ -36,20 +77,78 @@ const nbJours = computed(() => {
   return Math.max(0, Math.ceil((d2.getTime() - d1.getTime()) / 86400000) + 1)
 })
 
-const selectedTaux = computed(() => taux.value.find(t => t.id === Number(form.value.taux_id)))
-const montant = computed(() => nbJours.value * (selectedTaux.value?.montant_journalier || 0))
-const selectedAgent = computed(() => agents.value.find(a => a.id === Number(form.value.agent_id)))
+const filteredAgents = computed(() => {
+  if (!searchBeneficiaire.value) return agentsDB.value
+  const q = searchBeneficiaire.value.toLowerCase()
+  return agentsDB.value.filter(a =>
+    a.nom.toLowerCase().includes(q) || a.matricule.toLowerCase().includes(q)
+  )
+})
 
+function getTaux(categorie: string) {
+  return tauxParCategorie[categorie] || tauxParCategorie['<400K']
+}
+
+function beneficiaireTotal(b: Beneficiaire): number {
+  const t = getTaux(b.categorie)
+  return (b.jours_1_repas * t.repas1) + (b.jours_2_repas * t.repas2) + (b.nuitees * t.nuitee)
+}
+
+const totalGeneral = computed(() => beneficiaires.value.reduce((s, b) => s + beneficiaireTotal(b), 0))
+const avance = computed(() => Math.round(totalGeneral.value * 0.33))
+const reliquat = computed(() => totalGeneral.value - avance.value)
+
+const step1Valid = computed(() => form.value.semo && form.value.objet && form.value.lieu_depart && form.value.destination && form.value.date_depart && form.value.date_retour && form.value.transport)
+const step2Valid = computed(() => beneficiaires.value.length > 0)
+
+const checklist = computed(() => [
+  { label: 'Informations mission completes', ok: !!step1Valid.value },
+  { label: 'Au moins un beneficiaire', ok: beneficiaires.value.length > 0 },
+  { label: 'Numeros de telephone valides', ok: beneficiaires.value.every(b => b.telephone) },
+  { label: 'Operateurs selectionnes', ok: beneficiaires.value.every(b => b.operateur) },
+])
+
+const allChecksOk = computed(() => checklist.value.every(c => c.ok))
+
+// Methods
 function nextStep() { if (step.value < 3) step.value++ }
 function prevStep() { if (step.value > 1) step.value-- }
 
-async function handleSubmit() {
+function addBeneficiaire(agent: typeof agentsDB.value[0]) {
+  if (beneficiaires.value.find(b => b.id === agent.id)) return
+  beneficiaires.value.push({
+    ...agent,
+    jours_1_repas: 1,
+    jours_2_repas: 1,
+    nuitees: Math.max(0, nbJours.value - 1),
+    operateur: 'MTN',
+  })
+  searchBeneficiaire.value = ''
+  showSuggestions.value = false
+}
+
+function removeBeneficiaire(id: number) {
+  beneficiaires.value = beneficiaires.value.filter(b => b.id !== id)
+}
+
+function formatMontant(val: number): string {
+  return val.toLocaleString('fr-FR')
+}
+
+function handleSubmit() {
   loading.value = true
   setTimeout(() => {
     loading.value = false
-    router.push('/ordres')
+    showSuccessModal.value = true
   }, 1500)
 }
+
+function handleSaveDraft() {
+  router.push('/ordres')
+}
+
+const stepLabels = ['Informations', 'Beneficiaires', 'Recapitulatif']
+const stepSubLabels = ['Details de la mission', 'Selection agents', 'Validation finale']
 </script>
 
 <template>
