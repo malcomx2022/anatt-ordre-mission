@@ -1,0 +1,24 @@
+﻿# Dépendances
+node_modules/
+vendor/
+
+# Environnement
+.env
+.env.local
+*.env.backup
+
+# Builds
+frontend/dist/
+backend/public/storage
+
+# Logs
+*.log
+backend/storage/logs/*
+frontend/storage/logs/*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
