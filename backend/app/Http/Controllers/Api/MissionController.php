@@ -7,13 +7,16 @@ use App\Http\Requests\StoreOrdreMissionRequest;
 use App\Http\Requests\UpdateOrdreMissionRequest;
 use App\Http\Resources\OrdreMissionResource;
 use App\Models\OrdreMission;
-use App\Models\TauxPerDiem;
-use Carbon\Carbon;
+use App\Services\MissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MissionController extends Controller
 {
+    public function __construct(
+        private readonly MissionService $missionService,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $query = OrdreMission::with(['agent', 'taux']);
@@ -49,19 +52,10 @@ class MissionController extends Controller
 
     public function store(StoreOrdreMissionRequest $request): JsonResponse
     {
-        $data = $request->validated();
-
-        $nbJours = Carbon::parse($data['date_retour'])->diffInDays(Carbon::parse($data['date_depart'])) + 1;
-        $taux = TauxPerDiem::findOrFail($data['taux_id']);
-        $montant = $nbJours * $taux->montant_journalier;
-
-        $ordre = OrdreMission::create([
-            ...$data,
-            'numero' => OrdreMission::generateNumero(),
-            'nb_jours' => $nbJours,
-            'montant_per_diem' => $montant,
-            'statut' => 'BROUILLON',
-        ]);
+        $ordre = $this->missionService->creer(
+            $request->validated(),
+            $request->user(),
+        );
 
         return response()->json([
             'data' => new OrdreMissionResource($ordre->load(['agent', 'taux'])),
@@ -80,83 +74,47 @@ class MissionController extends Controller
 
     public function update(UpdateOrdreMissionRequest $request, OrdreMission $ordre): JsonResponse
     {
-        if ($ordre->statut !== 'BROUILLON') {
-            return response()->json(['message' => 'Seuls les ordres en brouillon peuvent etre modifies.'], 422);
-        }
-
-        $data = $request->validated();
-
-        if (isset($data['date_depart']) && isset($data['date_retour'])) {
-            $data['nb_jours'] = Carbon::parse($data['date_retour'])->diffInDays(Carbon::parse($data['date_depart'])) + 1;
-            if (isset($data['taux_id'])) {
-                $taux = TauxPerDiem::findOrFail($data['taux_id']);
-                $data['montant_per_diem'] = $data['nb_jours'] * $taux->montant_journalier;
-            }
-        }
-
-        $ordre->update($data);
+        $ordre = $this->missionService->modifier($ordre, $request->validated());
 
         return response()->json([
-            'data' => new OrdreMissionResource($ordre->fresh(['agent', 'taux'])),
+            'data' => new OrdreMissionResource($ordre),
             'message' => 'Ordre de mission mis a jour.',
         ]);
     }
 
     public function destroy(OrdreMission $ordre): JsonResponse
     {
-        if ($ordre->statut !== 'BROUILLON') {
-            return response()->json(['message' => 'Seuls les ordres en brouillon peuvent etre supprimes.'], 422);
-        }
-
-        $ordre->delete();
+        $this->missionService->supprimer($ordre);
 
         return response()->json(['message' => 'Ordre de mission supprime.']);
     }
 
     public function soumettre(OrdreMission $ordre): JsonResponse
     {
-        if ($ordre->statut !== 'BROUILLON') {
-            return response()->json(['message' => 'Cet ordre ne peut pas etre soumis.'], 422);
-        }
-
-        $ordre->update(['statut' => 'SOUMIS']);
+        $ordre = $this->missionService->soumettre($ordre);
 
         return response()->json([
-            'data' => new OrdreMissionResource($ordre->fresh(['agent', 'taux'])),
+            'data' => new OrdreMissionResource($ordre),
             'message' => 'Ordre de mission soumis pour validation.',
         ]);
     }
 
     public function validerN1(Request $request, OrdreMission $ordre): JsonResponse
     {
-        if ($ordre->statut !== 'SOUMIS') {
-            return response()->json(['message' => 'Cet ordre ne peut pas etre valide.'], 422);
-        }
-
-        $ordre->update([
-            'statut' => 'VALIDE_N1',
-            'valide_par_chef' => $request->user()->id,
-        ]);
+        $ordre = $this->missionService->validerN1($ordre, $request->user());
 
         return response()->json([
-            'data' => new OrdreMissionResource($ordre->fresh(['agent', 'taux'])),
+            'data' => new OrdreMissionResource($ordre),
             'message' => 'Ordre de mission valide par le chef de service.',
         ]);
     }
 
     public function approuver(Request $request, OrdreMission $ordre): JsonResponse
     {
-        if ($ordre->statut !== 'VALIDE_N1') {
-            return response()->json(['message' => 'Cet ordre ne peut pas etre approuve.'], 422);
-        }
-
-        $ordre->update([
-            'statut' => 'APPROUVE_DG',
-            'valide_par_dg' => $request->user()->id,
-        ]);
+        $ordre = $this->missionService->approuver($ordre, $request->user());
 
         return response()->json([
-            'data' => new OrdreMissionResource($ordre->fresh(['agent', 'taux'])),
+            'data' => new OrdreMissionResource($ordre),
             'message' => 'Ordre de mission approuve par la direction.',
         ]);
     }
@@ -167,24 +125,16 @@ class MissionController extends Controller
             'commentaire' => 'required|string|min:10',
         ]);
 
-        if (! in_array($ordre->statut, ['SOUMIS', 'VALIDE_N1'])) {
-            return response()->json(['message' => 'Cet ordre ne peut pas etre rejete.'], 422);
-        }
-
-        $ordre->update([
-            'statut' => 'REJETE',
-            'commentaire_rejet' => $request->commentaire,
-        ]);
+        $ordre = $this->missionService->rejeter($ordre, $request->commentaire);
 
         return response()->json([
-            'data' => new OrdreMissionResource($ordre->fresh(['agent', 'taux'])),
+            'data' => new OrdreMissionResource($ordre),
             'message' => 'Ordre de mission rejete.',
         ]);
     }
 
     public function pdf(OrdreMission $ordre): JsonResponse
     {
-        // PDF generation will use DomPDF
         return response()->json([
             'data' => ['url' => "/api/ordres/{$ordre->id}/pdf/download"],
             'message' => 'PDF genere.',

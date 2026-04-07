@@ -219,6 +219,12 @@ const routes: RouteRecordRaw[] = [
     meta: { auth: true },
   },
   {
+    path: '/admin/utilisateurs/nouveau',
+    name: 'admin-user-create',
+    component: () => import('@/views/admin/UserCreateView.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/admin/roles',
     name: 'admin-roles',
     component: () => import('@/views/admin/RolesView.vue'),
