@@ -26,8 +26,6 @@ class AuditController extends Controller
 
     public function show(AuditLog $audit): JsonResponse
     {
-        return response()->json([
-            'data' => $this->auditService->afficher($audit),
-        ]);
+        return $this->success($this->auditService->afficher($audit));
     }
 }

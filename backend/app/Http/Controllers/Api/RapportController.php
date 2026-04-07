@@ -15,29 +15,23 @@ class RapportController extends Controller
 
     public function mensuel(Request $request): JsonResponse
     {
-        $mois = $request->get('mois', now()->format('Y-m'));
-
-        return response()->json([
-            'data' => $this->rapportService->mensuel($mois),
-        ]);
+        return $this->success($this->rapportService->mensuel(
+            $request->get('mois', now()->format('Y-m'))
+        ));
     }
 
     public function agents(Request $request): JsonResponse
     {
-        $annee = $request->integer('annee', now()->year);
-
-        return response()->json([
-            'data' => $this->rapportService->parAgents($annee),
-        ]);
+        return $this->success($this->rapportService->parAgents(
+            $request->integer('annee', now()->year)
+        ));
     }
 
     public function export(Request $request): JsonResponse
     {
-        $resultat = $this->rapportService->exporter($request->all());
-
-        return response()->json([
-            'data' => $resultat,
-            'message' => 'Export en cours de generation.',
-        ]);
+        return $this->success(
+            $this->rapportService->exporter($request->all()),
+            'Export en cours de generation.',
+        );
     }
 }

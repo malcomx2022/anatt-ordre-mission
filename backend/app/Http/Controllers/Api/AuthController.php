@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
@@ -30,7 +29,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
+        return $this->success([
             'token' => $token,
             'user' => $user,
         ]);
@@ -40,14 +39,12 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Deconnexion reussie.']);
+        return $this->success(null, 'Deconnexion reussie.');
     }
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
-            'data' => $request->user()->load('agent'),
-        ]);
+        return $this->success($request->user()->load('agent'));
     }
 
     public function sendResetLink(Request $request): JsonResponse
@@ -57,7 +54,7 @@ class AuthController extends Controller
         $status = Password::sendResetLink($request->only('email'));
 
         if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Lien de reinitialisation envoye.']);
+            return $this->success(null, 'Lien de reinitialisation envoye.');
         }
 
         throw ValidationException::withMessages([
@@ -81,7 +78,7 @@ class AuthController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Mot de passe reinitialise avec succes.']);
+            return $this->success(null, 'Mot de passe reinitialise avec succes.');
         }
 
         throw ValidationException::withMessages([
