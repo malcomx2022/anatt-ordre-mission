@@ -43,7 +43,7 @@ class MissionController extends Controller
             $query->search($search);
         }
 
-        $ordres = $query->orderByDesc('created_at')->paginate($request->get('per_page', 15));
+        $ordres = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
 
         return OrdreMissionResource::collection($ordres)->response();
     }

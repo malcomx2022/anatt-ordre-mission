@@ -21,7 +21,7 @@ class AgentController extends Controller
     {
         $agents = $this->agentService->lister(
             $request->only(['search', 'categorie', 'service', 'actif']),
-            $request->integer('per_page', 15),
+            $this->getPerPage($request),
         );
 
         return AgentResource::collection($agents)->response();
