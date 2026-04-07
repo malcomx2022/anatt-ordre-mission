@@ -6,11 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PaiementResource;
 use App\Models\OrdreMission;
 use App\Models\Paiement;
+use App\Services\MoovPaymentService;
+use App\Services\MtnPaymentService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PaiementController extends Controller
 {
+    public function __construct(
+        private readonly MoovPaymentService $moovService,
+        private readonly MtnPaymentService $mtnService,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $query = Paiement::with(['ordreMission', 'agent']);
@@ -40,25 +48,16 @@ class PaiementController extends Controller
             ->where('statut', 'APPROUVE_DG')
             ->get();
 
-        $paiements = [];
-        foreach ($ordres as $ordre) {
-            if (! $ordre->agent->numero_moov) {
-                continue;
-            }
-
-            $paiements[] = Paiement::create([
-                'ordre_mission_id' => $ordre->id,
-                'agent_id' => $ordre->agent_id,
-                'operateur' => 'MOOV',
-                'numero_destinataire' => $ordre->agent->numero_moov,
-                'montant' => $ordre->montant_per_diem,
-                'statut' => 'EN_ATTENTE',
-            ]);
-        }
+        $resultat = $this->moovService->genererFichier($ordres);
 
         return response()->json([
-            'data' => PaiementResource::collection($paiements),
-            'message' => count($paiements) . ' paiement(s) Moov genere(s).',
+            'data' => [
+                'fichier' => $resultat['fichier'],
+                'nb_paiements' => $resultat['nb_paiements'],
+                'montant_total' => $resultat['montant_total'],
+                'paiements' => PaiementResource::collection($resultat['paiements']),
+            ],
+            'message' => "{$resultat['nb_paiements']} paiement(s) Moov genere(s).",
         ]);
     }
 
@@ -74,25 +73,16 @@ class PaiementController extends Controller
             ->where('statut', 'APPROUVE_DG')
             ->get();
 
-        $paiements = [];
-        foreach ($ordres as $ordre) {
-            if (! $ordre->agent->numero_mtn) {
-                continue;
-            }
-
-            $paiements[] = Paiement::create([
-                'ordre_mission_id' => $ordre->id,
-                'agent_id' => $ordre->agent_id,
-                'operateur' => 'MTN',
-                'numero_destinataire' => $ordre->agent->numero_mtn,
-                'montant' => $ordre->montant_per_diem,
-                'statut' => 'EN_ATTENTE',
-            ]);
-        }
+        $resultat = $this->mtnService->genererFichier($ordres);
 
         return response()->json([
-            'data' => PaiementResource::collection($paiements),
-            'message' => count($paiements) . ' paiement(s) MTN genere(s).',
+            'data' => [
+                'fichier' => $resultat['fichier'],
+                'nb_paiements' => $resultat['nb_paiements'],
+                'montant_total' => $resultat['montant_total'],
+                'paiements' => PaiementResource::collection($resultat['paiements']),
+            ],
+            'message' => "{$resultat['nb_paiements']} paiement(s) MTN genere(s).",
         ]);
     }
 
@@ -109,11 +99,19 @@ class PaiementController extends Controller
     {
         $request->validate([
             'fichier' => 'required|file|mimes:csv,txt',
+            'operateur' => 'required|in:MOOV,MTN',
         ]);
 
-        // Reconciliation logic to be implemented
+        $contenu = file_get_contents($request->file('fichier')->getRealPath());
+
+        $resultats = match ($request->operateur) {
+            'MOOV' => $this->moovService->traiterRetour($contenu),
+            'MTN' => $this->mtnService->traiterRetour($contenu),
+        };
+
         return response()->json([
-            'message' => 'Reconciliation en cours de traitement.',
+            'data' => $resultats,
+            'message' => "Reconciliation terminee : {$resultats['succes']} succes, {$resultats['echec']} echec(s).",
         ]);
     }
 
@@ -122,8 +120,9 @@ class PaiementController extends Controller
         $query = Paiement::with(['ordreMission', 'agent']);
 
         if ($periode = $request->get('periode')) {
-            $query->whereMonth('created_at', Carbon::parse($periode)->month)
-                  ->whereYear('created_at', Carbon::parse($periode)->year);
+            $date = Carbon::parse($periode);
+            $query->whereMonth('created_at', $date->month)
+                  ->whereYear('created_at', $date->year);
         }
 
         $paiements = $query->orderByDesc('created_at')->paginate($request->get('per_page', 15));
