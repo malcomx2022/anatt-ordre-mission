@@ -2,9 +2,11 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAuth, type Permission } from '@/composables/useAuth'
 
 const route = useRoute()
 const auth = useAuthStore()
+const { can } = useAuth()
 
 const userInitials = computed(() => {
   if (!auth.user) return '?'
@@ -16,6 +18,7 @@ interface NavItem {
   icon: string
   to: string
   badge?: number
+  permission?: Permission
 }
 
 interface NavGroup {
@@ -23,42 +26,51 @@ interface NavGroup {
   items: NavItem[]
 }
 
-const navigation: NavGroup[] = [
+const allNavigation: NavGroup[] = [
   {
     title: 'Principal',
     items: [
-      { label: 'Tableau de bord', icon: 'grid', to: '/' },
+      { label: 'Tableau de bord', icon: 'grid', to: '/', permission: 'dashboard.view' },
     ],
   },
   {
     title: 'Gestion',
     items: [
-      { label: 'Personnel', icon: 'users', to: '/agents' },
-      { label: 'Ordres de Mission', icon: 'file-text', to: '/ordres' },
+      { label: 'Personnel', icon: 'users', to: '/agents', permission: 'agents.read' },
+      { label: 'Ordres de Mission', icon: 'file-text', to: '/ordres', permission: 'ordres.read' },
     ],
   },
   {
     title: 'Finances',
     items: [
-      { label: 'Paiements', icon: 'credit-card', to: '/paiements' },
-      { label: 'Baremes', icon: 'calculator', to: '/taux' },
+      { label: 'Paiements', icon: 'credit-card', to: '/paiements', permission: 'paiements.read' },
+      { label: 'Baremes', icon: 'calculator', to: '/taux', permission: 'taux.read' },
     ],
   },
   {
     title: 'Analyses',
     items: [
-      { label: 'Rapports', icon: 'bar-chart-2', to: '/rapports' },
-      { label: 'Audit', icon: 'clock', to: '/audit' },
+      { label: 'Rapports', icon: 'bar-chart-2', to: '/rapports', permission: 'rapports.read' },
+      { label: 'Audit', icon: 'clock', to: '/audit', permission: 'audit.read' },
     ],
   },
   {
     title: 'Systeme',
     items: [
-      { label: 'Utilisateurs', icon: 'shield', to: '/admin/utilisateurs' },
-      { label: 'Parametres', icon: 'settings', to: '/admin/parametres' },
+      { label: 'Utilisateurs', icon: 'shield', to: '/admin/utilisateurs', permission: 'admin.users' },
+      { label: 'Parametres', icon: 'settings', to: '/admin/parametres', permission: 'admin.settings' },
     ],
   },
 ]
+
+const navigation = computed(() => {
+  return allNavigation
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.permission || can(item.permission)),
+    }))
+    .filter((group) => group.items.length > 0)
+})
 
 function isActive(to: string): boolean {
   if (to === '/') return route.path === '/'
