@@ -2,10 +2,16 @@
 
 namespace App\Services;
 
+use App\Exports\AgentsExport;
+use App\Exports\MissionsExport;
+use App\Exports\PaiementsExport;
+use App\Exports\RapportCompletExport;
 use App\Models\OrdreMission;
 use App\Models\Paiement;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
 
 class RapportService
 {
@@ -52,10 +58,39 @@ class RapportService
 
     public function exporter(array $params): array
     {
-        // Export Excel/PDF sera implemente avec Maatwebsite/Excel et DomPDF
+        $type = $params['type'] ?? 'complet';
+        $format = $params['format'] ?? 'xlsx';
+        $dateDebut = $params['date_debut'] ?? null;
+        $dateFin = $params['date_fin'] ?? null;
+        $extension = $format === 'csv' ? 'csv' : 'xlsx';
+
+        $export = match ($type) {
+            'missions' => new MissionsExport($dateDebut, $dateFin, $params['statut'] ?? null),
+            'paiements' => new PaiementsExport($dateDebut, $dateFin, $params['operateur'] ?? null),
+            'agents' => new AgentsExport($params['service'] ?? null),
+            default => new RapportCompletExport($dateDebut, $dateFin),
+        };
+
+        $filename = "rapports/rapport_{$type}_" . now()->format('Ymd_His') . ".{$extension}";
+
+        Excel::store($export, $filename, 'local');
+
         return [
-            'url' => '/api/rapports/export/download',
-            'format' => $params['format'] ?? 'excel',
+            'url' => "/api/rapports/export/download?fichier={$filename}",
+            'fichier' => $filename,
+            'format' => $format,
+            'type' => $type,
         ];
+    }
+
+    public function telechargerExport(string $fichier)
+    {
+        if (! Storage::disk('local')->exists($fichier)) {
+            abort(404, 'Fichier introuvable.');
+        }
+
+        $nom = basename($fichier);
+
+        return Storage::disk('local')->download($fichier, $nom);
     }
 }

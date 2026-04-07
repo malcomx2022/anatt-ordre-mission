@@ -29,9 +29,25 @@ class RapportController extends Controller
 
     public function export(Request $request): JsonResponse
     {
+        $request->validate([
+            'type' => 'sometimes|in:missions,paiements,agents,complet',
+            'format' => 'sometimes|in:xlsx,csv',
+            'date_debut' => 'sometimes|date',
+            'date_fin' => 'sometimes|date|after_or_equal:date_debut',
+        ]);
+
         return $this->success(
             $this->rapportService->exporter($request->all()),
-            'Export en cours de generation.',
+            'Export genere avec succes.',
         );
+    }
+
+    public function exportDownload(Request $request)
+    {
+        $request->validate([
+            'fichier' => 'required|string',
+        ]);
+
+        return $this->rapportService->telechargerExport($request->get('fichier'));
     }
 }
