@@ -4,19 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\TauxPerDiem;
+use App\Services\TauxService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TauxController extends Controller
 {
+    public function __construct(
+        private readonly TauxService $tauxService,
+    ) {}
+
     public function index(): JsonResponse
     {
-        $taux = TauxPerDiem::where('actif', true)
-            ->orderBy('categorie')
-            ->orderBy('destination_type')
-            ->get();
-
-        return response()->json(['data' => $taux]);
+        return response()->json([
+            'data' => $this->tauxService->listerActifs(),
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -28,7 +30,7 @@ class TauxController extends Controller
             'annee' => 'required|integer|min:2020',
         ]);
 
-        $taux = TauxPerDiem::create([...$data, 'actif' => true]);
+        $taux = $this->tauxService->creer($data);
 
         return response()->json([
             'data' => $taux,
@@ -43,7 +45,7 @@ class TauxController extends Controller
             'actif' => 'sometimes|boolean',
         ]);
 
-        $taux->update($data);
+        $taux = $this->tauxService->modifier($taux, $data);
 
         return response()->json([
             'data' => $taux,

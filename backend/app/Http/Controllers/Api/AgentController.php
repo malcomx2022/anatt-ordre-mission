@@ -7,43 +7,29 @@ use App\Http\Requests\StoreAgentRequest;
 use App\Http\Requests\UpdateAgentRequest;
 use App\Http\Resources\AgentResource;
 use App\Models\Agent;
+use App\Services\AgentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AgentController extends Controller
 {
+    public function __construct(
+        private readonly AgentService $agentService,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $query = Agent::query();
-
-        if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nom', 'like', "%{$search}%")
-                  ->orWhere('prenom', 'like', "%{$search}%")
-                  ->orWhere('matricule', 'like', "%{$search}%");
-            });
-        }
-
-        if ($categorie = $request->get('categorie')) {
-            $query->where('categorie', $categorie);
-        }
-
-        if ($service = $request->get('service')) {
-            $query->where('service', $service);
-        }
-
-        if ($request->has('actif')) {
-            $query->where('actif', $request->boolean('actif'));
-        }
-
-        $agents = $query->orderBy('nom')->paginate($request->get('per_page', 15));
+        $agents = $this->agentService->lister(
+            $request->only(['search', 'categorie', 'service', 'actif']),
+            $request->integer('per_page', 15),
+        );
 
         return AgentResource::collection($agents)->response();
     }
 
     public function store(StoreAgentRequest $request): JsonResponse
     {
-        $agent = Agent::create($request->validated());
+        $agent = $this->agentService->creer($request->validated());
 
         return response()->json([
             'data' => new AgentResource($agent),
@@ -53,16 +39,14 @@ class AgentController extends Controller
 
     public function show(Agent $agent): JsonResponse
     {
-        $agent->load('ordresMission');
-
         return response()->json([
-            'data' => new AgentResource($agent),
+            'data' => new AgentResource($this->agentService->afficher($agent)),
         ]);
     }
 
     public function update(UpdateAgentRequest $request, Agent $agent): JsonResponse
     {
-        $agent->update($request->validated());
+        $agent = $this->agentService->modifier($agent, $request->validated());
 
         return response()->json([
             'data' => new AgentResource($agent),
@@ -72,7 +56,7 @@ class AgentController extends Controller
 
     public function destroy(Agent $agent): JsonResponse
     {
-        $agent->update(['actif' => false]);
+        $this->agentService->desactiver($agent);
 
         return response()->json([
             'message' => 'Agent desactive avec succes.',
@@ -85,9 +69,11 @@ class AgentController extends Controller
             'fichier' => 'required|file|mimes:csv,txt,xlsx',
         ]);
 
-        // Import logic will be implemented with Maatwebsite/Excel
+        $resultat = $this->agentService->importer($request->file('fichier'));
+
         return response()->json([
-            'message' => 'Import en cours de traitement.',
+            'data' => $resultat,
+            'message' => 'Import traite.',
         ]);
     }
 }
