@@ -59,49 +59,41 @@ class MissionController extends Controller
             $request->user(),
         );
 
-        return response()->json([
-            'data' => new OrdreMissionResource($ordre->load(['agent', 'taux'])),
-            'message' => 'Ordre de mission cree avec succes.',
-        ], 201);
+        return $this->created(
+            new OrdreMissionResource($ordre->load(['agent', 'taux'])),
+            'Ordre de mission cree avec succes.',
+        );
     }
 
     public function show(OrdreMission $ordre): JsonResponse
     {
         $ordre->load(['agent', 'taux', 'valideurChef', 'valideurDG', 'paiements']);
 
-        return response()->json([
-            'data' => new OrdreMissionResource($ordre),
-        ]);
+        return $this->success(new OrdreMissionResource($ordre));
     }
 
     public function update(UpdateOrdreMissionRequest $request, OrdreMission $ordre): JsonResponse
     {
         $ordre = $this->missionService->modifier($ordre, $request->validated());
 
-        return response()->json([
-            'data' => new OrdreMissionResource($ordre),
-            'message' => 'Ordre de mission mis a jour.',
-        ]);
+        return $this->success(new OrdreMissionResource($ordre), 'Ordre de mission mis a jour.');
     }
 
     public function destroy(OrdreMission $ordre): JsonResponse
     {
         $this->missionService->supprimer($ordre);
 
-        return response()->json(['message' => 'Ordre de mission supprime.']);
+        return $this->success(null, 'Ordre de mission supprime.');
     }
 
     public function pdf(OrdreMission $ordre): JsonResponse
     {
         $filename = $this->pdfGenerator->genererOrdreMission($ordre);
 
-        return response()->json([
-            'data' => [
-                'url' => "/api/ordres/{$ordre->id}/pdf/download",
-                'fichier' => $filename,
-            ],
-            'message' => 'PDF genere.',
-        ]);
+        return $this->success([
+            'url' => "/api/ordres/{$ordre->id}/pdf/download",
+            'fichier' => $filename,
+        ], 'PDF genere.');
     }
 
     public function pdfDownload(OrdreMission $ordre)
@@ -116,6 +108,6 @@ class MissionController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return response()->json(['data' => $logs]);
+        return $this->success($logs);
     }
 }

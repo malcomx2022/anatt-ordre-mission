@@ -16,9 +16,7 @@ class TauxController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json([
-            'data' => $this->tauxService->listerActifs(),
-        ]);
+        return $this->success($this->tauxService->listerActifs());
     }
 
     public function store(Request $request): JsonResponse
@@ -30,12 +28,7 @@ class TauxController extends Controller
             'annee' => 'required|integer|min:2020',
         ]);
 
-        $taux = $this->tauxService->creer($data);
-
-        return response()->json([
-            'data' => $taux,
-            'message' => 'Taux cree avec succes.',
-        ], 201);
+        return $this->created($this->tauxService->creer($data), 'Taux cree avec succes.');
     }
 
     public function update(Request $request, TauxPerDiem $taux): JsonResponse
@@ -45,11 +38,6 @@ class TauxController extends Controller
             'actif' => 'sometimes|boolean',
         ]);
 
-        $taux = $this->tauxService->modifier($taux, $data);
-
-        return response()->json([
-            'data' => $taux,
-            'message' => 'Taux mis a jour.',
-        ]);
+        return $this->success($this->tauxService->modifier($taux, $data), 'Taux mis a jour.');
     }
 }

@@ -50,15 +50,12 @@ class PaiementController extends Controller
 
         $resultat = $this->moovService->genererFichier($ordres);
 
-        return response()->json([
-            'data' => [
-                'fichier' => $resultat['fichier'],
-                'nb_paiements' => $resultat['nb_paiements'],
-                'montant_total' => $resultat['montant_total'],
-                'paiements' => PaiementResource::collection($resultat['paiements']),
-            ],
-            'message' => "{$resultat['nb_paiements']} paiement(s) Moov genere(s).",
-        ]);
+        return $this->success([
+            'fichier' => $resultat['fichier'],
+            'nb_paiements' => $resultat['nb_paiements'],
+            'montant_total' => $resultat['montant_total'],
+            'paiements' => PaiementResource::collection($resultat['paiements']),
+        ], "{$resultat['nb_paiements']} paiement(s) Moov genere(s).");
     }
 
     public function genererMtn(Request $request): JsonResponse
@@ -75,15 +72,12 @@ class PaiementController extends Controller
 
         $resultat = $this->mtnService->genererFichier($ordres);
 
-        return response()->json([
-            'data' => [
-                'fichier' => $resultat['fichier'],
-                'nb_paiements' => $resultat['nb_paiements'],
-                'montant_total' => $resultat['montant_total'],
-                'paiements' => PaiementResource::collection($resultat['paiements']),
-            ],
-            'message' => "{$resultat['nb_paiements']} paiement(s) MTN genere(s).",
-        ]);
+        return $this->success([
+            'fichier' => $resultat['fichier'],
+            'nb_paiements' => $resultat['nb_paiements'],
+            'montant_total' => $resultat['montant_total'],
+            'paiements' => PaiementResource::collection($resultat['paiements']),
+        ], "{$resultat['nb_paiements']} paiement(s) MTN genere(s).");
     }
 
     public function statuts(): JsonResponse
@@ -92,7 +86,7 @@ class PaiementController extends Controller
             ->groupBy('operateur', 'statut')
             ->get();
 
-        return response()->json(['data' => $statuts]);
+        return $this->success($statuts);
     }
 
     public function reconcilier(Request $request): JsonResponse
@@ -109,10 +103,7 @@ class PaiementController extends Controller
             'MTN' => $this->mtnService->traiterRetour($contenu),
         };
 
-        return response()->json([
-            'data' => $resultats,
-            'message' => "Reconciliation terminee : {$resultats['succes']} succes, {$resultats['echec']} echec(s).",
-        ]);
+        return $this->success($resultats, "Reconciliation terminee : {$resultats['succes']} succes, {$resultats['echec']} echec(s).");
     }
 
     public function historique(Request $request): JsonResponse
