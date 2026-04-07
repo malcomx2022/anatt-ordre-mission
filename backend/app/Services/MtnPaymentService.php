@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Storage;
 
 class MtnPaymentService
 {
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {}
+
     /**
      * Format fichier virement MTN (CSV):
      * MSISDN;AMOUNT;EXTERNAL_REF;BENEFICIARY_NAME;NARRATION
@@ -82,12 +86,20 @@ class MtnPaymentService
                 })->where('operateur', 'MTN')->first();
 
                 if ($paiement) {
+                    $isSuccess = strtoupper($statut) === 'SUCCESSFUL';
                     $paiement->update([
-                        'statut' => strtoupper($statut) === 'SUCCESSFUL' ? 'SUCCES' : 'ECHEC',
+                        'statut' => $isSuccess ? 'SUCCES' : 'ECHEC',
                         'reference_transaction' => $colonnes[6] ?? null,
                         'date_virement' => now(),
                     ]);
-                    $resultats[strtoupper($statut) === 'SUCCESSFUL' ? 'succes' : 'echec']++;
+                    $resultats[$isSuccess ? 'succes' : 'echec']++;
+
+                    $paiement->load(['ordreMission', 'agent']);
+                    if ($isSuccess) {
+                        $this->notificationService->paiementEffectue($paiement);
+                    } else {
+                        $this->notificationService->paiementEchoue($paiement);
+                    }
                 }
             }
         }

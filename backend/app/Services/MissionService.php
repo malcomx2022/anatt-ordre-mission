@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class MissionService
 {
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {}
+
     public function creer(array $data, User $user): OrdreMission
     {
         $nbJours = Carbon::parse($data['date_retour'])->diffInDays(Carbon::parse($data['date_depart'])) + 1;
@@ -68,6 +72,9 @@ class MissionService
 
         $ordre->update(['statut' => 'SOUMIS']);
 
+        $ordre->load('agent');
+        $this->notificationService->missionSoumise($ordre);
+
         return $ordre->fresh(['agent', 'taux']);
     }
 
@@ -97,6 +104,9 @@ class MissionService
             'valide_par_chef' => $user->id,
         ]);
 
+        $ordre->load(['agent', 'valideurChef']);
+        $this->notificationService->missionValideeN1($ordre);
+
         return $ordre->fresh(['agent', 'taux']);
     }
 
@@ -119,6 +129,9 @@ class MissionService
             'valide_par_dg' => $user->id,
         ]);
 
+        $ordre->load('agent');
+        $this->notificationService->missionApprouvee($ordre);
+
         return $ordre->fresh(['agent', 'taux']);
     }
 
@@ -134,6 +147,9 @@ class MissionService
             'statut' => 'REJETE',
             'commentaire_rejet' => $commentaire,
         ]);
+
+        $ordre->load('agent');
+        $this->notificationService->missionRejetee($ordre);
 
         return $ordre->fresh(['agent', 'taux']);
     }
