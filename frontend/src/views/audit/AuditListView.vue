@@ -1,49 +1,85 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import AppPagination from '@/components/shared/AppPagination.vue'
+import { useApi } from '@/composables/useApi'
+import { useSearch } from '@/composables/useSearch'
+import type { AuditLog } from '@/types'
 
-const searchQuery = ref('')
+const api = useApi()
+const { query: searchQuery, debouncedQuery } = useSearch(300)
 const actionFilter = ref('')
-const moduleFilter = ref('')
-const userFilter = ref('')
-const dateFilter = ref('2025-01-15')
+const dateFilter = ref('')
+const loadingData = ref(true)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
 
-const stats = [
-  { label: 'Actions totales', value: '247', badge: "Aujourd'hui", badgeBg: 'bg-blue-50', badgeColor: 'text-blue-600', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { label: 'Creations', value: '89', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  { label: 'Modifications', value: '134', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
-  { label: 'Actions critiques', value: '3', iconBg: 'bg-red-100', iconColor: 'text-red-600' },
-]
+const entries = ref<AuditLog[]>([])
 
-interface AuditEntry {
-  date: string
-  time: string
-  userInitials: string
-  userName: string
-  userBg: string
-  userColor: string
-  action: string
-  actionBg: string
-  actionColor: string
-  module: string
-  detail: string
-  subDetail: string
-  ip: string
-  critical: boolean
+async function loadAudit() {
+  loadingData.value = true
+  try {
+    const params: Record<string, string | number> = { page: currentPage.value }
+    if (actionFilter.value) params.action = actionFilter.value
+    if (dateFilter.value) params.date_debut = dateFilter.value
+
+    const { data } = await api.get('/api/audit', { params })
+    entries.value = data.data || []
+    if (data.meta) {
+      currentPage.value = data.meta.current_page
+      totalPages.value = data.meta.last_page
+      totalItems.value = data.meta.total
+    }
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
+  }
 }
 
-const entries: AuditEntry[] = [
-  { date: '15/01/2025', time: '14:32:05', userInitials: 'GA', userName: 'Gislain A.', userBg: 'bg-anatt-100', userColor: 'text-anatt-700', action: 'Validation', actionBg: 'bg-green-100', actionColor: 'text-green-700', module: 'Ordres de Mission', detail: 'Validation OM OM-2025-0089', subDetail: 'MAGBE Victorin - Parakou', ip: '192.168.1.45', critical: false },
-  { date: '15/01/2025', time: '14:28:17', userInitials: 'MD', userName: 'Marie D.', userBg: 'bg-purple-100', userColor: 'text-purple-700', action: 'Creation', actionBg: 'bg-blue-100', actionColor: 'text-blue-700', module: 'Ordres de Mission', detail: 'Creation OM OM-2025-0092', subDetail: 'DOSSA Marie - Abomey', ip: '192.168.1.22', critical: false },
-  { date: '15/01/2025', time: '13:55:42', userInitials: 'GA', userName: 'Gislain A.', userBg: 'bg-anatt-100', userColor: 'text-anatt-700', action: 'Modification', actionBg: 'bg-amber-100', actionColor: 'text-amber-700', module: 'Baremes', detail: 'Modification bareme Categorie A', subDetail: 'Indemnite journaliere : 25 000 -> 28 000 FCFA', ip: '192.168.1.45', critical: false },
-  { date: '15/01/2025', time: '12:10:33', userInitials: 'PA', userName: 'Pierre A.', userBg: 'bg-red-100', userColor: 'text-red-700', action: 'Suppression', actionBg: 'bg-red-100', actionColor: 'text-red-700', module: 'Personnel', detail: 'Suppression agent HOUNTON Marc', subDetail: 'Action critique', ip: '192.168.1.18', critical: true },
-  { date: '15/01/2025', time: '11:45:20', userInitials: 'JK', userName: 'Jean-Baptiste K.', userBg: 'bg-blue-100', userColor: 'text-blue-700', action: 'Export', actionBg: 'bg-indigo-100', actionColor: 'text-indigo-700', module: 'Paiements', detail: 'Export fichier LOT-2025-012', subDetail: 'Format MTN MoMo - 45 transactions', ip: '192.168.1.30', critical: false },
-  { date: '15/01/2025', time: '10:15:08', userInitials: 'MD', userName: 'Marie D.', userBg: 'bg-purple-100', userColor: 'text-purple-700', action: 'Connexion', actionBg: 'bg-cyan-100', actionColor: 'text-cyan-700', module: 'Systeme', detail: 'Connexion reussie', subDetail: 'Navigateur Chrome - Windows 11', ip: '192.168.1.22', critical: false },
-  { date: '15/01/2025', time: '09:30:55', userInitials: 'GA', userName: 'Gislain A.', userBg: 'bg-anatt-100', userColor: 'text-anatt-700', action: 'Modification', actionBg: 'bg-amber-100', actionColor: 'text-amber-700', module: 'Utilisateurs', detail: 'Modification role Pierre A.', subDetail: 'Role : Gestionnaire -> Validateur', ip: '192.168.1.45', critical: false },
-  { date: '15/01/2025', time: '08:45:12', userInitials: 'GA', userName: 'Gislain A.', userBg: 'bg-anatt-100', userColor: 'text-anatt-700', action: 'Paiement', actionBg: 'bg-red-100', actionColor: 'text-red-700', module: 'Paiements', detail: 'Marquage paye lot LOT-2025-011', subDetail: 'Action critique - 12 450 000 FCFA', ip: '192.168.1.45', critical: true },
-]
+watch([debouncedQuery, actionFilter, dateFilter], () => {
+  currentPage.value = 1
+  loadAudit()
+})
 
-const currentPage = ref(1)
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadAudit()
+}
+
+onMounted(loadAudit)
+
+const stats = computed(() => [
+  { label: 'Actions totales', value: String(totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { label: 'Creations', value: String(entries.value.filter(e => e.action?.includes('CREATE')).length), iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { label: 'Validations', value: String(entries.value.filter(e => e.action?.includes('VALIDATE') || e.action?.includes('APPROVE')).length), iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  { label: 'Connexions', value: String(entries.value.filter(e => e.action === 'LOGIN').length), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
+])
+
+function formatDate(iso: string): string {
+  if (!iso) return '--'
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function formatTime(iso: string): string {
+  if (!iso) return '--'
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function getInitials(name: string): string {
+  return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??'
+}
+
+function getActionColor(action: string): { bg: string; color: string } {
+  if (action?.includes('CREATE')) return { bg: 'bg-blue-100', color: 'text-blue-700' }
+  if (action?.includes('VALIDATE') || action?.includes('APPROVE')) return { bg: 'bg-green-100', color: 'text-green-700' }
+  if (action?.includes('REJECT') || action?.includes('DELETE')) return { bg: 'bg-red-100', color: 'text-red-700' }
+  if (action?.includes('UPDATE')) return { bg: 'bg-amber-100', color: 'text-amber-700' }
+  if (action === 'LOGIN') return { bg: 'bg-cyan-100', color: 'text-cyan-700' }
+  if (action?.includes('GENERATE') || action?.includes('EXPORT')) return { bg: 'bg-indigo-100', color: 'text-indigo-700' }
+  return { bg: 'bg-gray-100', color: 'text-gray-600' }
+}
 </script>
 
 <template>
@@ -107,26 +143,34 @@ const currentPage = ref(1)
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="entry in entries" :key="entry.time" class="group" :class="entry.critical ? 'bg-red-50/30' : ''">
-            <td class="px-5 py-4"><p class="text-sm font-body font-medium text-gray-800">{{ entry.date }}</p><p class="text-[11px] text-gray-400 font-body">{{ entry.time }}</p></td>
+          <tr v-if="loadingData">
+            <td colspan="6" class="px-5 py-12 text-center">
+              <svg class="w-8 h-8 animate-spin text-anatt-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            </td>
+          </tr>
+          <tr v-else-if="entries.length === 0">
+            <td colspan="6" class="px-5 py-12 text-center text-sm text-gray-400 font-body">Aucun log d'audit trouve.</td>
+          </tr>
+          <tr v-for="entry in entries" :key="entry.id" class="group hover:bg-anatt-50/30 transition-colors" :class="entry.action?.includes('DELETE') || entry.action?.includes('REJECT') ? 'bg-red-50/30' : ''">
+            <td class="px-5 py-4"><p class="text-sm font-body font-medium text-gray-800">{{ formatDate(entry.created_at) }}</p><p class="text-[11px] text-gray-400 font-body">{{ formatTime(entry.created_at) }}</p></td>
             <td class="px-5 py-4">
               <div class="flex items-center gap-2">
-                <div :class="[entry.userBg, 'w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-display font-bold', entry.userColor]">{{ entry.userInitials }}</div>
-                <span class="text-sm font-body text-gray-700">{{ entry.userName }}</span>
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-display font-bold bg-anatt-100 text-anatt-700">{{ entry.utilisateur ? getInitials(entry.utilisateur) : '??' }}</div>
+                <span class="text-sm font-body text-gray-700">{{ entry.utilisateur || '--' }}</span>
               </div>
             </td>
-            <td class="px-5 py-4"><span :class="[entry.actionBg, entry.actionColor, 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']">{{ entry.action }}</span></td>
+            <td class="px-5 py-4"><span :class="[getActionColor(entry.action).bg, getActionColor(entry.action).color, 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']">{{ entry.action }}</span></td>
             <td class="px-5 py-4"><span class="text-sm font-body text-gray-600">{{ entry.module }}</span></td>
             <td class="px-5 py-4">
-              <p class="text-sm font-body text-gray-700">{{ entry.detail }}</p>
-              <p :class="entry.critical ? 'text-red-500' : 'text-gray-400'" class="text-[11px] font-body">
-                <template v-if="entry.critical">
+              <p class="text-sm font-body text-gray-700">{{ entry.cible }}</p>
+              <p class="text-[11px] text-gray-400 font-body">
+                <template v-if="entry.details">
                   <svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
                 </template>
                 {{ entry.subDetail }}
               </p>
             </td>
-            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">{{ entry.ip }}</span></td>
+            <td class="px-5 py-4"><span class="text-xs text-gray-400 font-mono">{{ entry.ip_address || '--' }}</span></td>
             <td class="px-5 py-4 text-center">
               <router-link :to="`/audit/1`" class="text-anatt-500 hover:text-anatt-600 text-sm opacity-0 group-hover:opacity-100 transition-opacity">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -135,22 +179,12 @@ const currentPage = ref(1)
           </tr>
         </tbody>
       </table>
-      <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-        <p class="text-sm text-gray-500 font-body">Affichage 1-8 sur <span class="font-semibold">247</span> actions</p>
-        <div class="flex items-center gap-1">
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-          </button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-anatt-500 text-white text-sm font-display font-semibold">1</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm font-body hover:bg-gray-50">2</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm font-body hover:bg-gray-50">3</button>
-          <span class="text-gray-400 px-1">...</span>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm font-body hover:bg-gray-50">31</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-          </button>
-        </div>
-      </div>
+      <AppPagination
+        :current-page="currentPage"
+        :last-page="totalPages"
+        :total="totalItems"
+        @page-change="handlePageChange"
+      />
     </div>
   </AppLayout>
 </template>
