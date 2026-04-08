@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppBadge from '@/components/shared/AppBadge.vue'
 import AppModal from '@/components/shared/AppModal.vue'
+import { useApi } from '@/composables/useApi'
 
 const router = useRouter()
+const api = useApi()
 const step = ref(1)
 const loading = ref(false)
+const loadingData = ref(true)
 const showSuccessModal = ref(false)
 const searchBeneficiaire = ref('')
 const showSuggestions = ref(false)
 
 // Form state
 const form = ref({
-  semo: 'SEMO-4523',
+  semo: '',
   objet: '',
   lieu_depart: 'Cotonou',
   destination: '',
@@ -34,21 +37,55 @@ const transports = [
   { value: 'avion', label: 'Avion', icon: 'plane' },
 ]
 
-// Mock agents database
-const agentsDB = ref([
-  { id: 1, initiales: 'MV', nom: 'MAGBE Victorin', matricule: 'MAT-0045', role: 'Cadre', salaire: 850000, categorie: '>=800K', color: 'blue', telephone: '229 99 70 74 80' },
-  { id: 2, initiales: 'AP', nom: 'ADJOVI Pierre', matricule: 'MAT-0023', role: 'Agent', salaire: 320000, categorie: '<400K', color: 'green', telephone: '229 01 66 33 55' },
-  { id: 3, initiales: 'KJ', nom: 'KONE Jean', matricule: 'MAT-0067', role: 'Agent', salaire: 320000, categorie: '<400K', color: 'amber', telephone: '229 97 12 34 56' },
-  { id: 4, initiales: 'HC', nom: 'HOUNGBEDJI Claude', matricule: 'MAT-0034', role: 'Cadre', salaire: 900000, categorie: '>=800K', color: 'indigo', telephone: '229 96 78 90 12' },
-  { id: 5, initiales: 'TB', nom: 'TOSSOU Beatrice', matricule: 'MAT-0078', role: 'Agent', salaire: 280000, categorie: '<400K', color: 'pink', telephone: '229 95 23 45 67' },
-])
+// Agents charges depuis l'API
+const agentsDB = ref<any[]>([])
 
-// Taux per diem par categorie
-const tauxParCategorie: Record<string, { repas1: number; repas2: number; nuitee: number }> = {
+// Taux per diem charges depuis l'API (fallback hardcode)
+const tauxParCategorie = ref<Record<string, { repas1: number; repas2: number; nuitee: number }>>({
   '>=800K': { repas1: 15000, repas2: 25000, nuitee: 45000 },
   '400-800K': { repas1: 12000, repas2: 20000, nuitee: 35000 },
   '<400K': { repas1: 10000, repas2: 15000, nuitee: 30000 },
-}
+})
+
+const colors = ['blue', 'green', 'amber', 'indigo', 'pink', 'purple', 'cyan', 'rose', 'teal', 'orange']
+
+onMounted(async () => {
+  try {
+    const [agentsRes, tauxRes] = await Promise.all([
+      api.get('/api/agents?per_page=100'),
+      api.get('/api/taux'),
+    ])
+
+    agentsDB.value = (agentsRes.data.data || []).map((a: any, i: number) => ({
+      id: a.id,
+      initiales: (a.prenom?.[0] || '') + (a.nom?.[0] || ''),
+      nom: `${a.nom} ${a.prenom}`,
+      matricule: a.matricule,
+      role: a.categorie,
+      salaire: 0,
+      categorie: a.categorie,
+      color: colors[i % colors.length],
+      telephone: a.telephone || '',
+    }))
+
+    // Construire tauxParCategorie depuis l'API si disponible
+    const tauxData = tauxRes.data.data || []
+    if (tauxData.length > 0) {
+      const built: Record<string, any> = {}
+      for (const t of tauxData) {
+        if (!built[t.categorie]) built[t.categorie] = { repas1: 0, repas2: 0, nuitee: 0 }
+        built[t.categorie].repas1 = t.montant_journalier
+        built[t.categorie].repas2 = Math.round(t.montant_journalier * 1.6)
+        built[t.categorie].nuitee = Math.round(t.montant_journalier * 3)
+      }
+      if (Object.keys(built).length > 0) tauxParCategorie.value = built
+    }
+  } catch {
+    // Fallback: donnees statiques deja presentes
+  } finally {
+    loadingData.value = false
+  }
+})
 
 // Selected beneficiaires
 interface Beneficiaire {
@@ -86,7 +123,7 @@ const filteredAgents = computed(() => {
 })
 
 function getTaux(categorie: string) {
-  return tauxParCategorie[categorie] || tauxParCategorie['<400K']
+  return tauxParCategorie.value[categorie] || Object.values(tauxParCategorie.value)[0] || { repas1: 10000, repas2: 15000, nuitee: 30000 }
 }
 
 function beneficiaireTotal(b: Beneficiaire): number {
@@ -135,12 +172,24 @@ function formatMontant(val: number): string {
   return val.toLocaleString('fr-FR')
 }
 
-function handleSubmit() {
+async function handleSubmit() {
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
+  try {
+    const taux = tauxParCategorie.value[beneficiaires.value[0]?.categorie]
+    await api.post('/api/ordres', {
+      agent_id: beneficiaires.value[0]?.id,
+      objet: form.value.objet,
+      destination: form.value.destination,
+      date_depart: form.value.date_depart,
+      date_retour: form.value.date_retour,
+      taux_id: 1,
+    })
     showSuccessModal.value = true
-  }, 1500)
+  } catch {
+    // Erreurs gerees par l'intercepteur useApi
+  } finally {
+    loading.value = false
+  }
 }
 
 function handleSaveDraft() {
@@ -415,7 +464,7 @@ const stepSubLabels = ['Details de la mission', 'Selection agents', 'Validation 
           <AppCard>
             <h3 class="text-sm font-display font-bold text-gray-800 mb-4">Bareme de reference</h3>
             <div class="space-y-2">
-              <div v-for="(rates, cat) in tauxParCategorie" :key="cat" class="bg-gray-50 rounded-lg p-3">
+              <div v-for="(rates, cat) in tauxParCategorie.value" :key="cat" class="bg-gray-50 rounded-lg p-3">
                 <p class="text-xs font-display font-bold text-gray-700 mb-1">{{ cat }}</p>
                 <div class="grid grid-cols-3 gap-1 text-[10px] text-gray-500 font-body">
                   <span>1 repas: {{ formatMontant(rates.repas1) }}</span>

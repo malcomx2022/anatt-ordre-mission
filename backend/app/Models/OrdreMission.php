@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class OrdreMission extends Model
 {
@@ -96,8 +97,23 @@ class OrdreMission extends Model
 
     public static function generateNumero(): string
     {
-        $year = now()->year;
-        $last = static::whereYear('created_at', $year)->max('id') ?? 0;
-        return sprintf('OM-%d-%04d', $year, $last + 1);
+        return DB::transaction(function () {
+            $year = now()->year;
+            $prefix = "OM-{$year}-";
+
+            // Lock la table pour eviter les doublons en concurrence
+            $last = static::where('numero', 'like', "{$prefix}%")
+                ->lockForUpdate()
+                ->orderByDesc('numero')
+                ->value('numero');
+
+            $nextNum = 1;
+            if ($last) {
+                $parts = explode('-', $last);
+                $nextNum = ((int) end($parts)) + 1;
+            }
+
+            return sprintf('%s%04d', $prefix, $nextNum);
+        });
     }
 }
