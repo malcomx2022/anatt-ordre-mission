@@ -1,13 +1,44 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+import type { UserRole } from '@/types'
 
-const roles = [
-  { name: 'Super Admin', users: 1, borderColor: 'border-red-200', iconBg: 'bg-red-100', iconColor: 'text-red-600' },
-  { name: 'Administrateur', users: 1, borderColor: 'border-blue-200', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { name: 'Validateur', users: 1, borderColor: 'border-green-200', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  { name: 'Gestionnaire', users: 3, borderColor: 'border-amber-200', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
-  { name: 'Lecteur', users: 1, borderColor: 'border-gray-200', iconBg: 'bg-gray-100', iconColor: 'text-gray-600' },
+const api = useApi()
+const loadingData = ref(true)
+
+// Roles avec compteur d'utilisateurs charge depuis l'API
+const rolesList = ref([
+  { name: 'ADMIN', label: 'Super Admin', users: 0, borderColor: 'border-red-200', iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  { name: 'DIRECTEUR', label: 'Directeur', users: 0, borderColor: 'border-purple-200', iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
+  { name: 'CHEF_SERVICE', label: 'Chef de Service', users: 0, borderColor: 'border-green-200', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { name: 'DRH', label: 'Gestionnaire RH', users: 0, borderColor: 'border-blue-200', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { name: 'AGENT', label: 'Agent', users: 0, borderColor: 'border-gray-200', iconBg: 'bg-gray-100', iconColor: 'text-gray-600' },
+])
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/api/admin/users?per_page=100')
+    const allUsers = data.data || []
+    for (const role of rolesList.value) {
+      role.users = allUsers.filter((u: any) => u.role === role.name).length
+    }
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
+  }
+})
+
+// Matrice de permissions reelle (conforme a useAuth.ts)
+const roleKeys: UserRole[] = ['ADMIN', 'DIRECTEUR', 'CHEF_SERVICE', 'DRH', 'AGENT']
+
+const roleHeaders = [
+  { label: 'ADMIN', color: 'text-red-600' },
+  { label: 'DIRECTEUR', color: 'text-purple-600' },
+  { label: 'CHEF_SERVICE', color: 'text-green-600' },
+  { label: 'DRH', color: 'text-blue-600' },
+  { label: 'AGENT', color: 'text-gray-500' },
 ]
 
 interface PermissionModule {
@@ -15,42 +46,45 @@ interface PermissionModule {
   permissions: { label: string; values: boolean[] }[]
 }
 
+// Matrice conforme a la vraie config dans useAuth.ts
 const modules: PermissionModule[] = [
   { name: 'Tableau de bord', permissions: [
     { label: 'Voir le dashboard', values: [true, true, true, true, true] },
-    { label: 'Statistiques avancees', values: [true, true, false, false, false] },
   ]},
   { name: 'Personnel', permissions: [
-    { label: 'Consulter', values: [true, true, true, true, false] },
-    { label: 'Creer / Modifier', values: [true, true, false, true, false] },
-    { label: 'Supprimer', values: [true, true, false, false, false] },
-    { label: 'Importer en masse', values: [true, true, false, false, false] },
+    { label: 'Consulter', values: [true, true, true, true, true] },
+    { label: 'Creer / Modifier', values: [true, false, false, true, false] },
+    { label: 'Importer en masse', values: [true, false, false, true, false] },
   ]},
   { name: 'Ordres de Mission', permissions: [
-    { label: 'Consulter', values: [true, true, true, true, false] },
-    { label: 'Creer / Modifier', values: [true, true, false, true, false] },
-    { label: 'Valider / Rejeter', values: [true, true, true, false, false] },
+    { label: 'Consulter', values: [true, true, true, true, true] },
+    { label: 'Creer / Soumettre', values: [true, true, true, true, true] },
+    { label: 'Valider N+1', values: [true, false, true, false, false] },
+    { label: 'Approuver DG', values: [true, true, false, false, false] },
+    { label: 'Rejeter', values: [true, true, true, false, false] },
   ]},
   { name: 'Paiements', permissions: [
-    { label: 'Consulter les lots', values: [true, true, true, true, false] },
-    { label: 'Generer des fichiers', values: [true, true, false, true, false] },
-    { label: 'Marquer paye', values: [true, true, true, false, false] },
-    { label: 'Reconciliation', values: [true, true, false, false, false] },
+    { label: 'Consulter', values: [true, true, true, true, true] },
+    { label: 'Generer fichiers', values: [true, false, false, true, false] },
+    { label: 'Reconciliation', values: [true, false, false, true, false] },
+  ]},
+  { name: 'Taux Per Diem', permissions: [
+    { label: 'Consulter', values: [true, true, true, true, true] },
+    { label: 'Modifier', values: [true, false, false, true, false] },
+  ]},
+  { name: 'Rapports', permissions: [
+    { label: 'Consulter', values: [true, true, true, true, false] },
+    { label: 'Exporter', values: [true, true, true, true, false] },
+  ]},
+  { name: 'Audit', permissions: [
+    { label: 'Journal d\'audit', values: [true, true, false, false, false] },
   ]},
   { name: 'Administration', permissions: [
     { label: 'Gerer utilisateurs', values: [true, false, false, false, false] },
     { label: 'Gerer roles', values: [true, false, false, false, false] },
     { label: 'Parametres systeme', values: [true, false, false, false, false] },
-    { label: 'Journal d\'audit', values: [true, true, false, false, false] },
+    { label: 'Sauvegardes', values: [true, false, false, false, false] },
   ]},
-]
-
-const roleHeaders = [
-  { label: 'Super Admin', color: 'text-red-600' },
-  { label: 'Admin', color: 'text-blue-600' },
-  { label: 'Validateur', color: 'text-green-600' },
-  { label: 'Gestionnaire', color: 'text-amber-600' },
-  { label: 'Lecteur', color: 'text-gray-500' },
 ]
 </script>
 
@@ -69,11 +103,11 @@ const roleHeaders = [
 
     <!-- Role Cards -->
     <div class="grid grid-cols-5 gap-3 mb-6 animate-fade-up">
-      <div v-for="role in roles" :key="role.name" :class="['bg-white rounded-xl border-2 p-4 text-center', role.borderColor]">
+      <div v-for="role in rolesList" :key="role.name" :class="['bg-white rounded-xl border-2 p-4 text-center', role.borderColor]">
         <div :class="[role.iconBg, 'w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2']">
           <svg :class="[role.iconColor, 'w-5 h-5']" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
         </div>
-        <p class="text-sm font-display font-bold text-gray-800">{{ role.name }}</p>
+        <p class="text-sm font-display font-bold text-gray-800">{{ role.label }}</p>
         <p class="text-[11px] text-gray-500 font-body">{{ role.users }} utilisateur{{ role.users > 1 ? 's' : '' }}</p>
       </div>
     </div>
@@ -115,7 +149,7 @@ const roleHeaders = [
             Refuse
           </span>
         </div>
-        <p class="text-xs text-gray-400 font-body">Derniere modification : 15/01/2025 a 09:30 par Gislain A.</p>
+        <p class="text-xs text-gray-400 font-body">Matrice conforme aux permissions definies dans le systeme</p>
       </div>
     </div>
   </AppLayout>
