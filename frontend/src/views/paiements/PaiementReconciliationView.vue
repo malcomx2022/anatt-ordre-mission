@@ -6,99 +6,77 @@ import AppButton from '@/components/shared/AppButton.vue'
 import AppBadge from '@/components/shared/AppBadge.vue'
 import AppModal from '@/components/shared/AppModal.vue'
 import { usePaiements } from '@/composables/usePaiements'
-import type { Paiement, OperateurPaiement } from '@/types'
+import { useApi } from '@/composables/useApi'
+import type { OperateurPaiement } from '@/types'
 
 const router = useRouter()
+const api = useApi()
 const { reconcilier, loading } = usePaiements()
 
 const activeTab = ref<'matched' | 'discrepancies' | 'missing'>('matched')
 const fileUploaded = ref(false)
 const isDragOver = ref(false)
-const selectedOperator = ref<'MTN' | 'MOOV'>('MTN')
+const selectedOperator = ref<OperateurPaiement>('MTN')
+const uploading = ref(false)
+const reconciled = ref(false)
+const errorMsg = ref('')
 
-// Import releve data
-const uploadedFile = ref({
-  name: 'releve_mtn_avril2026.csv',
-  size: '456 KB',
-  transactions: 89,
-  reussies: 82,
-  echouees: 7,
-})
+// Fichier selectionne
+const selectedFile = ref<File | null>(null)
+const uploadedFileInfo = ref({ name: '', size: '', })
 
-// Mapping preview
-const mappings = ref([
-  { colonneFichier: 'transaction_id', champSysteme: 'Ref. Transaction', exemple: 'TXN-2026-00891234' },
-  { colonneFichier: 'msisdn', champSysteme: 'N. Telephone', exemple: '+22997123456' },
-  { colonneFichier: 'amount', champSysteme: 'Montant', exemple: '125 000' },
-  { colonneFichier: 'status', champSysteme: 'Statut', exemple: 'SUCCESSFUL' },
-  { colonneFichier: 'date', champSysteme: 'Date transaction', exemple: '2026-04-10 14:32' },
-])
-
-// Reconciliation summary
-const reconciliation = ref({
-  correspondances: 13,
-  ecarts: 2,
-  nonTrouves: 3,
-  supplementaires: 0,
-})
-
-// Tab data
-interface Correspondance {
-  beneficiaire: string
-  telephone: string
-  montantEnvoye: number
-  montantRetour: number
-  statutOperateur: string
-}
-
-interface Ecart {
-  beneficiaire: string
-  telephone: string
-  montantLot: number
-  montantRetour: number
-  ecart: string
-  resolution: string
-}
-
-interface NonTrouve {
-  beneficiaire: string
-  telephone: string
-  montant: number
-  raisonProbable: string
-}
-
-const correspondances = ref<Correspondance[]>([
-  { beneficiaire: 'ADJOVI Kossi Pierre', telephone: '95 12 34 56', montantEnvoye: 152000, montantRetour: 152000, statutOperateur: 'SUCCESS' },
-  { beneficiaire: 'BOKO Grace Annick', telephone: '96 45 67 89', montantEnvoye: 152000, montantRetour: 152000, statutOperateur: 'SUCCESS' },
-  { beneficiaire: 'GANDONOU Estelle', telephone: '95 23 45 67', montantEnvoye: 152000, montantRetour: 152000, statutOperateur: 'SUCCESS' },
-])
-
-const ecarts = ref<Ecart[]>([
-  { beneficiaire: 'HOUNSA Michel', telephone: '96 11 22 33', montantLot: 152000, montantRetour: 150000, ecart: '-2 000 F', resolution: '' },
-  { beneficiaire: 'TOSSOU Raoul', telephone: '95 44 55 66', montantLot: 152000, montantRetour: 152000, ecart: 'STATUT: FAILED', resolution: '' },
-])
-
-const nonTrouves = ref<NonTrouve[]>([
-  { beneficiaire: 'HOUNKPATIN Joel', telephone: '96 34 56 78', montant: 152000, raisonProbable: 'Non traite par l\'operateur' },
-  { beneficiaire: 'MENSAH Adeline', telephone: '95 77 88 99', montant: 152000, raisonProbable: 'Timeout de traitement' },
-  { beneficiaire: 'SOSSOU Arnaud', telephone: '96 00 11 22', montant: 152000, raisonProbable: 'Numero non reconnu' },
-])
+// Resultats reconciliation depuis l'API
+const reconciliationResult = ref({ succes: 0, echec: 0 })
 
 function formatMontant(val: number): string {
   return val.toLocaleString('fr-FR')
 }
 
-function handleFileDrop(e: DragEvent) {
-  isDragOver.value = false
-  fileUploaded.value = true
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
-function handleFileSelect() {
-  fileUploaded.value = true
+function handleFileDrop(e: DragEvent) {
+  isDragOver.value = false
+  const file = e.dataTransfer?.files[0]
+  if (file) {
+    selectedFile.value = file
+    uploadedFileInfo.value = { name: file.name, size: formatSize(file.size) }
+    fileUploaded.value = true
+  }
+}
+
+function handleFileSelect(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (file) {
+    selectedFile.value = file
+    uploadedFileInfo.value = { name: file.name, size: formatSize(file.size) }
+    fileUploaded.value = true
+  }
 }
 
 function removeFile() {
+  selectedFile.value = null
   fileUploaded.value = false
+  reconciled.value = false
+  errorMsg.value = ''
+}
+
+async function launchReconciliation() {
+  if (!selectedFile.value) return
+  uploading.value = true
+  errorMsg.value = ''
+  try {
+    const result = await reconcilier(selectedFile.value)
+    reconciliationResult.value = result.data || { succes: 0, echec: 0 }
+    reconciled.value = true
+  } catch {
+    errorMsg.value = 'Erreur lors de la reconciliation. Verifiez le format du fichier.'
+  } finally {
+    uploading.value = false
+  }
 }
 
 function applyReconciliation() {
@@ -109,9 +87,13 @@ function applyReconciliation() {
 <template>
   <AppLayout title="Reconciliation Paiements" subtitle="Rapprochement avec le releve operateur">
     <template #header-actions>
-      <AppButton @click="applyReconciliation">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><polyline points="20 6 9 17 4 12" transform="translate(2,0)"/></svg>
-        Appliquer la Reconciliation
+      <AppButton v-if="fileUploaded && !reconciled" :loading="uploading" @click="launchReconciliation">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+        Lancer la Reconciliation
+      </AppButton>
+      <AppButton v-if="reconciled" @click="applyReconciliation">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Voir les resultats
       </AppButton>
     </template>
 
@@ -156,7 +138,7 @@ function applyReconciliation() {
           @dragover.prevent="isDragOver = true"
           @dragleave="isDragOver = false"
           @drop.prevent="handleFileDrop"
-          @click="handleFileSelect"
+          @click="($refs.fileInput as HTMLInputElement)?.click()"
         >
           <div class="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -164,6 +146,7 @@ function applyReconciliation() {
           <p class="text-sm font-display font-semibold text-gray-700 mb-1">Deposer le fichier retour ici</p>
           <p class="text-xs font-body text-gray-400 mb-3">Format CSV ou Excel (.xlsx)</p>
           <span class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-xs font-display font-semibold">Parcourir les fichiers</span>
+          <input ref="fileInput" type="file" accept=".csv,.txt,.xlsx" class="hidden" @change="handleFileSelect">
         </div>
 
         <!-- Uploaded file -->
@@ -173,8 +156,8 @@ function applyReconciliation() {
               <svg class="w-5 h-5 text-anatt-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
             <div>
-              <p class="text-sm font-display font-semibold text-gray-800">{{ uploadedFile.name }}</p>
-              <p class="text-[11px] font-body text-gray-500">{{ uploadedFile.size }} -- {{ uploadedFile.transactions }} transactions detectees</p>
+              <p class="text-sm font-display font-semibold text-gray-800">{{ uploadedFileInfo.name }}</p>
+              <p class="text-[11px] font-body text-gray-500">{{ uploadedFileInfo.size }}</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -199,7 +182,12 @@ function applyReconciliation() {
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-50">
-                <tr v-for="m in mappings" :key="m.colonneFichier">
+                <tr v-for="m in [
+              { colonneFichier: 'transaction_id', champSysteme: 'Ref. Transaction', exemple: '--' },
+              { colonneFichier: 'msisdn', champSysteme: 'N. Telephone', exemple: '--' },
+              { colonneFichier: 'amount', champSysteme: 'Montant', exemple: '--' },
+              { colonneFichier: 'status', champSysteme: 'Statut', exemple: '--' },
+            ]" :key="m.colonneFichier">
                   <td class="px-3 py-2 font-mono text-xs text-gray-600">{{ m.colonneFichier }}</td>
                   <td class="px-3 py-2 text-center text-gray-300">
                     <svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -237,7 +225,7 @@ function applyReconciliation() {
                 <p class="text-xs font-body text-anatt-600">Numero + montant identiques</p>
               </div>
             </div>
-            <span class="text-2xl font-display font-bold text-anatt-500">{{ reconciliation.correspondances }}</span>
+            <span class="text-2xl font-display font-bold text-anatt-500">{{ reconciliationResult.succes }}</span>
           </div>
           <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
             <div class="flex items-center gap-3">
@@ -249,7 +237,7 @@ function applyReconciliation() {
                 <p class="text-xs font-body text-amber-600">Montant ou statut different</p>
               </div>
             </div>
-            <span class="text-2xl font-display font-bold text-amber-700">{{ reconciliation.ecarts }}</span>
+            <span class="text-2xl font-display font-bold text-amber-700">{{ reconciliationResult.echec }}</span>
           </div>
           <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
             <div class="flex items-center gap-3">
@@ -261,7 +249,7 @@ function applyReconciliation() {
                 <p class="text-xs font-body text-red-500">Absents du fichier retour</p>
               </div>
             </div>
-            <span class="text-2xl font-display font-bold text-red-600">{{ reconciliation.nonTrouves }}</span>
+            <span class="text-2xl font-display font-bold text-red-600">{{ 0 }}</span>
           </div>
           <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
             <div class="flex items-center gap-3">
@@ -273,7 +261,7 @@ function applyReconciliation() {
                 <p class="text-xs font-body text-gray-500">Dans le retour mais pas dans le lot</p>
               </div>
             </div>
-            <span class="text-2xl font-display font-bold text-gray-600">{{ reconciliation.supplementaires }}</span>
+            <span class="text-2xl font-display font-bold text-gray-600">{{ 0 }}</span>
           </div>
         </div>
 
@@ -281,15 +269,15 @@ function applyReconciliation() {
         <div v-if="fileUploaded" class="mt-4 bg-gradient-to-r from-anatt-500 to-anatt-600 rounded-xl p-4">
           <div class="grid grid-cols-3 gap-3 mb-3">
             <div class="bg-white/10 rounded-lg p-2 text-center text-white">
-              <p class="text-lg font-display font-bold">{{ uploadedFile.transactions }}</p>
+              <p class="text-lg font-display font-bold">{{ reconciliationResult.succes + reconciliationResult.echec }}</p>
               <p class="text-[10px] font-body text-anatt-100">Transactions</p>
             </div>
             <div class="bg-white/10 rounded-lg p-2 text-center text-white">
-              <p class="text-lg font-display font-bold">{{ uploadedFile.reussies }}</p>
+              <p class="text-lg font-display font-bold">{{ reconciliationResult.succes }}</p>
               <p class="text-[10px] font-body text-anatt-100">Reussies</p>
             </div>
             <div class="bg-white/10 rounded-lg p-2 text-center text-white">
-              <p class="text-lg font-display font-bold">{{ uploadedFile.echouees }}</p>
+              <p class="text-lg font-display font-bold">{{ reconciliationResult.echec }}</p>
               <p class="text-[10px] font-body text-anatt-100">Echouees</p>
             </div>
           </div>
@@ -307,7 +295,7 @@ function applyReconciliation() {
             :class="activeTab === 'matched' ? 'font-semibold border-anatt-500 text-anatt-500' : 'font-medium text-gray-400 border-transparent hover:text-gray-600'"
           >
             <svg class="w-3.5 h-3.5 inline mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Correspondances <span class="bg-anatt-50 text-anatt-500 text-xs px-2 py-0.5 rounded-full ml-1">{{ reconciliation.correspondances }}</span>
+            Correspondances <span class="bg-anatt-50 text-anatt-500 text-xs px-2 py-0.5 rounded-full ml-1">{{ reconciliationResult.succes }}</span>
           </button>
           <button
             @click="activeTab = 'discrepancies'"
@@ -315,7 +303,7 @@ function applyReconciliation() {
             :class="activeTab === 'discrepancies' ? 'font-semibold border-anatt-500 text-anatt-500' : 'font-medium text-gray-400 border-transparent hover:text-gray-600'"
           >
             <svg class="w-3.5 h-3.5 inline mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Ecarts <span class="bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded-full ml-1">{{ reconciliation.ecarts }}</span>
+            Ecarts <span class="bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded-full ml-1">{{ reconciliationResult.echec }}</span>
           </button>
           <button
             @click="activeTab = 'missing'"
@@ -323,7 +311,7 @@ function applyReconciliation() {
             :class="activeTab === 'missing' ? 'font-semibold border-anatt-500 text-anatt-500' : 'font-medium text-gray-400 border-transparent hover:text-gray-600'"
           >
             <svg class="w-3.5 h-3.5 inline mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18.84 12.25 1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71"/><path d="m5.17 11.75-1.71 1.71a5.004 5.004 0 0 0 .12 7.07 5.006 5.006 0 0 0 6.95 0l1.71-1.71"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="2" y1="8" x2="5" y2="8"/><line x1="16" y1="19" x2="16" y2="22"/><line x1="19" y1="16" x2="22" y2="16"/></svg>
-            Non trouves <span class="bg-red-50 text-red-600 text-xs px-2 py-0.5 rounded-full ml-1">{{ reconciliation.nonTrouves }}</span>
+            Non trouves <span class="bg-red-50 text-red-600 text-xs px-2 py-0.5 rounded-full ml-1">{{ 0 }}</span>
           </button>
         </div>
       </div>
@@ -342,11 +330,12 @@ function applyReconciliation() {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="c in correspondances" :key="c.beneficiaire" class="hover:bg-anatt-50/30 transition-colors">
-              <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ c.beneficiaire }}</td>
-              <td class="px-5 py-3 text-sm font-body text-gray-600">{{ c.telephone }}</td>
-              <td class="px-5 py-3 text-right text-sm font-body text-gray-700">{{ formatMontant(c.montantEnvoye) }} F</td>
-              <td class="px-5 py-3 text-right text-sm font-display font-semibold text-anatt-500">{{ formatMontant(c.montantRetour) }} F</td>
+            <tr v-if="reconciliationResult.succes === 0"><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400 font-body">Lancez la reconciliation pour voir les resultats</td></tr>
+            <tr v-for="i in reconciliationResult.succes" :key="i" class="hover:bg-anatt-50/30 transition-colors">
+              <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">Paiement #{{ i }}</td>
+              <td class="px-5 py-3 text-sm font-body text-gray-600">--</td>
+              <td class="px-5 py-3 text-right text-sm font-body text-gray-700">--</td>
+              <td class="px-5 py-3 text-right text-sm font-display font-semibold text-anatt-500">--</td>
               <td class="px-5 py-3 text-center"><AppBadge variant="success">SUCCESS</AppBadge></td>
               <td class="px-5 py-3 text-center">
                 <span class="text-xs font-body text-anatt-600 font-medium flex items-center justify-center gap-1">
@@ -358,7 +347,7 @@ function applyReconciliation() {
           </tbody>
         </table>
         <div class="px-5 py-3 text-center text-xs font-body text-gray-400 border-t border-gray-100">
-          Affichage de 3 sur {{ reconciliation.correspondances }} correspondances
+          {{ reconciliationResult.succes }} correspondance(s) trouvee(s)
         </div>
       </div>
 
@@ -376,9 +365,10 @@ function applyReconciliation() {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="e in ecarts" :key="e.beneficiaire" class="bg-amber-50/30">
-              <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ e.beneficiaire }}</td>
-              <td class="px-5 py-3 text-sm font-body text-gray-600">{{ e.telephone }}</td>
+            <tr v-if="reconciliationResult.echec === 0"><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400 font-body">Aucun ecart detecte</td></tr>
+            <tr v-for="i in reconciliationResult.echec" :key="i" class="bg-amber-50/30">
+              <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">Paiement echoue #{{ i }}</td>
+              <td class="px-5 py-3 text-sm font-body text-gray-600">--</td>
               <td class="px-5 py-3 text-right text-sm font-body text-gray-700">{{ formatMontant(e.montantLot) }} F</td>
               <td class="px-5 py-3 text-right text-sm font-display font-semibold text-amber-700">{{ formatMontant(e.montantRetour) }} F</td>
               <td class="px-5 py-3 text-center">
@@ -410,9 +400,10 @@ function applyReconciliation() {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="n in nonTrouves" :key="n.beneficiaire" class="bg-red-50/30">
-              <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ n.beneficiaire }}</td>
-              <td class="px-5 py-3 text-sm font-body text-gray-600">{{ n.telephone }}</td>
+            <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-400 font-body">Les details des transactions non trouvees seront affiches apres reconciliation</td></tr>
+            <tr v-if="false" class="bg-red-50/30">
+              <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">--</td>
+              <td class="px-5 py-3 text-sm font-body text-gray-600">--</td>
               <td class="px-5 py-3 text-right text-sm font-body text-gray-700">{{ formatMontant(n.montant) }} F</td>
               <td class="px-5 py-3 text-xs font-body text-red-600">{{ n.raisonProbable }}</td>
               <td class="px-5 py-3 text-center">
