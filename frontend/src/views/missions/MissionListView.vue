@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
@@ -8,125 +8,91 @@ import AppPagination from '@/components/shared/AppPagination.vue'
 import AppModal from '@/components/shared/AppModal.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { useMissions } from '@/composables/useMissions'
+import { useApi } from '@/composables/useApi'
+import { useSearch } from '@/composables/useSearch'
 import type { OrdreMission, StatutMission } from '@/types'
 
 const router = useRouter()
-const { loading } = useMissions()
+const api = useApi()
+const { missions, loading, fetchMissions } = useMissions()
+const { query: searchQuery, debouncedQuery } = useSearch(300)
 
-const searchQuery = ref('')
 const filterStatus = ref('')
 const filterMonth = ref('')
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
 
 const stats = ref({
-  total: 156,
-  brouillons: 12,
-  en_attente: 8,
-  valides: 89,
-  payes: 42,
-  rejetes: 5,
+  total: 0,
+  brouillons: 0,
+  en_attente: 0,
+  valides: 0,
+  payes: 0,
+  rejetes: 0,
 })
-
-const missions = ref([
-  {
-    id: 1,
-    numero: 'OM-2026-000789',
-    semo: 'SEMO-4517',
-    agent: { nom: 'MAGBE', prenom: 'Victorin', initiales: 'MV', categorie: 'Cadre', bgColor: 'bg-blue-100', textColor: 'text-blue-600', salaire: '>=800K' },
-    destination: 'Parakou',
-    periode: '01-03 Avr 2026',
-    nb_jours: 3,
-    montant: 60000,
-    statut: 'PAYE' as StatutMission,
-    avance: { montant: 20000, statut: 'paye' },
-    reliquat: { montant: 40000, statut: 'paye' },
-  },
-  {
-    id: 2,
-    numero: 'OM-2026-000790',
-    semo: 'SEMO-4518',
-    agent: { nom: 'ADJOVI', prenom: 'Pierre', initiales: 'AP', categorie: 'Agent', bgColor: 'bg-green-100', textColor: 'text-green-600', salaire: '<400K' },
-    destination: 'Natitingou',
-    periode: '05-07 Avr 2026',
-    nb_jours: 3,
-    montant: 45000,
-    statut: 'VALIDE_N1' as StatutMission,
-    avance: { montant: 15000, statut: 'paye' },
-    reliquat: { montant: 30000, statut: 'en_attente' },
-  },
-  {
-    id: 3,
-    numero: 'OM-2026-000791',
-    semo: 'SEMO-4519',
-    agent: { nom: 'DOSSA', prenom: 'Marie', initiales: 'DM', categorie: 'Chef Service', bgColor: 'bg-purple-100', textColor: 'text-purple-600', salaire: '400-800K' },
-    destination: 'Abomey',
-    periode: '10-12 Avr 2026',
-    nb_jours: 3,
-    montant: 88000,
-    statut: 'SOUMIS' as StatutMission,
-    avance: null,
-    reliquat: null,
-  },
-  {
-    id: 4,
-    numero: 'OM-2026-000792',
-    semo: 'SEMO-4520',
-    agent: { nom: 'KONE', prenom: 'Jean', initiales: 'KJ', categorie: 'Agent', bgColor: 'bg-amber-100', textColor: 'text-amber-600', salaire: '<400K' },
-    destination: 'Djougou',
-    periode: '15-16 Avr 2026',
-    nb_jours: 2,
-    montant: 25000,
-    statut: 'BROUILLON' as StatutMission,
-    avance: null,
-    reliquat: null,
-  },
-  {
-    id: 5,
-    numero: 'OM-2026-000793',
-    semo: 'SEMO-4521',
-    agent: { nom: 'SAOSSI', prenom: 'Paterne', initiales: 'SP', categorie: 'Directeur', bgColor: 'bg-red-100', textColor: 'text-red-600', salaire: '>=800K' },
-    destination: 'Bohicon',
-    periode: '08-10 Avr 2026',
-    nb_jours: 3,
-    montant: 75000,
-    statut: 'REJETE' as StatutMission,
-    avance: null,
-    reliquat: null,
-    commentaire_rejet: 'Dates incorrectes',
-  },
-  {
-    id: 6,
-    numero: 'OM-2026-000794',
-    semo: 'SEMO-4522',
-    agent: { nom: 'GBAGUIDI', prenom: 'Flora', initiales: 'GF', categorie: 'Cadre', bgColor: 'bg-teal-100', textColor: 'text-teal-600', salaire: '>=800K' },
-    destination: 'Cotonou',
-    periode: '20-22 Mar 2026',
-    nb_jours: 3,
-    montant: 55000,
-    statut: 'PAYE' as StatutMission,
-    avance: { montant: 18333, statut: 'paye' },
-    reliquat: { montant: 36667, statut: 'paye' },
-  },
-])
-
-const currentPage = ref(1)
-const totalPages = ref(26)
-const totalItems = ref(156)
 
 const deleteModalOpen = ref(false)
 const deleteRef = ref('')
+const deleteId = ref<number | null>(null)
 
-const filteredMissions = computed(() => {
-  return missions.value.filter((m) => {
-    const matchSearch =
-      !searchQuery.value ||
-      m.numero.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      m.semo.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      `${m.agent.nom} ${m.agent.prenom}`.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      m.destination.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchStatus = !filterStatus.value || m.statut === filterStatus.value
-    return matchSearch && matchStatus
-  })
+async function loadMissions() {
+  try {
+    const params: Record<string, string | number> = { page: currentPage.value }
+    if (debouncedQuery.value) params.search = debouncedQuery.value
+    if (filterStatus.value) params.statut = filterStatus.value
+
+    const response = await fetchMissions(params)
+    if (response?.meta) {
+      currentPage.value = response.meta.current_page
+      totalPages.value = response.meta.last_page
+      totalItems.value = response.meta.total
+    }
+
+    computeStats()
+  } catch {
+    // Erreurs gerees par l'intercepteur useApi
+  }
+}
+
+function computeStats() {
+  stats.value = {
+    total: totalItems.value,
+    brouillons: missions.value.filter(m => m.statut === 'BROUILLON').length,
+    en_attente: missions.value.filter(m => m.statut === 'SOUMIS').length,
+    valides: missions.value.filter(m => m.statut === 'VALIDE_N1' || m.statut === 'APPROUVE_DG').length,
+    payes: missions.value.filter(m => m.statut === 'PAYE').length,
+    rejetes: missions.value.filter(m => m.statut === 'REJETE').length,
+  }
+}
+
+// Recharger quand les filtres changent
+watch([debouncedQuery, filterStatus], () => {
+  currentPage.value = 1
+  loadMissions()
 })
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadMissions()
+}
+
+onMounted(loadMissions)
+
+// Helper: construire les initiales depuis l'agent API
+function getInitiales(agent: any): string {
+  if (!agent) return '??'
+  return ((agent.prenom?.[0] || '') + (agent.nom?.[0] || '')).toUpperCase()
+}
+
+// Helper: formater la periode
+function formatPeriode(depart: string, retour: string): string {
+  if (!depart || !retour) return '--'
+  const d = new Date(depart)
+  const r = new Date(retour)
+  const mois = d.toLocaleDateString('fr-FR', { month: 'short' })
+  return `${d.getDate()}-${r.getDate()} ${mois} ${d.getFullYear()}`
+}
 
 function getStatutBadge(statut: StatutMission) {
   switch (statut) {
@@ -149,12 +115,21 @@ function formatMontant(n: number) {
   return new Intl.NumberFormat('fr-FR').format(n)
 }
 
-function confirmDelete(ref: string) {
-  deleteRef.value = ref
+function confirmDelete(numero: string, id: number) {
+  deleteRef.value = numero
+  deleteId.value = id
   deleteModalOpen.value = true
 }
 
-function handleDelete() {
+async function handleDelete() {
+  if (deleteId.value) {
+    try {
+      await api.delete(`/api/ordres/${deleteId.value}`)
+      loadMissions()
+    } catch {
+      // Erreurs gerees par l'intercepteur
+    }
+  }
   deleteModalOpen.value = false
 }
 </script>
@@ -265,7 +240,7 @@ function handleDelete() {
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr
-              v-for="m in filteredMissions"
+              v-for="m in missions"
               :key="m.id"
               class="hover:bg-anatt-50/30 transition-colors"
             >
@@ -276,16 +251,16 @@ function handleDelete() {
                 </router-link>
               </td>
               <td class="px-4 py-3">
-                <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ m.semo }}</span>
+                <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ m.numero }}</span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <div :class="[m.agent.bgColor, m.agent.textColor, 'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-display font-bold']">
-                    {{ m.agent.initiales }}
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-display font-bold bg-anatt-100 text-anatt-600">
+                    {{ m.agent ? getInitiales(m.agent) : '??' }}
                   </div>
                   <div>
-                    <p class="font-display font-medium text-gray-800">{{ m.agent.nom }} {{ m.agent.prenom }}</p>
-                    <p class="text-[11px] font-body text-gray-400">{{ m.agent.categorie }} &bull; {{ m.agent.salaire }}</p>
+                    <p class="font-display font-medium text-gray-800">{{ m.agent ? `${m.agent.nom} ${m.agent.prenom}` : '--' }}</p>
+                    <p class="text-[11px] font-body text-gray-400">{{ m.agent?.categorie || '--' }} &bull; {{ m.agent?.service || '' }}</p>
                   </div>
                 </div>
               </td>
@@ -296,32 +271,28 @@ function handleDelete() {
                 </span>
               </td>
               <td class="px-4 py-3">
-                <span class="text-xs text-gray-600">{{ m.periode }}</span><br />
+                <span class="text-xs text-gray-600">{{ formatPeriode(m.date_depart, m.date_retour) }}</span><br />
                 <span class="text-[10px] text-gray-400">{{ m.nb_jours }} jours</span>
               </td>
-              <td class="px-4 py-3 font-display font-semibold text-gray-800">{{ formatMontant(m.montant) }} F</td>
+              <td class="px-4 py-3 font-display font-semibold text-gray-800">{{ formatMontant(Number(m.montant_per_diem)) }} F</td>
               <td class="px-4 py-3">
-                <template v-if="m.avance">
-                  <div class="space-y-1">
-                    <span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full" :class="m.avance.statut === 'paye' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-600'">
-                      <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                      Avance: {{ formatMontant(m.avance.montant) }}
-                    </span>
-                    <br />
-                    <span v-if="m.reliquat" class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full" :class="m.reliquat.statut === 'paye' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-600'">
-                      <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                      Reliquat: {{ formatMontant(m.reliquat.montant) }}
-                    </span>
-                  </div>
+                <template v-if="m.statut === 'PAYE'">
+                  <span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                    <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    Paye: {{ formatMontant(Number(m.montant_per_diem)) }}
+                  </span>
                 </template>
-                <template v-else-if="m.statut === 'SOUMIS'">
-                  <span class="text-[11px] text-gray-400 italic font-body">En attente de validation</span>
+                <template v-else-if="m.statut === 'APPROUVE_DG'">
+                  <span class="text-[11px] text-anatt-600 font-body">Paiement en attente</span>
+                </template>
+                <template v-else-if="m.statut === 'SOUMIS' || m.statut === 'VALIDE_N1'">
+                  <span class="text-[11px] text-gray-400 italic font-body">En cours de validation</span>
                 </template>
                 <template v-else-if="m.statut === 'BROUILLON'">
                   <span class="text-[11px] text-gray-400 italic font-body">Brouillon</span>
                 </template>
                 <template v-else-if="m.statut === 'REJETE'">
-                  <span class="text-[11px] text-red-500 italic font-body">Motif: {{ (m as any).commentaire_rejet }}</span>
+                  <span class="text-[11px] text-red-500 italic font-body">Motif: {{ m.commentaire_rejet || '--' }}</span>
                 </template>
               </td>
               <td class="px-4 py-3">
@@ -354,7 +325,7 @@ function handleDelete() {
                     v-if="m.statut === 'BROUILLON'"
                     class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"
                     title="Supprimer"
-                    @click="confirmDelete(m.numero)"
+                    @click="confirmDelete(m.numero, m.id)"
                   >
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                   </button>
@@ -373,28 +344,16 @@ function handleDelete() {
         </table>
       </div>
       <!-- Pagination -->
-      <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-        <p class="text-sm font-body text-gray-500">
-          Affichage <span class="font-medium">1-6</span> sur <span class="font-medium">{{ totalItems }}</span>
-        </p>
-        <div class="flex gap-1">
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 cursor-not-allowed">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-anatt-500 text-white text-sm font-display font-medium">1</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-body">2</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-body">3</button>
-          <span class="w-9 h-9 flex items-center justify-center text-gray-400 text-sm">...</span>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-body">{{ totalPages }}</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      </div>
+      <AppPagination
+        :current-page="currentPage"
+        :last-page="totalPages"
+        :total="totalItems"
+        @page-change="handlePageChange"
+      />
     </div>
 
     <!-- Modal suppression -->
-    <AppModal :open="deleteModalOpen" @close="deleteModalOpen = false">
+    <AppModal :show="deleteModalOpen" title="Supprimer cet OM ?" @close="deleteModalOpen = false">
       <div class="text-center">
         <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4">
           <svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
