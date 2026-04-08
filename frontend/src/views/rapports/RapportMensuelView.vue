@@ -1,41 +1,81 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
 
-const selectedMonth = ref('2025-01')
+const api = useApi()
+const loadingData = ref(true)
+const selectedMonth = ref(new Date().toISOString().slice(0, 7))
 
-const kpis = [
-  { label: 'Ordres de Mission', value: '67', trend: '+12% vs Dec.', up: true },
-  { label: 'Personnel en Mission', value: '42', trend: '+8% vs Dec.', up: true },
-  { label: 'Montant Total Paye', value: '14.2M', trend: '-3% vs Dec.', up: false, highlight: true },
-  { label: 'Taux de Paiement', value: '94.3%', trend: '+2.1 pts', up: true, green: true },
-  { label: 'Jours Mission Cumules', value: '312', trend: '+18 jours', up: true },
-]
+// Generer les 6 derniers mois pour le select
+const monthOptions = computed(() => {
+  const opts = []
+  const now = new Date()
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const val = d.toISOString().slice(0, 7)
+    const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    opts.push({ value: val, label: label.charAt(0).toUpperCase() + label.slice(1) })
+  }
+  return opts
+})
 
-const weeklyData = [
-  { label: 'S1', value: 14, height: '65%' },
-  { label: 'S2', value: 19, height: '85%' },
-  { label: 'S3', value: 16, height: '75%' },
-  { label: 'S4', value: 18, height: '95%' },
-]
+const rapportData = ref<any>(null)
 
-const directions = [
-  { name: 'Direction Generale', missions: 8, agents: 5, jours: 42, montant: '3 240 000 F', budget: '22.8%' },
-  { name: 'Direction Technique', missions: 22, agents: 15, jours: 108, montant: '4 860 000 F', budget: '34.2%' },
-  { name: 'Direction Administrative', missions: 18, agents: 12, jours: 86, montant: '3 100 000 F', budget: '21.8%' },
-  { name: 'Direction Financiere', missions: 12, agents: 7, jours: 52, montant: '2 100 000 F', budget: '14.8%' },
-  { name: 'Cellule Informatique', missions: 7, agents: 3, jours: 24, montant: '900 000 F', budget: '6.4%' },
-]
+async function loadRapport() {
+  loadingData.value = true
+  try {
+    const { data } = await api.get(`/api/rapports/mensuel?mois=${selectedMonth.value}`)
+    rapportData.value = data.data || null
+  } catch {
+    rapportData.value = null
+  } finally {
+    loadingData.value = false
+  }
+}
+
+watch(selectedMonth, loadRapport)
+onMounted(loadRapport)
+
+const kpis = computed(() => {
+  const d = rapportData.value
+  if (!d) return []
+  const montant = Number(d.montant_total || 0)
+  return [
+    { label: 'Ordres de Mission', value: String(d.total_missions || 0) },
+    { label: 'Total Paiements', value: String(d.total_paiements || 0) },
+    { label: 'Montant Total', value: montant >= 1000000 ? (montant / 1000000).toFixed(1) + 'M' : montant.toLocaleString('fr-FR'), highlight: true },
+    { label: 'Mois', value: d.mois || '--' },
+  ]
+})
+
+const missionsParStatut = computed(() => {
+  if (!rapportData.value?.missions_par_statut) return []
+  return Object.entries(rapportData.value.missions_par_statut).map(([statut, count]) => ({
+    statut,
+    count: count as number,
+  }))
+})
+
+const paiementsParOperateur = computed(() => {
+  if (!rapportData.value?.paiements_par_operateur) return []
+  return Object.entries(rapportData.value.paiements_par_operateur).map(([op, montant]) => ({
+    operateur: op,
+    montant: Number(montant),
+  }))
+})
+
+const selectedMonthLabel = computed(() => {
+  const opt = monthOptions.value.find(o => o.value === selectedMonth.value)
+  return opt?.label || selectedMonth.value
+})
 </script>
 
 <template>
   <AppLayout title="Rapport Mensuel" subtitle="Synthese des missions et paiements">
     <template #header-actions>
       <select v-model="selectedMonth" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:ring-2 focus:ring-anatt-500/30 outline-none">
-        <option value="2025-02">Fevrier 2025</option>
-        <option value="2025-01">Janvier 2025</option>
-        <option value="2024-12">Decembre 2024</option>
-        <option value="2024-11">Novembre 2024</option>
+        <option v-for="opt in monthOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
       <button class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m0 0a48.103 48.103 0 0112.5 0m-12.5 0V4.875c0-.621.504-1.125 1.125-1.125h9.75c.621 0 1.125.504 1.125 1.125v1.659" /></svg>
@@ -60,36 +100,34 @@ const directions = [
           </div>
         </div>
         <div class="text-right">
-          <p class="text-2xl font-display font-bold text-anatt-700">Janvier 2025</p>
-          <p class="text-xs text-gray-400 font-body">Periode : 01/01/2025 - 31/01/2025</p>
+          <p class="text-2xl font-display font-bold text-anatt-700">{{ selectedMonthLabel }}</p>
+          <p class="text-xs text-gray-400 font-body">Periode : {{ selectedMonth }}</p>
         </div>
       </div>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loadingData" class="flex items-center justify-center py-24">
+      <svg class="w-8 h-8 animate-spin text-anatt-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+    </div>
+
     <!-- KPIs -->
-    <div class="grid grid-cols-5 gap-4 mb-6 animate-fade-up delay-100">
+    <div v-if="!loadingData" class="grid grid-cols-4 gap-4 mb-6 animate-fade-up delay-100">
       <div v-for="kpi in kpis" :key="kpi.label" class="bg-white rounded-2xl border border-gray-100 p-4 text-center">
         <p class="text-xs text-gray-500 font-body mb-1">{{ kpi.label }}</p>
-        <p :class="['text-2xl font-display font-bold', kpi.highlight ? 'text-anatt-700' : kpi.green ? 'text-green-600' : 'text-gray-900']">{{ kpi.value }}</p>
-        <p :class="['text-[10px] font-display font-semibold mt-1', kpi.up ? 'text-green-600' : 'text-red-500']">
-          <svg class="w-3 h-3 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path v-if="kpi.up" stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
-            <path v-else stroke-linecap="round" stroke-linejoin="round" d="M19.5 4.5l-15 15m0 0h11.25m-11.25 0V8.25" />
-          </svg>
-          {{ kpi.trend }}
-        </p>
+        <p :class="['text-2xl font-display font-bold', kpi.highlight ? 'text-anatt-700' : 'text-gray-900']">{{ kpi.value }}</p>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-6 mb-6">
-      <!-- Chart: Missions per Week -->
+    <div v-if="!loadingData" class="grid grid-cols-2 gap-6 mb-6">
+      <!-- Missions par statut -->
       <div class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up delay-100">
         <h3 class="text-sm font-display font-semibold text-gray-700 mb-6">Missions par Semaine</h3>
         <div class="flex items-end justify-between gap-3 h-40">
-          <div v-for="week in weeklyData" :key="week.label" class="flex-1 flex flex-col items-center gap-1">
-            <div class="w-full bg-anatt-500 rounded-t-lg transition-all duration-700" :style="{ height: week.height }"></div>
-            <span class="text-[10px] text-gray-400 font-body">{{ week.label }}</span>
-            <span class="text-xs font-display font-bold text-gray-700">{{ week.value }}</span>
+          <div v-for="item in missionsParStatut" :key="item.statut" class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full bg-anatt-500 rounded-t-lg transition-all duration-700" :style="{ height: (item.count * 20) + '%' }"></div>
+            <span class="text-[10px] text-gray-400 font-body">{{ item.statut }}</span>
+            <span class="text-xs font-display font-bold text-gray-700">{{ item.count }}</span>
           </div>
         </div>
       </div>
@@ -106,14 +144,14 @@ const directions = [
             </svg>
           </div>
           <div class="space-y-4 flex-1">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span><span class="text-sm font-body font-medium text-gray-700">MTN MoMo</span></div>
-              <div class="text-right"><p class="text-sm font-display font-bold text-gray-800">8 736 000 F</p><p class="text-[10px] text-gray-400 font-body">65% - 38 transactions</p></div>
+            <div v-for="op in paiementsParOperateur" :key="op.operateur" class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span :class="op.operateur === 'MTN' ? 'bg-yellow-400' : 'bg-blue-500'" class="w-3 h-3 rounded-full"></span>
+                <span class="text-sm font-body font-medium text-gray-700">{{ op.operateur === 'MTN' ? 'MTN MoMo' : 'MOOV Flooz' }}</span>
+              </div>
+              <div class="text-right"><p class="text-sm font-display font-bold text-gray-800">{{ op.montant.toLocaleString('fr-FR') }} F</p></div>
             </div>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-500 rounded-full"></span><span class="text-sm font-body font-medium text-gray-700">MOOV Flooz</span></div>
-              <div class="text-right"><p class="text-sm font-display font-bold text-gray-800">5 464 000 F</p><p class="text-[10px] text-gray-400 font-body">35% - 29 transactions</p></div>
-            </div>
+            <div v-if="paiementsParOperateur.length === 0" class="text-center text-sm text-gray-400 font-body py-4">Aucun paiement ce mois</div>
           </div>
         </div>
       </div>
@@ -124,29 +162,21 @@ const directions = [
       <div class="px-6 py-4 border-b border-gray-100"><h3 class="text-sm font-display font-semibold text-gray-700">Repartition par Direction</h3></div>
       <table class="w-full">
         <thead><tr class="bg-gray-50 border-b border-gray-100">
-          <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Direction</th>
-          <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Missions</th>
-          <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Agents</th>
-          <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Jours</th>
-          <th class="text-right px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Montant</th>
-          <th class="text-right px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">% Budget</th>
+          <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Statut</th>
+          <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Nombre</th>
         </tr></thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="dir in directions" :key="dir.name" class="hover:bg-anatt-50/30 transition-colors">
-            <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ dir.name }}</td>
-            <td class="px-5 py-3 text-center text-sm font-body">{{ dir.missions }}</td>
-            <td class="px-5 py-3 text-center text-sm font-body">{{ dir.agents }}</td>
-            <td class="px-5 py-3 text-center text-sm font-body">{{ dir.jours }}</td>
-            <td class="px-5 py-3 text-right text-sm font-display font-semibold">{{ dir.montant }}</td>
-            <td class="px-5 py-3 text-right"><span class="text-sm font-display font-bold text-anatt-700">{{ dir.budget }}</span></td>
+          <tr v-for="item in missionsParStatut" :key="item.statut" class="hover:bg-anatt-50/30 transition-colors">
+            <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ item.statut }}</td>
+            <td class="px-5 py-3 text-center text-sm font-display font-bold">{{ item.count }}</td>
+          </tr>
+          <tr v-if="missionsParStatut.length === 0">
+            <td colspan="2" class="px-5 py-8 text-center text-sm text-gray-400 font-body">Aucune mission ce mois</td>
           </tr>
         </tbody>
         <tfoot><tr class="bg-anatt-50 border-t-2 border-anatt-200">
           <td class="px-5 py-3 text-sm font-display font-bold text-anatt-800">TOTAL</td>
-          <td class="px-5 py-3 text-center text-sm font-display font-bold text-anatt-800">67</td>
-          <td class="px-5 py-3 text-center text-sm font-display font-bold text-anatt-800">42</td>
-          <td class="px-5 py-3 text-center text-sm font-display font-bold text-anatt-800">312</td>
-          <td class="px-5 py-3 text-right text-sm font-display font-bold text-anatt-800">14 200 000 F</td>
+          <td class="px-5 py-3 text-center text-sm font-display font-bold text-anatt-800">{{ rapportData?.total_missions || 0 }}</td>
           <td class="px-5 py-3 text-right text-sm font-display font-bold text-anatt-800">100%</td>
         </tr></tfoot>
       </table>
