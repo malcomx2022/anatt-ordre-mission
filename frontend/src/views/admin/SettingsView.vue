@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
+
+const api = useApi()
+const { success: toastSuccess } = useToast()
+const loadingData = ref(true)
+const saving = ref(false)
 
 const appName = ref('Systeme de Paiement des Missions - ANaTT')
-const appVersion = ref('2.1.0')
-const fiscalYear = ref('2025')
+const appVersion = ref('1.0.0')
+const fiscalYear = ref('2026')
 const currency = ref('FCFA (XOF)')
 const timezone = ref('Africa/Porto-Novo (UTC+1)')
 const batchSize = ref(100)
@@ -20,11 +27,11 @@ const logConnections = ref(true)
 const maintenanceMode = ref(false)
 
 const notifications = ref([
-  { label: 'Nouvel ordre de mission', description: 'Notifier les validateurs', enabled: true },
-  { label: 'Validation effectuee', description: 'Notifier le createur de l\'OM', enabled: true },
-  { label: 'Paiement effectue', description: 'Notifier l\'agent par SMS', enabled: true },
-  { label: 'Echec de paiement', description: 'Alerter les administrateurs', enabled: true },
-  { label: 'Rapport mensuel auto', description: 'Generer et envoyer le 1er de chaque mois', enabled: false },
+  { key: 'mission_soumise', label: 'Nouvel ordre de mission', description: 'Notifier les validateurs', enabled: true },
+  { key: 'mission_validee', label: 'Validation effectuee', description: 'Notifier le createur de l\'OM', enabled: true },
+  { key: 'paiement_effectue', label: 'Paiement effectue', description: 'Notifier l\'agent', enabled: true },
+  { key: 'paiement_echec', label: 'Echec de paiement', description: 'Alerter les administrateurs', enabled: true },
+  { key: 'rapport_mensuel', label: 'Rapport mensuel auto', description: 'Generer et envoyer le 1er de chaque mois', enabled: false },
 ])
 
 const activeSection = ref('general')
@@ -35,14 +42,72 @@ const sections = [
   { id: 'securite', label: 'Securite', icon: 'shield' },
   { id: 'maintenance', label: 'Maintenance', icon: 'wrench' },
 ]
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/api/admin/settings')
+    const s = data.data || {}
+    if (s.appName) appName.value = s.appName
+    if (s.appVersion) appVersion.value = s.appVersion
+    if (s.fiscalYear) fiscalYear.value = s.fiscalYear
+    if (s.batchSize) batchSize.value = s.batchSize
+    if (s.reconciliationDays) reconciliationDays.value = s.reconciliationDays
+    if (s.sessionDuration) sessionDuration.value = s.sessionDuration
+    if (s.maxLoginAttempts) maxLoginAttempts.value = s.maxLoginAttempts
+    if (s.mtnEnabled !== undefined) mtnEnabled.value = s.mtnEnabled
+    if (s.moovEnabled !== undefined) moovEnabled.value = s.moovEnabled
+    if (s.doubleValidation !== undefined) doubleValidation.value = s.doubleValidation
+    if (s.forceHttps !== undefined) forceHttps.value = s.forceHttps
+    if (s.logConnections !== undefined) logConnections.value = s.logConnections
+    if (s.maintenanceMode !== undefined) maintenanceMode.value = s.maintenanceMode
+    if (s.notifications) {
+      for (const n of s.notifications) {
+        const found = notifications.value.find(x => x.key === n.key)
+        if (found) found.enabled = n.enabled
+      }
+    }
+  } catch {
+    // Premier chargement, pas de settings existants
+  } finally {
+    loadingData.value = false
+  }
+})
+
+async function saveAll() {
+  saving.value = true
+  try {
+    await api.put('/api/admin/settings', {
+      appName: appName.value,
+      appVersion: appVersion.value,
+      fiscalYear: fiscalYear.value,
+      batchSize: batchSize.value,
+      reconciliationDays: reconciliationDays.value,
+      sessionDuration: sessionDuration.value,
+      maxLoginAttempts: maxLoginAttempts.value,
+      mtnEnabled: mtnEnabled.value,
+      moovEnabled: moovEnabled.value,
+      doubleValidation: doubleValidation.value,
+      forceHttps: forceHttps.value,
+      logConnections: logConnections.value,
+      maintenanceMode: maintenanceMode.value,
+      notifications: notifications.value.map(n => ({ key: n.key, enabled: n.enabled })),
+    })
+    toastSuccess('Parametres enregistres avec succes.')
+  } catch {
+    // Geree par useApi
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
   <AppLayout title="Parametres du Systeme" subtitle="Configuration generale de l'application">
     <template #header-actions>
-      <button class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
-        Enregistrer tout
+      <button :disabled="saving" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-60" @click="saveAll">
+        <svg v-if="saving" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+        {{ saving ? 'Enregistrement...' : 'Enregistrer tout' }}
       </button>
     </template>
 

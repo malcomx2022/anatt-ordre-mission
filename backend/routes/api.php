@@ -123,6 +123,18 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             $user->delete();
             return response()->json(['message' => 'Utilisateur supprime.']);
         });
+
+        // Settings (stockage fichier JSON)
+        Route::get('settings', function () {
+            $path = storage_path('app/settings.json');
+            $settings = file_exists($path) ? json_decode(file_get_contents($path), true) : [];
+            return response()->json(['data' => $settings]);
+        });
+        Route::put('settings', function (\Illuminate\Http\Request $request) {
+            $path = storage_path('app/settings.json');
+            file_put_contents($path, json_encode($request->all(), JSON_PRETTY_PRINT));
+            return response()->json(['data' => $request->all(), 'message' => 'Parametres enregistres.']);
+        });
     });
 
     // Audit - DIRECTEUR uniquement
