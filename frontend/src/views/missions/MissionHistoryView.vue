@@ -1,28 +1,102 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
+import { useApi } from '@/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
+const api = useApi()
+const loading = ref(true)
+const missionNumero = ref('')
 
-const events = ref([
-  { action: 'Creation de l\'ordre de mission', user: 'Gislain AHOUANSOU', role: 'ADMIN', date: '07/04/2026 10:30:15', ip: '192.168.1.100', details: 'Statut: BROUILLON' },
-  { action: 'Modification des dates', user: 'Gislain AHOUANSOU', role: 'ADMIN', date: '07/04/2026 10:45:22', ip: '192.168.1.100', details: 'Date retour changee: 12/04 -> 14/04' },
-  { action: 'Soumission pour validation', user: 'Gislain AHOUANSOU', role: 'ADMIN', date: '07/04/2026 11:00:05', ip: '192.168.1.100', details: 'Statut: BROUILLON -> SOUMIS' },
-  { action: 'Validation chef de service', user: 'Marie DOSSOU', role: 'CHEF_SERVICE', date: '07/04/2026 14:20:33', ip: '192.168.1.105', details: 'Statut: SOUMIS -> VALIDE_N1' },
-])
+interface HistoryEvent {
+  action: string
+  user: string
+  role: string
+  date: string
+  ip: string
+  details: string
+}
+
+const events = ref<HistoryEvent[]>([])
+
+onMounted(async () => {
+  try {
+    const [historiqueRes, missionRes] = await Promise.all([
+      api.get(`/api/ordres/${route.params.id}/historique`),
+      api.get(`/api/ordres/${route.params.id}`),
+    ])
+
+    missionNumero.value = missionRes.data.data?.numero || `OM-${route.params.id}`
+
+    const logs = historiqueRes.data.data || []
+    events.value = logs.map((log: any) => ({
+      action: formatAction(log.action),
+      user: log.user?.name || '--',
+      role: log.user?.role || '--',
+      date: formatDate(log.created_at),
+      ip: log.ip_address || '--',
+      details: formatDetails(log.action, log.details),
+    }))
+  } catch {
+    // Geree par useApi
+  } finally {
+    loading.value = false
+  }
+})
+
+function formatAction(action: string): string {
+  const map: Record<string, string> = {
+    CREATE_ORDRE_MISSION: 'Creation de l\'ordre de mission',
+    SUBMIT_ORDRE_MISSION: 'Soumission pour validation',
+    VALIDATE_N1: 'Validation chef de service',
+    APPROVE_DG: 'Approbation Direction Generale',
+    REJECT_ORDRE_MISSION: 'Rejet de l\'ordre de mission',
+    GENERATE_PAYMENT: 'Generation du paiement',
+    UPDATE_ORDRE_MISSION: 'Modification de l\'ordre',
+  }
+  return map[action] || action
+}
+
+function formatDetails(action: string, details: any): string {
+  if (!details) return ''
+  if (typeof details === 'string') return details
+  if (details.statut) return `Statut: ${details.statut}`
+  if (details.numero) return `Reference: ${details.numero}`
+  return JSON.stringify(details)
+}
+
+function formatDate(iso: string): string {
+  if (!iso) return '--'
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  })
+}
 </script>
 
 <template>
-  <AppLayout title="Historique des actions" subtitle="OM-2026-0042">
+  <AppLayout title="Historique des actions" :subtitle="missionNumero">
     <template #header-actions>
       <AppButton variant="outline" @click="router.push(`/ordres/${route.params.id}`)">Retour au detail</AppButton>
     </template>
 
     <div class="max-w-3xl">
-      <div class="bg-white rounded-2xl border border-gray-100 p-6">
+      <!-- Loading -->
+      <div v-if="loading" class="flex items-center justify-center py-24">
+        <svg class="w-8 h-8 animate-spin text-anatt-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else-if="events.length === 0" class="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <p class="text-sm font-body text-gray-400">Aucun historique disponible pour cet ordre de mission.</p>
+      </div>
+
+      <!-- Timeline -->
+      <div v-else class="bg-white rounded-2xl border border-gray-100 p-6">
         <div class="space-y-0">
           <div v-for="(event, i) in events" :key="i" class="flex gap-4">
             <div class="flex flex-col items-center">
