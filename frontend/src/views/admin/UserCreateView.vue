@@ -3,9 +3,13 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
+import { useApi, getValidationErrors } from '@/composables/useApi'
 
 const router = useRouter()
+const api = useApi()
 const loading = ref(false)
+const errors = ref<Record<string, string[]>>({})
+const showSuccess = ref(false)
 
 const form = ref({
   nom: '',
@@ -55,10 +59,20 @@ function generatePassword() {
 
 async function handleSubmit() {
   loading.value = true
-  setTimeout(() => {
+  errors.value = {}
+  try {
+    await api.post('/api/admin/users', {
+      name: `${form.value.prenom} ${form.value.nom}`.trim(),
+      email: form.value.email,
+      password: form.value.password,
+      role: form.value.role,
+    })
+    showSuccess.value = true
+  } catch (e) {
+    errors.value = getValidationErrors(e)
+  } finally {
     loading.value = false
-    router.push('/admin/utilisateurs')
-  }, 1500)
+  }
 }
 </script>
 
@@ -72,6 +86,14 @@ async function handleSubmit() {
     </template>
 
     <div class="max-w-3xl mx-auto space-y-6">
+      <!-- Erreurs globales -->
+      <div v-if="Object.keys(errors).length > 0" class="bg-red-50 border border-red-200 rounded-xl p-4">
+        <p class="text-sm font-display font-semibold text-red-800 mb-2">Erreurs de validation</p>
+        <ul class="text-xs text-red-700 font-body space-y-1">
+          <li v-for="(msgs, field) in errors" :key="field">{{ field }}: {{ msgs[0] }}</li>
+        </ul>
+      </div>
+
       <!-- Informations personnelles -->
       <div class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up">
         <h3 class="text-base font-display font-bold text-gray-800 mb-5 flex items-center gap-2">
@@ -89,7 +111,8 @@ async function handleSubmit() {
           </div>
           <div>
             <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Email professionnel <span class="text-red-500">*</span></label>
-            <input v-model="form.email" type="email" placeholder="prenom.nom@anatt.bj" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
+            <input v-model="form.email" type="email" placeholder="prenom.nom@anatt.bj" class="w-full px-4 py-2.5 border rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all" :class="errors.email ? 'border-red-300' : 'border-gray-200'">
+            <p v-if="errors.email" class="text-xs text-red-500 mt-1">{{ errors.email[0] }}</p>
           </div>
           <div>
             <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Telephone</label>
@@ -188,5 +211,22 @@ async function handleSubmit() {
         </div>
       </div>
     </div>
+
+    <!-- Modal succes -->
+    <teleport to="body">
+      <div v-if="showSuccess" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl text-center">
+          <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Utilisateur cree !</h3>
+          <p class="text-sm font-body text-gray-500 mb-6">Le compte a ete cree avec succes.</p>
+          <div class="flex gap-3">
+            <button class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50" @click="router.push('/admin/utilisateurs')">Liste</button>
+            <button class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600" @click="showSuccess = false; form = { nom: '', prenom: '', email: '', telephone: '', direction: '', fonction: '', role: '', password: '', forceChange: true, sendEmail: true, activateNow: true }">Creer un autre</button>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </AppLayout>
 </template>
