@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
+import { getErrorMessage } from '@/composables/useApi'
 import AppLogo from '@/components/shared/AppLogo.vue'
 
 const router = useRouter()
-const auth = useAuthStore()
+const route = useRoute()
+const { login, fetchUser } = useAuth()
 
 const email = ref('')
 const password = ref('')
@@ -18,10 +20,12 @@ async function handleLogin() {
   loading.value = true
   errorMsg.value = ''
   try {
-    await auth.login(email.value, password.value)
-    router.push('/')
-  } catch (e: any) {
-    errorMsg.value = e.response?.data?.message || 'Identifiants incorrects.'
+    await login(email.value, password.value)
+    await fetchUser()
+    const redirect = (route.query.redirect as string) || '/'
+    router.push(redirect)
+  } catch (e: unknown) {
+    errorMsg.value = getErrorMessage(e)
   } finally {
     loading.value = false
   }
