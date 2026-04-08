@@ -40,12 +40,9 @@ const transports = [
 // Agents charges depuis l'API
 const agentsDB = ref<any[]>([])
 
-// Taux per diem charges depuis l'API (fallback hardcode)
-const tauxParCategorie = ref<Record<string, { repas1: number; repas2: number; nuitee: number }>>({
-  '>=800K': { repas1: 15000, repas2: 25000, nuitee: 45000 },
-  '400-800K': { repas1: 12000, repas2: 20000, nuitee: 35000 },
-  '<400K': { repas1: 10000, repas2: 15000, nuitee: 30000 },
-})
+// Taux per diem charges depuis l'API
+const tauxParCategorie = ref<Record<string, { id: number; repas1: number; repas2: number; nuitee: number }>>({})
+const tauxList = ref<any[]>([])
 
 const colors = ['blue', 'green', 'amber', 'indigo', 'pink', 'purple', 'cyan', 'rose', 'teal', 'orange']
 
@@ -68,20 +65,26 @@ onMounted(async () => {
       telephone: a.telephone || '',
     }))
 
-    // Construire tauxParCategorie depuis l'API si disponible
-    const tauxData = tauxRes.data.data || []
-    if (tauxData.length > 0) {
+    // Stocker les taux bruts pour le submit
+    tauxList.value = tauxRes.data.data || []
+
+    // Construire tauxParCategorie depuis l'API
+    if (tauxList.value.length > 0) {
       const built: Record<string, any> = {}
-      for (const t of tauxData) {
-        if (!built[t.categorie]) built[t.categorie] = { repas1: 0, repas2: 0, nuitee: 0 }
-        built[t.categorie].repas1 = t.montant_journalier
-        built[t.categorie].repas2 = Math.round(t.montant_journalier * 1.6)
-        built[t.categorie].nuitee = Math.round(t.montant_journalier * 3)
+      for (const t of tauxList.value) {
+        if (!built[t.categorie]) {
+          built[t.categorie] = {
+            id: t.id,
+            repas1: t.montant_journalier,
+            repas2: Math.round(t.montant_journalier * 1.6),
+            nuitee: Math.round(t.montant_journalier * 3),
+          }
+        }
       }
-      if (Object.keys(built).length > 0) tauxParCategorie.value = built
+      tauxParCategorie.value = built
     }
   } catch {
-    // Fallback: donnees statiques deja presentes
+    // Fallback: aucun agent/taux charge
   } finally {
     loadingData.value = false
   }
@@ -123,7 +126,7 @@ const filteredAgents = computed(() => {
 })
 
 function getTaux(categorie: string) {
-  return tauxParCategorie.value[categorie] || Object.values(tauxParCategorie.value)[0] || { repas1: 10000, repas2: 15000, nuitee: 30000 }
+  return tauxParCategorie.value[categorie] || Object.values(tauxParCategorie.value)[0] || { id: 0, repas1: 10000, repas2: 15000, nuitee: 30000 }
 }
 
 function beneficiaireTotal(b: Beneficiaire): number {
@@ -175,15 +178,29 @@ function formatMontant(val: number): string {
 async function handleSubmit() {
   loading.value = true
   try {
-    const taux = tauxParCategorie.value[beneficiaires.value[0]?.categorie]
-    await api.post('/api/ordres', {
-      agent_id: beneficiaires.value[0]?.id,
-      objet: form.value.objet,
-      destination: form.value.destination,
-      date_depart: form.value.date_depart,
-      date_retour: form.value.date_retour,
-      taux_id: 1,
-    })
+    // Trouver le taux_id correspondant a la categorie du premier beneficiaire
+    const firstBenef = beneficiaires.value[0]
+    const categorieTaux = tauxParCategorie.value[firstBenef?.categorie]
+    const tauxId = categorieTaux?.id || tauxList.value[0]?.id
+
+    if (!tauxId) {
+      loading.value = false
+      return
+    }
+
+    // Creer un OM par beneficiaire
+    for (const beneficiaire of beneficiaires.value) {
+      const bt = tauxParCategorie.value[beneficiaire.categorie]
+      await api.post('/api/ordres', {
+        agent_id: beneficiaire.id,
+        objet: form.value.objet,
+        destination: form.value.destination,
+        date_depart: form.value.date_depart,
+        date_retour: form.value.date_retour,
+        taux_id: bt?.id || tauxId,
+      })
+    }
+
     showSuccessModal.value = true
   } catch {
     // Erreurs gerees par l'intercepteur useApi
