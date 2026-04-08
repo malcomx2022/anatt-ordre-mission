@@ -1,27 +1,81 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import AppPagination from '@/components/shared/AppPagination.vue'
+import { useApi } from '@/composables/useApi'
+import { useSearch } from '@/composables/useSearch'
+import type { User, UserRole } from '@/types'
 
-const searchQuery = ref('')
+const api = useApi()
+const { query: searchQuery, debouncedQuery } = useSearch(300)
 const roleFilter = ref('')
-const statusFilter = ref('')
+const loading = ref(true)
+const users = ref<User[]>([])
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
 
-const stats = [
-  { label: 'Utilisateurs total', value: '8', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { label: 'En ligne actuellement', value: '5', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  { label: 'Inactifs (30+ jours)', value: '2', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
-  { label: 'Comptes desactives', value: '1', iconBg: 'bg-red-100', iconColor: 'text-red-600' },
-]
+const stats = computed(() => [
+  { label: 'Utilisateurs total', value: String(totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { label: 'ADMIN', value: String(users.value.filter(u => u.role === 'ADMIN').length), iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  { label: 'CHEF_SERVICE', value: String(users.value.filter(u => u.role === 'CHEF_SERVICE').length), iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { label: 'AGENT', value: String(users.value.filter(u => u.role === 'AGENT').length), iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+])
 
-const users = [
-  { initials: 'GA', name: 'Gislain ADJAHO', email: 'gislain.adjaho@anatt.bj', role: 'Super Admin', roleBg: 'bg-red-100', roleColor: 'text-red-700', status: 'En ligne', statusColor: 'text-green-600', statusDot: 'bg-green-500', lastLogin: 'Maintenant', ip: '192.168.1.45', actions30d: 458, pct: 92, gradient: 'from-anatt-500 to-anatt-700', online: true, disabled: false },
-  { initials: 'MD', name: 'Marie DOSSA', email: 'marie.dossa@anatt.bj', role: 'Administrateur', roleBg: 'bg-blue-100', roleColor: 'text-blue-700', status: 'En ligne', statusColor: 'text-green-600', statusDot: 'bg-green-500', lastLogin: 'Il y a 12 min', ip: '192.168.1.22', actions30d: 312, pct: 78, gradient: 'from-purple-400 to-purple-600', online: true, disabled: false },
-  { initials: 'PA', name: 'Pierre ADJOVI', email: 'pierre.adjovi@anatt.bj', role: 'Validateur', roleBg: 'bg-green-100', roleColor: 'text-green-700', status: 'En ligne', statusColor: 'text-green-600', statusDot: 'bg-green-500', lastLogin: 'Il y a 1h', ip: '192.168.1.18', actions30d: 178, pct: 45, gradient: 'from-blue-400 to-blue-600', online: true, disabled: false },
-  { initials: 'JK', name: 'Jean-Baptiste KONE', email: 'jb.kone@anatt.bj', role: 'Gestionnaire', roleBg: 'bg-amber-100', roleColor: 'text-amber-700', status: 'En ligne', statusColor: 'text-green-600', statusDot: 'bg-green-500', lastLogin: 'Il y a 25 min', ip: '192.168.1.30', actions30d: 267, pct: 65, gradient: 'from-amber-400 to-amber-600', online: true, disabled: false },
-  { initials: 'SP', name: 'Paterne SAOSSI', email: 'paterne.saossi@anatt.bj', role: 'Gestionnaire', roleBg: 'bg-amber-100', roleColor: 'text-amber-700', status: 'Hors ligne', statusColor: 'text-gray-500', statusDot: 'bg-gray-400', lastLogin: 'Hier, 17:30', ip: '192.168.1.55', actions30d: 142, pct: 35, gradient: 'from-cyan-400 to-cyan-600', online: false, disabled: false },
-  { initials: 'FK', name: 'Fatima KOUKOUI', email: 'fatima.koukoui@anatt.bj', role: 'Lecteur', roleBg: 'bg-gray-100', roleColor: 'text-gray-600', status: 'Inactif', statusColor: 'text-amber-600', statusDot: 'bg-amber-500', lastLogin: '12/12/2024', ip: '192.168.1.67', actions30d: 8, pct: 5, gradient: 'from-pink-400 to-pink-600', online: false, disabled: false },
-  { initials: 'AH', name: 'Arnaud HOUNTON', email: 'arnaud.hounton@anatt.bj', role: 'Gestionnaire', roleBg: 'bg-gray-100', roleColor: 'text-gray-500', status: 'Desactive', statusColor: 'text-red-500', statusDot: 'bg-red-500', lastLogin: '05/11/2024', ip: '-', actions30d: 0, pct: 0, gradient: 'from-gray-300 to-gray-400', online: false, disabled: true },
-]
+async function loadUsers() {
+  loading.value = true
+  try {
+    const params: Record<string, string | number> = { page: currentPage.value }
+    if (debouncedQuery.value) params.search = debouncedQuery.value
+    if (roleFilter.value) params.role = roleFilter.value
+
+    const { data } = await api.get('/api/admin/users', { params })
+    users.value = data.data || []
+    if (data.meta) {
+      currentPage.value = data.meta.current_page
+      totalPages.value = data.meta.last_page
+      totalItems.value = data.meta.total
+    }
+  } catch {
+    // Geree par useApi
+  } finally {
+    loading.value = false
+  }
+}
+
+watch([debouncedQuery, roleFilter], () => {
+  currentPage.value = 1
+  loadUsers()
+})
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadUsers()
+}
+
+onMounted(loadUsers)
+
+const roleConfig: Record<string, { bg: string; color: string }> = {
+  ADMIN: { bg: 'bg-red-100', color: 'text-red-700' },
+  DIRECTEUR: { bg: 'bg-purple-100', color: 'text-purple-700' },
+  CHEF_SERVICE: { bg: 'bg-green-100', color: 'text-green-700' },
+  DRH: { bg: 'bg-blue-100', color: 'text-blue-700' },
+  AGENT: { bg: 'bg-gray-100', color: 'text-gray-600' },
+}
+
+function getInitials(name: string): string {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+async function deleteUser(user: User) {
+  if (!confirm(`Supprimer ${user.name} ?`)) return
+  try {
+    await api.delete(`/api/admin/users/${user.id}`)
+    loadUsers()
+  } catch {
+    // Geree par useApi
+  }
+}
 </script>
 
 <template>
@@ -55,11 +109,11 @@ const users = [
         </div>
         <select v-model="roleFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
           <option value="">Tous les roles</option>
-          <option>Super Admin</option><option>Administrateur</option><option>Validateur</option><option>Gestionnaire</option><option>Lecteur</option>
-        </select>
-        <select v-model="statusFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
-          <option value="">Tous les statuts</option>
-          <option>Actif</option><option>Inactif</option><option>Desactive</option>
+          <option value="ADMIN">ADMIN</option>
+          <option value="DIRECTEUR">DIRECTEUR</option>
+          <option value="CHEF_SERVICE">CHEF_SERVICE</option>
+          <option value="DRH">DRH</option>
+          <option value="AGENT">AGENT</option>
         </select>
       </div>
     </div>
@@ -78,53 +132,52 @@ const users = [
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="user in users" :key="user.email" class="group" :class="user.disabled ? 'opacity-50' : ''">
+          <tr v-if="loading">
+            <td colspan="6" class="px-5 py-12 text-center">
+              <svg class="w-8 h-8 animate-spin text-anatt-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            </td>
+          </tr>
+          <tr v-else-if="users.length === 0">
+            <td colspan="6" class="px-5 py-12 text-center text-sm text-gray-400 font-body">Aucun utilisateur trouve.</td>
+          </tr>
+          <tr v-for="u in users" :key="u.id" class="group hover:bg-anatt-50/30 transition-colors">
             <td class="px-5 py-4">
               <div class="flex items-center gap-3">
-                <div class="relative">
-                  <div :class="['w-10 h-10 bg-gradient-to-br rounded-xl flex items-center justify-center text-white text-sm font-display font-bold', user.gradient]">{{ user.initials }}</div>
-                  <div v-if="user.online" class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                </div>
+                <div class="w-10 h-10 bg-anatt-100 rounded-xl flex items-center justify-center text-anatt-600 text-sm font-display font-bold">{{ getInitials(u.name) }}</div>
                 <div>
-                  <p class="text-sm font-display font-semibold text-gray-800">{{ user.name }}</p>
-                  <p class="text-[11px] text-gray-400 font-body">{{ user.email }}</p>
+                  <p class="text-sm font-display font-semibold text-gray-800">{{ u.name }}</p>
+                  <p class="text-[11px] text-gray-400 font-body">{{ u.email }}</p>
                 </div>
               </div>
             </td>
-            <td class="px-5 py-4"><span :class="[user.roleBg, user.roleColor, 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']">{{ user.role }}</span></td>
             <td class="px-5 py-4">
-              <span :class="[user.statusColor, 'flex items-center gap-1.5 text-sm font-body']">
-                <span :class="[user.statusDot, 'w-2 h-2 rounded-full']"></span>{{ user.status }}
-              </span>
+              <span :class="[roleConfig[u.role]?.bg || 'bg-gray-100', roleConfig[u.role]?.color || 'text-gray-600', 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']">{{ u.role }}</span>
             </td>
             <td class="px-5 py-4">
-              <p class="text-sm font-body text-gray-700">{{ user.lastLogin }}</p>
-              <p class="text-[11px] text-gray-400 font-body">{{ user.ip }}</p>
+              <span class="text-sm font-body text-gray-600">{{ u.role }}</span>
             </td>
             <td class="px-5 py-4">
-              <div class="flex items-center gap-2">
-                <div class="flex-1 bg-gray-200 rounded-full h-1.5">
-                  <div class="bg-anatt-500 h-1.5 rounded-full" :style="{ width: user.pct + '%' }"></div>
-                </div>
-                <span class="text-xs font-display font-semibold text-gray-600">{{ user.actions30d }}</span>
-              </div>
+              <p class="text-sm font-body text-gray-500">{{ u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '--' }}</p>
+            </td>
+            <td class="px-5 py-4">
+              <span class="text-xs font-display text-gray-500">--</span>
             </td>
             <td class="px-5 py-4 text-center">
               <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
-                </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                </button>
-                <button v-if="!user.disabled && user.role !== 'Super Admin'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                <button v-if="u.role !== 'ADMIN'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500" @click="deleteUser(u)">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                 </button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
+      <AppPagination
+        :current-page="currentPage"
+        :last-page="totalPages"
+        :total="totalItems"
+        @page-change="handlePageChange"
+      />
     </div>
   </AppLayout>
 </template>

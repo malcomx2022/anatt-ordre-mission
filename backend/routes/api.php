@@ -85,6 +85,26 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('rapports/export/download', [RapportController::class, 'exportDownload']);
     });
 
+    // Admin - Gestion utilisateurs
+    Route::middleware('role:ADMIN')->prefix('admin')->group(function () {
+        Route::get('users', function (\Illuminate\Http\Request $request) {
+            $query = \App\Models\User::query();
+            if ($search = $request->get('search')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            if ($role = $request->get('role')) {
+                $query->where('role', $role);
+            }
+            return response()->json($query->orderBy('name')->paginate($request->integer('per_page', 15)));
+        });
+        Route::delete('users/{user}', function (\App\Models\User $user) {
+            $user->delete();
+            return response()->json(['message' => 'Utilisateur supprime.']);
+        });
+    });
+
     // Audit - DIRECTEUR uniquement
     Route::middleware('role:DIRECTEUR')->group(function () {
         Route::get('audit', [AuditController::class, 'index']);
