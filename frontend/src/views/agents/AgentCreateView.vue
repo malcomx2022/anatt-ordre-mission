@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
-import type { AgentFormData } from '@/types'
+import { useApi } from '@/composables/useApi'
+import { getValidationErrors } from '@/composables/useApi'
 
 const router = useRouter()
+const api = useApi()
 
-const form = ref<AgentFormData & { grade: string; salaire: number | null; operateur: string; statut: string }>({
+const form = ref({
   matricule: '',
   nom: '',
   prenom: '',
@@ -15,37 +17,46 @@ const form = ref<AgentFormData & { grade: string; salaire: number | null; operat
   numero_mtn: '',
   numero_moov: '',
   service: '',
-  categorie: 'C',
-  grade: '',
-  salaire: null,
-  operateur: '',
-  statut: 'Actif'
+  categorie: 'C' as 'A1' | 'A2' | 'B' | 'C' | 'D',
 })
 
+const loading = ref(false)
 const showSuccessModal = ref(false)
+const errors = ref<Record<string, string[]>>({})
+const createdAgentId = ref<number | null>(null)
 
-const categorieDisplay = computed(() => {
-  const s = form.value.salaire || 0
-  if (s === 0) return { text: 'Calcule automatiquement', class: 'bg-gray-50 border-gray-200 text-gray-500' }
-  if (s < 400000) return { text: '< 400 000 FCFA', class: 'bg-blue-50 border-blue-200 text-blue-700 font-medium' }
-  if (s < 800000) return { text: '400 000 - 800 000 FCFA', class: 'bg-amber-50 border-amber-200 text-amber-700 font-medium' }
-  return { text: '>= 800 000 FCFA', class: 'bg-green-50 border-green-200 text-green-700 font-medium' }
-})
-
-function handleSave() {
-  showSuccessModal.value = true
+async function handleSave() {
+  loading.value = true
+  errors.value = {}
+  try {
+    const { data } = await api.post('/api/agents', form.value)
+    createdAgentId.value = data.data?.id || null
+    showSuccessModal.value = true
+  } catch (e) {
+    errors.value = getValidationErrors(e)
+  } finally {
+    loading.value = false
+  }
 }
 
 function goToList() {
   router.push('/agents')
 }
 
+function goToDetail() {
+  if (createdAgentId.value) {
+    router.push(`/agents/${createdAgentId.value}`)
+  } else {
+    router.push('/agents')
+  }
+}
+
 function resetForm() {
   form.value = {
     matricule: '', nom: '', prenom: '', email: '', telephone: '',
     numero_mtn: '', numero_moov: '', service: '', categorie: 'C',
-    grade: '', salaire: null, operateur: '', statut: 'Actif'
   }
+  errors.value = {}
   showSuccessModal.value = false
 }
 </script>
@@ -81,24 +92,20 @@ function resetForm() {
                 required
                 class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500 focus:ring-2 focus:ring-anatt-500/20"
               >
+              <p v-if="errors.matricule" class="text-xs text-red-500 mt-1">{{ errors.matricule[0] }}</p>
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
-                Grade <span class="text-red-500">*</span>
+                Service <span class="text-red-500">*</span>
               </label>
-              <select
-                v-model="form.grade"
+              <input
+                v-model="form.service"
+                type="text"
+                placeholder="Ex: Direction Technique"
                 required
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500"
               >
-                <option value="">Selectionner un grade</option>
-                <option>Directeur General</option>
-                <option>Directeur</option>
-                <option>Chef Service</option>
-                <option>Chef Division</option>
-                <option>Cadre</option>
-                <option>Agent</option>
-              </select>
+              <p v-if="errors.service" class="text-xs text-red-500 mt-1">{{ errors.service[0] }}</p>
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
@@ -126,24 +133,20 @@ function resetForm() {
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
-                Salaire de base (FCFA) <span class="text-red-500">*</span>
+                Categorie <span class="text-red-500">*</span>
               </label>
-              <input
-                v-model.number="form.salaire"
-                type="number"
-                placeholder="Ex: 850000"
+              <select
+                v-model="form.categorie"
                 required
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500 focus:ring-2 focus:ring-anatt-500/20"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500"
               >
-            </div>
-            <div>
-              <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Categorie salariale</label>
-              <div
-                class="px-4 py-2.5 border rounded-xl text-sm"
-                :class="categorieDisplay.class"
-              >
-                {{ categorieDisplay.text }}
-              </div>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+              <p v-if="errors.categorie" class="text-xs text-red-500 mt-1">{{ errors.categorie[0] }}</p>
             </div>
           </div>
         </div>
@@ -195,35 +198,25 @@ function resetForm() {
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
-                Operateur principal <span class="text-red-500">*</span>
+                Numero MTN MoMo
               </label>
-              <div class="flex gap-4">
-                <label class="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors flex-1">
-                  <input v-model="form.operateur" type="radio" value="MTN" class="text-yellow-600" required>
-                  <span class="text-sm font-display font-medium text-gray-700">
-                    <svg class="w-2 h-2 inline text-yellow-500 mr-1" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>
-                    MTN MoMo
-                  </span>
-                </label>
-                <label class="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors flex-1">
-                  <input v-model="form.operateur" type="radio" value="MOOV" class="text-blue-600">
-                  <span class="text-sm font-display font-medium text-gray-700">
-                    <svg class="w-2 h-2 inline text-blue-500 mr-1" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>
-                    MOOV Flooz
-                  </span>
-                </label>
-              </div>
+              <input
+                v-model="form.numero_mtn"
+                type="text"
+                placeholder="229XXXXXXXX"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500"
+              >
+              <p v-if="errors.numero_mtn" class="text-xs text-red-500 mt-1">{{ errors.numero_mtn[0] }}</p>
             </div>
             <div>
-              <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Statut</label>
-              <select
-                v-model="form.statut"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500"
+              <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Numero MOOV Flooz</label>
+              <input
+                v-model="form.numero_moov"
+                type="text"
+                placeholder="229XXXXXXXX"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500"
               >
-                <option>Actif</option>
-                <option>Inactif</option>
-                <option>Suspendu</option>
-              </select>
+              <p v-if="errors.numero_moov" class="text-xs text-red-500 mt-1">{{ errors.numero_moov[0] }}</p>
             </div>
           </div>
         </div>
@@ -245,10 +238,12 @@ function resetForm() {
             </button>
             <button
               type="submit"
-              class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600 transition-colors flex items-center gap-2 shadow-lg shadow-anatt-500/30"
+              :disabled="loading"
+              class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600 transition-colors flex items-center gap-2 shadow-lg shadow-anatt-500/30 disabled:opacity-60"
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Enregistrer
+              <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ loading ? 'Enregistrement...' : 'Enregistrer' }}
             </button>
           </div>
         </div>
@@ -273,6 +268,12 @@ function resetForm() {
               @click="goToList"
             >
               Liste
+            </button>
+            <button
+              class="flex-1 px-4 py-2.5 border border-anatt-200 text-anatt-600 rounded-xl text-sm font-display font-medium hover:bg-anatt-50"
+              @click="goToDetail"
+            >
+              Voir la fiche
             </button>
             <button
               class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600"
