@@ -1,43 +1,103 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 
-const smtpHost = ref('smtp.anatt.bj')
+const api = useApi()
+const { success: toastSuccess, error: toastError } = useToast()
+const loadingData = ref(true)
+const saving = ref(false)
+
+const smtpHost = ref('')
 const smtpPort = ref(587)
-const smtpUser = ref('noreply@anatt.bj')
-const smtpPassword = ref('********')
+const smtpUser = ref('')
+const smtpPassword = ref('')
 const smtpEncryption = ref('TLS')
-const fromAddress = ref('noreply@anatt.bj')
+const fromAddress = ref('')
 const fromName = ref('ANaTT Missions')
 const testEmail = ref('')
 const testSending = ref(false)
 const testSuccess = ref(false)
+const testError = ref('')
 
-const templates = ref([
-  { id: 1, name: 'Nouvel ordre de mission', subject: 'Nouveau OM #{numero} - En attente de validation', status: 'Actif', lastEdit: '10/01/2025' },
-  { id: 2, name: 'Validation effectuee', subject: 'OM #{numero} - Valide par {validateur}', status: 'Actif', lastEdit: '10/01/2025' },
-  { id: 3, name: 'Rejet d\'un OM', subject: 'OM #{numero} - Rejete', status: 'Actif', lastEdit: '10/01/2025' },
-  { id: 4, name: 'Paiement effectue', subject: 'Paiement de {montant} FCFA effectue', status: 'Actif', lastEdit: '10/01/2025' },
-  { id: 5, name: 'Echec de paiement', subject: 'Echec paiement OM #{numero}', status: 'Actif', lastEdit: '08/01/2025' },
-  { id: 6, name: 'Reinitialisation mot de passe', subject: 'Reinitialisation de votre mot de passe', status: 'Actif', lastEdit: '05/01/2025' },
-])
+// Templates derives du SendNotification job (pas de table, definis dans le code)
+const templates = [
+  { id: 1, name: 'Mission soumise', subject: 'Nouvel OM {numero} - En attente de validation', type: 'mission_soumise' },
+  { id: 2, name: 'Mission validee', subject: 'OM {numero} valide par le chef de service', type: 'mission_validee' },
+  { id: 3, name: 'Mission approuvee', subject: 'OM {numero} approuve par la DG', type: 'mission_approuvee' },
+  { id: 4, name: 'Mission rejetee', subject: 'OM {numero} rejete', type: 'mission_rejetee' },
+  { id: 5, name: 'Paiement effectue', subject: 'Paiement de {montant} FCFA effectue via {operateur}', type: 'paiement_effectue' },
+  { id: 6, name: 'Paiement echoue', subject: 'Echec paiement OM {numero}', type: 'paiement_echec' },
+]
 
-function sendTestEmail() {
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/api/admin/settings')
+    const s = data.data || {}
+    if (s.smtpHost) smtpHost.value = s.smtpHost
+    if (s.smtpPort) smtpPort.value = s.smtpPort
+    if (s.smtpUser) smtpUser.value = s.smtpUser
+    if (s.smtpEncryption) smtpEncryption.value = s.smtpEncryption
+    if (s.fromAddress) fromAddress.value = s.fromAddress
+    if (s.fromName) fromName.value = s.fromName
+  } catch {
+    // Pas de settings existants
+  } finally {
+    loadingData.value = false
+  }
+})
+
+async function saveConfig() {
+  saving.value = true
+  try {
+    // Charger les settings existants puis merger
+    const { data: current } = await api.get('/api/admin/settings')
+    const merged = {
+      ...(current.data || {}),
+      smtpHost: smtpHost.value,
+      smtpPort: smtpPort.value,
+      smtpUser: smtpUser.value,
+      smtpPassword: smtpPassword.value !== '********' ? smtpPassword.value : undefined,
+      smtpEncryption: smtpEncryption.value,
+      fromAddress: fromAddress.value,
+      fromName: fromName.value,
+    }
+    await api.put('/api/admin/settings', merged)
+    toastSuccess('Configuration email enregistree.')
+  } catch {
+    // Geree par useApi
+  } finally {
+    saving.value = false
+  }
+}
+
+async function sendTestEmailFn() {
+  if (!testEmail.value) return
   testSending.value = true
-  setTimeout(() => {
-    testSending.value = false
+  testSuccess.value = false
+  testError.value = ''
+  try {
+    // Envoyer un email de test via l'API
+    await api.post('/api/auth/mot-de-passe/email', { email: testEmail.value })
     testSuccess.value = true
-    setTimeout(() => { testSuccess.value = false }, 3000)
-  }, 2000)
+    setTimeout(() => { testSuccess.value = false }, 5000)
+  } catch {
+    testError.value = 'Echec de l\'envoi. Verifiez la configuration SMTP.'
+    setTimeout(() => { testError.value = '' }, 5000)
+  } finally {
+    testSending.value = false
+  }
 }
 </script>
 
 <template>
   <AppLayout title="Configuration Email" subtitle="Parametres SMTP et templates de notifications">
     <template #header-actions>
-      <button class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
-        Enregistrer
+      <button :disabled="saving" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-60" @click="saveConfig">
+        <svg v-if="saving" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+        {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </template>
 
@@ -79,7 +139,7 @@ function sendTestEmail() {
       <!-- Test email -->
       <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
         <input v-model="testEmail" type="email" placeholder="Adresse email de test..." class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200 bg-white">
-        <button @click="sendTestEmail" :disabled="testSending" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-50">
+        <button @click="sendTestEmailFn" :disabled="testSending" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-50">
           <svg v-if="!testSending" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
           <svg v-else class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
           {{ testSending ? 'Envoi...' : 'Envoyer un test' }}
@@ -88,6 +148,10 @@ function sendTestEmail() {
       <div v-if="testSuccess" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-body flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
         Email de test envoye avec succes !
+      </div>
+      <div v-if="testError" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-body flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+        {{ testError }}
       </div>
     </div>
 
