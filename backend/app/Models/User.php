@@ -17,8 +17,18 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
     ];
+
+    /**
+     * Le role ne peut etre modifie que via assignRole() pour eviter
+     * qu'un utilisateur s'auto-promeuve via mass assignment.
+     */
+    public function assignRole(string $role): self
+    {
+        $this->role = $role;
+        $this->save();
+        return $this;
+    }
 
     protected $hidden = [
         'password',

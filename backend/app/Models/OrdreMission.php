@@ -20,14 +20,27 @@ class OrdreMission extends Model
         'destination',
         'date_depart',
         'date_retour',
-        'nb_jours',
         'taux_id',
-        'montant_per_diem',
-        'statut',
-        'commentaire_rejet',
-        'valide_par_chef',
-        'valide_par_dg',
     ];
+
+    /**
+     * Champs proteges modifiables uniquement via les services.
+     * Empeche le mass assignment de champs sensibles.
+     */
+    protected $guarded_fields = [
+        'nb_jours', 'montant_per_diem', 'statut',
+        'commentaire_rejet', 'valide_par_chef', 'valide_par_dg',
+    ];
+
+    public function setComputedFields(array $data): self
+    {
+        foreach (['nb_jours', 'montant_per_diem', 'statut', 'commentaire_rejet', 'valide_par_chef', 'valide_par_dg'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $this->{$field} = $data[$field];
+            }
+        }
+        return $this;
+    }
 
     protected function casts(): array
     {

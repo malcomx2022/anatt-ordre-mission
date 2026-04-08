@@ -40,14 +40,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('agents/import', [AgentController::class, 'import']);
     });
 
-    // Ordres de Mission - CRUD accessible a tous les connectes
-    Route::apiResource('ordres', MissionController::class);
-    Route::get('ordres/{ordre}/pdf', [MissionController::class, 'pdf']);
-    Route::get('ordres/{ordre}/pdf/download', [MissionController::class, 'pdfDownload']);
-    Route::get('ordres/{ordre}/historique', [MissionController::class, 'historique']);
+    // Ordres de Mission - CRUD avec controle ownership AGENT
+    Route::apiResource('ordres', MissionController::class)->middleware('ordre.owner');
+    Route::middleware('ordre.owner')->group(function () {
+        Route::get('ordres/{ordre}/pdf', [MissionController::class, 'pdf']);
+        Route::get('ordres/{ordre}/pdf/download', [MissionController::class, 'pdfDownload']);
+        Route::get('ordres/{ordre}/historique', [MissionController::class, 'historique']);
+    });
 
-    // Validation workflow - soumission par tous, validation par roles specifiques
-    Route::post('ordres/{ordre}/soumettre', [ValidationController::class, 'soumettre']);
+    // Validation workflow - soumission avec ownership, validation par roles specifiques
+    Route::post('ordres/{ordre}/soumettre', [ValidationController::class, 'soumettre'])
+        ->middleware('ordre.owner');
     Route::post('ordres/{ordre}/valider-n1', [ValidationController::class, 'validerN1'])
         ->middleware('role:CHEF_SERVICE');
     Route::post('ordres/{ordre}/approuver', [ValidationController::class, 'approuver'])
@@ -55,10 +58,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('ordres/{ordre}/rejeter', [ValidationController::class, 'rejeter'])
         ->middleware('role:CHEF_SERVICE,DIRECTEUR');
 
-    // Paiements - lecture pour tous, generation pour DRH
+    // Paiements - lecture restreinte, generation pour DRH
     Route::get('paiements', [PaiementController::class, 'index']);
-    Route::get('paiements/statuts', [PaiementController::class, 'statuts']);
-    Route::get('paiements/historique', [PaiementController::class, 'historique']);
+    Route::middleware('role:DRH,CHEF_SERVICE,DIRECTEUR')->group(function () {
+        Route::get('paiements/statuts', [PaiementController::class, 'statuts']);
+        Route::get('paiements/historique', [PaiementController::class, 'historique']);
+    });
     Route::middleware(['role:DRH', 'throttle:paiement'])->group(function () {
         Route::post('paiements/generer/moov', [PaiementController::class, 'genererMoov']);
         Route::post('paiements/generer/mtn', [PaiementController::class, 'genererMtn']);

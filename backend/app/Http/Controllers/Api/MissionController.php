@@ -56,10 +56,15 @@ class MissionController extends Controller
 
     public function store(StoreOrdreMissionRequest $request): JsonResponse
     {
-        $ordre = $this->missionService->creer(
-            $request->validated(),
-            $request->user(),
-        );
+        $user = $request->user();
+        $data = $request->validated();
+
+        // Un AGENT ne peut creer un OM que pour lui-meme
+        if ($user->role === 'AGENT' && $user->agent && (int) $data['agent_id'] !== $user->agent->id) {
+            return $this->forbidden('Vous ne pouvez creer un ordre de mission que pour vous-meme.');
+        }
+
+        $ordre = $this->missionService->creer($data, $user);
 
         return $this->created(
             new OrdreMissionResource($ordre->load(['agent', 'taux'])),

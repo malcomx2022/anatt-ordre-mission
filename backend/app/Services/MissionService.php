@@ -22,13 +22,16 @@ class MissionService
         $taux = TauxPerDiem::findOrFail($data['taux_id']);
         $montant = $nbJours * $taux->montant_journalier;
 
-        return OrdreMission::create([
-            ...$data,
+        $ordre = new OrdreMission($data);
+        $ordre->setComputedFields([
             'numero' => OrdreMission::generateNumero(),
             'nb_jours' => $nbJours,
             'montant_per_diem' => $montant,
             'statut' => 'BROUILLON',
         ]);
+        $ordre->save();
+
+        return $ordre;
     }
 
     public function modifier(OrdreMission $ordre, array $data): OrdreMission
