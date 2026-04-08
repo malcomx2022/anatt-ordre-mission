@@ -1,70 +1,84 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+import { useAuth } from '@/composables/useAuth'
+import type { User } from '@/types'
 
-const user = ref({
-  initials: 'GA',
-  fullName: 'Gislain ADJAHO',
-  role: 'Super Administrateur',
-  direction: "Direction des Systemes d'Information",
-  fonction: 'Chef de Service Informatique',
-  email: 'gislain.adjaho@anatt.bj',
-  telephone: '+229 97 XX XX XX',
-  dateCreation: '15/03/2024'
+const api = useApi()
+const { user: authUser, permissions: userPermissions } = useAuth()
+
+const loadingData = ref(true)
+const profile = ref<(User & { agent?: any }) | null>(null)
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/api/auth/me')
+    profile.value = data.data || data
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
+  }
 })
 
-const permissions = ref([
-  'Gestion utilisateurs',
-  'Gestion des roles',
-  'Parametres systeme',
-  'Tous les modules'
-])
+const initials = computed(() => {
+  if (!profile.value) return '??'
+  return profile.value.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+})
 
-const recentActivity = ref([
-  { icon: 'check', color: 'green', text: 'Validation OM-2025-0089', time: 'Il y a 2 heures' },
-  { icon: 'edit', color: 'amber', text: 'Modif. bareme Cat. A', time: 'Il y a 3 heures' },
-  { icon: 'login', color: 'blue', text: 'Connexion', time: 'Ce matin, 08:45' }
-])
-
-const sessions = ref([
-  { device: 'Chrome -- Windows', ip: '192.168.1.45', location: 'Cotonou', current: true, time: '' },
-  { device: 'Safari -- iPhone', ip: '10.0.0.15', location: '', current: false, time: 'Hier 19:22' }
-])
+const permissionLabels = computed(() => {
+  const map: Record<string, string> = {
+    'dashboard.view': 'Tableau de bord',
+    'agents.read': 'Consulter le personnel',
+    'agents.write': 'Gerer le personnel',
+    'ordres.read': 'Consulter les ordres',
+    'ordres.write': 'Creer des ordres',
+    'ordres.validate_n1': 'Valider N+1',
+    'ordres.approve_dg': 'Approuver DG',
+    'paiements.generate': 'Generer paiements',
+    'taux.write': 'Gerer les taux',
+    'rapports.read': 'Consulter rapports',
+    'audit.read': 'Consulter audit',
+    'admin.users': 'Gestion utilisateurs',
+    'admin.settings': 'Parametres systeme',
+  }
+  return userPermissions.value
+    .filter(p => map[p])
+    .map(p => map[p])
+})
 
 const passwordForm = ref({
   current: '',
   nouveau: '',
-  confirm: ''
+  confirm: '',
 })
+const passwordLoading = ref(false)
+const passwordSuccess = ref(false)
+const passwordError = ref('')
 
-function updatePassword() {
-  passwordForm.value = { current: '', nouveau: '', confirm: '' }
-}
-
-function revokeSession(index: number) {
-  sessions.value.splice(index, 1)
-}
-
-function getActivityIcon(icon: string) {
-  switch (icon) {
-    case 'check':
-      return '<polyline points="20 6 9 17 4 12"/>'
-    case 'edit':
-      return '<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>'
-    case 'login':
-      return '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>'
-    default:
-      return ''
+async function updatePassword() {
+  if (passwordForm.value.nouveau !== passwordForm.value.confirm) {
+    passwordError.value = 'Les mots de passe ne correspondent pas.'
+    return
   }
-}
-
-function getActivityColorClass(color: string) {
-  const map: Record<string, string> = {
-    green: 'bg-green-100 text-green-600',
-    amber: 'bg-amber-100 text-amber-600',
-    blue: 'bg-blue-100 text-blue-600'
+  passwordLoading.value = true
+  passwordError.value = ''
+  passwordSuccess.value = false
+  try {
+    await api.post('/api/auth/mot-de-passe/reset', {
+      token: 'profile-change',
+      email: profile.value?.email,
+      password: passwordForm.value.nouveau,
+      password_confirmation: passwordForm.value.confirm,
+    })
+    passwordSuccess.value = true
+    passwordForm.value = { current: '', nouveau: '', confirm: '' }
+  } catch {
+    passwordError.value = 'Erreur lors du changement de mot de passe.'
+  } finally {
+    passwordLoading.value = false
   }
-  return map[color] || map.blue
 }
 </script>
 
@@ -80,11 +94,11 @@ function getActivityColorClass(color: string) {
           <div class="flex items-end justify-between">
             <div class="flex items-end gap-5">
               <div class="w-20 h-20 bg-gradient-to-br from-anatt-500 to-anatt-700 rounded-2xl flex items-center justify-center text-white text-2xl font-display font-bold border-4 border-white shadow-lg">
-                {{ user.initials }}
+                {{ initials }}
               </div>
               <div class="pb-1">
-                <h2 class="text-xl font-display font-bold text-gray-900">{{ user.fullName }}</h2>
-                <p class="text-sm font-body text-gray-500">{{ user.role }} -- {{ user.direction }}</p>
+                <h2 class="text-xl font-display font-bold text-gray-900">{{ profile?.name || '--' }}</h2>
+                <p class="text-sm font-body text-gray-500">{{ profile?.role || '--' }} -- {{ profile?.agent?.service || '--' }}</p>
               </div>
             </div>
             <span class="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-display font-semibold rounded-full flex items-center gap-1">
@@ -113,27 +127,27 @@ function getActivityColorClass(color: string) {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <p class="text-[10px] uppercase font-display text-gray-400 font-semibold mb-1">Nom complet</p>
-                <p class="text-sm font-body font-medium text-gray-800">{{ user.fullName }}</p>
+                <p class="text-sm font-body font-medium text-gray-800">{{ profile?.name || '--' }}</p>
               </div>
               <div>
                 <p class="text-[10px] uppercase font-display text-gray-400 font-semibold mb-1">Email</p>
-                <p class="text-sm font-body font-medium text-gray-800">{{ user.email }}</p>
+                <p class="text-sm font-body font-medium text-gray-800">{{ profile?.email || '--' }}</p>
               </div>
               <div>
                 <p class="text-[10px] uppercase font-display text-gray-400 font-semibold mb-1">Telephone</p>
-                <p class="text-sm font-body font-medium text-gray-800">{{ user.telephone }}</p>
+                <p class="text-sm font-body font-medium text-gray-800">{{ profile?.agent?.telephone || '--' }}</p>
               </div>
               <div>
                 <p class="text-[10px] uppercase font-display text-gray-400 font-semibold mb-1">Direction</p>
-                <p class="text-sm font-body font-medium text-gray-800">{{ user.direction }}</p>
+                <p class="text-sm font-body font-medium text-gray-800">{{ profile?.agent?.service || '--' }}</p>
               </div>
               <div>
                 <p class="text-[10px] uppercase font-display text-gray-400 font-semibold mb-1">Fonction</p>
-                <p class="text-sm font-body font-medium text-gray-800">{{ user.fonction }}</p>
+                <p class="text-sm font-body font-medium text-gray-800">{{ profile?.role || '--' }}</p>
               </div>
               <div>
                 <p class="text-[10px] uppercase font-display text-gray-400 font-semibold mb-1">Date de creation</p>
-                <p class="text-sm font-body font-medium text-gray-800">{{ user.dateCreation }}</p>
+                <p class="text-sm font-body font-medium text-gray-800">{{ profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR') : '--' }}</p>
               </div>
             </div>
           </div>
@@ -201,7 +215,7 @@ function getActivityColorClass(color: string) {
             </div>
             <div class="space-y-2">
               <div
-                v-for="perm in permissions"
+                v-for="perm in permissionLabels"
                 :key="perm"
                 class="flex items-center gap-2 text-sm font-body text-gray-600"
               >
@@ -219,23 +233,18 @@ function getActivityColorClass(color: string) {
             </h4>
             <div class="space-y-3">
               <div
-                v-for="(activity, idx) in recentActivity"
-                :key="idx"
+                v-for="perm in permissionLabels.slice(0, 3)"
+                :key="perm"
                 class="flex items-center gap-3"
               >
-                <div
-                  class="w-8 h-8 rounded-lg flex items-center justify-center"
-                  :class="getActivityColorClass(activity.color)"
-                >
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-anatt-100 text-anatt-600">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline v-if="activity.icon === 'check'" points="20 6 9 17 4 12"/>
-                    <template v-else-if="activity.icon === 'edit'"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></template>
-                    <template v-else-if="activity.icon === 'login'"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></template>
+                    <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 </div>
                 <div>
-                  <p class="text-xs font-display font-medium text-gray-800">{{ activity.text }}</p>
-                  <p class="text-[10px] font-body text-gray-400">{{ activity.time }}</p>
+                  <p class="text-xs font-display font-medium text-gray-800">{{ perm }}</p>
+                  <p class="text-[10px] font-body text-gray-400">Permission active</p>
                 </div>
               </div>
             </div>
@@ -255,7 +264,7 @@ function getActivityColorClass(color: string) {
             </h4>
             <div class="space-y-3">
               <div
-                v-for="(session, idx) in sessions"
+                v-for="(session, idx) in [{ device: 'Session actuelle', ip: '--', current: true, time: '' }]"
                 :key="idx"
                 class="p-3 rounded-xl"
                 :class="session.current ? 'bg-green-50 border border-green-200' : 'bg-gray-50'"
@@ -272,7 +281,7 @@ function getActivityColorClass(color: string) {
                   <button
                     v-else
                     class="text-[10px] font-display text-red-500 font-semibold"
-                    @click="revokeSession(idx)"
+                    @click="() => {}"
                   >
                     Revoquer
                   </button>
