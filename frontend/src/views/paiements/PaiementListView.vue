@@ -1,52 +1,77 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppBadge from '@/components/shared/AppBadge.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import { usePaiements } from '@/composables/usePaiements'
-import type { LotPaiement, OperateurPaiement } from '@/types'
+import { useApi } from '@/composables/useApi'
+import { useSearch } from '@/composables/useSearch'
+import type { Paiement, OperateurPaiement } from '@/types'
 
 const router = useRouter()
-const { loading } = usePaiements()
+const api = useApi()
+const { paiements, loading, fetchPaiements } = usePaiements()
+const { query: searchQuery, debouncedQuery } = useSearch(300)
 
-const searchQuery = ref('')
 const filterOperateur = ref('')
 const filterStatut = ref('')
-const filterType = ref('')
-const filterMois = ref('2026-04')
+const filterMois = ref('')
 const currentPage = ref(1)
-
-interface LotPaiementDetail extends LotPaiement {
-  type_paiement: string
-  date_heure: string
-}
-
-const lots = ref<LotPaiementDetail[]>([
-  { id: 1, reference: 'LOT-2026-0047', operateur: 'MTN', nb_paiements: 24, montant_total: 1248000, statut: 'EN_ATTENTE', type_paiement: 'Avance (1/3)', date_heure: '15/04/2026 14:32', created_at: '2026-04-15' },
-  { id: 2, reference: 'LOT-2026-0046', operateur: 'MOOV', nb_paiements: 18, montant_total: 2736000, statut: 'EN_COURS', type_paiement: 'Solde (2/3)', date_heure: '14/04/2026 09:15', created_at: '2026-04-14' },
-  { id: 3, reference: 'LOT-2026-0045', operateur: 'MTN', nb_paiements: 31, montant_total: 1612000, statut: 'TRAITE', type_paiement: 'Avance (1/3)', date_heure: '12/04/2026 16:48', created_at: '2026-04-12' },
-  { id: 4, reference: 'LOT-2026-0044', operateur: 'MOOV', nb_paiements: 12, montant_total: 624000, statut: 'ECHEC', type_paiement: 'Avance (1/3)', date_heure: '10/04/2026 11:22', created_at: '2026-04-10' },
-  { id: 5, reference: 'LOT-2026-0043', operateur: 'MTN', nb_paiements: 28, montant_total: 4256000, statut: 'TRAITE', type_paiement: 'Solde (2/3)', date_heure: '08/04/2026 08:55', created_at: '2026-04-08' },
-])
+const totalPages = ref(1)
+const totalItems = ref(0)
 
 const kpis = computed(() => ({
-  total: 47,
-  enAttente: 8,
-  succes: 35,
-  echecs: 4,
+  total: totalItems.value,
+  enAttente: paiements.value.filter(p => p.statut === 'EN_ATTENTE').length,
+  succes: paiements.value.filter(p => p.statut === 'SUCCES').length,
+  echecs: paiements.value.filter(p => p.statut === 'ECHEC').length,
 }))
+
+async function loadPaiements() {
+  try {
+    const params: Record<string, string | number> = { page: currentPage.value }
+    if (filterOperateur.value) params.operateur = filterOperateur.value
+    if (filterStatut.value) params.statut = filterStatut.value
+
+    const response = await fetchPaiements(params)
+    if (response?.meta) {
+      currentPage.value = response.meta.current_page
+      totalPages.value = response.meta.last_page
+      totalItems.value = response.meta.total
+    }
+  } catch {
+    // Geree par useApi
+  }
+}
+
+watch([debouncedQuery, filterOperateur, filterStatut], () => {
+  currentPage.value = 1
+  loadPaiements()
+})
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadPaiements()
+}
+
+onMounted(loadPaiements)
 
 function formatMontant(val: number): string {
   return val.toLocaleString('fr-FR') + ' F'
 }
 
+function formatDate(iso: string): string {
+  if (!iso) return '--'
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 function statutVariant(statut: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
   switch (statut) {
-    case 'TRAITE': return 'success'
+    case 'SUCCES': return 'success'
     case 'EN_ATTENTE': return 'warning'
-    case 'EN_COURS': return 'info'
+    case 'INITIE': return 'info'
     case 'ECHEC': return 'danger'
     default: return 'neutral'
   }
@@ -54,16 +79,12 @@ function statutVariant(statut: string): 'success' | 'warning' | 'danger' | 'info
 
 function statutLabel(statut: string): string {
   switch (statut) {
-    case 'TRAITE': return 'Traite'
+    case 'SUCCES': return 'Succes'
     case 'EN_ATTENTE': return 'En attente'
-    case 'EN_COURS': return 'En cours'
+    case 'INITIE': return 'Initie'
     case 'ECHEC': return 'Echoue'
     default: return statut
   }
-}
-
-function voirDetail(lot: LotPaiementDetail) {
-  router.push(`/paiements/statuts`)
 }
 </script>
 
@@ -153,56 +174,54 @@ function voirDetail(lot: LotPaiementDetail) {
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50 border-b border-gray-100">
-            <th class="text-left px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Reference</th>
+            <th class="text-left px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Reference OM</th>
+            <th class="text-left px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Agent</th>
             <th class="text-left px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Operateur</th>
-            <th class="text-left px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-            <th class="text-center px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Beneficiaires</th>
-            <th class="text-right px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Montant Total</th>
+            <th class="text-right px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Montant</th>
             <th class="text-center px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
             <th class="text-left px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Date</th>
             <th class="text-center px-5 py-3.5 text-xs font-display font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="lot in lots" :key="lot.id" class="hover:bg-anatt-50/30 transition-colors">
+          <tr v-if="loading" class="text-center">
+            <td colspan="7" class="px-5 py-12">
+              <svg class="w-8 h-8 animate-spin text-anatt-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            </td>
+          </tr>
+          <tr v-else-if="paiements.length === 0">
+            <td colspan="7" class="px-5 py-12 text-center text-sm text-gray-400 font-body">Aucun paiement trouve.</td>
+          </tr>
+          <tr v-for="p in paiements" :key="p.id" class="hover:bg-anatt-50/30 transition-colors">
             <td class="px-5 py-4">
-              <span class="text-sm font-display font-bold text-anatt-500">{{ lot.reference }}</span>
+              <span class="text-sm font-display font-bold text-anatt-500">{{ p.ordre_mission?.numero || '--' }}</span>
+            </td>
+            <td class="px-5 py-4">
+              <span class="text-sm font-body text-gray-700">{{ p.agent ? p.agent.prenom + ' ' + p.agent.nom : '--' }}</span>
             </td>
             <td class="px-5 py-4">
               <span
                 class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-display font-semibold"
-                :class="lot.operateur === 'MTN' ? 'bg-yellow-50 text-yellow-800' : 'bg-blue-50 text-blue-800'"
+                :class="p.operateur === 'MTN' ? 'bg-yellow-50 text-yellow-800' : 'bg-blue-50 text-blue-800'"
               >
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
-                {{ lot.operateur === 'MTN' ? 'MTN MoMo' : 'MOOV Flooz' }}
+                {{ p.operateur === 'MTN' ? 'MTN MoMo' : 'MOOV Flooz' }}
               </span>
             </td>
-            <td class="px-5 py-4"><span class="text-sm font-body text-gray-700">{{ lot.type_paiement }}</span></td>
-            <td class="px-5 py-4 text-center"><span class="text-sm font-display font-semibold text-gray-800">{{ lot.nb_paiements }}</span></td>
-            <td class="px-5 py-4 text-right"><span class="text-sm font-display font-bold text-gray-900">{{ formatMontant(lot.montant_total) }}</span></td>
+            <td class="px-5 py-4 text-right"><span class="text-sm font-display font-bold text-gray-900">{{ formatMontant(Number(p.montant)) }}</span></td>
             <td class="px-5 py-4 text-center">
-              <AppBadge :variant="statutVariant(lot.statut)">{{ statutLabel(lot.statut) }}</AppBadge>
+              <AppBadge :variant="statutVariant(p.statut)">{{ statutLabel(p.statut) }}</AppBadge>
             </td>
             <td class="px-5 py-4">
-              <span class="text-sm font-body text-gray-600">{{ lot.date_heure.split(' ')[0] }}</span><br>
-              <span class="text-[10px] font-body text-gray-400">{{ lot.date_heure.split(' ')[1] }}</span>
+              <span class="text-sm font-body text-gray-600">{{ formatDate(p.created_at) }}</span>
             </td>
             <td class="px-5 py-4 text-center">
               <div class="flex items-center justify-center gap-1">
-                <button @click="voirDetail(lot)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-anatt-500 transition-colors" title="Details">
+                <button @click="router.push('/paiements/statuts')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-anatt-500 transition-colors" title="Details">
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
-                <button v-if="lot.statut === 'EN_ATTENTE'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-anatt-50 text-gray-400 hover:text-anatt-600 transition-colors" title="Soumettre">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                </button>
-                <button v-if="lot.statut === 'EN_COURS'" @click="router.push('/paiements/reconciliation')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors" title="Reconcilier">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                </button>
-                <button v-if="lot.statut === 'ECHEC'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-orange-50 text-gray-400 hover:text-orange-600 transition-colors" title="Relancer">
+                <button v-if="p.statut === 'ECHEC'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-orange-50 text-gray-400 hover:text-orange-600 transition-colors" title="Relancer">
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-                </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors" title="Telecharger">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
               </div>
             </td>
@@ -211,23 +230,12 @@ function voirDetail(lot: LotPaiementDetail) {
       </table>
 
       <!-- Pagination -->
-      <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-        <p class="text-sm font-body text-gray-500">
-          Affichage <span class="font-semibold text-gray-700">1-5</span> sur <span class="font-semibold text-gray-700">47</span>
-        </p>
-        <div class="flex items-center gap-1">
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400">
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-anatt-500 text-white text-sm font-display font-semibold">1</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm font-body hover:bg-gray-50">2</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm font-body hover:bg-gray-50">3</button>
-          <span class="text-gray-400 px-1">...</span>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm font-body hover:bg-gray-50">10</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
+      <AppPagination
+        :current-page="currentPage"
+        :last-page="totalPages"
+        :total="totalItems"
+        @page-change="handlePageChange"
+      />
       </div>
     </div>
   </AppLayout>
