@@ -99,6 +99,26 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             }
             return response()->json($query->orderBy('name')->paginate($request->integer('per_page', 15)));
         });
+        Route::post('users', function (\Illuminate\Http\Request $request) {
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:8',
+                'role' => 'required|in:AGENT,CHEF_SERVICE,DRH,DIRECTEUR,ADMIN',
+            ]);
+
+            $user = \App\Models\User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => bcrypt($data['password']),
+            ]);
+            $user->assignRole($data['role']);
+
+            return response()->json([
+                'data' => $user->fresh(),
+                'message' => 'Utilisateur cree avec succes.',
+            ], 201);
+        });
         Route::delete('users/{user}', function (\App\Models\User $user) {
             $user->delete();
             return response()->json(['message' => 'Utilisateur supprime.']);
