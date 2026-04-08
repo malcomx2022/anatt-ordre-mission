@@ -1,61 +1,71 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
+import type { TauxPerDiem } from '@/types'
 
 const router = useRouter()
+const api = useApi()
+const { success: toastSuccess } = useToast()
+const loadingData = ref(true)
+const saving = ref(false)
 
-const decretNumero = ref('2024-456')
-const decretDate = ref('2024-01-15')
-const applicationDate = ref('2024-02-01')
-
-interface RateRow {
+interface EditableTaux {
+  id: number
   categorie: string
-  description: string
-  hebergement: number
-  restauration: number
-  divers: number
-  origHebergement: number
-  origRestauration: number
-  origDivers: number
+  destination_type: string
+  montant: number
+  origMontant: number
+  annee: number
 }
 
-const rates = ref<RateRow[]>([
-  { categorie: 'Cat. A', description: 'DG, DGA, SG', hebergement: 35000, restauration: 15000, divers: 10000, origHebergement: 35000, origRestauration: 15000, origDivers: 10000 },
-  { categorie: 'Cat. B', description: 'Directeurs, CS, A1', hebergement: 25000, restauration: 12000, divers: 8000, origHebergement: 25000, origRestauration: 12000, origDivers: 8000 },
-  { categorie: 'Cat. C', description: 'A2, B1, Maitrise', hebergement: 20000, restauration: 10000, divers: 5000, origHebergement: 20000, origRestauration: 10000, origDivers: 5000 },
-  { categorie: 'Cat. D', description: 'B2, C, D, Appui', hebergement: 15000, restauration: 7500, divers: 2500, origHebergement: 15000, origRestauration: 7500, origDivers: 2500 },
-])
+const taux = ref<EditableTaux[]>([])
 
-const changeCount = computed(() => {
-  let count = 0
-  for (const r of rates.value) {
-    if (r.hebergement !== r.origHebergement) count++
-    if (r.restauration !== r.origRestauration) count++
-    if (r.divers !== r.origDivers) count++
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/api/taux')
+    taux.value = (data.data || []).map((t: TauxPerDiem) => ({
+      id: t.id,
+      categorie: t.categorie,
+      destination_type: t.destination_type,
+      montant: Number(t.montant_journalier),
+      origMontant: Number(t.montant_journalier),
+      annee: t.annee,
+    }))
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
   }
-  return count
 })
 
-function isModified(value: number, orig: number): boolean {
-  return value !== orig
+const changeCount = computed(() => taux.value.filter(t => t.montant !== t.origMontant).length)
+
+function isModified(t: EditableTaux): boolean {
+  return t.montant !== t.origMontant
 }
 
-function total(row: RateRow): string {
-  return (row.hebergement + row.restauration + row.divers).toLocaleString('fr-FR')
-}
-
-const history = [
-  { title: 'Mise a jour Decret 2024-456', date: '15/01/2024', detail: 'Cat. A hebergement : 30 000 -> 35 000 . Cat. B hebergement : 22 000 -> 25 000', author: 'Admin Systeme', validator: 'DG HOUNSOU' },
-  { title: 'Ajout zones de destination', date: '01/06/2023', detail: 'Creation des zones 1, 2, 3 avec supplements differencies', author: 'Admin Systeme', validator: 'DG HOUNSOU' },
-]
-
-function saveChanges() {
-  if (changeCount.value === 0) {
-    alert('Aucune modification detectee.')
-    return
+async function saveChanges() {
+  if (changeCount.value === 0) return
+  saving.value = true
+  try {
+    const modified = taux.value.filter(t => t.montant !== t.origMontant)
+    for (const t of modified) {
+      await api.put(`/api/taux/${t.id}`, { montant_journalier: t.montant })
+      t.origMontant = t.montant
+    }
+    toastSuccess(`${modified.length} taux mis a jour avec succes.`)
+  } catch {
+    // Geree par useApi
+  } finally {
+    saving.value = false
   }
-  alert(`Modifications enregistrees avec succes !\n\n${changeCount.value} valeur(s) modifiee(s).\nEn attente de validation par le Directeur General.`)
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString('fr-FR')
 }
 </script>
 
@@ -70,9 +80,10 @@ function saveChanges() {
         {{ changeCount }} modification(s)
       </span>
       <router-link to="/taux" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">Annuler</router-link>
-      <button @click="saveChanges" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
-        Enregistrer
+      <button :disabled="saving || changeCount === 0" @click="saveChanges" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-50">
+        <svg v-if="saving" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+        {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </template>
 
@@ -106,84 +117,45 @@ function saveChanges() {
       </div>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loadingData" class="flex items-center justify-center py-24">
+      <svg class="w-8 h-8 animate-spin text-anatt-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+    </div>
+
     <!-- Editable Table -->
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-6 animate-fade-up delay-200">
+    <div v-else class="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-6 animate-fade-up delay-200">
       <div class="px-6 py-4 border-b border-gray-100">
-        <h3 class="text-sm font-display font-semibold text-gray-700 flex items-center gap-2">
-          <svg class="w-4 h-4 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
-          Per Diem - Missions Nationales (FCFA / jour)
-        </h3>
+        <h3 class="text-sm font-display font-semibold text-gray-700">Taux Per Diem (FCFA / jour) - Cliquez sur un montant pour le modifier</h3>
       </div>
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50 border-b border-gray-100">
-            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase w-48">Categorie</th>
-            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Hebergement</th>
-            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Restauration</th>
-            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Frais Divers</th>
-            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase bg-gold-50">Total Calcule</th>
+            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Categorie</th>
+            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Type destination</th>
+            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase bg-gold-50 font-bold">Montant Journalier</th>
+            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Annee</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="row in rates" :key="row.categorie">
+          <tr v-for="t in taux" :key="t.id" class="hover:bg-gray-50/50">
             <td class="px-5 py-3">
-              <span class="text-sm font-display font-bold text-gray-800">{{ row.categorie }}</span>
-              <br>
-              <span class="text-[10px] text-gray-400 font-body">{{ row.description }}</span>
+              <span class="text-sm font-display font-bold text-gray-800">{{ t.categorie }}</span>
             </td>
-            <td class="px-3 py-2 text-center">
+            <td class="px-5 py-3 text-center">
+              <span class="text-xs font-display px-2 py-1 rounded-lg" :class="t.destination_type === 'LOCALE' ? 'bg-blue-50 text-blue-700' : t.destination_type === 'REGIONALE' ? 'bg-green-50 text-green-700' : 'bg-purple-50 text-purple-700'">{{ t.destination_type }}</span>
+            </td>
+            <td class="px-3 py-2 text-center bg-gold-50/50">
               <input
-                v-model.number="row.hebergement"
+                v-model.number="t.montant"
                 type="number"
-                :class="isModified(row.hebergement, row.origHebergement) ? 'bg-yellow-50 border-yellow-400' : 'bg-transparent border-transparent hover:border-gray-300 hover:bg-gray-50'"
-                class="w-28 text-center text-sm font-display font-semibold border rounded-lg px-2 py-1.5 focus:border-anatt-500 focus:bg-anatt-50 focus:ring-2 focus:ring-anatt-500/20 outline-none transition-all duration-200"
+                :class="isModified(t) ? 'bg-yellow-50 border-yellow-400' : 'bg-transparent border-transparent hover:border-gray-300 hover:bg-gray-50'"
+                class="w-32 text-center text-sm font-display font-bold border rounded-lg px-2 py-1.5 focus:border-anatt-500 focus:bg-anatt-50 focus:ring-2 focus:ring-anatt-500/20 outline-none transition-all duration-200"
               >
             </td>
-            <td class="px-3 py-2 text-center">
-              <input
-                v-model.number="row.restauration"
-                type="number"
-                :class="isModified(row.restauration, row.origRestauration) ? 'bg-yellow-50 border-yellow-400' : 'bg-transparent border-transparent hover:border-gray-300 hover:bg-gray-50'"
-                class="w-28 text-center text-sm font-display font-semibold border rounded-lg px-2 py-1.5 focus:border-anatt-500 focus:bg-anatt-50 focus:ring-2 focus:ring-anatt-500/20 outline-none transition-all duration-200"
-              >
-            </td>
-            <td class="px-3 py-2 text-center">
-              <input
-                v-model.number="row.divers"
-                type="number"
-                :class="isModified(row.divers, row.origDivers) ? 'bg-yellow-50 border-yellow-400' : 'bg-transparent border-transparent hover:border-gray-300 hover:bg-gray-50'"
-                class="w-28 text-center text-sm font-display font-semibold border rounded-lg px-2 py-1.5 focus:border-anatt-500 focus:bg-anatt-50 focus:ring-2 focus:ring-anatt-500/20 outline-none transition-all duration-200"
-              >
-            </td>
-            <td class="px-5 py-3 text-center bg-gold-50/50">
-              <span class="text-sm font-display font-bold text-anatt-700">{{ total(row) }}</span>
-            </td>
+            <td class="px-5 py-3 text-center text-sm font-body text-gray-500">{{ t.annee }}</td>
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- Change History -->
-    <div class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up delay-300">
-      <h3 class="text-sm font-display font-semibold text-gray-700 mb-4 flex items-center gap-2">
-        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        Historique des Modifications
-      </h3>
-      <div class="space-y-3">
-        <div v-for="item in history" :key="item.date" class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-          <div class="w-8 h-8 bg-anatt-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg class="w-4 h-4 text-anatt-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-display font-semibold text-gray-800">{{ item.title }}</p>
-              <span class="text-xs text-gray-400 font-body">{{ item.date }}</span>
-            </div>
-            <p class="text-xs text-gray-500 mt-0.5 font-body">{{ item.detail }}</p>
-            <p class="text-xs text-gray-400 mt-1 font-body">Par : {{ item.author }} - Valide par : {{ item.validator }}</p>
-          </div>
-        </div>
-      </div>
     </div>
   </AppLayout>
 </template>
