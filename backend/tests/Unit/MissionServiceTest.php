@@ -114,3 +114,34 @@ it('refuse de rejeter un ordre en brouillon', function () {
 
     $this->service->rejeter($ordre, 'Commentaire de rejet test');
 })->throws(ValidationException::class);
+
+it('refuse le rejet par un agent (defense en profondeur)', function () {
+    $agent = User::factory()->create(['role' => 'AGENT']);
+    $ordre = OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
+
+    $this->service->rejeter($ordre, 'Commentaire de rejet test', $agent);
+})->throws(ValidationException::class);
+
+it('empeche la double validation via verrou pessimiste', function () {
+    $chef = User::factory()->chefService()->create();
+    Agent::factory()->create(['user_id' => $chef->id, 'service' => 'Direction Technique']);
+    $agent = Agent::factory()->create(['service' => 'Direction Technique']);
+    $ordre = OrdreMission::factory()->soumis()->create(['agent_id' => $agent->id, 'taux_id' => $this->taux->id]);
+
+    // Premiere validation reussit
+    $result = $this->service->validerN1($ordre, $chef);
+    expect($result->statut)->toBe('VALIDE_N1');
+
+    // Deuxieme tentative echoue car statut a change
+    $this->service->validerN1($ordre, $chef);
+})->throws(ValidationException::class);
+
+it('empeche la soumission double', function () {
+    $ordre = OrdreMission::factory()->create(['taux_id' => $this->taux->id]);
+
+    $this->service->soumettre($ordre);
+    expect($ordre->fresh()->statut)->toBe('SOUMIS');
+
+    // Deuxieme soumission echoue
+    $this->service->soumettre($ordre);
+})->throws(ValidationException::class);
