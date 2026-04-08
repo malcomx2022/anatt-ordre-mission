@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppBadge from '@/components/shared/AppBadge.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppModal from '@/components/shared/AppModal.vue'
+import { useApi } from '@/composables/useApi'
+import type { OrdreMission } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const commentaire = ref('')
+const api = useApi()
 const loading = ref(false)
+const loadingData = ref(true)
 const showRejectModal = ref(false)
 const showSuccessModal = ref(false)
 const successTitle = ref('')
@@ -18,97 +21,95 @@ const successMessage = ref('')
 const rejectMotif = ref('')
 const rejectDetail = ref('')
 
-const currentIndex = ref(2)
-const totalEnAttente = ref(5)
+const mission = ref<OrdreMission | null>(null)
+const pendingIds = ref<number[]>([])
 
-const mission = ref({
-  numero: 'OM-2024-000791',
-  semo: 'SEMO-4519',
-  objet: 'Controle des permis zone sud',
-  itineraire: 'Cotonou -> Abomey',
-  duree: '3 jours (10-12 Dec 2024)',
-  transport: 'Vehicule de service',
-  soumis_par: 'Gislain A.',
-  date_soumission: '09 Dec 2024',
-  valide_par_chef: 'Marie DOSSOU',
-  valide_chef_date: '10 Dec 2024',
+const currentPendingIndex = computed(() => {
+  if (!mission.value) return -1
+  return pendingIds.value.indexOf(mission.value.id)
 })
 
-const beneficiaires = ref([
-  {
-    initiales: 'DM',
-    nom: 'DOSSA Marie',
-    telephone: '229 97 12 34 56',
-    categorie: '400-800K',
-    color: 'purple',
-    jours_1_repas: 1,
-    taux_1_repas: 12000,
-    montant_1_repas: 12000,
-    jours_2_repas: 1,
-    taux_2_repas: 20000,
-    montant_2_repas: 20000,
-    nuitees: 2,
-    taux_nuitee: 35000,
-    montant_nuitees: 70000,
-    total: 102000,
-    operateur: 'MTN',
-    verifie: true,
-  },
-])
+onMounted(async () => {
+  try {
+    const [missionRes, pendingRes] = await Promise.all([
+      api.get(`/api/ordres/${route.params.id}`),
+      api.get('/api/ordres?statut=VALIDE_N1&per_page=100'),
+    ])
+    mission.value = missionRes.data.data
+    pendingIds.value = (pendingRes.data.data || []).map((m: any) => m.id)
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
+  }
+})
 
-const totalMission = computed(() => beneficiaires.value.reduce((s, b) => s + b.total, 0))
-const avance = computed(() => Math.round(totalMission.value * 0.3333))
-const reliquat = computed(() => totalMission.value - avance.value)
-
-const conformite = ref([
-  { label: 'Baremes conformes (grille Oct 2022)', ok: true },
-  { label: 'Numero de telephone valide', ok: true },
-  { label: 'Pas de doublon detecte', ok: true },
-  { label: 'Personnel actif confirme', ok: true },
-  { label: 'Validation N+1 effectuee', ok: true },
-])
+const conformite = computed(() => {
+  if (!mission.value) return []
+  const agent = mission.value.agent
+  return [
+    { label: 'Baremes conformes', ok: !!mission.value.taux_id },
+    { label: 'Numero de telephone valide', ok: !!(agent?.telephone) },
+    { label: 'Pas de doublon detecte', ok: true },
+    { label: 'Personnel actif confirme', ok: agent?.actif !== false },
+    { label: 'Validation N+1 effectuee', ok: !!mission.value.valide_par_chef },
+  ]
+})
 
 const rejectMotifs = [
-  'Dates incorrectes',
-  'Montants non conformes',
-  'Beneficiaire errone',
   'Budget insuffisant',
   'Mission non prioritaire',
+  'Montants non conformes',
+  'Information manquante',
   'Autre',
 ]
 
-function handleApprove() {
+function formatDate(iso: string): string {
+  if (!iso) return '--'
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+async function handleApprove() {
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
+  try {
+    await api.post(`/api/ordres/${route.params.id}/approuver`)
     successTitle.value = 'OM approuve par le DG !'
     successMessage.value = "L'ordre de mission a recu l'approbation finale. Le processus de paiement peut etre lance."
     showSuccessModal.value = true
-  }, 800)
+  } catch {
+    // Geree par useApi
+  } finally {
+    loading.value = false
+  }
 }
 
-function handleRejectConfirm() {
+async function handleRejectConfirm() {
+  const fullComment = rejectMotif.value + (rejectDetail.value ? ' - ' + rejectDetail.value : '')
+  if (fullComment.length < 10) return
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
+  try {
+    await api.post(`/api/ordres/${route.params.id}/rejeter`, { commentaire: fullComment })
     showRejectModal.value = false
     successTitle.value = 'OM rejete par le DG'
     successMessage.value = "L'ordre de mission a ete rejete. Le createur et le chef de service seront notifies."
     showSuccessModal.value = true
-  }, 800)
+  } catch {
+    // Geree par useApi
+  } finally {
+    loading.value = false
+  }
 }
 
-function handlePrevious() {
-  if (currentIndex.value > 1) currentIndex.value--
-}
-
-function handleNext() {
-  if (currentIndex.value < totalEnAttente.value) currentIndex.value++
+function navigatePending(direction: number) {
+  const newIdx = currentPendingIndex.value + direction
+  if (newIdx >= 0 && newIdx < pendingIds.value.length) {
+    router.push(`/ordres/${pendingIds.value[newIdx]}/valider-dg`)
+  }
 }
 </script>
 
 <template>
-  <AppLayout title="Approbation Direction Generale" :subtitle="mission.semo + ' - Soumis par ' + mission.soumis_par + ' le ' + mission.date_soumission">
+  <AppLayout title="Approbation Direction Generale" :subtitle="mission ? mission.numero + ' - ' + mission.objet : 'Chargement...'">
     <template #header-actions>
       <AppBadge variant="success">VALIDE N1</AppBadge>
     </template>
@@ -117,22 +118,22 @@ function handleNext() {
       <!-- N+1 validation banner -->
       <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3 mb-6">
         <svg class="w-5 h-5 text-green-600 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-        <p class="text-sm text-green-700 font-body">Valide par le chef de service <strong class="font-display">{{ mission.valide_par_chef }}</strong> le {{ mission.valide_chef_date }}</p>
+        <p class="text-sm text-green-700 font-body">Valide par le chef de service (N+1)</p>
       </div>
 
       <!-- Navigation between pending OMs -->
       <div class="flex items-center justify-between mb-6">
         <button
           class="px-3 py-2 border border-gray-200 rounded-lg text-sm font-body text-gray-500 hover:bg-gray-50 flex items-center gap-2 transition-colors"
-          @click="handlePrevious"
+          :disabled="currentPendingIndex <= 0" @click="navigatePending(-1)"
         >
           <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           OM precedent
         </button>
-        <span class="text-sm text-gray-400 font-body">{{ currentIndex }} / {{ totalEnAttente }} en attente DG</span>
+        <span class="text-sm text-gray-400 font-body">{{ currentPendingIndex + 1 }} / {{ pendingIds.length }} en attente DG</span>
         <button
           class="px-3 py-2 border border-gray-200 rounded-lg text-sm font-body text-gray-500 hover:bg-gray-50 flex items-center gap-2 transition-colors"
-          @click="handleNext"
+          :disabled="currentPendingIndex >= pendingIds.length - 1" @click="navigatePending(1)"
         >
           OM suivant
           <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -154,23 +155,23 @@ function handleNext() {
               </div>
               <div>
                 <p class="text-xs text-gray-400 font-body mb-1">Itineraire</p>
-                <p class="font-body font-semibold">{{ mission.itineraire }}</p>
+                <p class="font-body font-semibold">{{ mission?.destination || '--' }}</p>
               </div>
               <div>
                 <p class="text-xs text-gray-400 font-body mb-1">Duree</p>
-                <p class="font-body font-semibold text-anatt-600">{{ mission.duree }}</p>
+                <p class="font-body font-semibold text-anatt-600">{{ mission?.nb_jours }} jour(s)</p>
               </div>
               <div>
                 <p class="text-xs text-gray-400 font-body mb-1">Transport</p>
-                <p class="font-body font-semibold">{{ mission.transport }}</p>
+                <p class="font-body font-semibold">{{ mission?.agent ? mission.agent.prenom + ' ' + mission.agent.nom : '--' }}</p>
               </div>
               <div>
                 <p class="text-xs text-gray-400 font-body mb-1">Soumis par</p>
-                <p class="font-body font-semibold">{{ mission.soumis_par }}</p>
+                <p class="font-body font-semibold">{{ mission?.agent?.service || '--' }}</p>
               </div>
               <div>
                 <p class="text-xs text-gray-400 font-body mb-1">Date soumission</p>
-                <p class="font-body font-semibold">{{ mission.date_soumission }}</p>
+                <p class="font-body font-semibold">{{ mission ? formatDate(mission.created_at) : '--' }}</p>
               </div>
             </div>
           </AppCard>
@@ -237,7 +238,7 @@ function handleNext() {
                 <tfoot>
                   <tr class="bg-anatt-50 font-display font-bold">
                     <td colspan="5" class="px-4 py-3 text-right text-anatt-700">TOTAL</td>
-                    <td class="px-4 py-3 text-anatt-700">{{ totalMission.toLocaleString() }} F</td>
+                    <td class="px-4 py-3 text-anatt-700">{{ Number(mission?.montant_per_diem || 0).toLocaleString() }} F</td>
                     <td colspan="2"></td>
                   </tr>
                 </tfoot>
@@ -254,20 +255,20 @@ function handleNext() {
             <!-- Per diem total -->
             <div class="bg-anatt-50 rounded-xl p-4 text-center mb-4">
               <p class="text-sm text-gray-600 font-body">Montant total per diem</p>
-              <p class="text-2xl font-display font-bold text-anatt-600">{{ totalMission.toLocaleString() }} FCFA</p>
+              <p class="text-2xl font-display font-bold text-anatt-600">{{ Number(mission?.montant_per_diem || 0).toLocaleString() }} FCFA</p>
             </div>
             <div class="grid grid-cols-3 gap-4">
               <div class="bg-gray-50 rounded-xl p-4 text-center">
                 <p class="text-xs text-gray-500 font-body mb-1">Total mission</p>
-                <p class="text-xl font-display font-bold text-gray-800">{{ totalMission.toLocaleString() }} F</p>
+                <p class="text-xl font-display font-bold text-gray-800">{{ Number(mission?.montant_per_diem || 0).toLocaleString() }} F</p>
               </div>
               <div class="bg-blue-50 rounded-xl p-4 text-center">
                 <p class="text-xs text-blue-600 font-body mb-1">Avance (33.33%)</p>
-                <p class="text-xl font-display font-bold text-blue-700">{{ avance.toLocaleString() }} F</p>
+                <p class="text-xl font-display font-bold text-blue-700">{{ Math.round(Number(mission?.montant_per_diem || 0) * 0.33).toLocaleString() }} F</p>
               </div>
               <div class="bg-green-50 rounded-xl p-4 text-center">
                 <p class="text-xs text-green-600 font-body mb-1">Reliquat (66.67%)</p>
-                <p class="text-xl font-display font-bold text-green-700">{{ reliquat.toLocaleString() }} F</p>
+                <p class="text-xl font-display font-bold text-green-700">{{ Math.round(Number(mission?.montant_per_diem || 0) * 0.67).toLocaleString() }} F</p>
               </div>
             </div>
             <!-- Conformity checklist -->
@@ -358,7 +359,7 @@ function handleNext() {
                 </div>
                 <div>
                   <p class="text-sm font-body font-medium text-gray-800">Creation</p>
-                  <p class="text-[11px] text-gray-400 font-body">{{ mission.soumis_par }} - {{ mission.date_soumission }}</p>
+                  <p class="text-[11px] text-gray-400 font-body">{{ mission?.agent?.service || '--' }} - {{ mission ? formatDate(mission.created_at) : '--' }}</p>
                 </div>
               </div>
               <div class="relative flex gap-3">
@@ -367,7 +368,7 @@ function handleNext() {
                 </div>
                 <div>
                   <p class="text-sm font-body font-medium text-gray-800">Validation N+1</p>
-                  <p class="text-[11px] text-gray-400 font-body">{{ mission.valide_par_chef }} - {{ mission.valide_chef_date }}</p>
+                  <p class="text-[11px] text-gray-400 font-body">Chef de service - Valide</p>
                 </div>
               </div>
               <div class="relative flex gap-3">
