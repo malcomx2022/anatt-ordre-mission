@@ -28,10 +28,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  async function logout() {
+    // Revoquer le token cote serveur
+    if (token.value) {
+      try {
+        const api = useApi()
+        await api.post('/api/auth/logout')
+      } catch {
+        // Ignorer si le serveur est injoignable
+      }
+    }
+
+    // Nettoyer completement l'etat local
     user.value = null
     token.value = null
     localStorage.removeItem('auth_token')
+    sessionStorage.clear()
   }
 
   return { user, token, isAuthenticated, login, fetchUser, logout }

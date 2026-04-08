@@ -85,12 +85,16 @@ class RapportService
 
     public function telechargerExport(string $fichier)
     {
+        // Sanitize: empecher traversal de repertoire (../../.env)
+        $fichier = ltrim($fichier, '/');
+        if (str_contains($fichier, '..') || ! str_starts_with($fichier, 'rapports/')) {
+            abort(403, 'Chemin de fichier non autorise.');
+        }
+
         if (! Storage::disk('local')->exists($fichier)) {
             abort(404, 'Fichier introuvable.');
         }
 
-        $nom = basename($fichier);
-
-        return Storage::disk('local')->download($fichier, $nom);
+        return Storage::disk('local')->download($fichier, basename($fichier));
     }
 }

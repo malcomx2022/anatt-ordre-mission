@@ -23,6 +23,12 @@ class MissionController extends Controller
     {
         $query = OrdreMission::with(['agent', 'taux']);
 
+        // AGENT ne voit que ses propres OM
+        $user = $request->user();
+        if ($user->role === 'AGENT' && $user->agent) {
+            $query->where('agent_id', $user->agent->id);
+        }
+
         if ($statut = $request->get('statut')) {
             $query->where('statut', $statut);
         }
@@ -61,8 +67,15 @@ class MissionController extends Controller
         );
     }
 
-    public function show(OrdreMission $ordre): JsonResponse
+    public function show(Request $request, OrdreMission $ordre): JsonResponse
     {
+        $user = $request->user();
+
+        // AGENT ne peut voir que ses propres OM
+        if ($user->role === 'AGENT' && $user->agent && $ordre->agent_id !== $user->agent->id) {
+            return $this->forbidden('Vous ne pouvez consulter que vos propres ordres de mission.');
+        }
+
         $ordre->load(['agent', 'taux', 'valideurChef', 'valideurDG', 'paiements']);
 
         return $this->success(new OrdreMissionResource($ordre));

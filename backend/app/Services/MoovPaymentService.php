@@ -27,7 +27,7 @@ class MoovPaymentService
         foreach ($ordres as $ordre) {
             $agent = $ordre->agent;
 
-            if (! $agent->numero_moov) {
+            if (! $agent->numero_moov || ! preg_match('/^229\d{8}$/', $agent->numero_moov)) {
                 continue;
             }
 

@@ -27,7 +27,7 @@ class MtnPaymentService
         foreach ($ordres as $ordre) {
             $agent = $ordre->agent;
 
-            if (! $agent->numero_mtn) {
+            if (! $agent->numero_mtn || ! preg_match('/^229\d{8}$/', $agent->numero_mtn)) {
                 continue;
             }
 

@@ -10,6 +10,20 @@ export interface User {
   email: string
   role: UserRole
   agent_id?: number
+  agent?: import('./agent').Agent
+  email_verified_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ApiErrorResponse {
+  message: string
+  errors?: Record<string, string[]>
+}
+
+export interface LoginResponse {
+  token: string
+  user: User
 }
 
 export interface PaginationMeta {
