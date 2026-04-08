@@ -1,121 +1,98 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import AppPagination from '@/components/shared/AppPagination.vue'
+import { useApi } from '@/composables/useApi'
+import { useSearch } from '@/composables/useSearch'
 import type { Agent } from '@/types'
 
 const router = useRouter()
+const api = useApi()
+const { query: searchQuery, debouncedQuery } = useSearch(300)
 
-const searchQuery = ref('')
 const filterGrade = ref('')
 const filterOperateur = ref('')
 const filterStatut = ref('')
 const currentPage = ref(1)
-const perPage = 5
+const totalPages = ref(1)
+const totalItems = ref(0)
+const loading = ref(true)
 const showDeleteModal = ref(false)
 const agentToDelete = ref<Agent | null>(null)
 
-const agents = ref<(Agent & { grade: string; salaire: number; operateur: string })[]>([
-  {
-    id: 1, matricule: 'MAT-0045', nom: 'MAGBE', prenom: 'Victorin', email: 'magbe.v@anatt.bj',
-    telephone: '229 99 70 74 80', numero_mtn: '22999707480', numero_moov: '22901234567',
-    service: 'Direction des Transports Routiers', categorie: 'A1', actif: true,
-    grade: 'Cadre', salaire: 850000, operateur: 'MTN'
-  },
-  {
-    id: 2, matricule: 'MAT-0023', nom: 'ADJOVI', prenom: 'Pierre', email: 'adjovi.p@anatt.bj',
-    telephone: '229 01 66 33 55', numero_mtn: '', numero_moov: '22901663355',
-    service: 'Direction Administrative', categorie: 'C', actif: true,
-    grade: 'Agent', salaire: 350000, operateur: 'MOOV'
-  },
-  {
-    id: 3, matricule: 'MAT-0012', nom: 'DOSSA', prenom: 'Marie', email: 'dossa.m@anatt.bj',
-    telephone: '229 97 12 34 56', numero_mtn: '22997123456', numero_moov: '',
-    service: 'Direction des Ressources Humaines', categorie: 'A2', actif: true,
-    grade: 'Chef Service', salaire: 650000, operateur: 'MTN'
-  },
-  {
-    id: 4, matricule: 'MAT-0003', nom: 'SAOSSI', prenom: 'Paterne', email: 'saossi.p@anatt.bj',
-    telephone: '229 01 98 76 54', numero_mtn: '', numero_moov: '22901987654',
-    service: 'Direction Generale', categorie: 'A1', actif: true,
-    grade: 'Directeur', salaire: 1200000, operateur: 'MOOV'
-  },
-  {
-    id: 5, matricule: 'MAT-0067', nom: 'KONE', prenom: 'Jean-Baptiste', email: 'kone.j@anatt.bj',
-    telephone: '229 96 45 67 89', numero_mtn: '22996456789', numero_moov: '',
-    service: 'Service Technique', categorie: 'C', actif: false,
-    grade: 'Agent', salaire: 380000, operateur: 'MTN'
-  },
-  {
-    id: 6, matricule: 'MAT-0078', nom: 'HOUNGBO', prenom: 'Sylvie', email: 'houngbo.s@anatt.bj',
-    telephone: '229 97 88 11 22', numero_mtn: '22997881122', numero_moov: '',
-    service: 'Direction Financiere', categorie: 'B', actif: true,
-    grade: 'Chef Division', salaire: 520000, operateur: 'MTN'
-  },
-  {
-    id: 7, matricule: 'MAT-0091', nom: 'TOSSOU', prenom: 'Eric', email: 'tossou.e@anatt.bj',
-    telephone: '229 01 44 55 66', numero_mtn: '', numero_moov: '22901445566',
-    service: 'Direction Administrative', categorie: 'C', actif: true,
-    grade: 'Agent', salaire: 320000, operateur: 'MOOV'
-  }
-])
-
-const filteredAgents = computed(() => {
-  return agents.value.filter(a => {
-    const matchSearch = !searchQuery.value ||
-      `${a.nom} ${a.prenom} ${a.matricule}`.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchGrade = !filterGrade.value || a.grade === filterGrade.value
-    const matchOp = !filterOperateur.value || a.operateur === filterOperateur.value
-    const matchStatut = !filterStatut.value ||
-      (filterStatut.value === 'Actif' && a.actif) ||
-      (filterStatut.value === 'Inactif' && !a.actif)
-    return matchSearch && matchGrade && matchOp && matchStatut
-  })
-})
-
-const totalPages = computed(() => Math.ceil(filteredAgents.value.length / perPage))
-const paginatedAgents = computed(() => {
-  const start = (currentPage.value - 1) * perPage
-  return filteredAgents.value.slice(start, start + perPage)
-})
+const agents = ref<Agent[]>([])
 
 const stats = computed(() => ({
-  total: agents.value.length,
+  total: totalItems.value,
   actifs: agents.value.filter(a => a.actif).length,
-  mtn: agents.value.filter(a => a.operateur === 'MTN').length,
-  moov: agents.value.filter(a => a.operateur === 'MOOV').length
+  mtn: agents.value.filter(a => a.numero_mtn).length,
+  moov: agents.value.filter(a => a.numero_moov).length,
 }))
 
+async function loadAgents() {
+  loading.value = true
+  try {
+    const params: Record<string, string | number> = { page: currentPage.value }
+    if (debouncedQuery.value) params.search = debouncedQuery.value
+    if (filterStatut.value === 'Actif') params.actif = 1
+    if (filterStatut.value === 'Inactif') params.actif = 0
+    if (filterGrade.value) params.categorie = filterGrade.value
+
+    const { data } = await api.get('/api/agents', { params })
+    agents.value = data.data || []
+    if (data.meta) {
+      currentPage.value = data.meta.current_page
+      totalPages.value = data.meta.last_page
+      totalItems.value = data.meta.total
+    }
+  } catch {
+    // Geree par useApi
+  } finally {
+    loading.value = false
+  }
+}
+
+watch([debouncedQuery, filterGrade, filterOperateur, filterStatut], () => {
+  currentPage.value = 1
+  loadAgents()
+})
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadAgents()
+}
+
+onMounted(loadAgents)
+
 function getInitials(nom: string, prenom: string) {
-  return `${nom[0] || ''}${prenom[0] || ''}`.toUpperCase()
+  return `${(prenom?.[0] || '')}${(nom?.[0] || '')}`.toUpperCase()
 }
 
 const initialsColors = [
-  'bg-blue-100 text-blue-600',
-  'bg-green-100 text-green-600',
-  'bg-purple-100 text-purple-600',
-  'bg-red-100 text-red-600',
-  'bg-amber-100 text-amber-600',
-  'bg-pink-100 text-pink-600',
-  'bg-teal-100 text-teal-600'
+  'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600',
+  'bg-purple-100 text-purple-600', 'bg-red-100 text-red-600',
+  'bg-amber-100 text-amber-600', 'bg-pink-100 text-pink-600',
+  'bg-teal-100 text-teal-600',
 ]
 
 function getInitialsColor(id: number) {
   return initialsColors[id % initialsColors.length]
 }
 
-function formatSalaire(montant: number) {
-  return montant.toLocaleString('fr-FR')
-}
-
-function confirmDelete(agent: Agent & { grade: string; salaire: number; operateur: string }) {
+function confirmDelete(agent: Agent) {
   agentToDelete.value = agent
   showDeleteModal.value = true
 }
 
-function handleDelete() {
+async function handleDelete() {
   if (agentToDelete.value) {
-    agents.value = agents.value.filter(a => a.id !== agentToDelete.value!.id)
+    try {
+      await api.delete(`/api/agents/${agentToDelete.value.id}`)
+      loadAgents()
+    } catch {
+      // Geree par useApi
+    }
   }
   showDeleteModal.value = false
   agentToDelete.value = null
@@ -222,7 +199,7 @@ function handleDelete() {
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr
-              v-for="agent in paginatedAgents"
+              v-for="agent in agents"
               :key="agent.id"
               class="hover:bg-anatt-50/30 transition-colors"
             >
@@ -244,14 +221,14 @@ function handleDelete() {
               <td class="px-5 py-3">
                 <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ agent.matricule }}</span>
               </td>
-              <td class="px-5 py-3 font-body">{{ agent.grade }}</td>
-              <td class="px-5 py-3 font-display font-semibold">{{ formatSalaire(agent.salaire) }}</td>
+              <td class="px-5 py-3 font-body">{{ agent.service }}</td>
+              <td class="px-5 py-3 font-display font-semibold">{{ agent.categorie }}</td>
               <td class="px-5 py-3">
                 <span
                   class="text-xs font-display font-bold px-2 py-1 rounded-lg"
-                  :class="agent.operateur === 'MTN' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'"
+                  :class="agent.numero_mtn ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'"
                 >
-                  {{ agent.operateur }}
+                  {{ agent.numero_mtn ? 'MTN' : agent.numero_moov ? 'MOOV' : '--' }}
                 </span>
               </td>
               <td class="px-5 py-3 font-mono text-xs">{{ agent.telephone }}</td>
@@ -294,36 +271,12 @@ function handleDelete() {
         </table>
       </div>
       <!-- Pagination -->
-      <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-        <p class="text-sm font-body text-gray-500">
-          Affichage {{ (currentPage - 1) * perPage + 1 }}-{{ Math.min(currentPage * perPage, filteredAgents.length) }} sur {{ filteredAgents.length }} agents
-        </p>
-        <div class="flex items-center gap-1">
-          <button
-            class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 disabled:opacity-50"
-            :disabled="currentPage === 1"
-            @click="currentPage--"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button
-            v-for="page in totalPages"
-            :key="page"
-            class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-display font-medium"
-            :class="page === currentPage ? 'bg-anatt-500 text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'"
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </button>
-          <button
-            class="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-700 disabled:opacity-50"
-            :disabled="currentPage === totalPages"
-            @click="currentPage++"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      </div>
+      <AppPagination
+        :current-page="currentPage"
+        :last-page="totalPages"
+        :total="totalItems"
+        @page-change="handlePageChange"
+      />
     </div>
 
     <!-- Modal Suppression -->
