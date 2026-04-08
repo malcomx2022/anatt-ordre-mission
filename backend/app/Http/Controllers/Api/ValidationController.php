@@ -42,7 +42,7 @@ class ValidationController extends Controller
             'commentaire' => 'required|string|min:10',
         ]);
 
-        $ordre = $this->missionService->rejeter($ordre, $request->commentaire);
+        $ordre = $this->missionService->rejeter($ordre, $request->commentaire, $request->user());
 
         return $this->success(new OrdreMissionResource($ordre), 'Ordre de mission rejete.');
     }
