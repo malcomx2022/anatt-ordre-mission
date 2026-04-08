@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useApi } from '@/composables/useApi'
+import AppLogo from '@/components/shared/AppLogo.vue'
 
 const email = ref('')
 const loading = ref(false)
@@ -30,12 +31,8 @@ async function handleSubmit() {
     </div>
 
     <div class="w-full max-w-md login-card">
-      <div class="text-center mb-8">
-        <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/20">
-          <svg class="w-8 h-8 text-gold-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 1 0 1.4l-9.1 9.1-4.4.6.6-4.4 9.2-9.1a1 1 0 0 1 1.4 0z"/><path d="m2.5 21.5 3-3"/></svg>
-        </div>
-        <h1 class="text-2xl font-display font-bold text-white">Mot de passe oublie</h1>
-        <p class="text-anatt-200 text-sm mt-1">Recuperez l'acces a votre compte</p>
+      <div class="flex justify-center mb-8">
+        <AppLogo size="lg" dark />
       </div>
 
       <div class="bg-white rounded-2xl shadow-2xl p-8">

@@ -55,11 +55,28 @@
     <!-- Flag bar -->
     <div class="flag-bar"></div>
 
-    <!-- Header -->
+    <!-- Header avec logo ANaTT -->
     <div class="header">
-        <div class="header-country">Republique du Benin</div>
-        <div class="header-org">Agence Nationale des Transports Terrestres</div>
-        <div class="header-sub">Direction Generale - Service des Ressources Humaines</div>
+        <table style="width:100%; border:none;">
+            <tr>
+                <td style="width:60px; vertical-align:middle; border:none; padding:0;">
+                    <!-- Armoiries du Benin (SVG inline pour DomPDF) -->
+                    <svg width="50" height="50" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 6h24v18c0 6-12 12-12 12S8 30 8 24V6z" fill="#CE1126" opacity="0.15"/>
+                        <path d="M8 6h12v18c0 6-12 12-12 12V6z" fill="#1D9E4F" opacity="0.2"/>
+                        <path d="M20 6h12v18c0 6-12 12-12 12V6z" fill="#D4A843" opacity="0.2"/>
+                        <path d="M20 12l2 4 4.5.7-3.3 3.2.8 4.6L20 22.3l-4 2.2.8-4.6-3.3-3.2 4.5-.7z" fill="#1D9E4F"/>
+                        <rect x="8" y="6" width="24" height="30" rx="2" stroke="#1D9E4F" stroke-width="1.5" fill="none"/>
+                    </svg>
+                </td>
+                <td style="vertical-align:middle; border:none; padding-left:10px;">
+                    <div style="font-size:18px; font-weight:bold; color:#0F5C2E; letter-spacing:1px;">ANaTT</div>
+                    <div style="font-size:9px; color:#374151; text-transform:uppercase; letter-spacing:1px; line-height:1.3;">Agence Nationale des Transports Terrestres</div>
+                    <div style="height:3px; margin-top:4px; background:linear-gradient(90deg, #1D9E4F 0%, #1D9E4F 33%, #D4A843 33%, #D4A843 66%, #CE1126 66%, #CE1126 100%); width:150px;"></div>
+                    <div style="font-size:8px; color:#6b7280; margin-top:2px;">Republique du Benin</div>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <!-- Document Title -->
