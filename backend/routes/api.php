@@ -16,15 +16,15 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// ── Authentification (publiques) ──
-Route::prefix('auth')->group(function () {
+// ── Authentification (publiques + rate limiting strict) ──
+Route::prefix('auth')->middleware('throttle:login')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('mot-de-passe/email', [AuthController::class, 'sendResetLink']);
     Route::post('mot-de-passe/reset', [AuthController::class, 'resetPassword']);
 });
 
-// ── Routes protégées par Sanctum ──
-Route::middleware('auth:sanctum')->group(function () {
+// ── Routes protégées par Sanctum + rate limiting global ──
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Auth (tous les utilisateurs connectes)
     Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -59,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('paiements', [PaiementController::class, 'index']);
     Route::get('paiements/statuts', [PaiementController::class, 'statuts']);
     Route::get('paiements/historique', [PaiementController::class, 'historique']);
-    Route::middleware('role:DRH')->group(function () {
+    Route::middleware(['role:DRH', 'throttle:paiement'])->group(function () {
         Route::post('paiements/generer/moov', [PaiementController::class, 'genererMoov']);
         Route::post('paiements/generer/mtn', [PaiementController::class, 'genererMtn']);
         Route::post('paiements/reconcilier', [PaiementController::class, 'reconcilier']);
@@ -76,7 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:CHEF_SERVICE,DRH,DIRECTEUR')->group(function () {
         Route::get('rapports/mensuel', [RapportController::class, 'mensuel']);
         Route::get('rapports/agents', [RapportController::class, 'agents']);
-        Route::get('rapports/export', [RapportController::class, 'export']);
+        Route::get('rapports/export', [RapportController::class, 'export'])->middleware('throttle:export');
         Route::get('rapports/export/download', [RapportController::class, 'exportDownload']);
     });
 
