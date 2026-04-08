@@ -1,45 +1,71 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi, getValidationErrors } from '@/composables/useApi'
+import type { Agent } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const agentId = Number(route.params.id) || 1
+const api = useApi()
+const agentId = Number(route.params.id)
+
+const loadingData = ref(true)
+const loading = ref(false)
+const showSuccessModal = ref(false)
+const errors = ref<Record<string, string[]>>({})
+const agent = ref<Agent | null>(null)
 
 const form = ref({
-  matricule: 'MAT-0045',
-  grade: 'Cadre',
-  nom: 'MAGBE',
-  prenom: 'Victorin',
-  salaire: 850000,
-  numero_mtn: '99707480',
-  numero_moov: '01234567',
-  operateur: 'MTN',
-  statut: 'Actif'
+  nom: '',
+  prenom: '',
+  email: '',
+  telephone: '',
+  service: '',
+  categorie: 'C' as string,
+  numero_mtn: '',
+  numero_moov: '',
 })
 
-const showSuccessModal = ref(false)
-
-const modifications = ref([
-  { text: 'Numero MTN modifie: 229 99 XX XX XX -> 229 99 70 74 80', date: '28/11/2024' },
-  { text: 'Salaire mis a jour: 780 000 -> 850 000 FCFA', date: '15/10/2024' }
-])
-
-const categorieDisplay = computed(() => {
-  const s = form.value.salaire || 0
-  if (s < 400000) return { text: '< 400 000 FCFA', class: 'bg-blue-50 border-blue-200 text-blue-700 font-medium' }
-  if (s < 800000) return { text: '400 000 - 800 000 FCFA', class: 'bg-amber-50 border-amber-200 text-amber-700 font-medium' }
-  return { text: '>= 800 000 FCFA', class: 'bg-green-50 border-green-200 text-green-700 font-medium' }
+onMounted(async () => {
+  try {
+    const { data } = await api.get(`/api/agents/${agentId}`)
+    agent.value = data.data
+    if (agent.value) {
+      form.value = {
+        nom: agent.value.nom,
+        prenom: agent.value.prenom,
+        email: agent.value.email,
+        telephone: agent.value.telephone,
+        service: agent.value.service,
+        categorie: agent.value.categorie,
+        numero_mtn: agent.value.numero_mtn || '',
+        numero_moov: agent.value.numero_moov || '',
+      }
+    }
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
+  }
 })
 
-function handleUpdate() {
-  showSuccessModal.value = true
+async function handleUpdate() {
+  loading.value = true
+  errors.value = {}
+  try {
+    await api.put(`/api/agents/${agentId}`, form.value)
+    showSuccessModal.value = true
+  } catch (e) {
+    errors.value = getValidationErrors(e)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
-  <AppLayout title="Modifier l'Agent" :subtitle="`${form.matricule} - ${form.nom} ${form.prenom}`">
+  <AppLayout :title="agent ? 'Modifier ' + agent.matricule : 'Chargement...'" :subtitle="agent ? `${agent.nom} ${agent.prenom}` : ''">
     <template #header-actions>
       <router-link
         :to="`/agents/${agentId}`"
@@ -47,10 +73,14 @@ function handleUpdate() {
       >
         <svg class="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
       </router-link>
-      <span class="text-xs font-body text-gray-400">Derniere modification: 28/11/2024</span>
     </template>
 
-    <div class="max-w-4xl">
+    <!-- Loading -->
+    <div v-if="loadingData" class="flex items-center justify-center py-24">
+      <svg class="w-8 h-8 animate-spin text-anatt-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+    </div>
+
+    <div v-else-if="agent" class="max-w-4xl">
       <!-- Alerte modification -->
       <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
         <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -71,7 +101,7 @@ function handleUpdate() {
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Matricule</label>
               <input
-                :value="form.matricule"
+                :value="agent.matricule"
                 type="text"
                 disabled
                 class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm font-body text-gray-500 cursor-not-allowed"
@@ -79,19 +109,14 @@ function handleUpdate() {
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
-                Grade <span class="text-red-500">*</span>
+                Service <span class="text-red-500">*</span>
               </label>
-              <select
-                v-model="form.grade"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500"
+              <input
+                v-model="form.service"
+                type="text"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500"
               >
-                <option>Directeur General</option>
-                <option>Directeur</option>
-                <option>Chef Service</option>
-                <option>Chef Division</option>
-                <option>Cadre</option>
-                <option>Agent</option>
-              </select>
+              <p v-if="errors.service" class="text-xs text-red-500 mt-1">{{ errors.service[0] }}</p>
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
@@ -115,19 +140,35 @@ function handleUpdate() {
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">
-                Salaire de base (FCFA) <span class="text-red-500">*</span>
+                Email <span class="text-red-500">*</span>
               </label>
               <input
-                v-model.number="form.salaire"
-                type="number"
+                v-model="form.email"
+                type="email"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500 focus:ring-2 focus:ring-anatt-500/20"
+              >
+              <p v-if="errors.email" class="text-xs text-red-500 mt-1">{{ errors.email[0] }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Telephone</label>
+              <input
+                v-model="form.telephone"
+                type="tel"
                 class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500 focus:ring-2 focus:ring-anatt-500/20"
               >
             </div>
             <div>
               <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Categorie</label>
-              <div class="px-4 py-2.5 border rounded-xl text-sm" :class="categorieDisplay.class">
-                {{ categorieDisplay.text }}
-              </div>
+              <select
+                v-model="form.categorie"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500"
+              >
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
             </div>
           </div>
         </div>
@@ -167,55 +208,6 @@ function handleUpdate() {
                 >
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Operateur principal</label>
-              <div class="flex gap-4">
-                <label
-                  class="flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer flex-1 transition-colors"
-                  :class="form.operateur === 'MTN' ? 'border-2 border-yellow-400 bg-yellow-50' : 'border border-gray-200 hover:bg-yellow-50'"
-                >
-                  <input v-model="form.operateur" type="radio" value="MTN" class="text-yellow-600">
-                  <span class="text-sm font-display font-medium">MTN MoMo</span>
-                </label>
-                <label
-                  class="flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer flex-1 transition-colors"
-                  :class="form.operateur === 'MOOV' ? 'border-2 border-blue-400 bg-blue-50' : 'border border-gray-200 hover:bg-blue-50'"
-                >
-                  <input v-model="form.operateur" type="radio" value="MOOV" class="text-blue-600">
-                  <span class="text-sm font-display font-medium">MOOV Flooz</span>
-                </label>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-display font-medium text-gray-700 mb-1.5">Statut</label>
-              <select
-                v-model="form.statut"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500"
-              >
-                <option>Actif</option>
-                <option>Inactif</option>
-                <option>Suspendu</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Historique des modifications -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-          <h3 class="text-base font-display font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-anatt-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            Dernieres Modifications
-          </h3>
-          <div class="space-y-3 text-sm">
-            <div
-              v-for="(mod, idx) in modifications"
-              :key="idx"
-              class="flex gap-3 items-center p-3 bg-gray-50 rounded-xl"
-            >
-              <svg class="w-4 h-4 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              <span class="font-body text-gray-600">{{ mod.text }}</span>
-              <span class="ml-auto text-xs font-body text-gray-400 flex-shrink-0">{{ mod.date }}</span>
-            </div>
           </div>
         </div>
 
@@ -223,41 +215,38 @@ function handleUpdate() {
         <div class="flex items-center justify-between">
           <router-link
             :to="`/agents/${agentId}`"
-            class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50"
+            class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Annuler
           </router-link>
           <button
             type="submit"
-            class="px-8 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600 transition-colors flex items-center gap-2 shadow-lg shadow-anatt-500/30"
+            :disabled="loading"
+            class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600 transition-colors flex items-center gap-2 shadow-lg shadow-anatt-500/30 disabled:opacity-60"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Sauvegarder les modifications
+            <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            {{ loading ? 'Enregistrement...' : 'Sauvegarder' }}
           </button>
         </div>
       </form>
-    </div>
 
-    <!-- Modal succes -->
-    <teleport to="body">
-      <div
-        v-if="showSuccessModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      >
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl text-center">
-          <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <!-- Success modal -->
+      <teleport to="body">
+        <div v-if="showSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Agent modifie !</h3>
+            <p class="text-sm font-body text-gray-500 mb-6">Les modifications ont ete enregistrees.</p>
+            <div class="flex gap-3">
+              <button class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50" @click="router.push('/agents')">Liste</button>
+              <button class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600" @click="router.push(`/agents/${agentId}`)">Voir la fiche</button>
+            </div>
           </div>
-          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Modifications enregistrees</h3>
-          <p class="text-sm font-body text-gray-500 mb-6">La fiche de {{ form.nom }} {{ form.prenom }} a ete mise a jour.</p>
-          <router-link
-            :to="`/agents/${agentId}`"
-            class="inline-block px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600"
-          >
-            Voir la fiche
-          </router-link>
         </div>
-      </div>
-    </teleport>
+      </teleport>
+    </div>
   </AppLayout>
 </template>
