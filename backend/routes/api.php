@@ -135,6 +135,35 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             file_put_contents($path, json_encode($request->all(), JSON_PRETTY_PRINT));
             return response()->json(['data' => $request->all(), 'message' => 'Parametres enregistres.']);
         });
+
+        // Backups
+        Route::get('backups', function () {
+            $dir = storage_path('app/backups');
+            if (! is_dir($dir)) return response()->json(['data' => []]);
+            $files = collect(scandir($dir))->filter(fn ($f) => str_ends_with($f, '.sql') || str_ends_with($f, '.sql.gz'))
+                ->values()->map(function ($f) use ($dir) {
+                    $path = "{$dir}/{$f}";
+                    $size = filesize($path);
+                    return [
+                        'name' => $f,
+                        'date' => date('d/m/Y H:i', filemtime($path)),
+                        'size' => $size < 1048576 ? round($size / 1024, 1) . ' KB' : round($size / 1048576, 1) . ' MB',
+                        'type' => str_contains($f, '_020000') ? 'Automatique' : 'Manuel',
+                        'status' => 'Complet',
+                    ];
+                })->sortByDesc('date')->values();
+            return response()->json(['data' => $files]);
+        });
+        Route::post('backups', function () {
+            \Illuminate\Support\Facades\Artisan::call('db:backup', ['--compress' => true]);
+            return response()->json(['message' => 'Sauvegarde creee.']);
+        });
+        Route::delete('backups/{name}', function (string $name) {
+            $name = basename($name);
+            $path = storage_path("app/backups/{$name}");
+            if (file_exists($path)) { unlink($path); }
+            return response()->json(['message' => 'Sauvegarde supprimee.']);
+        });
     });
 
     // Audit - DIRECTEUR uniquement
