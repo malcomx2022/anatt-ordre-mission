@@ -227,7 +227,11 @@ function getActivityColorClass(color: string) {
                   class="w-8 h-8 rounded-lg flex items-center justify-center"
                   :class="getActivityColorClass(activity.color)"
                 >
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="getActivityIcon(activity.icon)"></svg>
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline v-if="activity.icon === 'check'" points="20 6 9 17 4 12"/>
+                    <template v-else-if="activity.icon === 'edit'"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></template>
+                    <template v-else-if="activity.icon === 'login'"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></template>
+                  </svg>
                 </div>
                 <div>
                   <p class="text-xs font-display font-medium text-gray-800">{{ activity.text }}</p>

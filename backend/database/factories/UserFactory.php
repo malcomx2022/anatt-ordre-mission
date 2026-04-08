@@ -19,28 +19,37 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => 'AGENT',
             'remember_token' => Str::random(10),
         ];
     }
 
+    public function configure(): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user) {
+            if ($user->role === null) {
+                $user->role = 'AGENT';
+                $user->saveQuietly();
+            }
+        });
+    }
+
     public function admin(): static
     {
-        return $this->state(fn () => ['role' => 'ADMIN']);
+        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('ADMIN'));
     }
 
     public function chefService(): static
     {
-        return $this->state(fn () => ['role' => 'CHEF_SERVICE']);
+        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('CHEF_SERVICE'));
     }
 
     public function directeur(): static
     {
-        return $this->state(fn () => ['role' => 'DIRECTEUR']);
+        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('DIRECTEUR'));
     }
 
     public function drh(): static
     {
-        return $this->state(fn () => ['role' => 'DRH']);
+        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('DRH'));
     }
 }
