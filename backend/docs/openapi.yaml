@@ -1,0 +1,484 @@
+openapi: 3.0.3
+info:
+  title: ANaTT - API Gestion des Ordres de Mission
+  description: |
+    API RESTful pour la gestion des ordres de mission et paiements per diem.
+    Agence Nationale des Transports Terrestres - Republique du Benin.
+  version: 1.0.0
+  contact:
+    name: Equipe ANaTT
+    email: support@anatt.bj
+
+servers:
+  - url: http://localhost:8000/api
+    description: Developpement local
+  - url: https://missions.anatt.bj/api
+    description: Production
+
+tags:
+  - name: Auth
+    description: Authentification et gestion de session
+  - name: Agents
+    description: Gestion du personnel
+  - name: Ordres
+    description: CRUD ordres de mission
+  - name: Validation
+    description: Workflow de validation (soumettre, valider, approuver, rejeter)
+  - name: Paiements
+    description: Generation fichiers paiement Moov/MTN et reconciliation
+  - name: Taux
+    description: Taux per diem par categorie et destination
+  - name: Rapports
+    description: Rapports mensuels, par agent, exports Excel
+  - name: Audit
+    description: Journal d'activite systeme
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [AGENT, CHEF_SERVICE, DRH, DIRECTEUR, ADMIN] }
+
+    Agent:
+      type: object
+      properties:
+        id: { type: integer }
+        matricule: { type: string, example: ANT-001 }
+        nom: { type: string }
+        prenom: { type: string }
+        email: { type: string, format: email }
+        telephone: { type: string, example: "22997123456" }
+        numero_moov: { type: string, nullable: true }
+        numero_mtn: { type: string, nullable: true }
+        service: { type: string }
+        categorie: { type: string, enum: [A1, A2, B, C, D] }
+        actif: { type: boolean }
+
+    OrdreMission:
+      type: object
+      properties:
+        id: { type: integer }
+        numero: { type: string, example: OM-2026-0001 }
+        agent_id: { type: integer }
+        objet: { type: string }
+        destination: { type: string }
+        date_depart: { type: string, format: date }
+        date_retour: { type: string, format: date }
+        nb_jours: { type: integer }
+        montant_per_diem: { type: number }
+        statut: { type: string, enum: [BROUILLON, SOUMIS, VALIDE_N1, APPROUVE_DG, PAYE, REJETE] }
+        commentaire_rejet: { type: string, nullable: true }
+
+    Paiement:
+      type: object
+      properties:
+        id: { type: integer }
+        ordre_mission_id: { type: integer }
+        agent_id: { type: integer }
+        operateur: { type: string, enum: [MOOV, MTN] }
+        numero_destinataire: { type: string }
+        montant: { type: number }
+        statut: { type: string, enum: [EN_ATTENTE, INITIE, SUCCES, ECHEC] }
+        reference_transaction: { type: string, nullable: true }
+
+    TauxPerDiem:
+      type: object
+      properties:
+        id: { type: integer }
+        categorie: { type: string }
+        destination_type: { type: string, enum: [LOCALE, REGIONALE, INTERNATIONALE] }
+        montant_journalier: { type: number }
+        annee: { type: integer }
+        actif: { type: boolean }
+
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
+
+    Pagination:
+      type: object
+      properties:
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+
+  responses:
+    Unauthorized:
+      description: Non authentifie
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Acces refuse
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Donnees invalides
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion utilisateur
+      description: Authentifie un utilisateur et retourne un token Sanctum. Rate limit 5/min.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Connexion reussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token: { type: string }
+                      user: { $ref: '#/components/schemas/User' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Deconnexion
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Deconnexion reussie
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Profil utilisateur connecte
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+
+  /agents:
+    get:
+      tags: [Agents]
+      summary: Liste des agents
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: categorie
+          in: query
+          schema: { type: string, enum: [A1, A2, B, C, D] }
+        - name: service
+          in: query
+          schema: { type: string }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 15, minimum: 5, maximum: 100 }
+      responses:
+        '200':
+          description: Liste paginee
+    post:
+      tags: [Agents]
+      summary: Creer un agent (DRH)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [matricule, nom, prenom, email, telephone, service, categorie]
+              properties:
+                matricule: { type: string }
+                nom: { type: string }
+                prenom: { type: string }
+                email: { type: string, format: email }
+                telephone: { type: string }
+                numero_moov: { type: string }
+                numero_mtn: { type: string }
+                service: { type: string }
+                categorie: { type: string, enum: [A1, A2, B, C, D] }
+      responses:
+        '201':
+          description: Agent cree
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /ordres:
+    get:
+      tags: [Ordres]
+      summary: Liste des ordres de mission
+      description: Les AGENT ne voient que leurs propres OM. Recherche full-text disponible.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: search
+          in: query
+          description: Recherche full-text (numero, objet, destination, agent)
+          schema: { type: string }
+        - name: statut
+          in: query
+          schema: { type: string, enum: [BROUILLON, SOUMIS, VALIDE_N1, APPROUVE_DG, PAYE, REJETE] }
+        - name: agent_id
+          in: query
+          schema: { type: integer }
+        - name: date_debut
+          in: query
+          schema: { type: string, format: date }
+        - name: date_fin
+          in: query
+          schema: { type: string, format: date }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 15 }
+      responses:
+        '200':
+          description: Liste paginee des ordres
+    post:
+      tags: [Ordres]
+      summary: Creer un ordre de mission
+      description: Le per diem est calcule automatiquement (nb_jours x taux). Statut initial BROUILLON.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id, objet, destination, date_depart, date_retour, taux_id]
+              properties:
+                agent_id: { type: integer }
+                objet: { type: string }
+                destination: { type: string }
+                date_depart: { type: string, format: date }
+                date_retour: { type: string, format: date }
+                taux_id: { type: integer }
+      responses:
+        '201':
+          description: Ordre cree en BROUILLON
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /ordres/{id}/soumettre:
+    post:
+      tags: [Validation]
+      summary: Soumettre un OM pour validation
+      description: Transition BROUILLON -> SOUMIS. Protege par verrou pessimiste.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OM soumis
+        '422':
+          description: Statut incorrect
+
+  /ordres/{id}/valider-n1:
+    post:
+      tags: [Validation]
+      summary: Validation chef de service (N+1)
+      description: Transition SOUMIS -> VALIDE_N1. Requiert role CHEF_SERVICE du meme service.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OM valide N1
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /ordres/{id}/approuver:
+    post:
+      tags: [Validation]
+      summary: Approbation Direction Generale
+      description: Transition VALIDE_N1 -> APPROUVE_DG. Requiert role DIRECTEUR.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OM approuve
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /ordres/{id}/rejeter:
+    post:
+      tags: [Validation]
+      summary: Rejeter un OM
+      description: Requiert role CHEF_SERVICE ou DIRECTEUR. Commentaire min 10 caracteres.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [commentaire]
+              properties:
+                commentaire: { type: string, minLength: 10 }
+      responses:
+        '200':
+          description: OM rejete
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /paiements:
+    get:
+      tags: [Paiements]
+      summary: Liste des paiements
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: operateur
+          in: query
+          schema: { type: string, enum: [MOOV, MTN] }
+        - name: statut
+          in: query
+          schema: { type: string, enum: [EN_ATTENTE, INITIE, SUCCES, ECHEC] }
+      responses:
+        '200':
+          description: Liste paginee
+
+  /paiements/generer/moov:
+    post:
+      tags: [Paiements]
+      summary: Generer fichier virement Moov
+      description: Genere un fichier CSV au format Moov. Requiert role DRH. Rate limit 5/min.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ordre_ids]
+              properties:
+                ordre_ids: { type: array, items: { type: integer } }
+      responses:
+        '200':
+          description: Fichier genere
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /paiements/generer/mtn:
+    post:
+      tags: [Paiements]
+      summary: Generer fichier virement MTN
+      description: Genere un fichier CSV au format MTN MoMo. Requiert role DRH.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ordre_ids]
+              properties:
+                ordre_ids: { type: array, items: { type: integer } }
+      responses:
+        '200':
+          description: Fichier genere
+
+  /taux:
+    get:
+      tags: [Taux]
+      summary: Liste des taux per diem actifs
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Liste des taux
+
+  /rapports/export:
+    get:
+      tags: [Rapports]
+      summary: Generer un export Excel
+      description: Requiert role CHEF_SERVICE, DRH ou DIRECTEUR. Rate limit 10/min.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string, enum: [missions, paiements, agents, complet], default: complet }
+        - name: format
+          in: query
+          schema: { type: string, enum: [xlsx, csv], default: xlsx }
+        - name: date_debut
+          in: query
+          schema: { type: string, format: date }
+        - name: date_fin
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: URL de telechargement du fichier genere
+
+  /audit:
+    get:
+      tags: [Audit]
+      summary: Journal d'audit
+      description: Requiert role DIRECTEUR ou ADMIN.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: action
+          in: query
+          schema: { type: string }
+        - name: user_id
+          in: query
+          schema: { type: integer }
+        - name: date_debut
+          in: query
+          schema: { type: string, format: date }
+        - name: date_fin
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Journal pagine
+        '403': { $ref: '#/components/responses/Forbidden' }
