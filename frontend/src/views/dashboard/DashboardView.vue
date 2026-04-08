@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
 import { Bar, Doughnut } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -17,103 +18,100 @@ import {
 ChartJS.register(Title, Tooltip, Legend, BarElement, ArcElement, CategoryScale, LinearScale)
 
 const router = useRouter()
+const api = useApi()
+const loadingData = ref(true)
 
-// --- Mock data ---
+// Donnees chargees depuis l'API
+const rapportData = ref<any>(null)
+const recentMissions = ref<any[]>([])
+const recentPaiements = ref<any[]>([])
 
-const stats = ref([
-  {
-    label: 'Ordres de Mission',
-    value: '156',
-    trend: '+12%',
-    trendUp: true,
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    icon: 'file',
-    tags: [
-      { text: '98 valides', color: 'text-anatt-600 bg-anatt-50' },
-      { text: '12 en attente', color: 'text-orange-600 bg-orange-50' }
-    ]
-  },
-  {
-    label: 'Personnel Actif',
-    value: '87',
-    trend: 'Actif',
-    trendUp: false,
-    trendNeutral: true,
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-    icon: 'users',
-    tags: [
-      { text: '52 MTN', color: 'text-purple-600 bg-purple-50' },
-      { text: '35 MOOV', color: 'text-purple-600 bg-purple-50' }
-    ]
-  },
-  {
-    label: 'Total Paiements (FCFA)',
-    value: '24.5M',
-    trend: '+8%',
-    trendUp: true,
-    iconBg: 'bg-anatt-100',
-    iconColor: 'text-anatt-600',
-    icon: 'wallet',
-    tags: [
-      { text: 'MTN: 15.2M', color: 'text-yellow-700 bg-yellow-50' },
-      { text: 'MOOV: 9.3M', color: 'text-blue-600 bg-blue-50' }
-    ]
-  },
-  {
-    label: 'Fichiers Generes',
-    value: '28',
-    trend: 'Ce mois',
-    trendUp: false,
-    trendNeutral: true,
-    iconBg: 'bg-orange-100',
-    iconColor: 'text-orange-600',
-    icon: 'export',
-    tags: [
-      { text: '23 payes', color: 'text-anatt-600 bg-anatt-50' },
-      { text: '5 en cours', color: 'text-red-600 bg-red-50' }
-    ]
+onMounted(async () => {
+  try {
+    const mois = new Date().toISOString().slice(0, 7)
+    const [rapportRes, missionsRes, paiementsRes] = await Promise.all([
+      api.get(`/api/rapports/mensuel?mois=${mois}`),
+      api.get('/api/ordres?per_page=5'),
+      api.get('/api/paiements?per_page=5'),
+    ])
+    rapportData.value = rapportRes.data.data || null
+    recentMissions.value = missionsRes.data.data || []
+    recentPaiements.value = paiementsRes.data.data || []
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingData.value = false
   }
-])
+})
 
-const recentMissions = ref([
-  { ref: 'OM-2026-000793', agent: 'MAGBE Victorin', montant: '60 000', statut: 'APPROUVE_DG', date: '04/04/2026' },
-  { ref: 'OM-2026-000794', agent: 'ADJOVI Pierre', montant: '45 000', statut: 'SOUMIS', date: '03/04/2026' },
-  { ref: 'OM-2026-000792', agent: 'DOSSA Marie', montant: '35 000', statut: 'PAYE', date: '02/04/2026' },
-  { ref: 'OM-2026-000791', agent: 'SAOSSI Paterne', montant: '88 000', statut: 'VALIDE_N1', date: '01/04/2026' },
-  { ref: 'OM-2026-000790', agent: 'KONE Jean-Baptiste', montant: '40 000', statut: 'REJETE', date: '30/03/2026' }
-])
+const stats = computed(() => {
+  const d = rapportData.value
+  const totalMissions = d?.total_missions || 0
+  const totalPaiements = d?.total_paiements || 0
+  const montantTotal = Number(d?.montant_total || 0)
 
-const recentPaiements = ref([
-  { operateur: 'MTN', lot: 'LOT-MTN-20260404-001', montant: '1 250 000', beneficiaires: 15, statut: 'SUCCES' },
-  { operateur: 'MOOV', lot: 'LOT-MOOV-20260403-002', montant: '876 000', beneficiaires: 11, statut: 'EN_ATTENTE' },
-  { operateur: 'MTN', lot: 'LOT-MTN-20260402-003', montant: '2 100 000', beneficiaires: 22, statut: 'SUCCES' }
-])
-
-const operateurRepartition = ref([
-  { label: 'MTN MoMo', pct: 62, color: 'bg-yellow-500' },
-  { label: 'MOOV Flooz', pct: 38, color: 'bg-blue-500' }
-])
-
-// Chart data
-const barChartData = ref({
-  labels: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun'],
-  datasets: [
+  return [
     {
       label: 'Ordres de Mission',
-      backgroundColor: '#1D9E4F',
-      borderRadius: 6,
-      data: [22, 18, 30, 25, 35, 28]
+      value: String(totalMissions),
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      icon: 'file',
+      tags: Object.entries(d?.missions_par_statut || {}).slice(0, 2).map(([k, v]) => ({
+        text: `${v} ${k}`,
+        color: k === 'PAYE' ? 'text-anatt-600 bg-anatt-50' : 'text-orange-600 bg-orange-50',
+      })),
     },
     {
-      label: 'Paiements',
-      backgroundColor: '#D4A843',
-      borderRadius: 6,
-      data: [18, 15, 26, 22, 30, 24]
-    }
+      label: 'Total Paiements',
+      value: String(totalPaiements),
+      iconBg: 'bg-anatt-100',
+      iconColor: 'text-anatt-600',
+      icon: 'wallet',
+      tags: Object.entries(d?.paiements_par_operateur || {}).map(([k, v]) => ({
+        text: `${k}: ${Number(v).toLocaleString('fr-FR')} F`,
+        color: k === 'MTN' ? 'text-yellow-700 bg-yellow-50' : 'text-blue-600 bg-blue-50',
+      })),
+    },
+    {
+      label: 'Montant Total (FCFA)',
+      value: montantTotal >= 1000000 ? (montantTotal / 1000000).toFixed(1) + 'M' : montantTotal.toLocaleString('fr-FR'),
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      icon: 'users',
+      tags: [],
+    },
+    {
+      label: 'Mois en cours',
+      value: d?.mois || '--',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      icon: 'export',
+      tags: [],
+    },
   ]
 })
+
+const operateurRepartition = computed(() => {
+  const ops = rapportData.value?.paiements_par_operateur || {}
+  const total = Object.values(ops).reduce((s: number, v: any) => s + Number(v), 0) as number
+  if (total === 0) return []
+  return Object.entries(ops).map(([k, v]) => ({
+    label: k === 'MTN' ? 'MTN MoMo' : 'MOOV Flooz',
+    pct: Math.round((Number(v) / total) * 100),
+    color: k === 'MTN' ? 'bg-yellow-500' : 'bg-blue-500',
+  }))
+})
+
+const barChartData = computed(() => ({
+  labels: Object.keys(rapportData.value?.missions_par_statut || {}),
+  datasets: [{
+    label: 'Missions par statut',
+    backgroundColor: '#1D9E4F',
+    borderRadius: 6,
+    data: Object.values(rapportData.value?.missions_par_statut || {}),
+  }],
+}))
 
 const barChartOptions = ref({
   responsive: true,
@@ -368,14 +366,14 @@ function paiementStatutLabel(statut: string) {
           <tbody class="divide-y divide-gray-50">
             <tr
               v-for="mission in recentMissions"
-              :key="mission.ref"
+              :key="mission.id"
               class="hover:bg-anatt-50/30 transition-colors cursor-pointer"
             >
               <td class="py-3 pr-4">
-                <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ mission.ref }}</span>
+                <router-link :to="`/ordres/${mission.id}`" class="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-anatt-500 hover:underline">{{ mission.numero }}</router-link>
               </td>
-              <td class="py-3 pr-4 font-body font-medium text-gray-900">{{ mission.agent }}</td>
-              <td class="py-3 pr-4 font-display font-semibold text-gray-900">{{ mission.montant }}</td>
+              <td class="py-3 pr-4 font-body font-medium text-gray-900">{{ mission.agent ? `${mission.agent.prenom} ${mission.agent.nom}` : '--' }}</td>
+              <td class="py-3 pr-4 font-display font-semibold text-gray-900">{{ Number(mission.montant_per_diem).toLocaleString('fr-FR') }}</td>
               <td class="py-3 pr-4">
                 <span
                   :class="['inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-display font-medium', statutLabel(mission.statut).classes]"
@@ -426,7 +424,7 @@ function paiementStatutLabel(statut: string) {
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           v-for="paiement in recentPaiements"
-          :key="paiement.lot"
+          :key="paiement.id"
           class="border border-gray-100 rounded-xl p-4 card-hover cursor-pointer"
         >
           <div class="flex items-center justify-between mb-3">
@@ -452,8 +450,8 @@ function paiementStatutLabel(statut: string) {
               {{ paiementStatutLabel(paiement.statut).text }}
             </span>
           </div>
-          <p class="font-mono text-xs font-body text-gray-500">{{ paiement.lot }}</p>
-          <p class="text-lg font-display font-bold text-gray-800 mt-1">{{ paiement.montant }} FCFA</p>
+          <p class="font-mono text-xs font-body text-gray-500">{{ paiement.ordre_mission?.numero || '--' }}</p>
+          <p class="text-lg font-display font-bold text-gray-800 mt-1">{{ Number(paiement.montant).toLocaleString('fr-FR') }} FCFA</p>
           <p class="text-xs font-body text-gray-500 mt-2 flex items-center gap-1">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -461,7 +459,7 @@ function paiementStatutLabel(statut: string) {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            {{ paiement.beneficiaires }} beneficiaires
+            {{ paiement.agent ? `${paiement.agent.prenom} ${paiement.agent.nom}` : '--' }}
           </p>
         </div>
       </div>
