@@ -1,37 +1,86 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
 
-const searchQuery = ref('ADJOVI Kossi Pierre')
-const selectedYear = ref('2025')
+const api = useApi()
+const searchQuery = ref('')
+const selectedYear = ref(String(new Date().getFullYear()))
+const loadingData = ref(true)
 
-const agent = {
-  initials: 'AK',
-  nom: 'ADJOVI Kossi Pierre',
-  matricule: 'ANT-2019-0045',
-  categorie: 'B',
-  direction: 'Direction Technique',
-  service: 'Chef de Service Controle',
+// Donnees chargees depuis l'API
+const rapportAgents = ref<any[]>([])
+const selectedAgent = ref<any>(null)
+
+async function loadRapport() {
+  loadingData.value = true
+  try {
+    const { data } = await api.get(`/api/rapports/agents?annee=${selectedYear.value}`)
+    rapportAgents.value = data.data || []
+    // Si recherche, filtrer
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase()
+      const found = rapportAgents.value.find((r: any) =>
+        `${r.agent?.nom} ${r.agent?.prenom} ${r.agent?.matricule}`.toLowerCase().includes(q)
+      )
+      selectedAgent.value = found || rapportAgents.value[0] || null
+    } else {
+      selectedAgent.value = rapportAgents.value[0] || null
+    }
+  } catch {
+    rapportAgents.value = []
+  } finally {
+    loadingData.value = false
+  }
 }
 
-const agentStats = [
-  { value: '12', label: 'Missions', bg: 'bg-blue-50', color: 'text-blue-700' },
-  { value: '54', label: 'Jours', bg: 'bg-green-50', color: 'text-green-700' },
-  { value: '2.43M', label: 'Total Paye', bg: 'bg-purple-50', color: 'text-purple-700' },
-  { value: '100%', label: 'Taux Paie', bg: 'bg-amber-50', color: 'text-amber-700' },
-]
+onMounted(loadRapport)
 
-const missions = [
-  { ref: 'OM-2025-0089', objet: 'Controle routier corridor Cotonou-Parakou', destination: 'Parakou', periode: '05-09/02', jours: 5, indemnite: '250 000 F', avance: '83 333 F', solde: '166 667 F', statut: 'Paye' },
-  { ref: 'OM-2025-0072', objet: 'Inspection postes de peage Bohicon', destination: 'Bohicon', periode: '20-23/01', jours: 4, indemnite: '200 000 F', avance: '66 667 F', solde: '133 333 F', statut: 'Paye' },
-  { ref: 'OM-2025-0058', objet: 'Formation agents gare routiere Natitingou', destination: 'Natitingou', periode: '12-14/01', jours: 3, indemnite: '150 000 F', avance: '50 000 F', solde: '100 000 F', statut: 'Paye' },
-]
+function searchAgent() {
+  if (!searchQuery.value) {
+    selectedAgent.value = rapportAgents.value[0] || null
+    return
+  }
+  const q = searchQuery.value.toLowerCase()
+  selectedAgent.value = rapportAgents.value.find((r: any) =>
+    `${r.agent?.nom} ${r.agent?.prenom} ${r.agent?.matricule}`.toLowerCase().includes(q)
+  ) || null
+}
 
-const payments = [
-  { label: 'Solde OM-2025-0089', operator: 'MTN MoMo - 95 12 34 56', amount: '+166 667 F', date: '12/02/2025' },
-  { label: 'Avance OM-2025-0089', operator: 'MTN MoMo - 95 12 34 56', amount: '+83 333 F', date: '04/02/2025' },
-  { label: 'Solde OM-2025-0072', operator: 'MTN MoMo - 95 12 34 56', amount: '+133 333 F', date: '27/01/2025' },
-]
+const agentInfo = computed(() => {
+  const a = selectedAgent.value?.agent
+  if (!a) return null
+  return {
+    initials: ((a.prenom?.[0] || '') + (a.nom?.[0] || '')).toUpperCase(),
+    nom: `${a.prenom} ${a.nom}`,
+    matricule: a.matricule,
+    categorie: a.categorie,
+    service: a.service,
+  }
+})
+
+const agentStats = computed(() => {
+  const d = selectedAgent.value
+  if (!d) return []
+  const total = Number(d.total_per_diem || 0)
+  return [
+    { value: String(d.total_missions || 0), label: 'Missions', bg: 'bg-blue-50', color: 'text-blue-700' },
+    { value: total >= 1000000 ? (total / 1000000).toFixed(1) + 'M' : total.toLocaleString('fr-FR'), label: 'Total Per Diem', bg: 'bg-purple-50', color: 'text-purple-700' },
+  ]
+})
+
+const missionsParStatut = computed(() => {
+  if (!selectedAgent.value?.missions_par_statut) return []
+  return Object.entries(selectedAgent.value.missions_par_statut).map(([statut, count]) => ({
+    statut,
+    count: count as number,
+  }))
+})
+
+const yearOptions = computed(() => {
+  const now = new Date().getFullYear()
+  return [now, now - 1, now - 2].map(y => ({ value: String(y), label: `Annee ${y}` }))
+})
 </script>
 
 <template>
@@ -50,28 +99,37 @@ const payments = [
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
           <input v-model="searchQuery" type="text" placeholder="Rechercher un agent par nom, matricule..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 outline-none transition-all duration-200">
         </div>
-        <select v-model="selectedYear" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
-          <option value="2025">Annee 2025</option>
-          <option value="2024">Annee 2024</option>
+        <select v-model="selectedYear" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none" @change="loadRapport">
+          <option v-for="opt in yearOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>
-        <button class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2">
+        <button class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2" @click="searchAgent">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-          Generer
+          Rechercher
         </button>
       </div>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loadingData" class="flex items-center justify-center py-24">
+      <svg class="w-8 h-8 animate-spin text-anatt-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+    </div>
+
+    <!-- No agent selected -->
+    <div v-else-if="!agentInfo" class="bg-white rounded-2xl border border-gray-100 p-12 text-center mb-6">
+      <p class="text-sm text-gray-400 font-body">Aucun agent trouve. Recherchez par nom ou matricule.</p>
+    </div>
+
     <!-- Agent Profile Card -->
-    <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 animate-fade-up delay-100">
+    <div v-else class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 animate-fade-up delay-100">
       <div class="flex items-start justify-between">
         <div class="flex items-center gap-5">
-          <div class="w-16 h-16 bg-gradient-to-br from-anatt-500 to-anatt-700 rounded-2xl flex items-center justify-center text-white text-xl font-display font-bold">{{ agent.initials }}</div>
+          <div class="w-16 h-16 bg-gradient-to-br from-anatt-500 to-anatt-700 rounded-2xl flex items-center justify-center text-white text-xl font-display font-bold">{{ agentInfo.initials }}</div>
           <div>
-            <h2 class="text-lg font-display font-bold text-gray-900">{{ agent.nom }}</h2>
-            <p class="text-sm text-gray-500 font-body">Matricule : {{ agent.matricule }} - Categorie {{ agent.categorie }}</p>
+            <h2 class="text-lg font-display font-bold text-gray-900">{{ agentInfo.nom }}</h2>
+            <p class="text-sm text-gray-500 font-body">Matricule : {{ agentInfo.matricule }} - Categorie {{ agentInfo.categorie }}</p>
             <p class="text-xs text-gray-400 mt-1 font-body flex items-center gap-1">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
-              {{ agent.direction }} - {{ agent.service }}
+              {{ agentInfo.service }}
             </p>
           </div>
         </div>
@@ -100,16 +158,14 @@ const payments = [
           <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Statut</th>
         </tr></thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="m in missions" :key="m.ref" class="hover:bg-anatt-50/30 transition-colors">
-            <td class="px-5 py-3"><span class="text-sm font-body font-medium text-anatt-500 hover:underline cursor-pointer">{{ m.ref }}</span></td>
-            <td class="px-5 py-3 text-sm font-body text-gray-700">{{ m.objet }}</td>
-            <td class="px-5 py-3 text-sm font-body text-gray-600">{{ m.destination }}</td>
-            <td class="px-5 py-3 text-center text-xs font-body text-gray-600">{{ m.periode }}</td>
-            <td class="px-5 py-3 text-center text-sm font-display font-semibold">{{ m.jours }}</td>
-            <td class="px-5 py-3 text-right text-sm font-display font-semibold text-gray-800">{{ m.indemnite }}</td>
-            <td class="px-5 py-3 text-right text-xs font-body text-green-600">{{ m.avance }}</td>
-            <td class="px-5 py-3 text-right text-xs font-body text-green-600">{{ m.solde }}</td>
-            <td class="px-5 py-3 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-display font-medium">{{ m.statut }}</span></td>
+          <tr v-if="missionsParStatut.length === 0">
+            <td colspan="4" class="px-5 py-8 text-center text-sm text-gray-400 font-body">Aucune mission pour cet agent cette annee</td>
+          </tr>
+          <tr v-for="item in missionsParStatut" :key="item.statut" class="hover:bg-anatt-50/30 transition-colors">
+            <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ item.statut }}</td>
+            <td class="px-5 py-3 text-center text-sm font-display font-bold">{{ item.count }}</td>
+            <td class="px-5 py-3"></td>
+            <td class="px-5 py-3 text-center"><span :class="item.statut === 'PAYE' ? 'bg-green-50 text-green-700' : item.statut === 'REJETE' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'" class="px-2 py-0.5 rounded-full text-xs font-display font-medium">{{ item.statut }}</span></td>
           </tr>
         </tbody>
         <tfoot><tr class="bg-anatt-50 border-t-2 border-anatt-200">
