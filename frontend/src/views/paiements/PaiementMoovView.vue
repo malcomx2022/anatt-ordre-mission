@@ -6,16 +6,20 @@ import AppButton from '@/components/shared/AppButton.vue'
 import AppBadge from '@/components/shared/AppBadge.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import { usePaiements } from '@/composables/usePaiements'
-import type { Paiement, OperateurPaiement } from '@/types'
+import { useApi } from '@/composables/useApi'
+import type { OrdreMission } from '@/types'
 
 const router = useRouter()
+const api = useApi()
 const { generateMoov, loading } = usePaiements()
 
 const currentStep = ref(1)
 const typePaiement = ref('AVANCE')
-const dateDebut = ref('2026-03-01')
-const dateFin = ref('2026-03-31')
+const dateDebut = ref('')
+const dateFin = ref('')
 const validOnly = ref(true)
+const loadingSearch = ref(false)
+const generating = ref(false)
 
 interface PaiementCandidat {
   id: number
@@ -23,45 +27,80 @@ interface PaiementCandidat {
   agent: string
   montant: number
   telephone: string
-  statut: 'OK' | 'DOUBLON'
+  hasPhone: boolean
   selected: boolean
 }
 
-const candidats = ref<PaiementCandidat[]>([
-  { id: 1, refOM: 'OM-000793', agent: 'MAGBE Victorin', montant: 20000, telephone: '22967707480', statut: 'OK', selected: true },
-  { id: 2, refOM: 'OM-000791', agent: 'SAOSSI Paterne', montant: 29333, telephone: '22967123456', statut: 'OK', selected: true },
-  { id: 3, refOM: 'OM-000790', agent: 'KONE Jean-Baptiste', montant: 13333, telephone: '22966456789', statut: 'OK', selected: true },
-  { id: 4, refOM: 'OM-000788', agent: 'GOUDJO Felicien', montant: 16667, telephone: '22967887766', statut: 'OK', selected: true },
-  { id: 5, refOM: 'OM-000795', agent: 'AHOUANSOU Eric', montant: 15000, telephone: '22967707480', statut: 'DOUBLON', selected: false },
-])
+const candidats = ref<PaiementCandidat[]>([])
 
 const allSelected = computed({
-  get: () => candidats.value.filter(c => c.statut === 'OK').every(c => c.selected),
-  set: (val: boolean) => { candidats.value.forEach(c => { if (c.statut === 'OK') c.selected = val }) }
+  get: () => candidats.value.filter(c => c.hasPhone).every(c => c.selected),
+  set: (val: boolean) => { candidats.value.forEach(c => { if (c.hasPhone) c.selected = val }) }
 })
 
 const selectedCount = computed(() => candidats.value.filter(c => c.selected).length)
 const totalAmount = computed(() => candidats.value.filter(c => c.selected).reduce((s, c) => s + c.montant, 0))
-const hasDoublon = computed(() => candidats.value.some(c => c.statut === 'DOUBLON'))
 
 function formatMontant(val: number): string {
   return val.toLocaleString('fr-FR')
 }
 
-function selectAll() { candidats.value.forEach(c => c.selected = true) }
+function selectAll() { candidats.value.forEach(c => { if (c.hasPhone) c.selected = true }) }
 function deselectAll() { candidats.value.forEach(c => c.selected = false) }
-function excludeDoublons() { candidats.value.filter(c => c.statut === 'DOUBLON').forEach(c => c.selected = false) }
+
+async function searchCandidats() {
+  loadingSearch.value = true
+  try {
+    const params: Record<string, string> = { statut: 'APPROUVE_DG', per_page: '100' }
+    if (dateDebut.value) params.date_debut = dateDebut.value
+    if (dateFin.value) params.date_fin = dateFin.value
+
+    const { data } = await api.get('/api/ordres', { params })
+    const ordres: OrdreMission[] = data.data || []
+
+    candidats.value = ordres.map((om) => ({
+      id: om.id,
+      refOM: om.numero,
+      agent: om.agent ? `${om.agent.prenom} ${om.agent.nom}` : '--',
+      montant: Number(om.montant_per_diem),
+      telephone: om.agent?.numero_moov || '',
+      hasPhone: !!om.agent?.numero_moov,
+      selected: !!om.agent?.numero_moov,
+    }))
+
+    currentStep.value = 2
+  } catch {
+    // Geree par useApi
+  } finally {
+    loadingSearch.value = false
+  }
+}
+
+const lotGenere = ref<{ fichier: string; nb_paiements: number; montant_total: number } | null>(null)
+
+async function handleGenerate() {
+  const selectedIds = candidats.value.filter(c => c.selected).map(c => c.id)
+  if (selectedIds.length === 0) return
+
+  generating.value = true
+  try {
+    const { data } = await generateMoov(selectedIds)
+    lotGenere.value = {
+      fichier: data.data?.fichier || data.fichier || '',
+      nb_paiements: data.data?.nb_paiements || selectedIds.length,
+      montant_total: data.data?.montant_total || totalAmount.value,
+    }
+    currentStep.value = 3
+  } catch {
+    // Geree par useApi
+  } finally {
+    generating.value = false
+  }
+}
 
 function goToStep(step: number) {
   currentStep.value = step
 }
-
-const lotGenere = ref({
-  reference: 'LOT-MOOV-20260405-001',
-  beneficiaires: 4,
-  montantTotal: '79 333',
-  format: 'CSV (.csv)',
-})
 </script>
 
 <template>
@@ -140,7 +179,7 @@ const lotGenere = ref({
         </div>
       </div>
       <div class="flex justify-end">
-        <AppButton @click="goToStep(2)">
+        <AppButton :loading="loadingSearch" @click="searchCandidats">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           Rechercher les paiements
         </AppButton>
@@ -162,9 +201,9 @@ const lotGenere = ref({
         </div>
 
         <!-- Doublon alert -->
-        <div v-if="hasDoublon" class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+        <div v-if="candidats.some(c => !c.hasPhone)" class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-2">
           <svg class="w-4 h-4 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span class="text-sm font-body text-amber-700">1 doublon detecte -- <strong>OM-000795</strong> (meme numero que OM-000793)</span>
+          <span class="text-sm font-body text-amber-700">{{ candidats.filter(c => !c.hasPhone).length }} agent(s) sans numero MOOV -- ils ne seront pas inclus dans le fichier</span>
           <button @click="excludeDoublons" class="ml-auto text-xs font-display px-3 py-1 bg-amber-200 text-amber-800 rounded-lg hover:bg-amber-300 transition-colors">Exclure doublons</button>
         </div>
 
@@ -182,17 +221,17 @@ const lotGenere = ref({
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-              <tr v-for="c in candidats" :key="c.id" class="hover:bg-gray-50 transition-colors" :class="c.statut === 'DOUBLON' ? 'bg-red-50/50' : ''">
+              <tr v-for="c in candidats" :key="c.id" class="hover:bg-gray-50 transition-colors" :class="!c.hasPhone ? 'bg-red-50/50' : ''">
                 <td class="py-3 pr-3"><input type="checkbox" v-model="c.selected" class="rounded border-gray-300 text-anatt-500"></td>
                 <td class="py-3 pr-3">
-                  <span class="font-mono text-xs px-2 py-1 rounded" :class="c.statut === 'DOUBLON' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'">{{ c.refOM }}</span>
+                  <span class="font-mono text-xs px-2 py-1 rounded" :class="!c.hasPhone ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'">{{ c.refOM }}</span>
                 </td>
-                <td class="py-3 pr-3 font-body font-medium" :class="c.statut === 'DOUBLON' ? 'text-red-700' : 'text-gray-800'">{{ c.agent }}</td>
+                <td class="py-3 pr-3 font-body font-medium" :class="!c.hasPhone ? 'text-red-700' : 'text-gray-800'">{{ c.agent }}</td>
                 <td class="py-3 pr-3 font-display font-semibold text-gray-800">{{ formatMontant(c.montant) }}</td>
-                <td class="py-3 pr-3 font-mono text-xs" :class="c.statut === 'DOUBLON' ? 'text-red-600' : 'text-gray-600'">{{ c.telephone }}</td>
+                <td class="py-3 pr-3 font-mono text-xs" :class="!c.hasPhone ? 'text-red-600' : 'text-gray-600'">{{ c.telephone }}</td>
                 <td class="py-3 pr-3"><span class="bg-blue-100 text-blue-800 text-xs font-display font-bold px-2 py-0.5 rounded">MOOV</span></td>
                 <td class="py-3">
-                  <span v-if="c.statut === 'OK'" class="text-anatt-600 text-xs flex items-center gap-1">
+                  <span v-if="c.hasPhone" class="text-anatt-600 text-xs flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     OK
                   </span>
@@ -234,7 +273,7 @@ const lotGenere = ref({
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Retour filtrage
         </AppButton>
-        <AppButton @click="goToStep(3)">
+        <AppButton :loading="generating" :disabled="selectedCount === 0" @click="handleGenerate">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
           Generer le fichier MOOV
         </AppButton>
@@ -251,12 +290,12 @@ const lotGenere = ref({
           <h2 class="text-xl font-display font-bold text-gray-800 mb-2">Fichier genere avec succes !</h2>
           <p class="text-sm font-body text-gray-500 mb-6">Le lot de paiement a ete cree et le fichier est pret au telechargement.</p>
           <div class="bg-gray-50 rounded-xl p-4 mb-6 text-left space-y-2">
-            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Reference lot :</span><span class="font-mono font-bold text-gray-800">{{ lotGenere.reference }}</span></div>
+            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Fichier :</span><span class="font-mono font-bold text-gray-800">{{ lotGenere?.fichier || '--' }}</span></div>
             <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Operateur :</span><span class="font-display font-bold text-blue-700">MOOV Flooz</span></div>
             <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Type :</span><span class="font-body font-medium text-gray-700">{{ typePaiement === 'AVANCE' ? 'Avance (1/3)' : 'Reliquat (2/3)' }}</span></div>
-            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Beneficiaires :</span><span class="font-display font-bold text-gray-800">{{ lotGenere.beneficiaires }}</span></div>
-            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Montant total :</span><span class="font-display font-bold text-anatt-500">{{ lotGenere.montantTotal }} FCFA</span></div>
-            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Format :</span><span class="font-body font-medium text-gray-700">{{ lotGenere.format }}</span></div>
+            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Beneficiaires :</span><span class="font-display font-bold text-gray-800">{{ lotGenere?.nb_paiements || 0 }}</span></div>
+            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Montant total :</span><span class="font-display font-bold text-anatt-500">{{ formatMontant(lotGenere?.montant_total || 0) }} FCFA</span></div>
+            <div class="flex justify-between text-sm"><span class="font-body text-gray-500">Format :</span><span class="font-body font-medium text-gray-700">CSV (.csv)</span></div>
           </div>
           <div class="flex gap-3">
             <AppButton class="flex-1">
