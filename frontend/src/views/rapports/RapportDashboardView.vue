@@ -1,32 +1,49 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+
+const api = useApi()
+const loadingData = ref(true)
 
 const reportTypes = [
   { title: 'Rapport Mensuel', description: 'Synthese mensuelle des missions et paiements', route: '/rapports/mensuel', color: 'from-blue-500 to-blue-600', textColor: 'text-blue-600' },
   { title: 'Rapport Personnel', description: 'Detail des missions par agent', route: '/rapports/agents', color: 'from-purple-500 to-purple-600', textColor: 'text-purple-600' },
-  { title: 'Rapport Financier', description: 'Suivi budgetaire et execution financiere', route: '#', color: 'from-green-500 to-green-600', textColor: 'text-green-600' },
-  { title: 'Rapport Statistique', description: 'Analyses croisees et tendances', route: '#', color: 'from-amber-500 to-amber-600', textColor: 'text-amber-600' },
+  { title: 'Export Avance', description: 'Export Excel/CSV personnalise', route: '/rapports/export', color: 'from-green-500 to-green-600', textColor: 'text-green-600' },
+  { title: 'Rapport Statistique', description: 'Analyses croisees et tendances', route: '/rapports/mensuel', color: 'from-amber-500 to-amber-600', textColor: 'text-amber-600' },
 ]
 
-const recentReports = [
-  { name: 'Rapport Mensuel - Janvier 2025', date: '01/02/2025', pages: '12 pages', format: 'PDF', iconBg: 'bg-red-50', iconColor: 'text-red-500' },
-  { name: 'Export Personnel - Q4 2024', date: '15/01/2025', pages: '156 lignes', format: 'Excel', iconBg: 'bg-green-50', iconColor: 'text-green-600' },
-  { name: 'Rapport Mensuel - Decembre 2024', date: '02/01/2025', pages: '10 pages', format: 'PDF', iconBg: 'bg-red-50', iconColor: 'text-red-500' },
-  { name: 'Rapport Annuel 2024', date: '31/12/2024', pages: '45 pages', format: 'PDF', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-]
+// Donnees chargees depuis l'API
+const mensuelData = ref<any>(null)
 
-const scheduledReports = [
-  { name: 'Rapport Mensuel Fevrier', date: 'Generation auto le 01/03/2025', bg: 'bg-blue-50', textColor: 'text-blue-800', subColor: 'text-blue-600' },
-  { name: 'Export Trimestriel Q1', date: 'Generation auto le 01/04/2025', bg: 'bg-purple-50', textColor: 'text-purple-800', subColor: 'text-purple-600' },
-]
+onMounted(async () => {
+  try {
+    const mois = new Date().toISOString().slice(0, 7)
+    const { data } = await api.get(`/api/rapports/mensuel?mois=${mois}`)
+    mensuelData.value = data.data || null
+  } catch {
+    // Pas de donnees
+  } finally {
+    loadingData.value = false
+  }
+})
 
-const stats = [
-  { label: 'Rapports generes (2025)', value: '23' },
-  { label: 'Exports realises', value: '47' },
-  { label: 'Taille totale', value: '128 MB' },
-  { label: 'Dernier rapport', value: '01/02/2025' },
-]
+const stats = computed(() => [
+  { label: 'Missions ce mois', value: String(mensuelData.value?.total_missions || 0) },
+  { label: 'Paiements ce mois', value: String(mensuelData.value?.total_paiements || 0) },
+  { label: 'Montant total', value: mensuelData.value?.montant_total ? Number(mensuelData.value.montant_total).toLocaleString('fr-FR') + ' F' : '0 F' },
+  { label: 'Mois en cours', value: mensuelData.value?.mois || '--' },
+])
+
+const scheduledReports = computed(() => {
+  const now = new Date()
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const nextQuarter = new Date(now.getFullYear(), Math.ceil((now.getMonth() + 1) / 3) * 3, 1)
+  return [
+    { name: `Rapport Mensuel ${nextMonth.toLocaleDateString('fr-FR', { month: 'long' })}`, date: `Generation auto le ${nextMonth.toLocaleDateString('fr-FR')}`, bg: 'bg-blue-50', textColor: 'text-blue-800', subColor: 'text-blue-600' },
+    { name: `Export Trimestriel`, date: `Generation auto le ${nextQuarter.toLocaleDateString('fr-FR')}`, bg: 'bg-purple-50', textColor: 'text-purple-800', subColor: 'text-purple-600' },
+  ]
+})
 </script>
 
 <template>
@@ -66,25 +83,30 @@ const stats = [
           <button class="text-xs text-anatt-500 font-display font-semibold hover:underline">Voir tout</button>
         </div>
         <div class="divide-y divide-gray-50">
-          <div v-for="report in recentReports" :key="report.name" class="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50">
-            <div class="flex items-center gap-4">
-              <div :class="[report.iconBg, 'w-10 h-10 rounded-xl flex items-center justify-center']">
-                <svg :class="[report.iconColor, 'w-5 h-5']" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
-              </div>
-              <div>
-                <p class="text-sm font-display font-semibold text-gray-800">{{ report.name }}</p>
-                <p class="text-xs text-gray-400 font-body">Genere le {{ report.date }} - {{ report.pages }} - {{ report.format }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              </button>
-              <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              </button>
-            </div>
+          <div v-if="loadingData" class="px-6 py-12 text-center">
+            <svg class="w-8 h-8 animate-spin text-anatt-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
           </div>
+          <template v-else-if="mensuelData">
+            <div v-if="mensuelData.missions_par_statut" class="px-6 py-4">
+              <p class="text-sm font-display font-semibold text-gray-800 mb-3">Missions par statut ({{ mensuelData.mois }})</p>
+              <div class="grid grid-cols-3 gap-3">
+                <div v-for="(count, statut) in mensuelData.missions_par_statut" :key="statut" class="bg-gray-50 rounded-xl p-3 text-center">
+                  <p class="text-lg font-display font-bold text-gray-800">{{ count }}</p>
+                  <p class="text-[10px] text-gray-500 font-body">{{ statut }}</p>
+                </div>
+              </div>
+            </div>
+            <div v-if="mensuelData.paiements_par_operateur" class="px-6 py-4">
+              <p class="text-sm font-display font-semibold text-gray-800 mb-3">Paiements par operateur</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div v-for="(montant, op) in mensuelData.paiements_par_operateur" :key="op" class="bg-gray-50 rounded-xl p-3 text-center">
+                  <p class="text-lg font-display font-bold text-gray-800">{{ Number(montant).toLocaleString('fr-FR') }} F</p>
+                  <p class="text-[10px] text-gray-500 font-body">{{ op }}</p>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div v-else class="px-6 py-12 text-center text-sm text-gray-400 font-body">Aucune donnee pour ce mois.</div>
         </div>
       </div>
 
