@@ -1,48 +1,67 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
+import { useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 
-const reportType = ref('mensuel')
-const exportFormat = ref('pdf')
-const periodeDebut = ref('2025-01')
-const periodeFin = ref('2025-01')
-const direction = ref('')
-const statutPaiement = ref('')
-const includeGraphiques = ref(true)
-const includePageGarde = ref(true)
-const includeDetailAgent = ref(false)
-const sendEmail = ref(false)
+const api = useApi()
+const { success: toastSuccess } = useToast()
+
+const reportType = ref('complet')
+const exportFormat = ref('xlsx')
+const periodeDebut = ref('')
+const periodeFin = ref('')
 const showModal = ref(false)
 const exportDone = ref(false)
-const progressWidth = ref('0%')
+const exporting = ref(false)
+const downloadUrl = ref('')
 
 const reportTypes = [
-  { value: 'mensuel', label: 'Rapport Mensuel', description: 'Synthese mensuelle des missions et paiements', iconBg: 'bg-anatt-100', iconColor: 'text-anatt-600' },
-  { value: 'personnel', label: 'Rapport Personnel', description: 'Fiche individuelle par agent', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-  { value: 'financier', label: 'Rapport Financier', description: 'Etat recapitulatif des depenses', iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
+  { value: 'complet', label: 'Rapport Complet', description: 'Missions + Paiements + Personnel', iconBg: 'bg-anatt-100', iconColor: 'text-anatt-600' },
+  { value: 'missions', label: 'Ordres de Mission', description: 'Liste des ordres avec statuts', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+  { value: 'paiements', label: 'Paiements', description: 'Historique des virements', iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
+  { value: 'agents', label: 'Personnel', description: 'Liste des agents', iconBg: 'bg-green-50', iconColor: 'text-green-600' },
 ]
 
 const formats = [
-  { value: 'pdf', label: 'PDF', description: 'Mise en page professionnelle avec en-tete ANaTT', iconBg: 'bg-red-100', iconColor: 'text-red-500', recommended: true },
-  { value: 'excel', label: 'Excel (.xlsx)', description: 'Feuilles de calcul avec formules integrees', iconBg: 'bg-green-100', iconColor: 'text-green-600', recommended: false },
-  { value: 'csv', label: 'CSV', description: 'Donnees brutes pour import dans d\'autres systemes', iconBg: 'bg-blue-100', iconColor: 'text-blue-500', recommended: false },
+  { value: 'xlsx', label: 'Excel (.xlsx)', description: 'Feuilles de calcul avec formules', iconBg: 'bg-green-100', iconColor: 'text-green-600', recommended: true },
+  { value: 'csv', label: 'CSV', description: 'Donnees brutes', iconBg: 'bg-blue-100', iconColor: 'text-blue-500', recommended: false },
 ]
 
-const recentExports = [
-  { name: 'Rapport_Mensuel_Dec2024.pdf', date: '05/01/2025 a 14:32', size: '2.4 MB', iconBg: 'bg-red-100', iconColor: 'text-red-500' },
-  { name: 'Export_Personnel_Nov2024.xlsx', date: '02/12/2024 a 09:15', size: '856 KB', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  { name: 'Donnees_Brutes_Q3_2024.csv', date: '15/10/2024 a 16:50', size: '324 KB', iconBg: 'bg-blue-100', iconColor: 'text-blue-500' },
-]
-
-function startExport() {
+async function startExport() {
   showModal.value = true
   exportDone.value = false
-  progressWidth.value = '0%'
-  setTimeout(() => { progressWidth.value = '25%' }, 300)
-  setTimeout(() => { progressWidth.value = '50%' }, 1000)
-  setTimeout(() => { progressWidth.value = '75%' }, 2000)
-  setTimeout(() => { progressWidth.value = '100%' }, 3000)
-  setTimeout(() => { exportDone.value = true }, 3500)
+  exporting.value = true
+  try {
+    const params: Record<string, string> = { type: reportType.value, format: exportFormat.value }
+    if (periodeDebut.value) params.date_debut = periodeDebut.value
+    if (periodeFin.value) params.date_fin = periodeFin.value
+
+    const { data } = await api.get('/api/rapports/export', { params })
+    downloadUrl.value = data.data?.url || ''
+    exportDone.value = true
+    toastSuccess('Export genere avec succes.')
+  } catch {
+    showModal.value = false
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function downloadFile() {
+  if (!downloadUrl.value) return
+  try {
+    const response = await api.get(downloadUrl.value, { responseType: 'blob' })
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `rapport_${reportType.value}_${new Date().toISOString().slice(0, 10)}.${exportFormat.value}`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch {
+    // Geree par useApi
+  }
 }
 </script>
 
