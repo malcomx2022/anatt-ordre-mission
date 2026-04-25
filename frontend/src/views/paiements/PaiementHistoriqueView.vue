@@ -1,56 +1,68 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppBadge from '@/components/shared/AppBadge.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
-import { usePaiements } from '@/composables/usePaiements'
+import { useApi } from '@/composables/useApi'
 import type { Paiement, OperateurPaiement, StatutPaiement } from '@/types'
 
 const router = useRouter()
-const { loading } = usePaiements()
+const api = useApi()
+const loading = ref(true)
 
-const searchQuery = ref('')
 const filterOperateur = ref('')
 const filterStatut = ref('')
-const dateDebut = ref('2026-01-01')
-const dateFin = ref('2026-04-07')
+const dateDebut = ref('')
+const dateFin = ref('')
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
 
-interface HistoriquePaiement {
-  id: number
-  reference: string
-  agent: string
-  refOM: string
-  operateur: OperateurPaiement
-  telephone: string
-  montant: number
-  statut: StatutPaiement
-  dateVirement: string
-  refTransaction: string
+const paiements = ref<Paiement[]>([])
+
+async function loadHistorique() {
+  loading.value = true
+  try {
+    const params: Record<string, string | number> = { page: currentPage.value }
+    if (filterOperateur.value) params.operateur = filterOperateur.value
+    if (filterStatut.value) params.statut = filterStatut.value
+    if (dateDebut.value) params.periode = dateDebut.value
+
+    const { data } = await api.get('/api/paiements/historique', { params })
+    paiements.value = data.data || []
+    if (data.meta) {
+      currentPage.value = data.meta.current_page
+      totalPages.value = data.meta.last_page
+      totalItems.value = data.meta.total
+    }
+  } catch {
+    // Geree par useApi
+  } finally {
+    loading.value = false
+  }
 }
 
-const paiements = ref<HistoriquePaiement[]>([
-  { id: 1, reference: 'PAY-2026-0312', agent: 'MAGBE Victorin', refOM: 'OM-2026-0089', operateur: 'MTN', telephone: '22997123456', montant: 185000, statut: 'SUCCES', dateVirement: '07/04/2026 14:32', refTransaction: 'TXN-8A3F2B1' },
-  { id: 2, reference: 'PAY-2026-0311', agent: 'ADJOVI Kossi Pierre', refOM: 'OM-2026-0091', operateur: 'MOOV', telephone: '22995123456', montant: 152000, statut: 'SUCCES', dateVirement: '07/04/2026 14:30', refTransaction: 'TXN-9C4D3E2' },
-  { id: 3, reference: 'PAY-2026-0310', agent: 'DOSSOU Fabrice', refOM: 'OM-2026-0093', operateur: 'MTN', telephone: '22996789012', montant: 152000, statut: 'ECHEC', dateVirement: '06/04/2026 11:15', refTransaction: 'ERR-TIMEOUT' },
-  { id: 4, reference: 'PAY-2026-0309', agent: 'BOKO Grace Annick', refOM: 'OM-2026-0087', operateur: 'MOOV', telephone: '22996456789', montant: 98500, statut: 'SUCCES', dateVirement: '05/04/2026 09:22', refTransaction: 'TXN-2E5F4A3' },
-  { id: 5, reference: 'PAY-2026-0308', agent: 'GANDONOU Estelle', refOM: 'OM-2026-0085', operateur: 'MTN', telephone: '22995234567', montant: 127000, statut: 'SUCCES', dateVirement: '05/04/2026 09:20', refTransaction: 'TXN-7G8H5B4' },
-  { id: 6, reference: 'PAY-2026-0307', agent: 'SAOSSI Paterne', refOM: 'OM-2026-0083', operateur: 'MOOV', telephone: '22967234567', montant: 142500, statut: 'EN_ATTENTE', dateVirement: '04/04/2026 16:45', refTransaction: '--' },
-  { id: 7, reference: 'PAY-2026-0306', agent: 'KONE Jean-Baptiste', refOM: 'OM-2026-0081', operateur: 'MTN', telephone: '22994567890', montant: 115200, statut: 'SUCCES', dateVirement: '04/04/2026 16:40', refTransaction: 'TXN-4K9L6C5' },
-  { id: 8, reference: 'PAY-2026-0305', agent: 'HOUNKPATIN Joel', refOM: 'OM-2026-0079', operateur: 'MTN', telephone: '22996345678', montant: 152000, statut: 'INITIE', dateVirement: '03/04/2026 10:00', refTransaction: 'PENDING-001' },
-  { id: 9, reference: 'PAY-2026-0304', agent: 'DOSSA Marie', refOM: 'OM-2026-0077', operateur: 'MOOV', telephone: '22995789012', montant: 89000, statut: 'SUCCES', dateVirement: '02/04/2026 15:30', refTransaction: 'TXN-5M2N7D6' },
-  { id: 10, reference: 'PAY-2026-0303', agent: 'HOUNSA Michel', refOM: 'OM-2026-0075', operateur: 'MTN', telephone: '22996112233', montant: 175000, statut: 'SUCCES', dateVirement: '01/04/2026 08:55', refTransaction: 'TXN-6P3Q8E7' },
-])
-
-const stats = computed(() => {
-  const total = paiements.value.length
-  const succes = paiements.value.filter(p => p.statut === 'SUCCES').length
-  const echec = paiements.value.filter(p => p.statut === 'ECHEC').length
-  const montantTotal = paiements.value.reduce((s, p) => s + p.montant, 0)
-  const montantPaye = paiements.value.filter(p => p.statut === 'SUCCES').reduce((s, p) => s + p.montant, 0)
-  return { total, succes, echec, montantTotal, montantPaye }
+watch([filterOperateur, filterStatut], () => {
+  currentPage.value = 1
+  loadHistorique()
 })
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  loadHistorique()
+}
+
+onMounted(loadHistorique)
+
+const stats = computed(() => ({
+  total: totalItems.value,
+  succes: paiements.value.filter(p => p.statut === 'SUCCES').length,
+  echec: paiements.value.filter(p => p.statut === 'ECHEC').length,
+  montantTotal: paiements.value.reduce((s, p) => s + Number(p.montant), 0),
+  montantPaye: paiements.value.filter(p => p.statut === 'SUCCES').reduce((s, p) => s + Number(p.montant), 0),
+}))
 
 function formatMontant(val: number): string {
   return val.toLocaleString('fr-FR')
@@ -181,18 +193,18 @@ function statutLabel(statut: StatutPaiement): string {
         <tbody class="divide-y divide-gray-50">
           <tr v-for="p in paiements" :key="p.id" class="hover:bg-anatt-50/30 transition-colors cursor-pointer" :class="p.statut === 'ECHEC' ? 'bg-red-50/20' : ''">
             <td class="px-5 py-4">
-              <span class="text-sm font-display font-bold text-anatt-500">{{ p.reference }}</span>
+              <span class="text-sm font-display font-bold text-anatt-500">{{ p.ordre_mission?.numero || '#' + p.id }}</span>
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-display font-bold" :class="p.operateur === 'MTN' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'">
-                  {{ p.agent.split(' ').map(n => n[0]).slice(0, 2).join('') }}
+                  {{ p.agent ? ((p.agent.prenom?.[0] || '') + (p.agent.nom?.[0] || '')).toUpperCase() : '??' }}
                 </div>
-                <span class="text-sm font-body font-medium text-gray-800">{{ p.agent }}</span>
+                <span class="text-sm font-body font-medium text-gray-800">{{ p.agent ? p.agent.prenom + ' ' + p.agent.nom : '--' }}</span>
               </div>
             </td>
             <td class="px-5 py-4">
-              <router-link :to="`/ordres/${p.id}`" class="text-sm font-body text-anatt-500 hover:underline">{{ p.refOM }}</router-link>
+              <router-link :to="`/ordres/${p.id}`" class="text-sm font-body text-anatt-500 hover:underline">{{ p.ordre_mission?.numero || '--' }}</router-link>
             </td>
             <td class="px-5 py-4">
               <span
@@ -204,20 +216,19 @@ function statutLabel(statut: StatutPaiement): string {
               </span>
             </td>
             <td class="px-5 py-4">
-              <span class="text-sm font-mono text-gray-600">{{ p.telephone }}</span>
+              <span class="text-sm font-mono text-gray-600">{{ p.numero_destinataire }}</span>
             </td>
             <td class="px-5 py-4 text-right">
-              <span class="text-sm font-display font-bold text-gray-900">{{ formatMontant(p.montant) }} F</span>
+              <span class="text-sm font-display font-bold text-gray-900">{{ formatMontant(Number(p.montant)) }} F</span>
             </td>
             <td class="px-5 py-4 text-center">
               <AppBadge :variant="statutVariant(p.statut)">{{ statutLabel(p.statut) }}</AppBadge>
             </td>
             <td class="px-5 py-4">
-              <span class="text-sm font-body text-gray-600">{{ p.dateVirement.split(' ')[0] }}</span><br>
-              <span class="text-[10px] font-body text-gray-400">{{ p.dateVirement.split(' ')[1] }}</span>
+              <span class="text-sm font-body text-gray-600">{{ p.date_virement ? new Date(p.date_virement).toLocaleDateString('fr-FR') : '--' }}</span>
             </td>
             <td class="px-5 py-4">
-              <span class="text-xs font-mono" :class="p.statut === 'ECHEC' ? 'text-red-400' : 'text-gray-400'">{{ p.refTransaction }}</span>
+              <span class="text-xs font-mono" :class="p.statut === 'ECHEC' ? 'text-red-400' : 'text-gray-400'">{{ p.reference_transaction || '--' }}</span>
             </td>
           </tr>
         </tbody>
