@@ -20,11 +20,23 @@ class AgentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $agents = $this->agentService->lister(
-            $request->only(['search', 'categorie', 'service', 'actif']),
+            $request->only(['search', 'categorie', 'operateur', 'actif']),
             $this->getPerPage($request),
         );
 
         return AgentResource::collection($agents)->response();
+    }
+
+    /**
+     * Autocomplétion du wizard OM : recherche par nom / matricule / IFU.
+     */
+    public function recherche(Request $request): JsonResponse
+    {
+        $request->validate(['q' => 'required|string|min:1']);
+
+        $agents = $this->agentService->rechercher($request->string('q'));
+
+        return $this->success(AgentResource::collection($agents));
     }
 
     public function store(StoreAgentRequest $request): JsonResponse
@@ -61,6 +73,14 @@ class AgentController extends Controller
 
         $resultat = $this->agentService->importer($request->file('fichier'));
 
-        return $this->success($resultat, 'Import traite.');
+        // Échec : aucune ligne importée (rollback) -> 422 avec rapport ligne à ligne.
+        if (! empty($resultat['rollback'])) {
+            return $this->unprocessable(
+                'Import annulé : '.count($resultat['erreurs']).' ligne(s) en erreur. Aucun agent enregistré.',
+                $resultat['erreurs'],
+            );
+        }
+
+        return $this->success($resultat, "{$resultat['importes']} agent(s) importé(s) avec succès.");
     }
 }

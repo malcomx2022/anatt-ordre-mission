@@ -12,12 +12,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('action');
-            $table->string('cible');
-            $table->json('details')->nullable();
+            $table->string('entite');
+            $table->unsignedBigInteger('entite_id')->nullable();
+            $table->json('donnees')->nullable();
             $table->string('ip_address', 45)->nullable();
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable()->useCurrent();
 
             $table->index(['action', 'created_at']);
+            $table->index(['entite', 'entite_id']);
             $table->index('user_id');
         });
     }

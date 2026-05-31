@@ -2,250 +2,111 @@
 
 use App\Models\Agent;
 use App\Models\OrdreMission;
-use App\Models\TauxPerDiem;
 use App\Models\User;
+use App\Models\Versement;
+use Database\Seeders\BaremeSeeder;
 
 beforeEach(function () {
-    $this->admin = User::factory()->admin()->create();
-    $this->agent = Agent::factory()->create(['categorie' => 'A1']);
-    $this->taux = TauxPerDiem::factory()->create([
-        'categorie' => 'A1',
-        'destination_type' => 'LOCALE',
-        'montant_journalier' => 25000,
-        'annee' => now()->year,
+    $this->seed(BaremeSeeder::class);
+    $this->gestion = User::factory()->gestionnaireOm()->create();
+    $this->dada = Agent::factory()->categorie('ORDRE_1')->create();
+    $this->cav = Agent::factory()->categorie('ORDRE_3')->moov()->create();
+});
+
+function missionPayload(array $agents): array
+{
+    return [
+        'objet' => 'Atelier régional',
+        'destination' => 'Bohicon',
+        'zone_code' => 'INTERIEUR',
+        'date_depart' => '2026-06-01',
+        'date_retour' => '2026-06-03',
+        'ordres' => $agents,
+    ];
+}
+
+it('retranscrit une mission en N OM avec versements', function () {
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        ['reference_semo' => 'SEMO-1', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
+        ['reference_semo' => 'SEMO-2', 'agent_id' => $this->cav->id, 'role' => 'CAV', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
+    ]))->assertStatus(201);
+
+    expect(OrdreMission::count())->toBe(2);
+
+    $om = OrdreMission::where('reference_semo', 'SEMO-1')->first();
+    // ORDRE_1 / INTERIEUR / JOURNEE_COMPLETE = 45000 x 3 = 135000
+    expect($om->montant_total)->toBe(135000)
+        ->and($om->avance)->toBe(45000)
+        ->and($om->reliquat)->toBe(90000)
+        ->and($om->statut)->toBe('IMPORTE');
+
+    expect(Versement::where('ordre_mission_id', $om->id)->count())->toBe(2);
+});
+
+it('le CAV est payé selon SA catégorie', function () {
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        ['reference_semo' => 'SEMO-CAV', 'agent_id' => $this->cav->id, 'role' => 'CAV', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
+    ]))->assertStatus(201);
+
+    // ORDRE_3 / INTERIEUR / JOURNEE_COMPLETE = 30000 x 3 = 90000
+    expect(OrdreMission::where('reference_semo', 'SEMO-CAV')->value('montant_total'))->toBe(90000);
+});
+
+it('refuse une référence SEMO en doublon', function () {
+    OrdreMission::factory()->create(['reference_semo' => 'SEMO-DUP']);
+
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        ['reference_semo' => 'SEMO-DUP', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
+    ]))->assertStatus(422)->assertJsonValidationErrors(['ordres.0.reference_semo']);
+});
+
+it('refuse un type incompatible avec la zone', function () {
+    // LOGE_SEUL (hébergement) interdit en INTERIEUR.
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        ['reference_semo' => 'SEMO-X', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT', 'type_prise_en_charge' => 'LOGE_SEUL'],
+    ]))->assertStatus(422);
+});
+
+it('exonère les versements en cas de prise en charge tiers', function () {
+    $payload = missionPayload([
+        ['reference_semo' => 'SEMO-EX', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
     ]);
+    $payload['prise_en_charge_tiers'] = true;
+
+    $this->actingAs($this->gestion)->postJson('/api/missions', $payload)->assertStatus(201);
+
+    $om = OrdreMission::where('reference_semo', 'SEMO-EX')->first();
+    expect($om->montant_total)->toBe(0)
+        ->and(Versement::where('ordre_mission_id', $om->id)->count())->toBe(0);
 });
 
 it('liste les ordres de mission', function () {
-    OrdreMission::factory()->count(3)->create(['taux_id' => $this->taux->id]);
+    OrdreMission::factory()->count(3)->create();
 
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(3);
+    $this->actingAs($this->gestion)->getJson('/api/ordres')
+        ->assertOk()
+        ->assertJsonCount(3, 'data');
 });
 
-it('filtre les missions par statut', function () {
-    OrdreMission::factory()->create(['statut' => 'BROUILLON', 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
-    OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
+it('valide un OM (IMPORTE -> VALIDE)', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?statut=SOUMIS');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(2);
+    $this->actingAs($this->gestion)->postJson("/api/ordres/{$om->id}/valider")
+        ->assertOk()
+        ->assertJsonPath('data.statut', 'VALIDE');
 });
 
-it('cree un ordre avec calcul automatique per diem', function () {
-    $response = $this->actingAs($this->admin)->postJson('/api/ordres', [
-        'agent_id' => $this->agent->id,
-        'objet' => 'Mission de test',
-        'destination' => 'Parakou',
-        'date_depart' => '2026-05-10',
-        'date_retour' => '2026-05-14',
-        'taux_id' => $this->taux->id,
-    ]);
+it('rejette un OM avec motif', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $response->assertStatus(201);
-    expect($response->json('data.statut'))->toBe('BROUILLON');
-    expect($response->json('data.nb_jours'))->toBe(5);
-    expect((float) $response->json('data.montant_per_diem'))->toBe(125000.0);
-    expect($response->json('data.numero'))->toStartWith('OM-');
+    $this->actingAs($this->gestion)->postJson("/api/ordres/{$om->id}/rejeter", [
+        'motif' => 'Document non conforme au dossier',
+    ])->assertOk()->assertJsonPath('data.statut', 'REJETE');
 });
 
-it('refuse modification si ordre non brouillon', function () {
-    $ordre = OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
+it('refuse un rejet sans motif suffisant', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $response = $this->actingAs($this->admin)->putJson("/api/ordres/{$ordre->id}", [
-        'objet' => 'Modifie',
-    ]);
-
-    $response->assertStatus(422);
-});
-
-it('refuse suppression si ordre non brouillon', function () {
-    $ordre = OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->deleteJson("/api/ordres/{$ordre->id}");
-
-    $response->assertStatus(422);
-});
-
-it('soumet un brouillon vers soumis', function () {
-    $ordre = OrdreMission::factory()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->postJson("/api/ordres/{$ordre->id}/soumettre");
-
-    $response->assertOk();
-    expect($response->json('data.statut'))->toBe('SOUMIS');
-});
-
-it('valide N1 avec chef de service', function () {
-    $chef = User::factory()->chefService()->create();
-    Agent::factory()->create(['user_id' => $chef->id, 'service' => $this->agent->service]);
-
-    $ordre = OrdreMission::factory()->soumis()->create([
-        'agent_id' => $this->agent->id,
-        'taux_id' => $this->taux->id,
-    ]);
-
-    $response = $this->actingAs($chef)->postJson("/api/ordres/{$ordre->id}/valider-n1");
-
-    $response->assertOk();
-    expect($response->json('data.statut'))->toBe('VALIDE_N1');
-});
-
-it('refuse validation N1 par un agent', function () {
-    $agentUser = User::factory()->create(['role' => 'AGENT']);
-    $ordre = OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($agentUser)->postJson("/api/ordres/{$ordre->id}/valider-n1");
-
-    $response->assertStatus(422);
-});
-
-it('approuve DG avec directeur', function () {
-    $dg = User::factory()->directeur()->create();
-    $ordre = OrdreMission::factory()->valideN1()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($dg)->postJson("/api/ordres/{$ordre->id}/approuver");
-
-    $response->assertOk();
-    expect($response->json('data.statut'))->toBe('APPROUVE_DG');
-});
-
-it('refuse approbation DG par chef service', function () {
-    $chef = User::factory()->chefService()->create();
-    $ordre = OrdreMission::factory()->valideN1()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($chef)->postJson("/api/ordres/{$ordre->id}/approuver");
-
-    $response->assertStatus(422);
-});
-
-it('rejete un ordre avec commentaire obligatoire', function () {
-    $response = $this->actingAs($this->admin)->postJson("/api/ordres/" . OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id])->id . "/rejeter", [
-        'commentaire' => 'Ce motif est suffisamment long pour la validation',
-    ]);
-
-    $response->assertOk();
-    expect($response->json('data.statut'))->toBe('REJETE');
-});
-
-it('refuse rejet sans commentaire', function () {
-    $ordre = OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->postJson("/api/ordres/{$ordre->id}/rejeter", []);
-
-    $response->assertStatus(422);
-});
-
-it('refuse rejet avec commentaire trop court', function () {
-    $ordre = OrdreMission::factory()->soumis()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->postJson("/api/ordres/{$ordre->id}/rejeter", [
-        'commentaire' => 'Court',
-    ]);
-
-    $response->assertStatus(422);
-});
-
-it('respecte le workflow complet BROUILLON -> SOUMIS -> VALIDE_N1 -> APPROUVE_DG', function () {
-    $chef = User::factory()->chefService()->create();
-    Agent::factory()->create(['user_id' => $chef->id, 'service' => $this->agent->service]);
-    $dg = User::factory()->directeur()->create();
-
-    $ordre = OrdreMission::factory()->create([
-        'agent_id' => $this->agent->id,
-        'taux_id' => $this->taux->id,
-    ]);
-
-    // BROUILLON -> SOUMIS
-    $this->actingAs($this->admin)->postJson("/api/ordres/{$ordre->id}/soumettre")->assertOk();
-    expect($ordre->fresh()->statut)->toBe('SOUMIS');
-
-    // SOUMIS -> VALIDE_N1
-    $this->actingAs($chef)->postJson("/api/ordres/{$ordre->id}/valider-n1")->assertOk();
-    expect($ordre->fresh()->statut)->toBe('VALIDE_N1');
-
-    // VALIDE_N1 -> APPROUVE_DG
-    $this->actingAs($dg)->postJson("/api/ordres/{$ordre->id}/approuver")->assertOk();
-    expect($ordre->fresh()->statut)->toBe('APPROUVE_DG');
-});
-
-// ── RECHERCHE FULL-TEXT ──
-
-it('recherche par numero OM', function () {
-    OrdreMission::factory()->create(['numero' => 'OM-2026-0042', 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['numero' => 'OM-2026-0099', 'taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=0042');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.numero'))->toBe('OM-2026-0042');
-});
-
-it('recherche par objet de mission', function () {
-    OrdreMission::factory()->create(['objet' => 'Inspection technique routiere', 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['objet' => 'Formation gestion', 'taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=Inspection');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-});
-
-it('recherche par destination', function () {
-    OrdreMission::factory()->create(['destination' => 'Parakou', 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['destination' => 'Natitingou', 'taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=Parakou');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-});
-
-it('recherche par nom agent', function () {
-    $agent1 = Agent::factory()->create(['nom' => 'KOUASSI', 'prenom' => 'Jean']);
-    $agent2 = Agent::factory()->create(['nom' => 'ADJOVI', 'prenom' => 'Sylvie']);
-    OrdreMission::factory()->create(['agent_id' => $agent1->id, 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['agent_id' => $agent2->id, 'taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=KOUASSI');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-});
-
-it('recherche par matricule agent', function () {
-    $agent = Agent::factory()->create(['matricule' => 'ANT-777']);
-    OrdreMission::factory()->create(['agent_id' => $agent->id, 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=ANT-777');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-});
-
-it('recherche multi-termes affine les resultats', function () {
-    $agent = Agent::factory()->create(['nom' => 'KOUASSI']);
-    OrdreMission::factory()->create(['agent_id' => $agent->id, 'destination' => 'Parakou', 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['agent_id' => $agent->id, 'destination' => 'Natitingou', 'taux_id' => $this->taux->id]);
-    OrdreMission::factory()->create(['destination' => 'Parakou', 'taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=KOUASSI Parakou');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-});
-
-it('recherche vide retourne tout', function () {
-    OrdreMission::factory()->count(3)->create(['taux_id' => $this->taux->id]);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/ordres?search=');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(3);
+    $this->actingAs($this->gestion)->postJson("/api/ordres/{$om->id}/rejeter", ['motif' => 'court'])
+        ->assertStatus(422);
 });

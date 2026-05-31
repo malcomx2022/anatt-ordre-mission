@@ -46,7 +46,7 @@ const allNavigation: NavGroup[] = [
     title: 'Finances',
     items: [
       { label: 'Paiements', icon: 'credit-card', to: '/paiements', permission: 'paiements.read' },
-      { label: 'Baremes', icon: 'calculator', to: '/taux', permission: 'taux.read' },
+      { label: 'Baremes', icon: 'calculator', to: '/taux', permission: 'baremes.read' },
     ],
   },
   {

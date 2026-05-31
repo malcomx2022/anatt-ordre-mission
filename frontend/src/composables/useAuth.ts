@@ -5,57 +5,47 @@ import type { UserRole } from '@/types'
 export type Permission =
   | 'dashboard.view'
   | 'agents.read' | 'agents.write' | 'agents.import'
-  | 'ordres.read' | 'ordres.write' | 'ordres.submit'
-  | 'ordres.validate_n1' | 'ordres.approve_dg' | 'ordres.reject'
-  | 'paiements.read' | 'paiements.generate' | 'paiements.reconcile'
-  | 'taux.read' | 'taux.write'
+  | 'ordres.read' | 'missions.create' | 'ordres.validate' | 'ordres.reject'
+  | 'paiements.read' | 'paiements.generate' | 'paiements.confirm'
+  | 'baremes.read' | 'baremes.write'
   | 'rapports.read' | 'rapports.export'
   | 'audit.read'
-  | 'admin.users' | 'admin.roles' | 'admin.settings' | 'admin.backups'
+  | 'admin.users' | 'admin.settings' | 'admin.backups'
 
 const rolePermissions: Record<UserRole, Permission[]> = {
-  ADMIN: [
+  admin: [
     'dashboard.view',
     'agents.read', 'agents.write', 'agents.import',
-    'ordres.read', 'ordres.write', 'ordres.submit',
-    'ordres.validate_n1', 'ordres.approve_dg', 'ordres.reject',
-    'paiements.read', 'paiements.generate', 'paiements.reconcile',
-    'taux.read', 'taux.write',
+    'ordres.read', 'missions.create', 'ordres.validate', 'ordres.reject',
+    'paiements.read', 'paiements.generate', 'paiements.confirm',
+    'baremes.read', 'baremes.write',
     'rapports.read', 'rapports.export',
     'audit.read',
-    'admin.users', 'admin.roles', 'admin.settings', 'admin.backups',
+    'admin.users', 'admin.settings', 'admin.backups',
   ],
-  DIRECTEUR: [
-    'dashboard.view',
-    'agents.read',
-    'ordres.read', 'ordres.write', 'ordres.submit', 'ordres.approve_dg', 'ordres.reject',
-    'paiements.read',
-    'taux.read',
-    'rapports.read', 'rapports.export',
-    'audit.read',
-  ],
-  CHEF_SERVICE: [
-    'dashboard.view',
-    'agents.read',
-    'ordres.read', 'ordres.write', 'ordres.submit', 'ordres.validate_n1', 'ordres.reject',
-    'paiements.read',
-    'taux.read',
-    'rapports.read', 'rapports.export',
-  ],
-  DRH: [
+  gestionnaire_om: [
     'dashboard.view',
     'agents.read', 'agents.write', 'agents.import',
-    'ordres.read', 'ordres.write', 'ordres.submit',
-    'paiements.read', 'paiements.generate', 'paiements.reconcile',
-    'taux.read', 'taux.write',
+    'ordres.read', 'missions.create', 'ordres.validate', 'ordres.reject',
+    'paiements.read',
+    'baremes.read',
     'rapports.read', 'rapports.export',
   ],
-  AGENT: [
+  agent_financier: [
     'dashboard.view',
     'agents.read',
-    'ordres.read', 'ordres.submit',
+    'ordres.read',
+    'paiements.read', 'paiements.generate', 'paiements.confirm',
+    'baremes.read',
+    'rapports.read', 'rapports.export',
+  ],
+  lecteur: [
+    'dashboard.view',
+    'agents.read',
+    'ordres.read',
     'paiements.read',
-    'taux.read',
+    'baremes.read',
+    'rapports.read',
   ],
 }
 
@@ -84,27 +74,31 @@ export function useAuth() {
   }
 
   function isAdmin(): boolean {
-    return hasRole('ADMIN')
-  }
-
-  function canValidateN1(): boolean {
-    return can('ordres.validate_n1')
-  }
-
-  function canApproveDG(): boolean {
-    return can('ordres.approve_dg')
+    return hasRole('admin')
   }
 
   function canManageAgents(): boolean {
     return can('agents.write')
   }
 
-  function canManagePaiements(): boolean {
+  function canCreerMissions(): boolean {
+    return can('missions.create')
+  }
+
+  function canValiderOM(): boolean {
+    return can('ordres.validate')
+  }
+
+  function canGenererPaiements(): boolean {
     return can('paiements.generate')
   }
 
-  function canAccessAdmin(): boolean {
-    return canAny('admin.users', 'admin.roles', 'admin.settings', 'admin.backups')
+  function canConfirmerPaiements(): boolean {
+    return can('paiements.confirm')
+  }
+
+  function canManageBaremes(): boolean {
+    return can('baremes.write')
   }
 
   function canAccessRapports(): boolean {
@@ -113,6 +107,10 @@ export function useAuth() {
 
   function canAccessAudit(): boolean {
     return can('audit.read')
+  }
+
+  function canAccessAdmin(): boolean {
+    return canAny('admin.users', 'admin.settings', 'admin.backups')
   }
 
   return {
@@ -124,13 +122,15 @@ export function useAuth() {
     can,
     canAny,
     isAdmin,
-    canValidateN1,
-    canApproveDG,
     canManageAgents,
-    canManagePaiements,
-    canAccessAdmin,
+    canCreerMissions,
+    canValiderOM,
+    canGenererPaiements,
+    canConfirmerPaiements,
+    canManageBaremes,
     canAccessRapports,
     canAccessAudit,
+    canAccessAdmin,
     login: store.login,
     logout: store.logout,
     fetchUser: store.fetchUser,

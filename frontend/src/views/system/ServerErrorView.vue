@@ -2,6 +2,10 @@
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+function reload() {
+  window.location.reload()
+}
 </script>
 
 <template>
@@ -57,7 +61,7 @@ const router = useRouter()
 
         <!-- Suggestion Cards -->
         <div class="grid grid-cols-3 gap-3 mb-8 max-w-md mx-auto">
-          <button @click="location.reload()" class="bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-200 hover:shadow-md transition-all group">
+          <button @click="reload" class="bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-200 hover:shadow-md transition-all group">
             <div class="w-10 h-10 bg-anatt-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-anatt-100 transition-colors">
               <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
             </div>
@@ -83,7 +87,7 @@ const router = useRouter()
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
             Page precedente
           </button>
-          <button @click="location.reload()" class="px-5 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 flex items-center gap-2">
+          <button @click="reload" class="px-5 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
             Actualiser la page
           </button>

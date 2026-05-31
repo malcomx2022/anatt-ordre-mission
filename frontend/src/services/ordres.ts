@@ -1,0 +1,48 @@
+import { api, toPage, unwrap, saveBlob, filenameFromDisposition, type Page } from './http'
+import type { OrdreMission, MissionHistoryEntry } from '@/types'
+
+export interface OrdreFilters {
+  statut?: string
+  zone?: string
+  agent_id?: number
+  operateur?: string
+  date_debut?: string
+  date_fin?: string
+  search?: string
+  per_page?: number
+  page?: number
+}
+
+export const ordresService = {
+  async list(params: OrdreFilters = {}): Promise<Page<OrdreMission>> {
+    const { data } = await api.get('/api/ordres', { params })
+    return toPage<OrdreMission>(data)
+  },
+
+  async get(id: number): Promise<OrdreMission> {
+    const { data } = await api.get(`/api/ordres/${id}`)
+    return unwrap<OrdreMission>(data)
+  },
+
+  async valider(id: number): Promise<OrdreMission> {
+    const { data } = await api.post(`/api/ordres/${id}/valider`)
+    return unwrap<OrdreMission>(data)
+  },
+
+  async rejeter(id: number, motif: string): Promise<OrdreMission> {
+    const { data } = await api.post(`/api/ordres/${id}/rejeter`, { motif })
+    return unwrap<OrdreMission>(data)
+  },
+
+  async historique(id: number): Promise<MissionHistoryEntry[]> {
+    const { data } = await api.get(`/api/ordres/${id}/historique`)
+    return unwrap<MissionHistoryEntry[]>(data)
+  },
+
+  /** Télécharge le PDF officiel de l'OM (généré côté serveur). */
+  async telechargerPdf(id: number): Promise<void> {
+    const res = await api.get(`/api/ordres/${id}/pdf/download`, { responseType: 'blob' })
+    const nom = filenameFromDisposition(res.headers['content-disposition'], `OM-${id}.pdf`)
+    saveBlob(res.data as Blob, nom)
+  },
+}

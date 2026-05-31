@@ -2,99 +2,177 @@
 
 namespace App\Services;
 
-use App\Exports\AgentsExport;
-use App\Exports\MissionsExport;
-use App\Exports\PaiementsExport;
-use App\Exports\RapportCompletExport;
-use App\Models\OrdreMission;
-use App\Models\Paiement;
+use App\Exports\EtatExport;
+use App\Models\Versement;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
+/**
+ * États de paiement alimentés par les versements CONFIRMÉS.
+ * Tous les montants et dates s'appuient sur date_paiement (TIMESTAMP complet).
+ */
 class RapportService
 {
+    /** État mensuel : synthèse + ventilation par statut (instantané du pipeline). */
     public function mensuel(string $mois): array
     {
-        $date = Carbon::parse($mois);
+        $date = Carbon::parse($mois.'-01');
+        $debut = $date->copy()->startOfMonth();
+        $fin = $date->copy()->endOfMonth();
 
-        $missions = OrdreMission::whereMonth('created_at', $date->month)
-            ->whereYear('created_at', $date->year)
-            ->get();
+        $base = $this->baseConfirmes(['date_debut' => $debut, 'date_fin' => $fin]);
 
-        $paiements = Paiement::whereMonth('created_at', $date->month)
-            ->whereYear('created_at', $date->year)
-            ->get();
+        $synthese = (clone $base)
+            ->selectRaw('COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total')
+            ->first();
 
         return [
             'mois' => $mois,
-            'total_missions' => $missions->count(),
-            'missions_par_statut' => $missions->groupBy('statut')->map->count(),
-            'total_paiements' => $paiements->count(),
-            'montant_total' => $paiements->sum('montant'),
-            'paiements_par_operateur' => $paiements->groupBy('operateur')->map->sum('montant'),
+            'periode' => ['debut' => $debut->toDateString(), 'fin' => $fin->toDateString()],
+            'synthese' => [
+                'nb_versements' => (int) $synthese->nb_versements,
+                'montant_total' => (int) $synthese->montant_total,
+            ],
+            'par_operateur' => $this->parOperateur(['date_debut' => $debut, 'date_fin' => $fin]),
+            'par_tranche' => (clone $base)
+                ->selectRaw('versements.type as tranche, COUNT(*) as nb, COALESCE(SUM(versements.montant),0) as montant')
+                ->groupBy('versements.type')->get(),
+            // Instantané global de tous les versements par statut (pipeline).
+            'par_statut' => Versement::selectRaw('statut, COUNT(*) as nb, COALESCE(SUM(montant),0) as montant')
+                ->groupBy('statut')->get(),
         ];
     }
 
-    public function parAgents(int $annee): Collection
+    public function parAgent(array $filtres): Collection
     {
-        $missions = OrdreMission::with('agent')
-            ->whereYear('created_at', $annee)
-            ->get()
-            ->groupBy('agent_id');
-
-        return $missions->map(function ($agentMissions) {
-            $agent = $agentMissions->first()->agent;
-
-            return [
-                'agent' => $agent,
-                'total_missions' => $agentMissions->count(),
-                'total_per_diem' => $agentMissions->sum('montant_per_diem'),
-                'missions_par_statut' => $agentMissions->groupBy('statut')->map->count(),
-            ];
-        })->values();
+        return $this->baseConfirmes($filtres)
+            ->selectRaw('agents.id as agent_id, agents.matricule, agents.nom, agents.prenoms,
+                         COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total')
+            ->groupBy('agents.id', 'agents.matricule', 'agents.nom', 'agents.prenoms')
+            ->orderByDesc('montant_total')
+            ->get();
     }
 
+    public function parOperateur(array $filtres): Collection
+    {
+        return $this->baseConfirmes($filtres)
+            ->selectRaw('versements.operateur, COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total')
+            ->groupBy('versements.operateur')
+            ->get();
+    }
+
+    public function parZone(array $filtres): Collection
+    {
+        return $this->baseConfirmes($filtres)
+            ->selectRaw('ordre_missions.zone_code, COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total')
+            ->groupBy('ordre_missions.zone_code')
+            ->orderByDesc('montant_total')
+            ->get();
+    }
+
+    public function parImputation(array $filtres): Collection
+    {
+        return $this->baseConfirmes($filtres)
+            ->selectRaw('missions.imputation_budgetaire, COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total')
+            ->groupBy('missions.imputation_budgetaire')
+            ->orderByDesc('montant_total')
+            ->get();
+    }
+
+    /** Génère un export (xlsx ou pdf) d'un état et le stocke ; renvoie ses métadonnées. */
     public function exporter(array $params): array
     {
-        $type = $params['type'] ?? 'complet';
-        $format = $params['format'] ?? 'xlsx';
-        $dateDebut = $params['date_debut'] ?? null;
-        $dateFin = $params['date_fin'] ?? null;
-        $extension = $format === 'csv' ? 'csv' : 'xlsx';
+        $dimension = $params['dimension'] ?? 'agent';
+        $format = ($params['format'] ?? 'xlsx') === 'pdf' ? 'pdf' : 'xlsx';
+        $filtres = array_intersect_key($params, array_flip(['date_debut', 'date_fin']));
 
-        $export = match ($type) {
-            'missions' => new MissionsExport($dateDebut, $dateFin, $params['statut'] ?? null),
-            'paiements' => new PaiementsExport($dateDebut, $dateFin, $params['operateur'] ?? null),
-            'agents' => new AgentsExport($params['service'] ?? null),
-            default => new RapportCompletExport($dateDebut, $dateFin),
-        };
+        [$entetes, $lignes, $titre] = $this->tabulaire($dimension, $filtres);
 
-        $filename = "rapports/rapport_{$type}_" . now()->format('Ymd_His') . ".{$extension}";
+        $fichier = "rapports/etat_{$dimension}_".now()->format('Ymd_His').".{$format}";
 
-        Excel::store($export, $filename, 'local');
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('pdf.etat', [
+                'titre' => $titre,
+                'entetes' => $entetes,
+                'lignes' => $lignes,
+                'periode' => $filtres,
+                'genere_le' => now()->format('d/m/Y H:i'),
+            ])->setPaper('A4', 'landscape');
+            Storage::disk('local')->put($fichier, $pdf->output());
+        } else {
+            Excel::store(new EtatExport($entetes, $lignes, $titre), $fichier, 'local');
+        }
 
         return [
-            'url' => "/api/rapports/export/download?fichier={$filename}",
-            'fichier' => $filename,
+            'fichier' => $fichier,
+            'url' => "/api/rapports/export/download?fichier={$fichier}",
+            'dimension' => $dimension,
             'format' => $format,
-            'type' => $type,
+            'nb_lignes' => count($lignes),
         ];
     }
 
     public function telechargerExport(string $fichier)
     {
-        // Sanitize: empecher traversal de repertoire (../../.env)
         $fichier = ltrim($fichier, '/');
         if (str_contains($fichier, '..') || ! str_starts_with($fichier, 'rapports/')) {
-            abort(403, 'Chemin de fichier non autorise.');
+            abort(403, 'Chemin de fichier non autorisé.');
         }
-
         if (! Storage::disk('local')->exists($fichier)) {
             abort(404, 'Fichier introuvable.');
         }
 
         return Storage::disk('local')->download($fichier, basename($fichier));
+    }
+
+    /** Requête de base : versements CONFIRMÉS joints aux OM, missions et agents. */
+    private function baseConfirmes(array $filtres): Builder
+    {
+        $query = DB::table('versements')
+            ->join('ordre_missions', 'versements.ordre_mission_id', '=', 'ordre_missions.id')
+            ->join('missions', 'ordre_missions.mission_id', '=', 'missions.id')
+            ->join('agents', 'ordre_missions.agent_id', '=', 'agents.id')
+            ->where('versements.statut', 'CONFIRME');
+
+        if ($debut = ($filtres['date_debut'] ?? null)) {
+            $query->where('versements.date_paiement', '>=', $debut);
+        }
+        if ($fin = ($filtres['date_fin'] ?? null)) {
+            $query->where('versements.date_paiement', '<=', $fin);
+        }
+
+        return $query;
+    }
+
+    /** Prépare en-têtes + lignes tabulaires pour l'export d'une dimension. */
+    private function tabulaire(string $dimension, array $filtres): array
+    {
+        return match ($dimension) {
+            'operateur' => [
+                ['Opérateur', 'Nb versements', 'Montant total (FCFA)'],
+                $this->parOperateur($filtres)->map(fn ($r) => [$r->operateur, $r->nb_versements, $r->montant_total])->all(),
+                'État par opérateur',
+            ],
+            'zone' => [
+                ['Zone', 'Nb versements', 'Montant total (FCFA)'],
+                $this->parZone($filtres)->map(fn ($r) => [$r->zone_code, $r->nb_versements, $r->montant_total])->all(),
+                'État par zone',
+            ],
+            'imputation' => [
+                ['Imputation budgétaire', 'Nb versements', 'Montant total (FCFA)'],
+                $this->parImputation($filtres)->map(fn ($r) => [$r->imputation_budgetaire ?? '(non renseignée)', $r->nb_versements, $r->montant_total])->all(),
+                'État par imputation budgétaire',
+            ],
+            default => [
+                ['Matricule', 'Bénéficiaire', 'Nb versements', 'Montant total (FCFA)'],
+                $this->parAgent($filtres)->map(fn ($r) => [$r->matricule, trim("{$r->nom} {$r->prenoms}"), $r->nb_versements, $r->montant_total])->all(),
+                'État par agent',
+            ],
+        };
     }
 }

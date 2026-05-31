@@ -15,35 +15,29 @@ class ValidationController extends Controller
         private readonly MissionService $missionService,
     ) {}
 
-    public function soumettre(OrdreMission $ordre): JsonResponse
+    /** Validation d'un OM retranscrit : IMPORTE → VALIDE. */
+    public function valider(Request $request, OrdreMission $ordre): JsonResponse
     {
-        $ordre = $this->missionService->soumettre($ordre);
+        $ordre = $this->missionService->valider($ordre, $request->user());
 
-        return $this->success(new OrdreMissionResource($ordre), 'Ordre de mission soumis pour validation.');
+        return $this->success(
+            new OrdreMissionResource($ordre->load(['agent', 'mission', 'versements'])),
+            'Ordre de mission validé.',
+        );
     }
 
-    public function validerN1(Request $request, OrdreMission $ordre): JsonResponse
-    {
-        $ordre = $this->missionService->validerN1($ordre, $request->user());
-
-        return $this->success(new OrdreMissionResource($ordre), 'Ordre de mission valide par le chef de service.');
-    }
-
-    public function approuver(Request $request, OrdreMission $ordre): JsonResponse
-    {
-        $ordre = $this->missionService->approuver($ordre, $request->user());
-
-        return $this->success(new OrdreMissionResource($ordre), 'Ordre de mission approuve par la direction.');
-    }
-
+    /** Rejet d'un OM avec motif obligatoire : IMPORTE → REJETE. */
     public function rejeter(Request $request, OrdreMission $ordre): JsonResponse
     {
         $request->validate([
-            'commentaire' => 'required|string|min:10',
+            'motif' => 'required|string|min:10',
         ]);
 
-        $ordre = $this->missionService->rejeter($ordre, $request->commentaire, $request->user());
+        $ordre = $this->missionService->rejeter($ordre, $request->string('motif'), $request->user());
 
-        return $this->success(new OrdreMissionResource($ordre), 'Ordre de mission rejete.');
+        return $this->success(
+            new OrdreMissionResource($ordre->load(['agent', 'mission', 'versements'])),
+            'Ordre de mission rejeté.',
+        );
     }
 }
