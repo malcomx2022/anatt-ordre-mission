@@ -24,7 +24,7 @@ interface BackupEntry {
 const backups = ref<BackupEntry[]>([])
 
 const stats = computed(() => [
-  { label: 'Derniere sauvegarde', value: backups.value.length > 0 ? backups.value[0].date : '--', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { label: 'Derniere sauvegarde', value: backups.value[0]?.date ?? '--', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
   { label: 'Sauvegardes stockees', value: String(backups.value.length), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
   { label: 'Frequence', value: backupFrequency.value === 'daily' ? 'Quotidienne' : backupFrequency.value === 'weekly' ? 'Hebdomadaire' : 'Mensuelle', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
   { label: 'Prochaine auto', value: '02:00', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
@@ -131,7 +131,7 @@ async function deleteBackup(name: string) {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          <tr v-for="backup in backups" :key="backup.id" class="hover:bg-anatt-50/30 transition-colors group">
+          <tr v-for="backup in backups" :key="backup.name" class="hover:bg-anatt-50/30 transition-colors group">
             <td class="px-5 py-3">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">

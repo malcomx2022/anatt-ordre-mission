@@ -4,8 +4,8 @@ import { useAuth } from '@/composables/useAuth'
 const { can } = useAuth()
 
 const actions = [
-  { label: 'Nouvel Ordre', to: '/ordres/nouveau', color: 'bg-anatt-50 text-anatt-600', permission: 'ordres.write' as const },
-  { label: 'Generer Fichiers', to: '/paiements/moov', color: 'bg-blue-50 text-blue-600', permission: 'paiements.generate' as const },
+  { label: 'Nouvelle Mission', to: '/ordres/nouveau', color: 'bg-anatt-50 text-anatt-600', permission: 'missions.create' as const },
+  { label: 'Generer Fichiers', to: '/paiements/mtn', color: 'bg-blue-50 text-blue-600', permission: 'paiements.generate' as const },
   { label: 'Personnel', to: '/agents', color: 'bg-purple-50 text-purple-600', permission: 'agents.read' as const },
   { label: 'Rapports', to: '/rapports', color: 'bg-amber-50 text-amber-600', permission: 'rapports.read' as const },
 ]

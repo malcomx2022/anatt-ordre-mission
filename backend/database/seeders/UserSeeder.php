@@ -9,34 +9,19 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Gislain AHOUANSOU',
-            'email' => 'admin@anatt.bj',
-            'role' => 'ADMIN',
-        ]);
+        $comptes = [
+            ['name' => 'Gislain AHOUANSOU', 'email' => 'admin@anatt.bj', 'role' => User::ROLE_ADMIN],
+            ['name' => 'Marie DOSSOU', 'email' => 'gestion@anatt.bj', 'role' => User::ROLE_GESTIONNAIRE_OM],
+            ['name' => 'Amina BELLO', 'email' => 'finance@anatt.bj', 'role' => User::ROLE_AGENT_FINANCIER],
+            ['name' => 'Pierre HOUNGBO', 'email' => 'lecteur@anatt.bj', 'role' => User::ROLE_LECTEUR],
+        ];
 
-        User::factory()->create([
-            'name' => 'Marie DOSSOU',
-            'email' => 'chef@anatt.bj',
-            'role' => 'CHEF_SERVICE',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Pierre HOUNGBO',
-            'email' => 'directeur@anatt.bj',
-            'role' => 'DIRECTEUR',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Amina BELLO',
-            'email' => 'drh@anatt.bj',
-            'role' => 'DRH',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Jean KOUASSI',
-            'email' => 'agent@anatt.bj',
-            'role' => 'AGENT',
-        ]);
+        foreach ($comptes as $compte) {
+            $user = User::factory()->create([
+                'name' => $compte['name'],
+                'email' => $compte['email'],
+            ]);
+            $user->assignRole($compte['role']);
+        }
     }
 }

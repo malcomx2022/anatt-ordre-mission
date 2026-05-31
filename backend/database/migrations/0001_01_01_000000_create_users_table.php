@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['AGENT', 'CHEF_SERVICE', 'DRH', 'DIRECTEUR', 'ADMIN'])->default('AGENT');
+            // RBAC : admin (total) / gestionnaire_om (retranscription OM, agents, missions)
+            //        / agent_financier (génération & confirmation des fichiers de paiement) / lecteur (lecture seule)
+            $table->enum('role', ['admin', 'gestionnaire_om', 'agent_financier', 'lecteur'])->default('lecteur');
             $table->rememberToken();
             $table->timestamps();
         });

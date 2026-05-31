@@ -1,50 +1,49 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { useApi } from '@/composables/useApi'
+import { authService } from '@/services/auth'
 import type { User } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('auth_token'))
+  const loading = ref(false)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
 
   async function login(email: string, password: string) {
-    const api = useApi()
-    const { data } = await api.post('/api/auth/login', { email, password })
-    token.value = data.token
-    user.value = data.user
-    localStorage.setItem('auth_token', data.token)
+    loading.value = true
+    try {
+      const { token: jeton, user: utilisateur } = await authService.login(email, password)
+      token.value = jeton
+      user.value = utilisateur
+      localStorage.setItem('auth_token', jeton)
+    } finally {
+      loading.value = false
+    }
   }
 
   async function fetchUser() {
     if (!token.value) return
     try {
-      const api = useApi()
-      const { data } = await api.get('/api/auth/me')
-      user.value = data.data || data
+      user.value = await authService.me()
     } catch {
-      logout()
+      await logout()
     }
   }
 
   async function logout() {
-    // Revoquer le token cote serveur
     if (token.value) {
       try {
-        const api = useApi()
-        await api.post('/api/auth/logout')
+        await authService.logout()
       } catch {
         // Ignorer si le serveur est injoignable
       }
     }
-
-    // Nettoyer completement l'etat local
     user.value = null
     token.value = null
     localStorage.removeItem('auth_token')
     sessionStorage.clear()
   }
 
-  return { user, token, isAuthenticated, login, fetchUser, logout }
+  return { user, token, loading, isAuthenticated, login, fetchUser, logout }
 })

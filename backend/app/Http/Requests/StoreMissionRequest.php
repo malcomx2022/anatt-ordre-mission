@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Support\ZoneResolver;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+
+class StoreMissionRequest extends FormRequest
+{
+    /** Types de prise en charge autorisés selon la portée de la zone. */
+    private const TYPES_INTERIEUR = ['UN_REPAS', 'DEUX_REPAS', 'JOURNEE_COMPLETE'];
+    private const TYPES_EXTERIEUR = ['JOURNEE_COMPLETE', 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL'];
+
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /** Déduit la zone depuis la destination si elle n'est pas fournie explicitement. */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('zone_code') && $this->filled('destination')) {
+            $zone = ZoneResolver::deduire($this->input('destination'));
+            if ($zone) {
+                $this->merge(['zone_code' => $zone]);
+            }
+        }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'objet' => 'required|string|max:255',
+            'destination' => 'required|string|max:255',
+            'zone_code' => 'nullable|in:INTERIEUR,EXT_ZONE_I,EXT_ZONE_II,EXT_ZONE_III',
+            'date_depart' => 'required|date',
+            'date_retour' => 'required|date|after_or_equal:date_depart',
+            'imputation_budgetaire' => 'nullable|string|max:255',
+            'prise_en_charge_tiers' => 'sometimes|boolean',
+            'observations' => 'nullable|string',
+
+            // Au moins un bénéficiaire (participant ou CAV).
+            'ordres' => 'required|array|min:1',
+            'ordres.*.reference_semo' => 'required|string|max:255|distinct|unique:ordre_missions,reference_semo',
+            'ordres.*.agent_id' => 'required|integer|exists:agents,id',
+            'ordres.*.role' => 'required|in:PARTICIPANT,CAV',
+            'ordres.*.categorie' => 'nullable|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'ordres.*.type_prise_en_charge' => 'required|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',
+            'ordres.*.nb_jours' => 'nullable|integer|min:1',
+            'ordres.*.conducteur_a_bord' => 'nullable|string|max:255',
+            'ordres.*.reference_autorisation' => 'nullable|string|max:255',
+            'ordres.*.moyen_transport' => 'nullable|string|max:255',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $zone = $this->input('zone_code');
+
+            // La zone doit être déductible ou fournie.
+            if (! $zone) {
+                $validator->errors()->add(
+                    'zone_code',
+                    "Zone indéterminable pour la destination « {$this->input('destination')} » : précisez zone_code.",
+                );
+
+                return;
+            }
+
+            // Cohérence type de prise en charge ↔ portée de la zone.
+            $typesAutorises = $zone === 'INTERIEUR' ? self::TYPES_INTERIEUR : self::TYPES_EXTERIEUR;
+
+            foreach ((array) $this->input('ordres', []) as $i => $ordre) {
+                $type = $ordre['type_prise_en_charge'] ?? null;
+                if ($type && ! in_array($type, $typesAutorises, true)) {
+                    $validator->errors()->add(
+                        "ordres.{$i}.type_prise_en_charge",
+                        "Le type « {$type} » est incompatible avec la zone {$zone}.",
+                    );
+                }
+            }
+        });
+    }
+
+    public function messages(): array
+    {
+        return [
+            'ordres.*.reference_semo.unique' => 'La référence SEMO :input existe déjà (doublon interdit).',
+            'ordres.*.reference_semo.distinct' => 'La référence SEMO :input est répétée dans la requête.',
+        ];
+    }
+}

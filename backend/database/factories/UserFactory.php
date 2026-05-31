@@ -27,7 +27,7 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (\App\Models\User $user) {
             if ($user->role === null) {
-                $user->role = 'AGENT';
+                $user->role = User::ROLE_LECTEUR;
                 $user->saveQuietly();
             }
         });
@@ -35,21 +35,21 @@ class UserFactory extends Factory
 
     public function admin(): static
     {
-        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('ADMIN'));
+        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_ADMIN));
     }
 
-    public function chefService(): static
+    public function gestionnaireOm(): static
     {
-        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('CHEF_SERVICE'));
+        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_GESTIONNAIRE_OM));
     }
 
-    public function directeur(): static
+    public function agentFinancier(): static
     {
-        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('DIRECTEUR'));
+        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_AGENT_FINANCIER));
     }
 
-    public function drh(): static
+    public function lecteur(): static
     {
-        return $this->afterCreating(fn (\App\Models\User $user) => $user->assignRole('DRH'));
+        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_LECTEUR));
     }
 }

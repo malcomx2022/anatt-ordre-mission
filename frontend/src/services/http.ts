@@ -1,0 +1,46 @@
+import { useApi } from '@/composables/useApi'
+import type { PaginationMeta } from '@/types'
+
+/** Instance axios partagée (intercepteur Sanctum dans useApi). */
+export const api = useApi()
+
+export interface Page<T> {
+  items: T[]
+  meta: PaginationMeta
+}
+
+/** Normalise une réponse paginée (collection de Resource OU paginateur brut Laravel). */
+export function toPage<T>(payload: any): Page<T> {
+  const items: T[] = payload?.data ?? []
+  const meta: PaginationMeta = payload?.meta ?? {
+    current_page: payload?.current_page ?? 1,
+    last_page: payload?.last_page ?? 1,
+    per_page: payload?.per_page ?? items.length,
+    total: payload?.total ?? items.length,
+  }
+  return { items, meta }
+}
+
+/** Déballe l'enveloppe { data: ... } des réponses « success ». */
+export function unwrap<T>(payload: any): T {
+  return (payload?.data ?? payload) as T
+}
+
+/** Extrait le nom de fichier d'un en-tête Content-Disposition. */
+export function filenameFromDisposition(disposition?: string, fallback = 'fichier'): string {
+  if (!disposition) return fallback
+  const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(disposition)
+  return match?.[1] ? decodeURIComponent(match[1].replace(/"/g, '')) : fallback
+}
+
+/** Déclenche le téléchargement d'un Blob côté navigateur. */
+export function saveBlob(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}

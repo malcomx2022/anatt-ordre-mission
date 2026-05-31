@@ -13,6 +13,19 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    /** Rôles RBAC de l'application. */
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_GESTIONNAIRE_OM = 'gestionnaire_om';
+    public const ROLE_AGENT_FINANCIER = 'agent_financier';
+    public const ROLE_LECTEUR = 'lecteur';
+
+    public const ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_GESTIONNAIRE_OM,
+        self::ROLE_AGENT_FINANCIER,
+        self::ROLE_LECTEUR,
+    ];
+
     protected $fillable = [
         'name',
         'email',
@@ -43,18 +56,13 @@ class User extends Authenticatable
         ];
     }
 
-    public function agent()
-    {
-        return $this->hasOne(Agent::class);
-    }
-
     public function isAdmin(): bool
     {
-        return $this->role === 'ADMIN';
+        return $this->role === self::ROLE_ADMIN;
     }
 
     public function hasRole(string ...$roles): bool
     {
-        return in_array($this->role, $roles);
+        return in_array($this->role, $roles, true);
     }
 }

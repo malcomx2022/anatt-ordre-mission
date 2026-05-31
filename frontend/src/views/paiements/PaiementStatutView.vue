@@ -1,419 +1,63 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
-import AppButton from '@/components/shared/AppButton.vue'
-import AppBadge from '@/components/shared/AppBadge.vue'
-import AppModal from '@/components/shared/AppModal.vue'
-import { useApi } from '@/composables/useApi'
-import type { Paiement, OperateurPaiement, StatutPaiement } from '@/types'
+import AppCard from '@/components/shared/AppCard.vue'
+import OperateurBadge from '@/components/paiements/OperateurBadge.vue'
+import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
+import { paiementsService } from '@/services/paiements'
+import type { Operateur } from '@/types'
 
-const router = useRouter()
-const api = useApi()
-const loadingData = ref(true)
+interface Ligne { operateur: string; statut: string; total: number; montant_total: number }
 
-// Stats calculees depuis l'API
-const paiements = ref<Paiement[]>([])
-const filterStatut = ref('')
+const lignes = ref<Ligne[]>([])
+const loading = ref(true)
 
-const lot = computed(() => {
-  const all = paiements.value
-  const succes = all.filter(p => p.statut === 'SUCCES')
-  const echec = all.filter(p => p.statut === 'ECHEC')
-  const attente = all.filter(p => p.statut === 'EN_ATTENTE' || p.statut === 'INITIE')
-  const montantTotal = all.reduce((s, p) => s + Number(p.montant), 0)
-  const montantPaye = succes.reduce((s, p) => s + Number(p.montant), 0)
-  const total = all.length
-  const progression = total > 0 ? Math.round((succes.length / total) * 100) : 0
-
-  return {
-    operateur: all[0]?.operateur || 'MTN',
-    montantTotal,
-    montantPaye,
-    montantEchec: echec.reduce((s, p) => s + Number(p.montant), 0),
-    montantAttente: attente.reduce((s, p) => s + Number(p.montant), 0),
-    progression,
-    reussis: succes.length,
-    echoues: echec.length,
-    enAttente: attente.length,
-    totalTransactions: total,
-  }
-})
-
-const filteredPaiements = computed(() => {
-  if (!filterStatut.value) return paiements.value
-  return paiements.value.filter(p => p.statut === filterStatut.value)
-})
+const fmt = (v: number) => Number(v).toLocaleString('fr-FR')
 
 onMounted(async () => {
   try {
-    const [paiementsRes, statutsRes] = await Promise.all([
-      api.get('/api/paiements?per_page=100'),
-      api.get('/api/paiements/statuts'),
-    ])
-    paiements.value = paiementsRes.data.data || []
-  } catch {
-    // Geree par useApi
+    lignes.value = await paiementsService.statuts() as Ligne[]
   } finally {
-    loadingData.value = false
+    loading.value = false
   }
 })
 
-// Marquage lot paye
-const showConfirmModal = ref(false)
-const showSuccessModal = ref(false)
-const confirmPassword = ref('')
-const commentaire = ref('')
-const checks = ref({
-  paiementsEnvoyes: false,
-  reconciliationComplete: false,
-  montantCorrespond: false,
-  confirmationFinale: false,
-})
-
-const canMarkAsPaid = computed(() =>
-  checks.value.paiementsEnvoyes &&
-  checks.value.reconciliationComplete &&
-  checks.value.montantCorrespond &&
-  checks.value.confirmationFinale
-)
-
-function formatMontant(val: number): string {
-  return val.toLocaleString('fr-FR')
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return '--'
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
-
-function statutVariant(statut: string): 'success' | 'warning' | 'danger' | 'info' {
-  switch (statut) {
-    case 'SUCCES': return 'success'
-    case 'EN_ATTENTE': return 'warning'
-    case 'ECHEC': return 'danger'
-    default: return 'info'
-  }
-}
-
-function statutLabel(statut: string): string {
-  switch (statut) {
-    case 'SUCCES': return 'Reussi'
-    case 'EN_ATTENTE': return 'En attente'
-    case 'ECHEC': return 'Echoue'
-    case 'INITIE': return 'Initie'
-    default: return statut
-  }
-}
-
-function confirmMarkPaid() {
-  showConfirmModal.value = false
-  showSuccessModal.value = true
-}
+const total = computed(() => ({
+  versements: lignes.value.reduce((s, l) => s + Number(l.total), 0),
+  montant: lignes.value.reduce((s, l) => s + Number(l.montant_total), 0),
+  confirmes: lignes.value.filter((l) => l.statut === 'CONFIRME').reduce((s, l) => s + Number(l.total), 0),
+}))
 </script>
 
 <template>
-  <AppLayout title="Detail Lot de Paiement" subtitle="Suivi des transactions et marquage du lot comme paye">
-    <template #header-actions>
-      <div class="flex items-center gap-2">
-        <AppButton @click="router.push('/paiements/reconciliation')">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-          Reconcilier
-        </AppButton>
-        <AppButton variant="outline">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Telecharger
-        </AppButton>
-      </div>
-    </template>
-
-    <!-- Lot header info -->
-    <div class="flex items-center gap-3 mb-6 animate-fade-up">
-      <button @click="router.push('/paiements')" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
-      <div>
-        <div class="flex items-center gap-3">
-          <h2 class="text-lg font-display font-bold text-gray-800">Paiements {{ lot.operateur }}</h2>
-          <AppBadge variant="info">En cours</AppBadge>
-        </div>
-        <p class="text-xs font-body text-gray-500">{{ lot.operateur === 'MOOV' ? 'MOOV Flooz' : 'MTN MoMo' }} -- {{ lot.totalTransactions }} transaction(s)</p>
-      </div>
+  <AppLayout title="Statuts des versements" subtitle="Synthèse par opérateur et statut">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <AppCard><p class="text-2xl font-display font-bold text-gray-800">{{ total.versements }}</p><p class="text-xs font-body text-gray-500">Versements</p></AppCard>
+      <AppCard><p class="text-2xl font-display font-bold text-anatt-600">{{ fmt(total.montant) }}</p><p class="text-xs font-body text-gray-500">Montant total (FCFA)</p></AppCard>
+      <AppCard><p class="text-2xl font-display font-bold text-green-600">{{ total.confirmes }}</p><p class="text-xs font-body text-gray-500">Versements confirmés</p></AppCard>
     </div>
 
-    <!-- Progress & Summary grid -->
-    <div class="grid grid-cols-3 gap-6 mb-6">
-      <!-- Progress Ring -->
-      <div class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up">
-        <h3 class="text-sm font-display font-semibold text-gray-700 mb-4">Progression du Traitement</h3>
-        <div class="flex items-center justify-center mb-4">
-          <div class="relative w-32 h-32">
-            <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" stroke="#f3f4f6" stroke-width="8" fill="none"/>
-              <circle cx="60" cy="60" r="52" stroke="#1D9E4F" stroke-width="8" fill="none" stroke-dasharray="326.7" :stroke-dashoffset="326.7 * (1 - lot.progression / 100)" stroke-linecap="round"/>
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span class="text-2xl font-display font-bold text-gray-900">{{ lot.progression }}%</span>
-              <span class="text-[10px] font-body text-gray-500">traite</span>
-            </div>
-          </div>
-        </div>
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs font-body">
-            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 bg-anatt-500 rounded-full"></span>Reussis</span>
-            <span class="font-display font-bold text-gray-800">{{ lot.reussis }}</span>
-          </div>
-          <div class="flex items-center justify-between text-xs font-body">
-            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span>Echoues</span>
-            <span class="font-display font-bold text-gray-800">{{ lot.echoues }}</span>
-          </div>
-          <div class="flex items-center justify-between text-xs font-body">
-            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 bg-gray-300 rounded-full"></span>En attente</span>
-            <span class="font-display font-bold text-gray-800">{{ lot.enAttente }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Info Lot -->
-      <div class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up delay-100">
-        <h3 class="text-sm font-display font-semibold text-gray-700 mb-4">Informations du Lot</h3>
-        <div class="space-y-3">
-          <div class="flex justify-between"><span class="text-xs font-body text-gray-500">Operateur</span><span class="text-sm font-display font-bold text-gray-800">{{ lot.operateur }}</span></div>
-          <div class="flex justify-between"><span class="text-xs font-body text-gray-500">Transactions</span><span class="text-sm font-body text-gray-700">{{ lot.totalTransactions }}</span></div>
-          <div class="flex justify-between"><span class="text-xs font-body text-gray-500">Reussies</span><span class="text-sm font-body text-green-600">{{ lot.reussis }}</span></div>
-          <div class="flex justify-between"><span class="text-xs font-body text-gray-500">Echouees</span><span class="text-sm font-body text-red-600">{{ lot.echoues }}</span></div>
-          <div class="flex justify-between"><span class="text-xs font-body text-gray-500">En attente</span><span class="text-sm font-body text-amber-600">{{ lot.enAttente }}</span></div>
-        </div>
-      </div>
-
-      <!-- Montants -->
-      <div class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up delay-200">
-        <h3 class="text-sm font-display font-semibold text-gray-700 mb-4">Resume Financier</h3>
-        <div class="space-y-4">
-          <div class="bg-gray-50 rounded-xl p-4">
-            <p class="text-xs font-body text-gray-500 mb-1">Montant Total du Lot</p>
-            <p class="text-2xl font-display font-bold text-gray-900">{{ formatMontant(lot.montantTotal) }} <span class="text-sm font-normal text-gray-500">FCFA</span></p>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-anatt-50 rounded-xl p-3 text-center">
-              <p class="text-[10px] font-body text-anatt-600 font-medium">Paye</p>
-              <p class="text-lg font-display font-bold text-anatt-500">{{ formatMontant(lot.montantPaye) }}</p>
-            </div>
-            <div class="bg-red-50 rounded-xl p-3 text-center">
-              <p class="text-[10px] font-body text-red-500 font-medium">Echoue</p>
-              <p class="text-lg font-display font-bold text-red-600">{{ formatMontant(lot.montantEchec) }}</p>
-            </div>
-          </div>
-          <div class="bg-amber-50 rounded-xl p-3 text-center">
-            <p class="text-[10px] font-body text-amber-600 font-medium">En attente de traitement</p>
-            <p class="text-lg font-display font-bold text-amber-700">{{ formatMontant(lot.montantAttente) }} <span class="text-xs font-normal">FCFA</span></p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Timeline -->
-    <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 animate-fade-up delay-200">
-      <h3 class="text-sm font-display font-semibold text-gray-700 mb-4">Chronologie</h3>
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-anatt-500 rounded-full flex items-center justify-center">
-            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div><p class="text-xs font-display font-semibold text-gray-800">Genere</p><p class="text-[10px] font-body text-gray-400">14/04 08:30</p></div>
-        </div>
-        <div class="flex-1 h-0.5 bg-anatt-500"></div>
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-anatt-500 rounded-full flex items-center justify-center">
-            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div><p class="text-xs font-display font-semibold text-gray-800">Valide</p><p class="text-[10px] font-body text-gray-400">14/04 09:00</p></div>
-        </div>
-        <div class="flex-1 h-0.5 bg-anatt-500"></div>
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-anatt-500 rounded-full flex items-center justify-center">
-            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div><p class="text-xs font-display font-semibold text-gray-800">Soumis</p><p class="text-[10px] font-body text-gray-400">14/04 09:15</p></div>
-        </div>
-        <div class="flex-1 h-0.5 bg-blue-400 animate-pulse"></div>
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-            <svg class="w-3.5 h-3.5 text-white animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          </div>
-          <div><p class="text-xs font-display font-semibold text-blue-700">En cours</p><p class="text-[10px] font-body text-gray-400">75%</p></div>
-        </div>
-        <div class="flex-1 h-0.5 bg-gray-200"></div>
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-            <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-          </div>
-          <div><p class="text-xs font-display font-semibold text-gray-400">Termine</p><p class="text-[10px] font-body text-gray-300">--</p></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Transactions Table -->
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-6 animate-fade-up delay-300">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 class="text-sm font-display font-semibold text-gray-700">Transactions ({{ lot.totalTransactions }})</h3>
-        <div class="flex items-center gap-2">
-          <select v-model="filterStatut" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-body text-gray-600 outline-none">
-            <option value="">Tous les statuts</option>
-            <option value="SUCCES">Reussis</option>
-            <option value="ECHEC">Echoues</option>
-            <option value="EN_ATTENTE">En attente</option>
-          </select>
-          <button class="px-3 py-1.5 text-xs font-display text-anatt-500 font-semibold hover:bg-anatt-50 rounded-lg transition-colors">Exporter CSV</button>
-        </div>
-      </div>
-      <table class="w-full">
+    <AppCard>
+      <p v-if="loading" class="text-center text-gray-400 font-body py-6">Chargement…</p>
+      <p v-else-if="!lignes.length" class="text-center text-gray-400 font-body py-6">Aucun versement.</p>
+      <table v-else class="w-full text-sm font-body">
         <thead>
-          <tr class="bg-gray-50 border-b border-gray-100">
-            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">#</th>
-            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Beneficiaire</th>
-            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Telephone</th>
-            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Ref. OM</th>
-            <th class="text-right px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Montant</th>
-            <th class="text-center px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Statut</th>
-            <th class="text-left px-5 py-3 text-xs font-display font-semibold text-gray-500 uppercase">Transaction ID</th>
+          <tr class="text-left text-[11px] text-gray-400 uppercase border-b border-gray-100">
+            <th class="py-2">Opérateur</th>
+            <th>Statut</th>
+            <th class="text-right">Nombre</th>
+            <th class="text-right">Montant</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
-          <tr v-for="txn in filteredPaiements" :key="txn.id" class="hover:bg-anatt-50/30 transition-colors" :class="txn.statut === 'ECHEC' ? 'bg-red-50/30' : ''">
-            <td class="px-5 py-3 text-xs font-body text-gray-400">{{ txn.id }}</td>
-            <td class="px-5 py-3 text-sm font-body font-medium text-gray-800">{{ txn.agent ? txn.agent.prenom + ' ' + txn.agent.nom : '--' }}</td>
-            <td class="px-5 py-3 text-sm font-body text-gray-600">{{ txn.numero_destinataire }}</td>
-            <td class="px-5 py-3">
-              <router-link v-if="txn.ordre_mission" :to="`/ordres/${txn.ordre_mission_id}`" class="text-sm font-body text-anatt-500 font-medium hover:underline">{{ txn.ordre_mission.numero }}</router-link>
-              <span v-else class="text-sm text-gray-400">--</span>
-            </td>
-            <td class="px-5 py-3 text-right text-sm font-display font-semibold text-gray-800">{{ formatMontant(Number(txn.montant)) }} F</td>
-            <td class="px-5 py-3 text-center">
-              <AppBadge :variant="statutVariant(txn.statut)">{{ statutLabel(txn.statut) }}</AppBadge>
-            </td>
-            <td class="px-5 py-3 text-xs font-mono" :class="txn.statut === 'ECHEC' ? 'text-red-400' : 'text-gray-400'">{{ txn.reference_transaction || '--' }}</td>
+        <tbody>
+          <tr v-for="(l, i) in lignes" :key="i" class="border-b border-gray-50">
+            <td class="py-2"><OperateurBadge :operateur="(l.operateur as Operateur)" /></td>
+            <td><PaiementStatusBadge :statut="l.statut" /></td>
+            <td class="text-right font-semibold">{{ l.total }}</td>
+            <td class="text-right">{{ fmt(l.montant_total) }}</td>
           </tr>
         </tbody>
       </table>
-      <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-        <p class="text-sm font-body text-gray-500">Affichage <span class="font-semibold text-gray-700">1-6</span> sur <span class="font-semibold text-gray-700">18</span></p>
-        <div class="flex items-center gap-1">
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400">
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg bg-anatt-500 text-white text-sm font-display font-semibold">1</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">2</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">3</button>
-          <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Marquage Lot Paye Section -->
-    <div class="bg-white rounded-2xl border-2 border-amber-200 p-6 mb-6 animate-fade-up delay-300">
-      <div class="flex items-start gap-4 mb-6">
-        <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-          <svg class="w-6 h-6 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div>
-          <h3 class="text-base font-display font-bold text-gray-800">Confirmer le marquage comme paye</h3>
-          <p class="text-sm font-body text-gray-500 mt-1">Cette action est <strong class="text-red-500">irreversible</strong>. Le lot sera marque comme entierement paye et archive.</p>
-        </div>
-      </div>
-
-      <div class="space-y-3 mb-6">
-        <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-anatt-50 transition-colors group">
-          <input type="checkbox" v-model="checks.paiementsEnvoyes" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
-          <span class="text-sm font-body text-gray-700 group-hover:text-gray-900">Tous les paiements ont ete envoyes avec succes ({{ lot.totalTransactions }}/{{ lot.totalTransactions }})</span>
-          <svg v-if="checks.paiementsEnvoyes" class="w-4 h-4 text-anatt-500 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </label>
-        <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-anatt-50 transition-colors group">
-          <input type="checkbox" v-model="checks.reconciliationComplete" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
-          <span class="text-sm font-body text-gray-700 group-hover:text-gray-900">La reconciliation bancaire est complete (0 ecart)</span>
-          <svg v-if="checks.reconciliationComplete" class="w-4 h-4 text-anatt-500 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </label>
-        <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-anatt-50 transition-colors group">
-          <input type="checkbox" v-model="checks.montantCorrespond" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
-          <span class="text-sm font-body text-gray-700 group-hover:text-gray-900">Le montant total correspond au budget approuve</span>
-          <svg v-if="checks.montantCorrespond" class="w-4 h-4 text-anatt-500 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </label>
-        <label class="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors group">
-          <input type="checkbox" v-model="checks.confirmationFinale" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
-          <span class="text-sm font-body text-gray-700 group-hover:text-gray-900 font-medium">Je confirme avoir verifie toutes les informations ci-dessus</span>
-        </label>
-      </div>
-
-      <div class="mb-6">
-        <label class="block text-sm font-display font-semibold text-gray-700 mb-2">Commentaire / justification <span class="text-gray-400 font-normal">(optionnel)</span></label>
-        <textarea v-model="commentaire" rows="3" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-body focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 resize-none transition-all duration-200" placeholder="Ex: Lot valide apres verification complete des releves..."></textarea>
-      </div>
-
-      <div class="flex items-center justify-between">
-        <AppButton variant="outline" @click="router.push('/paiements')">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          Retour au lot
-        </AppButton>
-        <AppButton :disabled="!canMarkAsPaid" @click="showConfirmModal = true">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 12 4 4 8-8"/></svg>
-          Marquer comme Paye
-        </AppButton>
-      </div>
-    </div>
-
-    <!-- Confirm Modal -->
-    <AppModal :show="showConfirmModal" title="Derniere confirmation" @close="showConfirmModal = false">
-      <div class="text-center">
-        <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
-          <svg class="w-8 h-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 12 4 4 8-8"/></svg>
-        </div>
-        <p class="text-sm font-body text-gray-500 mb-6">
-          Vous etes sur le point de marquer le lot <strong>{{ lot.operateur }}</strong> comme paye pour un montant de <strong class="text-anatt-500">{{ formatMontant(lot.montantTotal) }} FCFA</strong>. Cette action est irreversible.
-        </p>
-        <div class="bg-gray-50 rounded-xl p-4 mb-6">
-          <label class="block text-sm font-display font-semibold text-gray-700 mb-2">Saisissez votre mot de passe pour confirmer</label>
-          <input v-model="confirmPassword" type="password" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-body text-center tracking-widest focus:ring-2 focus:ring-anatt-500/30 transition-all duration-200" placeholder="........">
-        </div>
-      </div>
-      <template #footer>
-        <AppButton variant="outline" @click="showConfirmModal = false">Annuler</AppButton>
-        <AppButton @click="confirmMarkPaid">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Confirmer
-        </AppButton>
-      </template>
-    </AppModal>
-
-    <!-- Success Modal -->
-    <AppModal :show="showSuccessModal" title="Lot marque comme paye" @close="showSuccessModal = false">
-      <div class="text-center">
-        <div class="w-20 h-20 bg-anatt-50 rounded-full flex items-center justify-center mx-auto mb-5">
-          <svg class="w-10 h-10 text-anatt-500" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="18" stroke="#1D9E4F" stroke-width="2" fill="none"/>
-            <path d="M12 20l6 6 10-12" stroke="#1D9E4F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h3 class="text-xl font-display font-bold text-gray-800 mb-2">Lot marque comme paye !</h3>
-        <p class="text-sm font-body text-gray-500 mb-6">Le lot {{ lot.operateur }} a ete cloture avec succes. Les recus de paiement ont ete generes.</p>
-        <div class="bg-anatt-50 rounded-xl p-4 mb-6 text-left space-y-2">
-          <div class="flex items-center justify-between text-sm"><span class="font-body text-gray-600">Montant paye</span><span class="font-display font-bold text-anatt-500">{{ formatMontant(lot.montantTotal) }} FCFA</span></div>
-          <div class="flex items-center justify-between text-sm"><span class="font-body text-gray-600">Agents payes</span><span class="font-display font-bold text-gray-800">{{ lot.totalTransactions }}</span></div>
-          <div class="flex items-center justify-between text-sm"><span class="font-body text-gray-600">Date de cloture</span><span class="font-display font-bold text-gray-800">07/04/2026 16:42</span></div>
-          <div class="flex items-center justify-between text-sm"><span class="font-body text-gray-600">Reference</span><span class="font-mono text-xs text-gray-500">PAY-2026-046-FINAL</span></div>
-        </div>
-      </div>
-      <template #footer>
-        <AppButton variant="outline" @click="router.push('/paiements')">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          Voir les lots
-        </AppButton>
-        <AppButton>
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Telecharger recus
-        </AppButton>
-      </template>
-    </AppModal>
+    </AppCard>
   </AppLayout>
 </template>

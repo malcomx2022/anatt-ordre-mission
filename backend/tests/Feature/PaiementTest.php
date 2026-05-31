@@ -1,104 +1,87 @@
 <?php
 
 use App\Models\Agent;
+use App\Models\LotPaiement;
+use App\Models\Mission;
 use App\Models\OrdreMission;
-use App\Models\Paiement;
-use App\Models\TauxPerDiem;
 use App\Models\User;
+use App\Models\Versement;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
-    $this->admin = User::factory()->admin()->create();
-    $this->taux = TauxPerDiem::factory()->create(['montant_journalier' => 25000, 'annee' => now()->year]);
-});
+    Storage::fake('local');
+    $this->finance = User::factory()->agentFinancier()->create();
 
-it('liste les paiements', function () {
-    Paiement::factory()->count(3)->create();
-
-    $response = $this->actingAs($this->admin)->getJson('/api/paiements');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(3);
-});
-
-it('filtre les paiements par operateur', function () {
-    Paiement::factory()->create(['operateur' => 'MTN']);
-    Paiement::factory()->create(['operateur' => 'MOOV']);
-    Paiement::factory()->create(['operateur' => 'MTN']);
-
-    $response = $this->actingAs($this->admin)->getJson('/api/paiements?operateur=MTN');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(2);
-});
-
-it('genere un fichier paiement Moov', function () {
-    $agent = Agent::factory()->create(['numero_moov' => '22997123456']);
-    $ordre = OrdreMission::factory()->approuveDG()->create([
-        'agent_id' => $agent->id,
-        'taux_id' => $this->taux->id,
-        'montant_per_diem' => 75000,
+    $this->mission = Mission::factory()->create(['objet' => 'Mission paiement', 'destination' => 'Bohicon']);
+    $agent = Agent::factory()->mtn()->create(['nom' => 'DADA', 'prenoms' => 'Richard']);
+    $this->om = OrdreMission::factory()->create([
+        'mission_id' => $this->mission->id, 'agent_id' => $agent->id,
+    ]);
+    $this->versement = Versement::factory()->create([
+        'ordre_mission_id' => $this->om->id, 'type' => 'AVANCE',
+        'operateur' => 'MTN', 'telephone' => $agent->telephone, 'montant' => 45000, 'statut' => 'EN_ATTENTE',
     ]);
 
-    $response = $this->actingAs($this->admin)->postJson('/api/paiements/generer/moov', [
-        'ordre_ids' => [$ordre->id],
-    ]);
-
-    $response->assertOk();
-    expect($response->json('data.nb_paiements'))->toBe(1);
-    expect($response->json('data.fichier'))->toContain('MOOV_');
-
-    $this->assertDatabaseHas('paiements', [
-        'ordre_mission_id' => $ordre->id,
-        'operateur' => 'MOOV',
-        'montant' => 75000,
-        'statut' => 'EN_ATTENTE',
-    ]);
+    $this->selection = ['mission_id' => $this->mission->id, 'tranche' => 'AVANCE', 'operateur' => 'MTN'];
 });
 
-it('genere un fichier paiement MTN', function () {
-    $agent = Agent::factory()->create(['numero_mtn' => '22961234567']);
-    $ordre = OrdreMission::factory()->approuveDG()->create([
-        'agent_id' => $agent->id,
-        'taux_id' => $this->taux->id,
-        'montant_per_diem' => 50000,
-    ]);
-
-    $response = $this->actingAs($this->admin)->postJson('/api/paiements/generer/mtn', [
-        'ordre_ids' => [$ordre->id],
-    ]);
-
-    $response->assertOk();
-    expect($response->json('data.nb_paiements'))->toBe(1);
-    expect($response->json('data.fichier'))->toContain('MTN_');
+it('prévisualise les bénéficiaires éligibles', function () {
+    $this->actingAs($this->finance)->getJson('/api/paiements/lots/previsualiser?'.http_build_query($this->selection))
+        ->assertOk()
+        ->assertJsonPath('data.nb_lignes', 1)
+        ->assertJsonPath('data.total', 45000);
 });
 
-it('ignore les agents sans numero Moov', function () {
-    $agent = Agent::factory()->create(['numero_moov' => null]);
-    $ordre = OrdreMission::factory()->approuveDG()->create([
-        'agent_id' => $agent->id,
-        'taux_id' => $this->taux->id,
-    ]);
+it('génère le fichier et passe le lot en GENERE', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)
+        ->assertOk()
+        ->assertHeader('content-disposition');
 
-    $response = $this->actingAs($this->admin)->postJson('/api/paiements/generer/moov', [
-        'ordre_ids' => [$ordre->id],
-    ]);
-
-    $response->assertOk();
-    expect($response->json('data.nb_paiements'))->toBe(0);
+    $lot = LotPaiement::first();
+    expect($lot->statut)->toBe('GENERE')->and($lot->nb_lignes)->toBe(1);
+    expect(Versement::find($this->versement->id)->statut)->toBe('GENERE');
 });
 
-it('retourne les statuts agreges', function () {
-    Paiement::factory()->succes()->count(3)->create(['operateur' => 'MTN']);
-    Paiement::factory()->echec()->count(1)->create(['operateur' => 'MOOV']);
+it('confirme un lot et solde les versements', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+    $lot = LotPaiement::first();
 
-    $response = $this->actingAs($this->admin)->getJson('/api/paiements/statuts');
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$lot->id}/confirmer")
+        ->assertOk()
+        ->assertJsonPath('data.statut', 'CONFIRME');
 
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(2);
+    $v = Versement::find($this->versement->id);
+    expect($v->statut)->toBe('CONFIRME')->and($v->date_paiement)->not->toBeNull();
 });
 
-it('refuse acces non authentifie aux paiements', function () {
-    $response = $this->getJson('/api/paiements');
+it('bloque la régénération d’un lot confirmé (anti-double-paiement)', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+    $lot = LotPaiement::first();
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$lot->id}/confirmer");
 
-    $response->assertStatus(401);
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)
+        ->assertStatus(422);
+});
+
+it('marque un lot en erreur puis le régénère', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+    $lot = LotPaiement::first();
+
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$lot->id}/erreur")
+        ->assertOk()->assertJsonPath('data.statut', 'ERREUR');
+
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
+    expect(LotPaiement::find($lot->id)->statut)->toBe('GENERE');
+});
+
+it('liste les lots de paiement', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+
+    $this->actingAs($this->finance)->getJson('/api/paiements/lots')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+});
+
+it('expose la synthèse des statuts de versement', function () {
+    $this->actingAs($this->finance)->getJson('/api/paiements/statuts')->assertOk();
 });
