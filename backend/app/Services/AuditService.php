@@ -8,12 +8,34 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AuditService
 {
+    /**
+     * Trace un événement métier dans le journal d'audit (qui, quoi, quand, données).
+     *
+     * @param  array<string,mixed>  $donnees
+     */
+    public static function log(?User $user, string $action, string $entite, ?int $entiteId = null, array $donnees = []): void
+    {
+        AuditLog::create([
+            'user_id' => $user?->id,
+            'action' => $action,
+            'entite' => $entite,
+            'entite_id' => $entiteId,
+            'donnees' => $donnees,
+            'ip_address' => request()?->ip(),
+            'created_at' => now(),
+        ]);
+    }
+
     public function lister(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = AuditLog::with('user');
 
         if ($action = ($filters['action'] ?? null)) {
             $query->where('action', $action);
+        }
+
+        if ($entite = ($filters['entite'] ?? null)) {
+            $query->where('entite', $entite);
         }
 
         if ($userId = ($filters['user_id'] ?? null)) {
@@ -34,16 +56,5 @@ class AuditService
     public function afficher(AuditLog $audit): AuditLog
     {
         return $audit->load('user');
-    }
-
-    public function enregistrer(User $user, string $action, string $cible, ?array $details = null, ?string $ip = null): AuditLog
-    {
-        return AuditLog::create([
-            'user_id' => $user->id,
-            'action' => $action,
-            'cible' => $cible,
-            'details' => $details,
-            'ip_address' => $ip,
-        ]);
     }
 }

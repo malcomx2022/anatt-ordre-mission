@@ -107,13 +107,13 @@ const routes: RouteRecordRaw[] = [
     path: '/ordres/:id/valider-n1',
     name: 'mission-validate-n1',
     component: () => import('@/views/missions/MissionValidation1View.vue'),
-    meta: { auth: true, permission: 'ordres.validate_n1' },
+    meta: { auth: true, permission: 'ordres.validate' },
   },
   {
     path: '/ordres/:id/valider-dg',
     name: 'mission-validate-dg',
     component: () => import('@/views/missions/MissionValidation2View.vue'),
-    meta: { auth: true, permission: 'ordres.approve_dg' },
+    meta: { auth: true, permission: 'ordres.validate' },
   },
   {
     path: '/ordres/:id/pdf',
@@ -157,7 +157,7 @@ const routes: RouteRecordRaw[] = [
     path: '/paiements/reconciliation',
     name: 'paiement-reconciliation',
     component: () => import('@/views/paiements/PaiementReconciliationView.vue'),
-    meta: { auth: true, permission: 'paiements.reconcile' },
+    meta: { auth: true, permission: 'paiements.read' },
   },
   {
     path: '/paiements/historique',
@@ -177,7 +177,7 @@ const routes: RouteRecordRaw[] = [
     path: '/taux/configurer',
     name: 'taux-edit',
     component: () => import('@/views/taux/TauxEditView.vue'),
-    meta: { auth: true, permission: 'taux.write' },
+    meta: { auth: true, permission: 'baremes.write' },
   },
 
   // ── RAPPORTS ──
@@ -237,7 +237,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/roles',
     name: 'admin-roles',
     component: () => import('@/views/admin/RolesView.vue'),
-    meta: { auth: true, permission: 'admin.roles' },
+    meta: { auth: true, permission: 'admin.users' },
   },
   {
     path: '/admin/parametres',

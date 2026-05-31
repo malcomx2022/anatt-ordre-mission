@@ -3,7 +3,7 @@
 use App\Models\User;
 
 it('authentifie un utilisateur avec identifiants valides', function () {
-    $user = User::factory()->create(['password' => bcrypt('secret123')]);
+    $user = User::factory()->admin()->create(['password' => bcrypt('secret123')]);
 
     $response = $this->postJson('/api/auth/login', [
         'email' => $user->email,
@@ -11,50 +11,44 @@ it('authentifie un utilisateur avec identifiants valides', function () {
     ]);
 
     $response->assertOk()
-        ->assertJsonStructure(['token', 'user']);
+        ->assertJsonStructure(['data' => ['token', 'user']])
+        ->assertJsonPath('data.user.role', 'admin');
 });
 
 it('refuse un login avec mot de passe incorrect', function () {
     $user = User::factory()->create();
 
-    $response = $this->postJson('/api/auth/login', [
+    $this->postJson('/api/auth/login', [
         'email' => $user->email,
         'password' => 'mauvais',
-    ]);
-
-    $response->assertStatus(422);
+    ])->assertStatus(422);
 });
 
 it('refuse un login avec email inexistant', function () {
-    $response = $this->postJson('/api/auth/login', [
+    $this->postJson('/api/auth/login', [
         'email' => 'inexistant@test.com',
         'password' => 'password',
-    ]);
-
-    $response->assertStatus(422);
+    ])->assertStatus(422);
 });
 
 it('retourne le profil utilisateur connecte', function () {
     $user = User::factory()->admin()->create();
 
-    $response = $this->actingAs($user)->getJson('/api/auth/me');
-
-    $response->assertOk()
+    $this->actingAs($user)->getJson('/api/auth/me')
+        ->assertOk()
         ->assertJsonPath('data.email', $user->email)
-        ->assertJsonPath('data.role', 'ADMIN');
+        ->assertJsonPath('data.role', 'admin');
 });
 
 it('deconnecte un utilisateur', function () {
     $user = User::factory()->create();
+    $token = $user->createToken('test')->plainTextToken;
 
-    $response = $this->actingAs($user)->postJson('/api/auth/logout');
-
-    $response->assertOk()
+    $this->withToken($token)->postJson('/api/auth/logout')
+        ->assertOk()
         ->assertJsonPath('message', 'Deconnexion reussie.');
 });
 
 it('refuse acces non authentifie a /auth/me', function () {
-    $response = $this->getJson('/api/auth/me');
-
-    $response->assertStatus(401);
+    $this->getJson('/api/auth/me')->assertStatus(401);
 });

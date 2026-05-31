@@ -3,104 +3,60 @@
 namespace App\Services;
 
 use App\Jobs\SendNotification;
+use App\Models\LotPaiement;
 use App\Models\OrdreMission;
-use App\Models\Paiement;
 use App\Models\User;
 
+/**
+ * Notifications e-mail des handoffs internes du workflow.
+ *
+ * Note : dans le nouveau modèle, les agents (bénéficiaires) ne sont PAS des comptes
+ * utilisateurs et n'ont pas d'e-mail. Les notifications ciblent donc les utilisateurs
+ * applicatifs par rôle (gestionnaire_om / agent_financier / admin).
+ */
 class NotificationService
 {
-    public function missionSoumise(OrdreMission $ordre): void
+    /** OM validé : l'agent financier peut préparer le paiement. */
+    public function omValide(OrdreMission $ordre): void
     {
-        $chefs = User::where('role', 'CHEF_SERVICE')->get();
-
-        foreach ($chefs as $chef) {
-            if ($chef->agent && $chef->agent->service === $ordre->agent->service) {
-                SendNotification::dispatch($chef->id, 'mission_soumise', [
-                    'numero' => $ordre->numero,
-                    'agent' => $ordre->agent->nom_complet,
-                    'destination' => $ordre->destination,
-                ]);
-            }
-        }
+        $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'om_valide', [
+            'reference_semo' => $ordre->reference_semo,
+            'beneficiaire' => $ordre->agent?->nom_complet ?? '—',
+            'montant' => number_format($ordre->montant_total, 0, ',', ' '),
+        ]);
     }
 
-    public function missionValideeN1(OrdreMission $ordre): void
+    /** OM rejeté : le gestionnaire OM est informé. */
+    public function omRejete(OrdreMission $ordre): void
     {
-        // Notifier le createur
-        if ($ordre->agent->user_id) {
-            SendNotification::dispatch($ordre->agent->user_id, 'mission_validee', [
-                'numero' => $ordre->numero,
-                'validateur' => $ordre->valideurChef?->name ?? 'Chef de service',
-            ]);
-        }
+        $this->notifierRole(User::ROLE_GESTIONNAIRE_OM, 'om_rejete', [
+            'reference_semo' => $ordre->reference_semo,
+            'motif' => $ordre->commentaire_rejet ?? '—',
+        ]);
+    }
 
-        // Notifier les directeurs pour approbation
-        $directeurs = User::where('role', 'DIRECTEUR')->get();
-        foreach ($directeurs as $dg) {
-            SendNotification::dispatch($dg->id, 'mission_soumise', [
-                'numero' => $ordre->numero,
-                'agent' => $ordre->agent->nom_complet,
-                'destination' => $ordre->destination,
+    /** Lot de paiement confirmé : gestionnaire OM et admin sont informés. */
+    public function lotConfirme(LotPaiement $lot): void
+    {
+        foreach ([User::ROLE_GESTIONNAIRE_OM, User::ROLE_ADMIN] as $role) {
+            $this->notifierRole($role, 'lot_confirme', [
+                'mission' => $lot->mission?->destination ?? '—',
+                'tranche' => $lot->tranche,
+                'operateur' => $lot->operateur,
+                'montant' => number_format($lot->montant_total, 0, ',', ' '),
             ]);
         }
     }
 
-    public function missionApprouvee(OrdreMission $ordre): void
+    /**
+     * Dispatche une notification à tous les utilisateurs d'un rôle.
+     *
+     * @param  array<string,mixed>  $data
+     */
+    private function notifierRole(string $role, string $type, array $data): void
     {
-        // Notifier le createur
-        if ($ordre->agent->user_id) {
-            SendNotification::dispatch($ordre->agent->user_id, 'mission_approuvee', [
-                'numero' => $ordre->numero,
-                'montant' => number_format($ordre->montant_per_diem, 0, ',', ' '),
-            ]);
-        }
-
-        // Notifier le DRH pour lancer le paiement
-        $drhs = User::where('role', 'DRH')->get();
-        foreach ($drhs as $drh) {
-            SendNotification::dispatch($drh->id, 'mission_approuvee', [
-                'numero' => $ordre->numero,
-                'montant' => number_format($ordre->montant_per_diem, 0, ',', ' '),
-            ]);
-        }
-    }
-
-    public function missionRejetee(OrdreMission $ordre): void
-    {
-        if ($ordre->agent->user_id) {
-            SendNotification::dispatch($ordre->agent->user_id, 'mission_rejetee', [
-                'numero' => $ordre->numero,
-                'commentaire' => $ordre->commentaire_rejet,
-            ]);
-        }
-    }
-
-    public function paiementEffectue(Paiement $paiement): void
-    {
-        $ordre = $paiement->ordreMission;
-        $agent = $paiement->agent;
-
-        if ($agent->user_id) {
-            SendNotification::dispatch($agent->user_id, 'paiement_effectue', [
-                'numero' => $ordre->numero,
-                'montant' => number_format($paiement->montant, 0, ',', ' '),
-                'operateur' => $paiement->operateur,
-            ]);
-        }
-    }
-
-    public function paiementEchoue(Paiement $paiement): void
-    {
-        $ordre = $paiement->ordreMission;
-
-        // Notifier les admins
-        $admins = User::where('role', 'ADMIN')->get();
-        foreach ($admins as $admin) {
-            SendNotification::dispatch($admin->id, 'paiement_echec', [
-                'numero' => $ordre->numero,
-                'montant' => number_format($paiement->montant, 0, ',', ' '),
-                'operateur' => $paiement->operateur,
-            ]);
-        }
+        User::where('role', $role)->get()->each(
+            fn (User $u) => SendNotification::dispatch($u->id, $type, $data),
+        );
     }
 }

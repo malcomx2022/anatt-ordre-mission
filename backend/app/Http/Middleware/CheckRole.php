@@ -17,8 +17,8 @@ class CheckRole
             return response()->json(['message' => 'Non authentifie.'], 401);
         }
 
-        // ADMIN a toujours acces
-        if ($user->role === 'ADMIN') {
+        // admin a toujours acces
+        if ($user->role === \App\Models\User::ROLE_ADMIN) {
             return $next($request);
         }
 

@@ -49,26 +49,20 @@ class SendNotification implements ShouldQueue
     private function getSubject(): string
     {
         return match ($this->type) {
-            'mission_soumise' => "Nouvel ordre de mission {$this->data['numero']} - En attente de validation",
-            'mission_validee' => "Ordre de mission {$this->data['numero']} valide",
-            'mission_approuvee' => "Ordre de mission {$this->data['numero']} approuve",
-            'mission_rejetee' => "Ordre de mission {$this->data['numero']} rejete",
-            'paiement_effectue' => "Paiement de {$this->data['montant']} FCFA effectue",
-            'paiement_echec' => "Echec paiement - Ordre {$this->data['numero']}",
-            default => "Notification ANaTT",
+            'om_valide' => "OM {$this->data['reference_semo']} validé — paiement préparable",
+            'om_rejete' => "OM {$this->data['reference_semo']} rejeté",
+            'lot_confirme' => "Lot {$this->data['tranche']} {$this->data['operateur']} confirmé",
+            default => 'Notification ANaTT',
         };
     }
 
     private function getBody(): string
     {
         return match ($this->type) {
-            'mission_soumise' => "Un nouvel ordre de mission ({$this->data['numero']}) a ete soumis et attend votre validation.",
-            'mission_validee' => "L'ordre de mission {$this->data['numero']} a ete valide par le chef de service.",
-            'mission_approuvee' => "L'ordre de mission {$this->data['numero']} a ete approuve par la Direction Generale. Le paiement peut etre lance.",
-            'mission_rejetee' => "L'ordre de mission {$this->data['numero']} a ete rejete. Motif: {$this->data['commentaire']}",
-            'paiement_effectue' => "Le paiement de {$this->data['montant']} FCFA pour l'ordre {$this->data['numero']} a ete effectue avec succes via {$this->data['operateur']}.",
-            'paiement_echec' => "Le paiement pour l'ordre {$this->data['numero']} a echoue. Veuillez verifier et relancer.",
-            default => "Notification du systeme ANaTT Missions.",
+            'om_valide' => "L'ordre de mission {$this->data['reference_semo']} ({$this->data['beneficiaire']}, {$this->data['montant']} FCFA) a été validé. Le fichier de paiement peut être généré.",
+            'om_rejete' => "L'ordre de mission {$this->data['reference_semo']} a été rejeté. Motif : {$this->data['motif']}",
+            'lot_confirme' => "Le lot {$this->data['tranche']} / {$this->data['operateur']} (mission {$this->data['mission']}, {$this->data['montant']} FCFA) a été confirmé : versements soldés et horodatés.",
+            default => 'Notification du système ANaTT Missions.',
         };
     }
 

@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import AppBadge from '@/components/shared/AppBadge.vue'
-import type { StatutPaiement } from '@/types'
 
 defineProps<{
-  statut: StatutPaiement
+  statut: string
 }>()
 
-const config: Record<StatutPaiement, { variant: 'success' | 'warning' | 'danger' | 'info'; label: string }> = {
+type Variant = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+
+// Statuts de lot (GENERE/CONFIRME/ERREUR) et de versement (EN_ATTENTE/GENERE/CONFIRME/ANNULE).
+const config: Record<string, { variant: Variant; label: string }> = {
   EN_ATTENTE: { variant: 'warning', label: 'En attente' },
-  INITIE: { variant: 'info', label: 'Initie' },
-  SUCCES: { variant: 'success', label: 'Succes' },
-  ECHEC: { variant: 'danger', label: 'Echoue' },
+  GENERE: { variant: 'info', label: 'Généré' },
+  CONFIRME: { variant: 'success', label: 'Confirmé' },
+  ERREUR: { variant: 'danger', label: 'Erreur' },
+  ANNULE: { variant: 'neutral', label: 'Annulé' },
 }
 </script>
 
 <template>
-  <AppBadge :variant="config[statut].variant">{{ config[statut].label }}</AppBadge>
+  <AppBadge :variant="config[statut]?.variant ?? 'neutral'">{{ config[statut]?.label ?? statut }}</AppBadge>
 </template>

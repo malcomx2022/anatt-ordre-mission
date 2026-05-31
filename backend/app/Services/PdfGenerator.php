@@ -5,38 +5,69 @@ namespace App\Services;
 use App\Models\OrdreMission;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PdfGenerator
 {
+    private const ZONES = [
+        'INTERIEUR' => 'Intérieur (Bénin)',
+        'EXT_ZONE_I' => 'Extérieur — Zone I',
+        'EXT_ZONE_II' => 'Extérieur — Zone II',
+        'EXT_ZONE_III' => 'Extérieur — Zone III',
+    ];
+
+    private const TYPES = [
+        'UN_REPAS' => 'Un repas',
+        'DEUX_REPAS' => 'Deux repas',
+        'JOURNEE_COMPLETE' => 'Journée complète',
+        'LOGE_NOURRI' => 'Logé + nourri',
+        'LOGE_SEUL' => 'Logé seul',
+        'NOURRI_SEUL' => 'Nourri seul',
+    ];
+
     public function genererOrdreMission(OrdreMission $ordre): string
     {
-        $ordre->load(['agent', 'taux', 'valideurChef', 'valideurDG']);
+        $ordre->load(['agent', 'mission']);
+        $agent = $ordre->agent;
+        $mission = $ordre->mission;
+
+        $tauxJournalier = $ordre->nb_jours > 0 ? intdiv($ordre->montant_total, $ordre->nb_jours) : 0;
+        $fmt = fn (int $n) => number_format($n, 0, ',', ' ');
 
         $data = [
-            'ordre' => $ordre,
-            'agent' => $ordre->agent,
-            'taux' => $ordre->taux,
-            'numero' => $ordre->numero,
-            'objet' => $ordre->objet,
-            'destination' => $ordre->destination,
-            'date_depart' => $ordre->date_depart->format('d/m/Y'),
-            'date_retour' => $ordre->date_retour->format('d/m/Y'),
+            'reference_semo' => $ordre->reference_semo,
+            'role' => $ordre->role,
+            'statut' => $ordre->statut,
+            'beneficiaire' => trim("{$agent->nom} {$agent->prenoms}"),
+            'matricule' => $agent->matricule,
+            'categorie' => $ordre->categorie,
+            'telephone' => $agent->telephone,
+            'operateur' => $agent->operateur,
+            'grade' => $agent->grade,
+            'objet' => $mission?->objet,
+            'destination' => $mission?->destination,
+            'zone' => self::ZONES[$ordre->zone_code] ?? $ordre->zone_code,
+            'type_prise_en_charge' => self::TYPES[$ordre->type_prise_en_charge] ?? $ordre->type_prise_en_charge,
+            'date_depart' => $mission?->date_depart?->format('d/m/Y'),
+            'date_retour' => $mission?->date_retour?->format('d/m/Y'),
             'nb_jours' => $ordre->nb_jours,
-            'montant_per_diem' => number_format($ordre->montant_per_diem, 0, ',', ' '),
-            'valideur_chef' => $ordre->valideurChef?->name,
-            'valideur_dg' => $ordre->valideurDG?->name,
+            'imputation' => $mission?->imputation_budgetaire,
+            'moyen_transport' => $ordre->moyen_transport,
+            'conducteur_a_bord' => $ordre->conducteur_a_bord,
+            'reference_autorisation' => $ordre->reference_autorisation,
+            'exonere' => (bool) $mission?->prise_en_charge_tiers,
+            'taux_journalier' => $fmt($tauxJournalier),
+            'montant_total' => $fmt($ordre->montant_total),
+            'avance' => $fmt($ordre->avance),
+            'reliquat' => $fmt($ordre->reliquat),
             'date_generation' => now()->format('d/m/Y H:i'),
         ];
 
-        $pdf = Pdf::loadView('pdf.ordre-mission', $data);
+        $pdf = Pdf::loadView('pdf.ordre-mission', $data)
+            ->setPaper('A4', 'portrait')
+            ->setOption(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
 
-        $pdf->setPaper('A4', 'portrait');
-        $pdf->setOption([
-            'defaultFont' => 'sans-serif',
-            'isRemoteEnabled' => true,
-        ]);
-
-        $filename = "ordres/{$ordre->numero}.pdf";
+        $filename = $this->chemin($ordre);
         Storage::disk('local')->put($filename, $pdf->output());
 
         return $filename;
@@ -44,12 +75,17 @@ class PdfGenerator
 
     public function telecharger(OrdreMission $ordre)
     {
-        $filename = "ordres/{$ordre->numero}.pdf";
+        $filename = $this->chemin($ordre);
 
         if (! Storage::disk('local')->exists($filename)) {
             $filename = $this->genererOrdreMission($ordre);
         }
 
-        return Storage::disk('local')->download($filename, "{$ordre->numero}.pdf");
+        return Storage::disk('local')->download($filename, basename($filename));
+    }
+
+    private function chemin(OrdreMission $ordre): string
+    {
+        return 'ordres/OM-'.Str::slug($ordre->reference_semo).'.pdf';
     }
 }

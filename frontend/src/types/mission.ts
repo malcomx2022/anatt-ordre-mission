@@ -1,42 +1,119 @@
-import type { Agent } from './agent'
-import type { TauxPerDiem } from './paiement'
+import type { Agent, Categorie } from './agent'
+import type { Versement } from './paiement'
 
-export type StatutMission = 'BROUILLON' | 'SOUMIS' | 'VALIDE_N1' | 'APPROUVE_DG' | 'PAYE' | 'REJETE'
+export type ZoneCode = 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III'
+export type RoleOM = 'PARTICIPANT' | 'CAV'
+
+export type TypePriseEnCharge =
+  | 'UN_REPAS' | 'DEUX_REPAS' | 'JOURNEE_COMPLETE'
+  | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
+
+export type StatutOM =
+  | 'BROUILLON' | 'IMPORTE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
+
+/** Types de prise en charge autorisés selon la portée de la zone. */
+export const TYPES_INTERIEUR: TypePriseEnCharge[] = ['UN_REPAS', 'DEUX_REPAS', 'JOURNEE_COMPLETE']
+export const TYPES_EXTERIEUR: TypePriseEnCharge[] = ['JOURNEE_COMPLETE', 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL']
+
+export function typesPourZone(zone: ZoneCode | '' | null | undefined): TypePriseEnCharge[] {
+  return zone === 'INTERIEUR' ? TYPES_INTERIEUR : zone ? TYPES_EXTERIEUR : []
+}
+
+export interface Mission {
+  id: number
+  objet: string
+  destination: string
+  zone_code: ZoneCode
+  date_depart: string
+  date_retour: string
+  imputation_budgetaire?: string | null
+  prise_en_charge_tiers: boolean
+  observations?: string | null
+  ordres_mission?: OrdreMission[]
+  created_at?: string
+  updated_at?: string
+}
 
 export interface OrdreMission {
   id: number
-  numero: string
+  reference_semo: string
+  mission_id: number
+  mission?: Mission
   agent_id: number
-  agent: Agent
-  objet: string
-  destination: string
-  date_depart: string
-  date_retour: string
+  agent?: Agent
+  role: RoleOM
+  categorie: Categorie
+  zone_code: ZoneCode
+  type_prise_en_charge: TypePriseEnCharge
   nb_jours: number
-  taux_id: number
-  taux: TauxPerDiem
-  montant_per_diem: number
-  statut: StatutMission
-  commentaire_rejet?: string
-  valide_par_chef?: number
-  valide_par_dg?: number
-  created_at: string
-  updated_at: string
+  montant_total: number
+  avance: number
+  reliquat: number
+  statut: StatutOM
+  conducteur_a_bord?: string | null
+  reference_autorisation?: string | null
+  moyen_transport?: string | null
+  commentaire_rejet?: string | null
+  versements?: Versement[]
+  created_at?: string
+  updated_at?: string
 }
 
-export interface OrdreMissionFormData {
-  agent_id: number
+/** Étape 1 du wizard : contexte commun de la mission. */
+export interface MissionContexte {
   objet: string
   destination: string
+  zone_code: ZoneCode | ''
   date_depart: string
   date_retour: string
-  taux_id: number
+  imputation_budgetaire?: string
+  prise_en_charge_tiers: boolean
+  observations?: string
+}
+
+/** Étape 2 du wizard : un bénéficiaire (participant ou CAV). */
+export interface BeneficiaireForm {
+  reference_semo: string
+  agent_id: number | null
+  agent?: Agent | null
+  role: RoleOM
+  categorie?: Categorie
+  type_prise_en_charge: TypePriseEnCharge | ''
+  nb_jours?: number | null
+  conducteur_a_bord?: string | null
+  reference_autorisation?: string | null
+  moyen_transport?: string | null
+}
+
+/** Charge utile envoyée à POST /api/missions. */
+export interface MissionFormData {
+  objet: string
+  destination: string
+  zone_code?: ZoneCode | ''
+  date_depart: string
+  date_retour: string
+  imputation_budgetaire?: string
+  prise_en_charge_tiers: boolean
+  observations?: string
+  ordres: Array<{
+    reference_semo: string
+    agent_id: number
+    role: RoleOM
+    categorie?: Categorie
+    type_prise_en_charge: TypePriseEnCharge
+    nb_jours?: number | null
+    conducteur_a_bord?: string | null
+    reference_autorisation?: string | null
+    moyen_transport?: string | null
+  }>
 }
 
 export interface MissionHistoryEntry {
   id: number
   action: string
-  utilisateur: string
-  date: string
-  commentaire?: string
+  entite: string
+  entite_id: number
+  donnees?: Record<string, unknown>
+  utilisateur?: { id: number; name: string; email: string; role: string } | null
+  created_at: string
 }

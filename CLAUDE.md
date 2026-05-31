@@ -7,27 +7,61 @@
 
 ## 1. CONTEXTE PROJET
 
-**Application** : Système de gestion des ordres de mission et paiements per diem  
+**Application** : Suivi des ordres de mission émis par **SEMO** et **génération des fichiers de paiement** Mobile Money (MTN, Moov).  
 **Client** : ANaTT — Agence Nationale des Transports Terrestres, République du Bénin  
-**Objectif** : Dématérialiser le circuit des ordres de mission (création → validation → paiement mobile money)  
 **Version** : 1.0.0  
 **Statut** : En développement
+
+### ⚠️ RÈGLE D'OR — périmètre de l'application
+
+L'application **NE crée PAS** les ordres de mission (c'est **SEMO** qui les émet) et **NE réalise PAS** les paiements (faits sur les plateformes MTN / Moov).
+Elle **RETRANSCRIT** les OM, puis **GÉNÈRE** les fichiers de paiement à déposer sur les plateformes des opérateurs.
+
+> Aucune API SEMO. Aucune API de décaissement. Aucun réimport de fichier résultat opérateur.
 
 ### Workflow métier principal
 
 ```
-Agent soumet OM → Chef de service valide → DG approuve → RH calcule per diem → Paiement Moov/MTN
+SEMO émet l'OM → retranscription dans l'app → regroupement par mission
+→ calcul per diem (barème ANaTT) → génération fichier de paiement (.txt MTN / .xlsx Moov)
+→ dépôt manuel sur la plateforme opérateur → confirmation manuelle dans l'app
 ```
 
-### Rôles utilisateurs
+### Règles métier (référence pour toutes les tâches)
+
+- **1 OM SEMO = 1 enregistrement = 1 bénéficiaire** (mono-bénéficiaire).
+- Une **mission** (événement) regroupe **N OM individuels** (participants + chauffeurs).
+- Le **CAV** (conducteur de véhicule administratif) est un **bénéficiaire à part entière**, payé selon **SA** catégorie. Le champ « conducteur à bord » sur l'OM d'un participant n'est qu'une **mention logistique**.
+- **Catégorie d'indice** reprise telle quelle de SEMO :
+  - `ORDRE_1` : indice ≥ 800 — salaire brut ≥ 372 000
+  - `ORDRE_2` : indice 400-799 — salaire brut 186 000-372 000
+  - `ORDRE_3` : indice < 400 — salaire brut < 186 000
+  - Formule de secours : `indice = salaire_base × 12 / 3097`.
+- **Per diem** = taux journalier (catégorie × **ZONE** × **type de prise en charge**) × nb jours.
+  - 4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` (**II = III**, taux identiques).
+  - Types `INTERIEUR` : `UN_REPAS` / `DEUX_REPAS` / `JOURNEE_COMPLETE`.
+  - Types `EXTERIEUR` : `JOURNEE_COMPLETE` / `LOGE_NOURRI` / `LOGE_SEUL` / `NOURRI_SEUL`.
+  - **Règle des 12 h** pour le nb de jours (période ≥ 12 h = jour entier ; retour 0-12 h = rien).
+  - Répartition : **AVANCE 33,33 %** / **RELIQUAT 66,67 %**.
+  - **Exonération** si prise en charge par un organisme tiers (aucun frais alloué).
+- **Téléphone et opérateur** (MTN / Moov) viennent du **référentiel agents**, pas de l'OM.
+- **Référence SEMO** = clé naturelle **UNIQUE** (anti-doublon).
+- **Paiements** : GÉNÉRATION de fichiers — un fichier = **1 mission × 1 tranche [`AVANCE` | `RELIQUAT`] × 1 opérateur**.
+  - MTN → `.txt` ; Moov → `.xlsx`.
+  - Statuts versement : `EN_ATTENTE` / `GENERE` / `CONFIRME` / `ANNULE`.
+  - Confirmation **manuelle** après dépôt réussi. Régénération possible tant que **non confirmé**.
+  - **Idempotence** : un versement `CONFIRME` n'est **jamais** réinclus dans un nouveau fichier (anti-double-paiement).
+
+### Rôles utilisateurs (RBAC Sanctum — middleware `role`)
 
 | Rôle | Permissions |
 |------|-------------|
-| `AGENT` | Soumettre ses propres ordres de mission |
-| `CHEF_SERVICE` | Valider les OM de son service |
-| `DRH` | Gérer les agents, taux per diem, rapports |
-| `DIRECTEUR` | Approbation finale, tableau de bord global |
-| `ADMIN` | Accès total, configuration système |
+| `admin` | Accès total, barème, utilisateurs, audit, configuration |
+| `gestionnaire_om` | Référentiel agents, retranscription des missions/OM, validation/rejet |
+| `agent_financier` | Génération des fichiers de paiement, confirmation des lots |
+| `lecteur` | Lecture seule (consultation OM, paiements, rapports, barème) |
+
+> `admin` franchit toujours toute garde de rôle. Comptes de démo : `admin@`, `gestion@`, `finance@`, `lecteur@anatt.bj`.
 
 ---
 
@@ -119,29 +153,36 @@ anatt-ordre-mission/
 │   │   ├── Http/Controllers/Api/
 │   │   │   ├── AuthController.php
 │   │   │   ├── AgentController.php
-│   │   │   ├── MissionController.php
-│   │   │   ├── ValidationController.php
-│   │   │   ├── PaiementController.php
-│   │   │   ├── TauxController.php
+│   │   │   ├── MissionController.php      ← missions + OM (index/show/storeMission/pdf)
+│   │   │   ├── ValidationController.php   ← valider / rejeter
+│   │   │   ├── PaiementController.php     ← lots (génération/confirmation)
+│   │   │   ├── BaremeController.php
 │   │   │   ├── RapportController.php
 │   │   │   └── AuditController.php
 │   │   ├── Models/
 │   │   │   ├── User.php
 │   │   │   ├── Agent.php
-│   │   │   ├── OrdreMission.php
 │   │   │   ├── Mission.php
-│   │   │   ├── Paiement.php
-│   │   │   ├── TauxPerDiem.php
+│   │   │   ├── OrdreMission.php
+│   │   │   ├── Versement.php
+│   │   │   ├── LotPaiement.php
+│   │   │   ├── Bareme.php
+│   │   │   ├── ZoneGeographique.php
 │   │   │   └── AuditLog.php
 │   │   ├── Services/
 │   │   │   ├── MissionService.php
-│   │   │   ├── PerDiemCalculator.php
+│   │   │   ├── CalculIndemniteService.php
+│   │   │   ├── LotPaiementService.php
+│   │   │   ├── BaremeService.php
+│   │   │   ├── RapportService.php
+│   │   │   ├── AuditService.php
 │   │   │   ├── PdfGenerator.php
-│   │   │   ├── MoovPaymentService.php
-│   │   │   └── MtnPaymentService.php
+│   │   │   └── Paiement/
+│   │   │       ├── MtnFileGenerator.php   ← .txt
+│   │   │       └── MoovFileGenerator.php  ← .xlsx (PhpSpreadsheet)
 │   │   └── Jobs/
-│   │       ├── GeneratePaiementFile.php
-│   │       └── SendNotification.php
+│   │       ├── GenererLotPaiementJob.php  ← file Redis « paiements »
+│   │       └── GenererEtatJob.php         ← file Redis « etats »
 │   ├── database/
 │   │   ├── migrations/
 │   │   └── seeders/
@@ -318,7 +359,7 @@ extend: {
 │  ├─ Profil utilisateur connecté                             │
 │  ├─ Navigation par module (icône + label)                   │
 │  │   Dashboard · Personnel · Ordres · Paiements            │
-│  │   Taux · Rapports · Audit · Administration              │
+│  │   Barème · Rapports · Audit · Administration            │
 │  └─ Déconnexion                                            │
 ├────────────────────────────────────────────────────────────│
 │  TOPBAR (fixed, left-offset 260px, h-16, bg-white)        │
@@ -364,25 +405,25 @@ extend: {
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
-| OM-01 | `views/missions/MissionListView.vue` | `/ordres` | Table ordres avec filtres statut/date/agent |
-| OM-02 | `views/missions/MissionCreateView.vue` | `/ordres/nouveau` | Formulaire création : agent, destination, dates, motif |
-| OM-03 | `views/missions/MissionDetailView.vue` | `/ordres/:id` | Détail complet, timeline statut, documents |
-| OM-04 | `views/missions/MissionEditView.vue` | `/ordres/:id/modifier` | Modification (seulement si brouillon) |
-| OM-05 | `views/missions/MissionValidation1View.vue` | `/ordres/:id/valider-n1` | Validation chef de service (approuver/rejeter + commentaire) |
-| OM-06 | `views/missions/MissionValidation2View.vue` | `/ordres/:id/valider-dg` | Validation DG (approbation finale) |
-| OM-07 | `views/missions/MissionPdfView.vue` | `/ordres/:id/pdf` | Aperçu PDF in-browser + bouton télécharger/imprimer |
-| OM-08 | `views/missions/MissionHistoryView.vue` | `/ordres/:id/historique` | Journal complet des actions sur l'OM |
+| OM-01 | `views/missions/MissionListView.vue` | `/ordres` | Table OM (réf. SEMO, bénéficiaire, statut) filtres statut/zone/opérateur |
+| OM-02 | `views/missions/MissionCreateView.vue` | `/ordres/nouveau` | Wizard retranscription : mission + N bénéficiaires (participants + CAV), per diem temps réel |
+| OM-03 | `views/missions/MissionDetailView.vue` | `/ordres/:id` | Détail complet + valider/rejeter + versements |
+| OM-04 | `views/missions/MissionEditView.vue` | `/ordres/:id/modifier` | Redirige vers la fiche (OM non éditables individuellement) |
+| OM-05 | `views/missions/MissionValidation1View.vue` | `/ordres/:id/valider-n1` | Redirection (validation unifiée sur la fiche) |
+| OM-06 | `views/missions/MissionValidation2View.vue` | `/ordres/:id/valider-dg` | Redirection (plus de double validation N1/DG) |
+| OM-07 | `views/missions/MissionPdfView.vue` | `/ordres/:id/pdf` | Aperçu imprimable + téléchargement du PDF serveur |
+| OM-08 | `views/missions/MissionHistoryView.vue` | `/ordres/:id/historique` | Journal d'audit de l'OM |
 
 ### Module PAIEMENTS (6 écrans)
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
-| PAY-01 | `views/paiements/PaiementListView.vue` | `/paiements` | Liste paiements avec statuts Moov/MTN |
-| PAY-02 | `views/paiements/PaiementMoovView.vue` | `/paiements/moov` | Sélection OM, calcul per diem, génération fichier Moov |
-| PAY-03 | `views/paiements/PaiementMtnView.vue` | `/paiements/mtn` | Sélection OM, calcul per diem, génération fichier MTN |
-| PAY-04 | `views/paiements/PaiementStatutView.vue` | `/paiements/statuts` | Tableau de bord statuts retours opérateurs |
-| PAY-05 | `views/paiements/PaiementReconciliationView.vue` | `/paiements/reconciliation` | Rapprochement fichiers envoyés vs retours |
-| PAY-06 | `views/paiements/PaiementHistoriqueView.vue` | `/paiements/historique` | Historique complet virements par période |
+| PAY-01 | `views/paiements/PaiementListView.vue` | `/paiements` | Liste des lots (statut GENERE/CONFIRME/ERREUR) + téléchargement |
+| PAY-02 | `views/paiements/PaiementMoovView.vue` | `/paiements/moov` | Génération Moov : mission + tranche → aperçu → `.xlsx` → confirmer |
+| PAY-03 | `views/paiements/PaiementMtnView.vue` | `/paiements/mtn` | Génération MTN : mission + tranche → aperçu → `.txt` → confirmer |
+| PAY-04 | `views/paiements/PaiementStatutView.vue` | `/paiements/statuts` | Synthèse des versements par opérateur/statut |
+| PAY-05 | `views/paiements/PaiementReconciliationView.vue` | `/paiements/reconciliation` | Info : modèle manuel, aucun réimport (cycle de confirmation) |
+| PAY-06 | `views/paiements/PaiementHistoriqueView.vue` | `/paiements/historique` | Historique des versements confirmés par période |
 
 ### Module TAUX PER DIEM (2 écrans)
 
@@ -430,77 +471,117 @@ extend: {
 
 ## 6. MODÈLES DE DONNÉES
 
-### OrdreMission
+### Mission (événement regroupant N OM)
+
+```typescript
+interface Mission {
+  id: number
+  objet: string                 // thème de la mission
+  destination: string
+  zone_code: 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III' // déduite de la destination
+  date_depart: string           // ISO 8601 (date)
+  date_retour: string
+  imputation_budgetaire?: string
+  prise_en_charge_tiers: boolean // true => exonération (aucun frais)
+  observations?: string
+  ordres_mission?: OrdreMission[]
+}
+```
+
+### OrdreMission (1 enregistrement = 1 bénéficiaire)
 
 ```typescript
 interface OrdreMission {
   id: number
-  numero: string           // OM-2026-0001 (auto-généré)
+  reference_semo: string        // clé naturelle UNIQUE (anti-doublon)
+  mission_id: number
+  mission?: Mission
   agent_id: number
-  agent: Agent
-  objet: string
-  destination: string
-  date_depart: string      // ISO 8601
-  date_retour: string
-  nb_jours: number         // calculé automatiquement
-  taux_id: number
-  taux: TauxPerDiem
-  montant_per_diem: number // calculé : nb_jours × taux.montant_journalier
-  statut: 'BROUILLON' | 'SOUMIS' | 'VALIDE_N1' | 'APPROUVE_DG' | 'PAYE' | 'REJETE'
+  agent?: Agent
+  role: 'PARTICIPANT' | 'CAV'    // le CAV est payé selon SA catégorie
+  categorie: 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'  // reprise de SEMO
+  zone_code: 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III'
+  type_prise_en_charge: 'UN_REPAS' | 'DEUX_REPAS' | 'JOURNEE_COMPLETE'
+                       | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
+  nb_jours: number
+  montant_total: number         // taux_journalier × nb_jours (FCFA)
+  avance: number                // round(montant_total / 3)
+  reliquat: number              // montant_total - avance
+  statut: 'BROUILLON' | 'IMPORTE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
+  conducteur_a_bord?: string    // mention logistique uniquement (≠ bénéficiaire)
+  reference_autorisation?: string
+  moyen_transport?: string
   commentaire_rejet?: string
-  valide_par_chef?: number
-  valide_par_dg?: number
+  versements?: Versement[]
   created_at: string
   updated_at: string
 }
 ```
 
-### Agent
+### Agent (référentiel des bénéficiaires)
 
 ```typescript
 interface Agent {
   id: number
-  matricule: string
   nom: string
-  prenom: string
-  email: string
-  telephone: string
-  numero_moov?: string    // pour paiement Moov
-  numero_mtn?: string     // pour paiement MTN
-  service: string
-  categorie: 'A1' | 'A2' | 'B' | 'C' | 'D'  // détermine le taux per diem
+  prenoms: string
+  matricule: string
+  ifu?: string
+  grade?: string
+  indice?: number              // ORDRE_1 ≥ 800 ; ORDRE_2 400-799 ; ORDRE_3 < 400
+  salaire_brut?: number        // ≥ 372000 / 186000-372000 / < 186000
+  categorie: 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'  // déduite de l'indice OU du salaire
+  telephone: string            // national 10 chiffres, débute par 01
+  operateur: 'MTN' | 'MOOV'    // cohérent avec le préfixe du numéro
   actif: boolean
 }
 ```
 
-### TauxPerDiem
+### Bareme (barème officiel ANaTT — remplace TauxPerDiem)
 
 ```typescript
-interface TauxPerDiem {
+interface Bareme {
   id: number
-  categorie: string
-  destination_type: 'LOCALE' | 'REGIONALE' | 'INTERNATIONALE'
-  montant_journalier: number  // en FCFA
-  annee: number
-  actif: boolean
+  categorie: 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'
+  zone_code: 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III' // II = III
+  type_prise_en_charge: 'UN_REPAS' | 'DEUX_REPAS' | 'JOURNEE_COMPLETE'
+                       | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
+  taux_journalier: number      // FCFA. Unicité (categorie, zone_code, type)
 }
 ```
 
-### Paiement
+### Versement (une tranche d'un OM)
 
 ```typescript
-interface Paiement {
+interface Versement {
   id: number
   ordre_mission_id: number
-  agent_id: number
-  operateur: 'MOOV' | 'MTN'
-  numero_destinataire: string
+  lot_id?: number              // null tant que non généré
+  type: 'AVANCE' | 'RELIQUAT'
   montant: number
-  statut: 'EN_ATTENTE' | 'INITIE' | 'SUCCES' | 'ECHEC'
-  reference_transaction?: string
-  fichier_virement?: string   // nom du fichier généré
-  date_virement?: string
-  created_at: string
+  operateur: 'MTN' | 'MOOV'    // figé depuis le référentiel agent
+  telephone: string
+  statut: 'EN_ATTENTE' | 'GENERE' | 'CONFIRME' | 'ANNULE'
+  date_paiement?: string       // rempli à la confirmation manuelle
+}
+```
+
+### LotPaiement (1 mission × 1 tranche × 1 opérateur)
+
+```typescript
+interface LotPaiement {
+  id: number
+  mission_id: number
+  tranche: 'AVANCE' | 'RELIQUAT'
+  operateur: 'MTN' | 'MOOV'
+  statut: 'GENERE' | 'CONFIRME' | 'ERREUR'
+  nom_fichier?: string         // .txt (MTN) / .xlsx (Moov)
+  nb_lignes: number
+  montant_total: number
+  genere_le?: string
+  genere_par?: number
+  confirme_le?: string
+  confirme_par?: number
 }
 ```
 
@@ -510,7 +591,7 @@ interface Paiement {
 
 ### Authentification
 ```
-POST   /api/auth/login              → { token, user }
+POST   /api/auth/login              → { data: { token, user } }
 POST   /api/auth/logout
 POST   /api/auth/mot-de-passe/email
 POST   /api/auth/mot-de-passe/reset
@@ -519,51 +600,67 @@ GET    /api/auth/me                 → User connecté
 
 ### Agents
 ```
-GET    /api/agents                  → { data: Agent[], meta: Pagination }
-POST   /api/agents                  → Créer agent
-GET    /api/agents/:id              → Agent + missions
+GET    /api/agents                  → { data: Agent[], meta } (filtres: search, categorie, operateur, actif)
+GET    /api/agents/recherche        → ?q=...  autocomplétion (nom/matricule/IFU)
+POST   /api/agents                  → Créer (catégorie déduite, cohérence numéro/opérateur)
+GET    /api/agents/:id              → Agent + ordres de mission
 PUT    /api/agents/:id              → Modifier agent
 DELETE /api/agents/:id              → Désactiver agent
-POST   /api/agents/import           → Upload CSV agents
+POST   /api/agents/import           → Import Excel/CSV (rapport d'erreurs ligne à ligne, rollback)
+```
+> Écriture/import : rôle `gestionnaire_om`. Lecture : tout authentifié.
+
+### Missions & Ordres de Mission
+```
+POST   /api/missions                → Retranscription : crée la mission + N OM (rôle gestionnaire_om)
+                                       Body: { objet, destination, zone_code?, dates, prise_en_charge_tiers,
+                                               ordres:[{ reference_semo, agent_id, role, type_prise_en_charge,
+                                                         categorie?, nb_jours? }] }
+GET    /api/ordres                  → Liste filtrée (statut, zone, agent_id, operateur, dates, search)
+GET    /api/ordres/:id              → Détail OM (mission, agent, versements)
+POST   /api/ordres/:id/valider      → IMPORTE → VALIDE
+POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars)
+GET    /api/ordres/:id/pdf          → Génère le PDF de l'OM → { url, fichier }
+GET    /api/ordres/:id/pdf/download → Télécharge le PDF
+GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
+```
+> Les OM ne sont ni créés ni modifiés individuellement (retranscrits via /missions). Pas de PUT/DELETE.
+
+### Paiements (mode GÉNÉRATION — rôle agent_financier)
+```
+GET    /api/paiements/lots                  → Liste des lots (filtres mission/tranche/operateur/statut)
+GET    /api/paiements/lots/previsualiser    → ?mission_id&tranche&operateur → bénéficiaires éligibles
+POST   /api/paiements/lots/generer          → Génère le fichier (.txt MTN / .xlsx Moov), lot → GENERE
+                                              petit lot : téléchargement direct ; gros lot : 202 + tracking_id (file Redis)
+GET    /api/paiements/lots/:lot/download    → Re-télécharge le fichier du lot
+POST   /api/paiements/lots/:lot/confirmer   → Lot + versements → CONFIRME, horodatés
+POST   /api/paiements/lots/:lot/erreur      → Lot → ERREUR (autorise régénération)
+GET    /api/paiements/lots/job/:trackingId  → Suivi d'une génération asynchrone
+GET    /api/paiements/statuts               → Synthèse versements par opérateur/statut
+GET    /api/paiements/historique            → Versements CONFIRMÉS filtrables (date_paiement)
+```
+> Idempotence : un versement CONFIRME n'est jamais réinclus. Aucun réimport, aucune API opérateur.
+
+### Barème (per diem)
+```
+GET    /api/baremes                 → Liste du barème (lecture pour tous)
+GET    /api/baremes/:id             → Détail
+POST   /api/baremes                 → Créer (rôle admin ; contrainte type↔zone + unicité)
+PUT    /api/baremes/:id             → Modifier le taux journalier
+DELETE /api/baremes/:id             → Supprimer
+GET    /api/taux                    → Alias rétro-compatible (= /api/baremes en lecture)
 ```
 
-### Ordres de Mission
+### Rapports (états alimentés par les versements confirmés)
 ```
-GET    /api/ordres                  → Liste avec filtres (statut, agent, dates)
-POST   /api/ordres                  → Créer OM (statut: BROUILLON)
-GET    /api/ordres/:id              → Détail OM
-PUT    /api/ordres/:id              → Modifier OM (seulement si BROUILLON)
-DELETE /api/ordres/:id              → Supprimer OM (seulement si BROUILLON)
-POST   /api/ordres/:id/soumettre    → Passer BROUILLON → SOUMIS
-POST   /api/ordres/:id/valider-n1   → Chef service : SOUMIS → VALIDE_N1
-POST   /api/ordres/:id/approuver    → DG : VALIDE_N1 → APPROUVE_DG
-POST   /api/ordres/:id/rejeter      → Rejeter avec commentaire → REJETE
-GET    /api/ordres/:id/pdf          → Génération PDF ordre de mission
-GET    /api/ordres/:id/historique   → Journal des actions sur l'OM
-```
-
-### Paiements
-```
-GET    /api/paiements               → Liste paiements
-POST   /api/paiements/generer/moov  → Générer fichier virement Moov (CSV)
-POST   /api/paiements/generer/mtn   → Générer fichier virement MTN (CSV)
-GET    /api/paiements/statuts       → Statuts depuis retours opérateurs
-POST   /api/paiements/reconcilier   → Upload fichier retour + rapprochement
-GET    /api/paiements/historique    → Historique filtrable
-```
-
-### Taux Per Diem
-```
-GET    /api/taux                    → Liste taux actifs
-PUT    /api/taux/:id                → Modifier taux
-POST   /api/taux                    → Créer nouveau taux
-```
-
-### Rapports
-```
-GET    /api/rapports/mensuel        → ?mois=2026-01  → stats complètes
-GET    /api/rapports/agents         → ?agent_id=X&annee=2026
-GET    /api/rapports/export         → ?format=excel&periode=... → fichier
+GET    /api/rapports/mensuel        → ?mois=2026-01  → synthèse + par opérateur/tranche/statut
+GET    /api/rapports/agents         → état par agent (filtres période)
+GET    /api/rapports/operateurs     → état par opérateur
+GET    /api/rapports/zones          → état par zone
+GET    /api/rapports/imputations    → état par imputation budgétaire
+GET    /api/rapports/export         → ?dimension&format=xlsx|pdf&date_debut&date_fin → { fichier, url }
+GET    /api/rapports/export/download → ?fichier=... → téléchargement
+POST   /api/rapports/export-async   → Production en file Redis → { tracking_id }
 ```
 
 ### Audit
@@ -576,41 +673,44 @@ GET    /api/audit/:id               → Détail action
 
 ## 8. RÈGLES MÉTIER
 
-### Calcul du Per Diem
+### Calcul de l'indemnité (CalculIndemniteService)
 
 ```php
-// PerDiemCalculator.php
-$nb_jours = Carbon::parse($date_retour)->diffInDays(Carbon::parse($date_depart)) + 1;
-$taux = TauxPerDiem::where('categorie', $agent->categorie)
-                    ->where('destination_type', $destination_type)
-                    ->where('annee', now()->year)
-                    ->where('actif', true)
-                    ->first();
-$montant = $nb_jours * $taux->montant_journalier;
+// nb_jours : règle des 12 h (période ≥ 12 h = jour entier). Dates seules => décompte inclusif.
+$nbJours = abs(Carbon::parse($depart)->diffInDays(Carbon::parse($retour))) + 1;
+
+// Taux depuis le barème officiel (catégorie × zone × type) :
+$taux = Bareme::taux($categorie, $zoneCode, $type);   // null => erreur de validation
+
+$montantTotal = $taux * $nbJours;
+$avance       = (int) round($montantTotal / 3);        // 33,33 %
+$reliquat     = $montantTotal - $avance;               // 66,67 %
+
+// Exonération : si mission.prise_en_charge_tiers => montants à 0, aucun versement.
 ```
 
-### Format fichier virement Moov (CSV)
+### Format fichier virement MTN (.txt) — exact, validé
 
 ```
-NUMERO_TELEPHONE;MONTANT;REFERENCE;NOM_BENEFICIAIRE;MOTIF
-22997123456;45000;OM-2026-0001;KOUASSI Jean;Per diem mission Parakou Jan 2026
+HDR,SARALY,1,45000
+1,MSISDN,2290167267455,45000,DADA RICHARD ATELIER REGIONAL
 ```
+- Séparateur **virgule**, fins de ligne **CRLF**, saut de ligne final, ASCII.
+- En-tête `HDR,{COMPTE},{NB_LIGNES},{MONTANT_TOTAL}` (compte en config). Détail `{seq},MSISDN,{229+tel},{montant},{libellé MAJUSCULES}`.
 
-### Format fichier virement MTN (CSV)
+### Format fichier virement Moov (.xlsx) — exact, validé
 
-```
-MSISDN;AMOUNT;EXTERNAL_REF;BENEFICIARY_NAME;NARRATION
-22961234567;45000;OM-2026-0001;KOUASSI Jean;Per diem mission
-```
+- Feuille `Sheet1`, en-tête 9 colonnes : `Receiver Identifier Type | IdentifierValue | Validation KYC | Validation KYC value | PayerAccountName | AccountName | Amount | Comment | VoucherSecretCode`.
+- Par bénéficiaire : A=`MSISDN`, B=`229`+téléphone **en TEXTE**, C-F vides, G=montant **numérique**, H=libellé MAJUSCULES, I vide.
 
 ### Règles de validation
 
-- Un OM ne peut être modifié que si statut = `BROUILLON`
-- La validation N+1 nécessite le rôle `CHEF_SERVICE` du même service que l'agent
-- L'approbation DG nécessite le rôle `DIRECTEUR`
-- Un OM `APPROUVE_DG` ne peut plus être modifié ni supprimé
-- Le paiement génère automatiquement une notification email à l'agent
-- Tout rejeter nécessite un commentaire obligatoire (min 10 chars)
+- Les OM sont **retranscrits** depuis SEMO (statut initial `IMPORTE`) — jamais créés/modifiés à la main.
+- `reference_semo` est **UNIQUE** (anti-doublon) ; rejet clair en cas de collision.
+- Validation : `IMPORTE → VALIDE` (rôle `gestionnaire_om`). Rejet : `IMPORTE → REJETE` avec motif ≥ 10 chars.
+- Contrainte type↔zone : repas (`UN_REPAS`/`DEUX_REPAS`) ⇒ INTERIEUR ; hébergement (`LOGE_*`/`NOURRI_SEUL`) ⇒ EXTÉRIEUR.
+- Téléphone/opérateur viennent du **référentiel agent** ; cohérence numéro↔opérateur validée.
+- Paiement : cycle `EN_ATTENTE → GENERE → CONFIRME`. Confirmation **manuelle** après dépôt. Régénération tant que non confirmé ; **idempotence** (un versement CONFIRME n'est jamais réinclus).
 
 ---
 
@@ -771,5 +871,5 @@ MTN_SUBSCRIPTION_KEY=
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : Avril 2026*  
+*Dernière mise à jour : 31 mai 2026*  
 *Version projet : 1.0.0*

@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Agent;
+use App\Support\Telephone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateAgentRequest extends FormRequest
 {
@@ -12,21 +15,66 @@ class UpdateAgentRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Recalcule la catégorie si l'indice ou le salaire change et qu'aucune
+     * catégorie n'est explicitement transmise.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('categorie') && ($this->filled('indice') || $this->filled('salaire_brut'))) {
+            $agent = $this->route('agent');
+            $indice = $this->has('indice') ? ($this->integer('indice') ?: null) : $agent->indice;
+            $salaire = $this->has('salaire_brut') ? ($this->integer('salaire_brut') ?: null) : $agent->salaire_brut;
+
+            $categorie = Agent::determinerCategorie($indice, $salaire);
+            if ($categorie) {
+                $this->merge(['categorie' => $categorie]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         $agentId = $this->route('agent')->id;
 
         return [
-            'matricule' => ['sometimes', 'string', Rule::unique('agents', 'matricule')->ignore($agentId)],
             'nom' => 'sometimes|string|max:255',
-            'prenom' => 'sometimes|string|max:255',
-            'email' => ['sometimes', 'email', Rule::unique('agents', 'email')->ignore($agentId)],
-            'telephone' => 'sometimes|string|max:20',
-            'numero_moov' => 'nullable|string|max:20',
-            'numero_mtn' => 'nullable|string|max:20',
-            'service' => 'sometimes|string|max:255',
-            'categorie' => 'sometimes|in:A1,A2,B,C,D',
+            'prenoms' => 'sometimes|string|max:255',
+            'matricule' => ['sometimes', 'string', 'max:50', Rule::unique('agents', 'matricule')->ignore($agentId)],
+            'ifu' => 'nullable|string|max:50',
+            'grade' => 'nullable|string|max:255',
+            'indice' => 'nullable|integer|min:0',
+            'salaire_brut' => 'nullable|integer|min:0',
+            'categorie' => 'sometimes|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'telephone' => ['sometimes', 'string', 'regex:'.config('benin.telephone.regex'), Rule::unique('agents', 'telephone')->ignore($agentId)],
+            'operateur' => 'sometimes|in:MTN,MOOV',
             'actif' => 'sometimes|boolean',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $agent = $this->route('agent');
+            $tel = $this->input('telephone', $agent->telephone);
+            $operateur = $this->input('operateur', $agent->operateur);
+
+            if ($tel && $operateur && ! Telephone::estCoherent($tel, $operateur)) {
+                $deduit = Telephone::operateurPour($tel);
+                $validator->errors()->add(
+                    'telephone',
+                    $deduit
+                        ? "Le numéro correspond à l'opérateur {$deduit}, pas à {$operateur}."
+                        : 'Le préfixe du numéro ne correspond à aucun opérateur connu.'
+                );
+            }
+        });
+    }
+
+    public function messages(): array
+    {
+        return [
+            'telephone.regex' => 'Le téléphone doit comporter 10 chiffres et débuter par 01.',
         ];
     }
 }

@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Agent;
+use App\Support\Telephone;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreAgentRequest extends FormRequest
 {
@@ -11,18 +14,67 @@ class StoreAgentRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Détermine automatiquement la catégorie depuis l'indice ou le salaire brut
+     * lorsqu'elle n'est pas fournie explicitement.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('categorie') && ($this->filled('indice') || $this->filled('salaire_brut'))) {
+            $this->merge([
+                'categorie' => Agent::determinerCategorie(
+                    $this->integer('indice') ?: null,
+                    $this->integer('salaire_brut') ?: null,
+                ),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'matricule' => 'required|string|unique:agents,matricule',
             'nom' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'email' => 'required|email|unique:agents,email',
-            'telephone' => 'required|string|max:20',
-            'numero_moov' => 'nullable|string|max:20',
-            'numero_mtn' => 'nullable|string|max:20',
-            'service' => 'required|string|max:255',
-            'categorie' => 'required|in:A1,A2,B,C,D',
+            'prenoms' => 'required|string|max:255',
+            'matricule' => 'required|string|max:50|unique:agents,matricule',
+            'ifu' => 'nullable|string|max:50',
+            'grade' => 'nullable|string|max:255',
+            'indice' => 'nullable|integer|min:0',
+            'salaire_brut' => 'nullable|integer|min:0',
+            'categorie' => 'required|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            // Téléphone national : 10 chiffres débutant par 01.
+            'telephone' => ['required', 'string', 'regex:'.config('benin.telephone.regex'), 'unique:agents,telephone'],
+            'operateur' => 'required|in:MTN,MOOV',
+            'actif' => 'sometimes|boolean',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            // Au moins l'indice OU le salaire brut pour justifier/déterminer la catégorie.
+            if (! $this->filled('indice') && ! $this->filled('salaire_brut')) {
+                $validator->errors()->add('indice', "L'indice ou le salaire brut est requis pour déterminer la catégorie.");
+            }
+
+            // Cohérence numéro ↔ opérateur (préfixes MTN vs Moov).
+            $tel = $this->input('telephone');
+            $operateur = $this->input('operateur');
+            if ($tel && $operateur && ! Telephone::estCoherent($tel, $operateur)) {
+                $deduit = Telephone::operateurPour($tel);
+                $validator->errors()->add(
+                    'telephone',
+                    $deduit
+                        ? "Le numéro correspond à l'opérateur {$deduit}, pas à {$operateur}."
+                        : 'Le préfixe du numéro ne correspond à aucun opérateur connu.'
+                );
+            }
+        });
+    }
+
+    public function messages(): array
+    {
+        return [
+            'telephone.regex' => 'Le téléphone doit comporter 10 chiffres et débuter par 01.',
         ];
     }
 }
