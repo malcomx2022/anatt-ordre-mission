@@ -27,6 +27,10 @@ onUnmounted(() => clearInterval(timer))
 function pad(n: number): string {
   return n.toString().padStart(2, '0')
 }
+
+function reload() {
+  window.location.reload()
+}
 </script>
 
 <template>
@@ -116,7 +120,7 @@ function pad(n: number): string {
 
         <!-- Actions -->
         <div class="flex flex-col items-center gap-3">
-          <button @click="location.reload()" class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 w-full max-w-xs flex items-center justify-center gap-2">
+          <button @click="reload" class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 w-full max-w-xs flex items-center justify-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
             Verifier la disponibilite
           </button>

@@ -10,18 +10,23 @@ return new class extends Migration
     {
         Schema::create('agents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('matricule')->unique();
             $table->string('nom');
-            $table->string('prenom');
-            $table->string('email')->unique();
-            $table->string('telephone');
-            $table->string('numero_moov')->nullable();
-            $table->string('numero_mtn')->nullable();
-            $table->string('service');
-            $table->enum('categorie', ['A1', 'A2', 'B', 'C', 'D'])->default('C');
+            $table->string('prenoms');
+            $table->string('matricule')->unique();
+            $table->string('ifu')->nullable();
+            $table->string('grade')->nullable();
+            $table->integer('indice')->nullable();
+            $table->integer('salaire_brut')->nullable();
+            $table->enum('categorie', ['ORDRE_1', 'ORDRE_2', 'ORDRE_3']);
+            // Téléphone national à 10 chiffres ; opérateur Mobile Money du bénéficiaire.
+            $table->string('telephone', 10);
+            $table->enum('operateur', ['MTN', 'MOOV']);
             $table->boolean('actif')->default(true);
             $table->timestamps();
+
+            $table->index('categorie');
+            $table->index('operateur');
+            $table->index('actif');
         });
     }
 

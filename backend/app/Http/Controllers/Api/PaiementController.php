@@ -3,121 +3,151 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\PaiementResource;
-use App\Models\OrdreMission;
-use App\Models\Paiement;
-use App\Services\MoovPaymentService;
-use App\Services\MtnPaymentService;
+use App\Http\Resources\LotPaiementResource;
+use App\Jobs\GenererLotPaiementJob;
+use App\Models\LotPaiement;
+use App\Models\Versement;
+use App\Services\LotPaiementService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PaiementController extends Controller
 {
     public function __construct(
-        private readonly MoovPaymentService $moovService,
-        private readonly MtnPaymentService $mtnService,
+        private readonly LotPaiementService $lotService,
     ) {}
 
+    /** Liste des lots de paiement (filtres : mission, tranche, opérateur, statut). */
     public function index(Request $request): JsonResponse
     {
-        $query = Paiement::with(['ordreMission', 'agent']);
+        $query = LotPaiement::with('mission');
 
-        if ($operateur = $request->get('operateur')) {
-            $query->where('operateur', $operateur);
+        foreach (['mission_id', 'tranche', 'operateur', 'statut'] as $champ) {
+            if ($valeur = $request->get($champ)) {
+                $query->where($champ, $valeur);
+            }
         }
 
-        if ($statut = $request->get('statut')) {
-            $query->where('statut', $statut);
+        $lots = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
+
+        return LotPaiementResource::collection($lots)->response();
+    }
+
+    /** Prévisualise les bénéficiaires éligibles d'un lot. */
+    public function previsualiser(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'mission_id' => 'required|integer|exists:missions,id',
+            'tranche' => 'required|in:AVANCE,RELIQUAT',
+            'operateur' => 'required|in:MTN,MOOV',
+        ]);
+
+        return $this->success(
+            $this->lotService->previsualiser($data['mission_id'], $data['tranche'], $data['operateur']),
+        );
+    }
+
+    /**
+     * Génère (ou régénère) le fichier d'un lot.
+     * Petit lot : téléchargement direct. Gros lot (> seuil) : bascule en file Redis (202 + tracking_id).
+     */
+    public function generer(Request $request)
+    {
+        $data = $request->validate([
+            'mission_id' => 'required|integer|exists:missions,id',
+            'tranche' => 'required|in:AVANCE,RELIQUAT',
+            'operateur' => 'required|in:MTN,MOOV',
+        ]);
+
+        $apercu = $this->lotService->previsualiser($data['mission_id'], $data['tranche'], $data['operateur']);
+
+        // Gros lot -> traitement asynchrone sur la file « paiements ».
+        if ($apercu['nb_lignes'] > config('paiement.async_seuil')) {
+            $trackingId = (string) Str::uuid();
+            GenererLotPaiementJob::dispatch(
+                $data['mission_id'], $data['tranche'], $data['operateur'], $request->user()->id, $trackingId,
+            );
+
+            return response()->json([
+                'async' => true,
+                'tracking_id' => $trackingId,
+                'nb_lignes' => $apercu['nb_lignes'],
+                'message' => 'Gros lot : génération lancée en file. Suivez la progression via tracking_id.',
+            ], 202);
         }
 
-        $paiements = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
+        $resultat = $this->lotService->generer(
+            $data['mission_id'], $data['tranche'], $data['operateur'], $request->user(),
+        );
 
-        return PaiementResource::collection($paiements)->response();
+        return Storage::disk('local')->download($resultat['chemin'], basename($resultat['chemin']));
     }
 
-    public function genererMoov(Request $request): JsonResponse
+    /** Suivi de progression d'une génération asynchrone de lot. */
+    public function statutJob(string $trackingId): JsonResponse
     {
-        $request->validate([
-            'ordre_ids' => 'required|array',
-            'ordre_ids.*' => 'exists:ordre_missions,id',
-        ]);
-
-        $ordres = OrdreMission::with('agent')
-            ->whereIn('id', $request->ordre_ids)
-            ->where('statut', 'APPROUVE_DG')
-            ->get();
-
-        $resultat = $this->moovService->genererFichier($ordres);
-
-        return $this->success([
-            'fichier' => $resultat['fichier'],
-            'nb_paiements' => $resultat['nb_paiements'],
-            'montant_total' => $resultat['montant_total'],
-            'paiements' => PaiementResource::collection($resultat['paiements']),
-        ], "{$resultat['nb_paiements']} paiement(s) Moov genere(s).");
+        return $this->success(Cache::get("lot_job:{$trackingId}", ['statut' => 'INTROUVABLE']));
     }
 
-    public function genererMtn(Request $request): JsonResponse
+    /** Re-télécharge le fichier d'un lot déjà généré. */
+    public function download(LotPaiement $lot)
     {
-        $request->validate([
-            'ordre_ids' => 'required|array',
-            'ordre_ids.*' => 'exists:ordre_missions,id',
-        ]);
+        abort_unless($lot->nom_fichier && Storage::disk('local')->exists($lot->nom_fichier), 404, 'Fichier introuvable.');
 
-        $ordres = OrdreMission::with('agent')
-            ->whereIn('id', $request->ordre_ids)
-            ->where('statut', 'APPROUVE_DG')
-            ->get();
-
-        $resultat = $this->mtnService->genererFichier($ordres);
-
-        return $this->success([
-            'fichier' => $resultat['fichier'],
-            'nb_paiements' => $resultat['nb_paiements'],
-            'montant_total' => $resultat['montant_total'],
-            'paiements' => PaiementResource::collection($resultat['paiements']),
-        ], "{$resultat['nb_paiements']} paiement(s) MTN genere(s).");
+        return Storage::disk('local')->download($lot->nom_fichier, basename($lot->nom_fichier));
     }
 
+    /** Confirmation manuelle d'un lot après dépôt réussi sur la plateforme opérateur. */
+    public function confirmer(LotPaiement $lot, Request $request): JsonResponse
+    {
+        $lot = $this->lotService->confirmer($lot, $request->user());
+
+        return $this->success(new LotPaiementResource($lot->load('mission')), 'Lot confirmé : versements soldés.');
+    }
+
+    /** Marque un lot en erreur (autorise la régénération). */
+    public function marquerErreur(LotPaiement $lot, Request $request): JsonResponse
+    {
+        $lot = $this->lotService->marquerErreur($lot, $request->user());
+
+        return $this->success(new LotPaiementResource($lot->load('mission')), 'Lot marqué en erreur.');
+    }
+
+    /** Synthèse des versements par opérateur et statut. */
     public function statuts(): JsonResponse
     {
-        $statuts = Paiement::selectRaw('operateur, statut, count(*) as total, sum(montant) as montant_total')
+        $statuts = Versement::selectRaw('operateur, statut, count(*) as total, sum(montant) as montant_total')
             ->groupBy('operateur', 'statut')
             ->get();
 
         return $this->success($statuts);
     }
 
-    public function reconcilier(Request $request): JsonResponse
-    {
-        $request->validate([
-            'fichier' => 'required|file|mimes:csv,txt',
-            'operateur' => 'required|in:MOOV,MTN',
-        ]);
-
-        $contenu = file_get_contents($request->file('fichier')->getRealPath());
-
-        $resultats = match ($request->operateur) {
-            'MOOV' => $this->moovService->traiterRetour($contenu),
-            'MTN' => $this->mtnService->traiterRetour($contenu),
-        };
-
-        return $this->success($resultats, "Reconciliation terminee : {$resultats['succes']} succes, {$resultats['echec']} echec(s).");
-    }
-
+    /** Historique des versements confirmés, filtrable par période (date_paiement). */
     public function historique(Request $request): JsonResponse
     {
-        $query = Paiement::with(['ordreMission', 'agent']);
+        $query = Versement::with(['ordreMission.agent', 'ordreMission.mission'])
+            ->where('statut', 'CONFIRME');
 
         if ($periode = $request->get('periode')) {
             $date = Carbon::parse($periode);
-            $query->whereMonth('created_at', $date->month)
-                  ->whereYear('created_at', $date->year);
+            $query->whereMonth('date_paiement', $date->month)
+                  ->whereYear('date_paiement', $date->year);
         }
 
-        $paiements = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
+        if ($dateDebut = $request->get('date_debut')) {
+            $query->where('date_paiement', '>=', $dateDebut);
+        }
+        if ($dateFin = $request->get('date_fin')) {
+            $query->where('date_paiement', '<=', $dateFin);
+        }
 
-        return PaiementResource::collection($paiements)->response();
+        $versements = $query->orderByDesc('date_paiement')->paginate($this->getPerPage($request));
+
+        return response()->json($versements);
     }
 }

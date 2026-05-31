@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import AppBadge from '@/components/shared/AppBadge.vue'
-import type { OperateurPaiement } from '@/types'
+import type { Operateur } from '@/types'
 
 defineProps<{
-  operateur: OperateurPaiement
+  operateur: Operateur
 }>()
 </script>
 

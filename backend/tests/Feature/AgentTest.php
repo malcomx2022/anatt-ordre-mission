@@ -3,99 +3,79 @@
 use App\Models\Agent;
 use App\Models\User;
 
-it('liste les agents avec pagination', function () {
-    $user = User::factory()->admin()->create();
-    Agent::factory()->count(5)->create();
-
-    $response = $this->actingAs($user)->getJson('/api/agents');
-
-    $response->assertOk()
-        ->assertJsonStructure(['data', 'meta']);
-    expect($response->json('data'))->toHaveCount(5);
+beforeEach(function () {
+    $this->gestion = User::factory()->gestionnaireOm()->create();
 });
 
-it('filtre les agents par recherche', function () {
-    $user = User::factory()->admin()->create();
-    Agent::factory()->create(['nom' => 'KOUASSI', 'prenom' => 'Jean']);
-    Agent::factory()->create(['nom' => 'ADJOVI', 'prenom' => 'Marie']);
+it('crée un agent et déduit la catégorie depuis l’indice', function () {
+    $this->actingAs($this->gestion)->postJson('/api/agents', [
+        'nom' => 'DADA', 'prenoms' => 'Richard', 'matricule' => 'ANT-1001',
+        'telephone' => '0190000001', 'operateur' => 'MTN', 'indice' => 850,
+    ])->assertStatus(201)
+      ->assertJsonPath('data.categorie', 'ORDRE_1');
 
-    $response = $this->actingAs($user)->getJson('/api/agents?search=KOUASSI');
-
-    $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.nom'))->toBe('KOUASSI');
+    expect(Agent::where('matricule', 'ANT-1001')->value('categorie'))->toBe('ORDRE_1');
 });
 
-it('cree un agent avec donnees valides', function () {
-    $user = User::factory()->admin()->create();
-
-    $response = $this->actingAs($user)->postJson('/api/agents', [
-        'matricule' => 'ANT-999',
-        'nom' => 'TOSSOU',
-        'prenom' => 'Marc',
-        'email' => 'marc@anatt.bj',
-        'telephone' => '22996789012',
-        'service' => 'Direction Technique',
-        'categorie' => 'B',
-    ]);
-
-    $response->assertStatus(201)
-        ->assertJsonPath('data.matricule', 'ANT-999')
-        ->assertJsonPath('data.nom', 'TOSSOU');
+it('déduit ORDRE_3 depuis le salaire brut', function () {
+    $this->actingAs($this->gestion)->postJson('/api/agents', [
+        'nom' => 'AKPACA', 'prenoms' => 'Gérard', 'matricule' => 'ANT-1002',
+        'telephone' => '0140000002', 'operateur' => 'MOOV', 'salaire_brut' => 150000,
+    ])->assertStatus(201)
+      ->assertJsonPath('data.categorie', 'ORDRE_3');
 });
 
-it('refuse la creation agent avec matricule duplique', function () {
-    $user = User::factory()->admin()->create();
-    Agent::factory()->create(['matricule' => 'ANT-001']);
-
-    $response = $this->actingAs($user)->postJson('/api/agents', [
-        'matricule' => 'ANT-001',
-        'nom' => 'TEST',
-        'prenom' => 'Test',
-        'email' => 'test@anatt.bj',
-        'telephone' => '22900000000',
-        'service' => 'Test',
-        'categorie' => 'C',
-    ]);
-
-    $response->assertStatus(422)
-        ->assertJsonValidationErrors('matricule');
+it('refuse un téléphone au mauvais format', function () {
+    $this->actingAs($this->gestion)->postJson('/api/agents', [
+        'nom' => 'X', 'prenoms' => 'Y', 'matricule' => 'ANT-9',
+        'telephone' => '12345', 'operateur' => 'MTN', 'indice' => 500,
+    ])->assertStatus(422)->assertJsonValidationErrors(['telephone']);
 });
 
-it('affiche un agent avec ses missions', function () {
-    $user = User::factory()->admin()->create();
+it('refuse une incohérence numéro / opérateur', function () {
+    // 014X -> Moov, mais opérateur déclaré MTN.
+    $this->actingAs($this->gestion)->postJson('/api/agents', [
+        'nom' => 'X', 'prenoms' => 'Y', 'matricule' => 'ANT-10',
+        'telephone' => '0140000000', 'operateur' => 'MTN', 'indice' => 500,
+    ])->assertStatus(422)->assertJsonValidationErrors(['telephone']);
+});
+
+it('exige l’indice ou le salaire brut', function () {
+    $this->actingAs($this->gestion)->postJson('/api/agents', [
+        'nom' => 'X', 'prenoms' => 'Y', 'matricule' => 'ANT-11',
+        'telephone' => '0190000000', 'operateur' => 'MTN',
+    ])->assertStatus(422);
+});
+
+it('recherche un agent par nom pour l’autocomplétion', function () {
+    Agent::factory()->create(['nom' => 'KOUASSI', 'prenoms' => 'Jean', 'matricule' => 'ANT-K1']);
+
+    $this->actingAs($this->gestion)->getJson('/api/agents/recherche?q=KOUASSI')
+        ->assertOk()
+        ->assertJsonPath('data.0.nom', 'KOUASSI');
+});
+
+it('met à jour un agent', function () {
     $agent = Agent::factory()->create();
 
-    $response = $this->actingAs($user)->getJson("/api/agents/{$agent->id}");
-
-    $response->assertOk()
-        ->assertJsonPath('data.id', $agent->id);
+    $this->actingAs($this->gestion)->putJson("/api/agents/{$agent->id}", ['grade' => 'Directeur'])
+        ->assertOk()
+        ->assertJsonPath('data.grade', 'Directeur');
 });
 
-it('met a jour un agent', function () {
-    $user = User::factory()->admin()->create();
-    $agent = Agent::factory()->create();
-
-    $response = $this->actingAs($user)->putJson("/api/agents/{$agent->id}", [
-        'nom' => 'NOUVEAU_NOM',
-    ]);
-
-    $response->assertOk()
-        ->assertJsonPath('data.nom', 'NOUVEAU_NOM');
-});
-
-it('desactive un agent au lieu de le supprimer', function () {
-    $user = User::factory()->admin()->create();
+it('désactive un agent', function () {
     $agent = Agent::factory()->create(['actif' => true]);
 
-    $response = $this->actingAs($user)->deleteJson("/api/agents/{$agent->id}");
+    $this->actingAs($this->gestion)->deleteJson("/api/agents/{$agent->id}")->assertOk();
 
-    $response->assertOk();
-    expect($agent->fresh()->actif)->toBeFalse();
+    expect(Agent::find($agent->id)->actif)->toBeFalse();
 });
 
-it('refuse acces non authentifie aux agents', function () {
-    $response = $this->getJson('/api/agents');
+it('filtre les agents par catégorie', function () {
+    Agent::factory()->categorie('ORDRE_1')->create();
+    Agent::factory()->categorie('ORDRE_3')->create();
 
-    $response->assertStatus(401);
+    $this->actingAs($this->gestion)->getJson('/api/agents?categorie=ORDRE_1')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
 });

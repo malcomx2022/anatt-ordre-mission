@@ -17,9 +17,9 @@ const totalItems = ref(0)
 
 const stats = computed(() => [
   { label: 'Utilisateurs total', value: String(totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { label: 'ADMIN', value: String(users.value.filter(u => u.role === 'ADMIN').length), iconBg: 'bg-red-100', iconColor: 'text-red-600' },
-  { label: 'CHEF_SERVICE', value: String(users.value.filter(u => u.role === 'CHEF_SERVICE').length), iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  { label: 'AGENT', value: String(users.value.filter(u => u.role === 'AGENT').length), iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  { label: 'Admin', value: String(users.value.filter(u => u.role === 'admin').length), iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  { label: 'Gestionnaire OM', value: String(users.value.filter(u => u.role === 'gestionnaire_om').length), iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { label: 'Agent financier', value: String(users.value.filter(u => u.role === 'agent_financier').length), iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
 ])
 
 async function loadUsers() {
@@ -56,11 +56,10 @@ function handlePageChange(page: number) {
 onMounted(loadUsers)
 
 const roleConfig: Record<string, { bg: string; color: string }> = {
-  ADMIN: { bg: 'bg-red-100', color: 'text-red-700' },
-  DIRECTEUR: { bg: 'bg-purple-100', color: 'text-purple-700' },
-  CHEF_SERVICE: { bg: 'bg-green-100', color: 'text-green-700' },
-  DRH: { bg: 'bg-blue-100', color: 'text-blue-700' },
-  AGENT: { bg: 'bg-gray-100', color: 'text-gray-600' },
+  admin: { bg: 'bg-red-100', color: 'text-red-700' },
+  gestionnaire_om: { bg: 'bg-green-100', color: 'text-green-700' },
+  agent_financier: { bg: 'bg-amber-100', color: 'text-amber-700' },
+  lecteur: { bg: 'bg-gray-100', color: 'text-gray-600' },
 }
 
 function getInitials(name: string): string {
@@ -108,12 +107,11 @@ async function deleteUser(user: User) {
           <input v-model="searchQuery" type="text" placeholder="Rechercher par nom, email, role..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 outline-none transition-all duration-200">
         </div>
         <select v-model="roleFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
-          <option value="">Tous les roles</option>
-          <option value="ADMIN">ADMIN</option>
-          <option value="DIRECTEUR">DIRECTEUR</option>
-          <option value="CHEF_SERVICE">CHEF_SERVICE</option>
-          <option value="DRH">DRH</option>
-          <option value="AGENT">AGENT</option>
+          <option value="">Tous les rôles</option>
+          <option value="admin">Administrateur</option>
+          <option value="gestionnaire_om">Gestionnaire OM</option>
+          <option value="agent_financier">Agent financier</option>
+          <option value="lecteur">Lecteur</option>
         </select>
       </div>
     </div>
@@ -164,7 +162,7 @@ async function deleteUser(user: User) {
             </td>
             <td class="px-5 py-4 text-center">
               <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button v-if="u.role !== 'ADMIN'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500" @click="deleteUser(u)">
+                <button v-if="u.role !== 'admin'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500" @click="deleteUser(u)">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                 </button>
               </div>

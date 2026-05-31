@@ -44,7 +44,7 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return $this->success($request->user()->load('agent'));
+        return $this->success($request->user());
     }
 
     public function sendResetLink(Request $request): JsonResponse

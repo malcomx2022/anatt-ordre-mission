@@ -3,185 +3,161 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Models\Mission;
 use App\Models\OrdreMission;
-use App\Models\TauxPerDiem;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Models\Versement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MissionService
 {
     public function __construct(
-        private readonly NotificationService $notificationService,
+        private readonly CalculIndemniteService $calcul,
+        private readonly NotificationService $notifications,
     ) {}
 
-    public function creer(array $data, User $user): OrdreMission
+    /**
+     * Retranscription SEMO : crée la mission PUIS N ordres de mission individuels
+     * (participants + CAV). Pour chaque OM : calcul de l'indemnité (barème) et
+     * création des versements AVANCE + RELIQUAT en statut EN_ATTENTE.
+     *
+     * Le tout est atomique : un doublon de reference_semo annule toute la mission.
+     */
+    public function creerAvecOrdres(array $data, User $user): Mission
     {
-        $nbJours = Carbon::parse($data['date_retour'])->diffInDays(Carbon::parse($data['date_depart'])) + 1;
-        $taux = TauxPerDiem::findOrFail($data['taux_id']);
-        $montant = $nbJours * $taux->montant_journalier;
+        return DB::transaction(function () use ($data, $user) {
+            $mission = Mission::create([
+                'objet' => $data['objet'],
+                'destination' => $data['destination'],
+                'zone_code' => $data['zone_code'],
+                'date_depart' => $data['date_depart'],
+                'date_retour' => $data['date_retour'],
+                'imputation_budgetaire' => $data['imputation_budgetaire'] ?? null,
+                'prise_en_charge_tiers' => (bool) ($data['prise_en_charge_tiers'] ?? false),
+                'observations' => $data['observations'] ?? null,
+            ]);
 
-        $ordre = new OrdreMission($data);
-        $ordre->setComputedFields([
-            'numero' => OrdreMission::generateNumero(),
-            'nb_jours' => $nbJours,
-            'montant_per_diem' => $montant,
-            'statut' => 'BROUILLON',
-        ]);
-        $ordre->save();
+            $exonere = $mission->prise_en_charge_tiers;
+
+            foreach ($data['ordres'] as $o) {
+                $agent = Agent::findOrFail($o['agent_id']);
+
+                // Catégorie reprise de SEMO si fournie, sinon celle du référentiel agent.
+                $categorie = $o['categorie'] ?? $agent->categorie;
+
+                $nbJours = $o['nb_jours'] ?? $this->calcul->nbJours($mission->date_depart, $mission->date_retour);
+
+                $calc = $this->calcul->calculer(
+                    $categorie,
+                    $mission->zone_code,
+                    $o['type_prise_en_charge'],
+                    $nbJours,
+                    $exonere,
+                );
+
+                $ordre = OrdreMission::create([
+                    'reference_semo' => $o['reference_semo'],
+                    'mission_id' => $mission->id,
+                    'agent_id' => $agent->id,
+                    'role' => $o['role'],
+                    'categorie' => $categorie,
+                    'zone_code' => $mission->zone_code,
+                    'type_prise_en_charge' => $o['type_prise_en_charge'],
+                    'nb_jours' => $calc['nb_jours'],
+                    'montant_total' => $calc['montant_total'],
+                    'avance' => $calc['avance'],
+                    'reliquat' => $calc['reliquat'],
+                    'statut' => 'IMPORTE',
+                    'conducteur_a_bord' => $o['conducteur_a_bord'] ?? null,
+                    'reference_autorisation' => $o['reference_autorisation'] ?? null,
+                    'moyen_transport' => $o['moyen_transport'] ?? null,
+                ]);
+
+                // Versements AVANCE + RELIQUAT (sauf exonération ou montant nul).
+                if (! $exonere && $ordre->montant_total > 0) {
+                    foreach (['AVANCE' => $ordre->avance, 'RELIQUAT' => $ordre->reliquat] as $type => $montant) {
+                        Versement::create([
+                            'ordre_mission_id' => $ordre->id,
+                            'type' => $type,
+                            'montant' => $montant,
+                            // Téléphone et opérateur figés depuis le référentiel agents.
+                            'operateur' => $agent->operateur,
+                            'telephone' => $agent->telephone,
+                            'statut' => 'EN_ATTENTE',
+                        ]);
+                    }
+                }
+
+                $this->journaliser($user, 'IMPORT_OM', $ordre, [
+                    'reference_semo' => $ordre->reference_semo,
+                    'agent' => $agent->nom_complet,
+                    'role' => $ordre->role,
+                    'montant_total' => $ordre->montant_total,
+                ]);
+            }
+
+            return $mission->load(['ordresMission.agent', 'ordresMission.versements']);
+        });
+    }
+
+    /** Validation d'un OM : IMPORTE → VALIDE. */
+    public function valider(OrdreMission $ordre, User $user): OrdreMission
+    {
+        $ordre = $this->transition($ordre, ['IMPORTE'], 'VALIDE', $user, 'VALIDATE_OM');
+        $this->notifications->omValide($ordre);
 
         return $ordre;
     }
 
-    public function modifier(OrdreMission $ordre, array $data): OrdreMission
+    /** Rejet d'un OM avec motif obligatoire : IMPORTE → REJETE. */
+    public function rejeter(OrdreMission $ordre, string $motif, User $user): OrdreMission
     {
-        return DB::transaction(function () use ($ordre, $data) {
-            $ordre = OrdreMission::lockForUpdate()->findOrFail($ordre->id);
+        $ordre = $this->transition($ordre, ['IMPORTE'], 'REJETE', $user, 'REJECT_OM', [
+            'commentaire_rejet' => $motif,
+        ]);
+        $this->notifications->omRejete($ordre);
 
-            if ($ordre->statut !== 'BROUILLON') {
-                throw ValidationException::withMessages([
-                    'statut' => ['Seuls les ordres en brouillon peuvent etre modifies.'],
-                ]);
-            }
-
-            if (isset($data['date_depart']) && isset($data['date_retour'])) {
-                $data['nb_jours'] = Carbon::parse($data['date_retour'])->diffInDays(Carbon::parse($data['date_depart'])) + 1;
-                if (isset($data['taux_id'])) {
-                    $taux = TauxPerDiem::findOrFail($data['taux_id']);
-                    $data['montant_per_diem'] = $data['nb_jours'] * $taux->montant_journalier;
-                }
-            }
-
-            $ordre->update($data);
-
-            return $ordre->fresh(['agent', 'taux']);
-        });
-    }
-
-    public function supprimer(OrdreMission $ordre): void
-    {
-        DB::transaction(function () use ($ordre) {
-            $ordre = OrdreMission::lockForUpdate()->findOrFail($ordre->id);
-
-            if ($ordre->statut !== 'BROUILLON') {
-                throw ValidationException::withMessages([
-                    'statut' => ['Seuls les ordres en brouillon peuvent etre supprimes.'],
-                ]);
-            }
-
-            $ordre->delete();
-        });
-    }
-
-    public function soumettre(OrdreMission $ordre): OrdreMission
-    {
-        return $this->transitionStatut($ordre, 'BROUILLON', 'SOUMIS', function (OrdreMission $ordre) {
-            $ordre->update(['statut' => 'SOUMIS']);
-
-            $ordre->load('agent');
-            $this->notificationService->missionSoumise($ordre);
-        });
-    }
-
-    public function validerN1(OrdreMission $ordre, User $user): OrdreMission
-    {
-        if (! $user->hasRole('CHEF_SERVICE', 'ADMIN')) {
-            throw ValidationException::withMessages([
-                'role' => ['La validation N+1 necessite le role CHEF_SERVICE.'],
-            ]);
-        }
-
-        $agent = $ordre->agent;
-        if ($user->role === 'CHEF_SERVICE' && $user->agent && $user->agent->service !== $agent->service) {
-            throw ValidationException::withMessages([
-                'service' => ['Vous ne pouvez valider que les ordres de votre service.'],
-            ]);
-        }
-
-        return $this->transitionStatut($ordre, 'SOUMIS', 'VALIDE_N1', function (OrdreMission $ordre) use ($user) {
-            $ordre->update([
-                'statut' => 'VALIDE_N1',
-                'valide_par_chef' => $user->id,
-            ]);
-
-            $ordre->load(['agent', 'valideurChef']);
-            $this->notificationService->missionValideeN1($ordre);
-        });
-    }
-
-    public function approuver(OrdreMission $ordre, User $user): OrdreMission
-    {
-        if (! $user->hasRole('DIRECTEUR', 'ADMIN')) {
-            throw ValidationException::withMessages([
-                'role' => ['L\'approbation necessite le role DIRECTEUR.'],
-            ]);
-        }
-
-        return $this->transitionStatut($ordre, 'VALIDE_N1', 'APPROUVE_DG', function (OrdreMission $ordre) use ($user) {
-            $ordre->update([
-                'statut' => 'APPROUVE_DG',
-                'valide_par_dg' => $user->id,
-            ]);
-
-            $ordre->load('agent');
-            $this->notificationService->missionApprouvee($ordre);
-        });
-    }
-
-    public function rejeter(OrdreMission $ordre, string $commentaire, ?User $user = null): OrdreMission
-    {
-        if ($user && ! $user->hasRole('CHEF_SERVICE', 'DIRECTEUR', 'ADMIN')) {
-            throw ValidationException::withMessages([
-                'role' => ['Le rejet necessite le role CHEF_SERVICE ou DIRECTEUR.'],
-            ]);
-        }
-
-        return DB::transaction(function () use ($ordre, $commentaire) {
-            $ordre = OrdreMission::lockForUpdate()->findOrFail($ordre->id);
-
-            if (! in_array($ordre->statut, ['SOUMIS', 'VALIDE_N1'])) {
-                throw ValidationException::withMessages([
-                    'statut' => ['Cet ordre ne peut pas etre rejete.'],
-                ]);
-            }
-
-            $ordre->update([
-                'statut' => 'REJETE',
-                'commentaire_rejet' => $commentaire,
-            ]);
-
-            $ordre->load('agent');
-            $this->notificationService->missionRejetee($ordre);
-
-            return $ordre->fresh(['agent', 'taux']);
-        });
+        return $ordre;
     }
 
     /**
-     * Transition atomique de statut avec verrou pessimiste.
-     * Empeche les race conditions quand 2 utilisateurs tentent
-     * de modifier le statut du meme OM simultanement.
+     * Transition de statut atomique avec verrou pessimiste (anti race condition).
+     *
+     * @param  array<int,string>  $statutsAttendus
+     * @param  array<string,mixed>  $champsSupplementaires
      */
-    private function transitionStatut(
+    private function transition(
         OrdreMission $ordre,
-        string $statutAttendu,
+        array $statutsAttendus,
         string $nouveauStatut,
-        callable $action,
+        User $user,
+        string $action,
+        array $champsSupplementaires = [],
     ): OrdreMission {
-        return DB::transaction(function () use ($ordre, $statutAttendu, $nouveauStatut, $action) {
-            // Verrou pessimiste: bloque les autres transactions sur cette ligne
+        return DB::transaction(function () use ($ordre, $statutsAttendus, $nouveauStatut, $user, $action, $champsSupplementaires) {
             $ordre = OrdreMission::lockForUpdate()->findOrFail($ordre->id);
 
-            if ($ordre->statut !== $statutAttendu) {
+            if (! in_array($ordre->statut, $statutsAttendus, true)) {
                 throw ValidationException::withMessages([
-                    'statut' => ["Cet ordre ne peut pas passer de '{$ordre->statut}' a '{$nouveauStatut}'. Statut attendu: '{$statutAttendu}'."],
+                    'statut' => ["Cet OM (statut « {$ordre->statut} ») ne peut pas passer à « {$nouveauStatut} »."],
                 ]);
             }
 
-            $action($ordre);
+            $ordre->update(array_merge(['statut' => $nouveauStatut], $champsSupplementaires));
 
-            return $ordre->fresh(['agent', 'taux']);
+            $this->journaliser($user, $action, $ordre, [
+                'reference_semo' => $ordre->reference_semo,
+                'statut' => $nouveauStatut,
+            ]);
+
+            return $ordre->fresh(['agent', 'mission', 'versements']);
         });
+    }
+
+    /** Écrit une entrée dans le journal d'audit. */
+    private function journaliser(User $user, string $action, OrdreMission $ordre, array $donnees = []): void
+    {
+        AuditService::log($user, $action, 'ordre_mission', $ordre->id, $donnees);
     }
 }
