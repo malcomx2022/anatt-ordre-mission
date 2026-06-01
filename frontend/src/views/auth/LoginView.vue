@@ -42,9 +42,11 @@ async function handleLogin() {
     </div>
 
     <div class="w-full max-w-md login-card">
-      <!-- Logo ANaTT -->
+      <!-- Logo ANaTT (version couleur sur badge blanc pour ressortir sur le fond vert) -->
       <div class="flex justify-center mb-8 animate-float">
-        <AppLogo size="xl" dark />
+        <div class="bg-white rounded-2xl shadow-xl px-8 py-5">
+          <AppLogo size="lg" />
+        </div>
       </div>
 
       <!-- Card -->
