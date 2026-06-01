@@ -9,8 +9,13 @@ interface ApiErrorResponse {
   errors?: Record<string, string[]>
 }
 
+// Priorité : config runtime (public/runtime-config.js, éditable après déploiement)
+// > variable de build VITE_API_URL > défaut local.
+const runtimeApiUrl =
+  (typeof window !== 'undefined' && window.__ANATT_CONFIG__?.apiUrl) || ''
+
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: runtimeApiUrl || import.meta.env.VITE_API_URL || 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
