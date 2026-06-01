@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LotPaiement;
 use App\Models\Mission;
+use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
 use App\Services\Paiement\MoovFileGenerator;
@@ -83,9 +84,25 @@ class LotPaiementService
 
             $now = now();
 
+            // OM concernés par ce lot, avant la mise à jour des statuts.
+            $omIds = Versement::where('lot_id', $lot->id)->pluck('ordre_mission_id')->unique();
+
             Versement::where('lot_id', $lot->id)
                 ->where('statut', '!=', 'CONFIRME')
                 ->update(['statut' => 'CONFIRME', 'date_paiement' => $now]);
+
+            // Un OM dont TOUS les versements sont confirmés passe à SOLDE.
+            foreach ($omIds as $omId) {
+                $resteAConfirmer = Versement::where('ordre_mission_id', $omId)
+                    ->where('statut', '!=', 'CONFIRME')
+                    ->exists();
+
+                if (! $resteAConfirmer) {
+                    OrdreMission::where('id', $omId)
+                        ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
+                        ->update(['statut' => 'SOLDE']);
+                }
+            }
 
             $lot->update([
                 'statut' => 'CONFIRME',
