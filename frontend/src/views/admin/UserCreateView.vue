@@ -26,11 +26,12 @@ const form = ref({
 })
 
 const roles = [
-  { value: 'ADMIN', label: 'Super Admin', desc: 'Acces complet au systeme, gestion des utilisateurs et configuration', color: 'red', perms: ['Tout'] },
-  { value: 'DIRECTEUR', label: 'Validateur DG', desc: 'Approbation finale des ordres de mission', color: 'green', perms: ['Missions (lecture)', 'Approbation DG', 'Rapports'] },
-  { value: 'CHEF_SERVICE', label: 'Chef de Service', desc: 'Validation des ordres de mission de son service', color: 'blue', perms: ['Missions (lecture)', 'Validation N1', 'Rapports'] },
-  { value: 'DRH', label: 'Gestionnaire RH', desc: 'Gestion du personnel, taux per diem, paiements', color: 'amber', perms: ['Personnel', 'Missions', 'Paiements', 'Baremes'] },
-  { value: 'AGENT', label: 'Agent', desc: 'Consultation uniquement, soumission de ses propres missions', color: 'gray', perms: ['Dashboard', 'Mes missions'] },
+  { value: 'SUPER_ADMIN', label: 'Super administrateur', desc: 'Accès total ; gère les super admins et les paramètres système', color: 'red', perms: ['Tout'] },
+  { value: 'ADMIN', label: 'Administrateur', desc: 'Utilisateurs, référentiels, barème ; supervision', color: 'purple', perms: ['Personnel', 'Barème', 'Utilisateurs', 'Audit'] },
+  { value: 'GESTIONNAIRE_OM', label: 'Gestionnaire OM', desc: 'Retranscrit/gère missions, OM et agents', color: 'green', perms: ['Personnel', 'Missions/OM', 'Rapports'] },
+  { value: 'AGENT_FINANCIER', label: 'Agent financier', desc: 'Génère les fichiers MTN/Moov et confirme les paiements', color: 'amber', perms: ['Paiements', 'Rapports'] },
+  { value: 'CONTROLEUR', label: 'Contrôleur', desc: 'Valide/rejette les OM ; consulte paiements et audit', color: 'blue', perms: ['Validation OM', 'Audit', 'Rapports'] },
+  { value: 'LECTEUR', label: 'Lecteur', desc: 'Consultation seule (tableau de bord, OM, états)', color: 'gray', perms: ['Dashboard', 'OM', 'Rapports'] },
 ]
 
 const selectedRole = computed(() => roles.find(r => r.value === form.value.role))
@@ -145,7 +146,7 @@ async function handleSubmit() {
             class="border-2 rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all hover:border-anatt-500"
             :class="[
               form.role === role.value ? 'border-anatt-500 bg-anatt-50' : 'border-gray-200',
-              role.value === 'AGENT' ? 'col-span-2' : ''
+              role.value === 'LECTEUR' ? 'col-span-2' : ''
             ]"
           >
             <input v-model="form.role" type="radio" :value="role.value" class="mt-1">

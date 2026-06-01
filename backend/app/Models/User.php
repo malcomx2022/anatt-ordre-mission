@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Permissions;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,18 +14,15 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    /** Rôles RBAC de l'application. */
-    public const ROLE_ADMIN = 'admin';
-    public const ROLE_GESTIONNAIRE_OM = 'gestionnaire_om';
-    public const ROLE_AGENT_FINANCIER = 'agent_financier';
-    public const ROLE_LECTEUR = 'lecteur';
+    /** Profils RBAC (cf. App\Support\Permissions). */
+    public const ROLE_SUPER_ADMIN = Permissions::SUPER_ADMIN;
+    public const ROLE_ADMIN = Permissions::ADMIN;
+    public const ROLE_GESTIONNAIRE_OM = Permissions::GESTIONNAIRE_OM;
+    public const ROLE_AGENT_FINANCIER = Permissions::AGENT_FINANCIER;
+    public const ROLE_CONTROLEUR = Permissions::CONTROLEUR;
+    public const ROLE_LECTEUR = Permissions::LECTEUR;
 
-    public const ROLES = [
-        self::ROLE_ADMIN,
-        self::ROLE_GESTIONNAIRE_OM,
-        self::ROLE_AGENT_FINANCIER,
-        self::ROLE_LECTEUR,
-    ];
+    public const ROLES = Permissions::PROFILS;
 
     protected $fillable = [
         'name',
@@ -40,6 +38,7 @@ class User extends Authenticatable
     {
         $this->role = $role;
         $this->save();
+
         return $this;
     }
 
@@ -53,7 +52,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'actif' => 'boolean',
         ];
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
     }
 
     public function isAdmin(): bool
@@ -64,5 +69,17 @@ class User extends Authenticatable
     public function hasRole(string ...$roles): bool
     {
         return in_array($this->role, $roles, true);
+    }
+
+    /** Permissions effectives du profil (SUPER_ADMIN -> toutes). */
+    public function permissions(): array
+    {
+        return Permissions::pour((string) $this->role);
+    }
+
+    /** Le SUPER_ADMIN a toujours la permission (cohérent avec Gate::before). */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->isSuperAdmin() || in_array($permission, $this->permissions(), true);
     }
 }

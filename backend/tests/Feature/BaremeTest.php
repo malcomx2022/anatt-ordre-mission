@@ -8,13 +8,18 @@ beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
 });
 
-it('liste le barème (lecture pour tout authentifié)', function () {
+it('liste le barème (profils avec baremes.consulter)', function () {
     $this->seed(BaremeSeeder::class);
-    $lecteur = User::factory()->lecteur()->create();
+    $gestion = User::factory()->gestionnaireOm()->create();
 
-    $this->actingAs($lecteur)->getJson('/api/baremes')
+    $this->actingAs($gestion)->getJson('/api/baremes')
         ->assertOk()
         ->assertJsonCount(45, 'data');
+});
+
+it('refuse la lecture du barème au lecteur', function () {
+    $lecteur = User::factory()->lecteur()->create();
+    $this->actingAs($lecteur)->getJson('/api/baremes')->assertStatus(403);
 });
 
 it('crée une ligne de barème', function () {

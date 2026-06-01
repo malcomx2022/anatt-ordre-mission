@@ -4,10 +4,10 @@ import { useAuth } from '@/composables/useAuth'
 const { can } = useAuth()
 
 const actions = [
-  { label: 'Nouvelle Mission', to: '/ordres/nouveau', color: 'bg-anatt-50 text-anatt-600', permission: 'missions.create' as const },
-  { label: 'Generer Fichiers', to: '/paiements/mtn', color: 'bg-blue-50 text-blue-600', permission: 'paiements.generate' as const },
-  { label: 'Personnel', to: '/agents', color: 'bg-purple-50 text-purple-600', permission: 'agents.read' as const },
-  { label: 'Rapports', to: '/rapports', color: 'bg-amber-50 text-amber-600', permission: 'rapports.read' as const },
+  { label: 'Nouvelle Mission', to: '/ordres/nouveau', color: 'bg-anatt-50 text-anatt-600', permission: 'om.retranscrire' as const },
+  { label: 'Generer Fichiers', to: '/paiements/mtn', color: 'bg-blue-50 text-blue-600', permission: 'paiements.generer' as const },
+  { label: 'Personnel', to: '/agents', color: 'bg-purple-50 text-purple-600', permission: 'personnel.consulter' as const },
+  { label: 'Rapports', to: '/rapports', color: 'bg-amber-50 text-amber-600', permission: 'rapports.consulter' as const },
 ]
 </script>
 
