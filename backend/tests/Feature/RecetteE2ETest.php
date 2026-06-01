@@ -19,7 +19,7 @@ beforeEach(function () {
     $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
     Storage::fake('local');
     $this->seed(BaremeSeeder::class);
-    $this->admin = User::factory()->admin()->create(); // bypass de toutes les gardes de rôle
+    $this->admin = User::factory()->superAdmin()->create(); // SUPER_ADMIN : bypass de toutes les gardes (Gate::before)
     $this->dada = Agent::factory()->mtn()->categorie('ORDRE_1')->create(['nom' => 'DADA', 'prenoms' => 'Richard']);
     $this->cav = Agent::factory()->moov()->categorie('ORDRE_3')->create(['nom' => 'AKPACA', 'prenoms' => 'Gérard']);
 });

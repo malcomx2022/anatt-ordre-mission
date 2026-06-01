@@ -12,7 +12,7 @@ it('authentifie un utilisateur avec identifiants valides', function () {
 
     $response->assertOk()
         ->assertJsonStructure(['data' => ['token', 'user']])
-        ->assertJsonPath('data.user.role', 'admin');
+        ->assertJsonPath('data.user.role', 'ADMIN');
 });
 
 it('refuse un login avec mot de passe incorrect', function () {
@@ -37,7 +37,7 @@ it('retourne le profil utilisateur connecte', function () {
     $this->actingAs($user)->getJson('/api/auth/me')
         ->assertOk()
         ->assertJsonPath('data.email', $user->email)
-        ->assertJsonPath('data.role', 'admin');
+        ->assertJsonPath('data.role', 'ADMIN');
 });
 
 it('deconnecte un utilisateur', function () {

@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import type { Permission } from '@/composables/useAuth'
+import { permissionsForRole } from '@/utils/permissions'
+import type { Permission } from '@/utils/permissions'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -51,13 +52,13 @@ const routes: RouteRecordRaw[] = [
     path: '/agents/nouveau',
     name: 'agent-create',
     component: () => import('@/views/agents/AgentCreateView.vue'),
-    meta: { auth: true, permission: 'agents.write' },
+    meta: { auth: true, permission: 'personnel.gerer' },
   },
   {
     path: '/agents/import',
     name: 'agent-import',
     component: () => import('@/views/agents/AgentImportView.vue'),
-    meta: { auth: true, permission: 'agents.import' },
+    meta: { auth: true, permission: 'personnel.gerer' },
   },
   {
     path: '/agents/:id',
@@ -69,7 +70,7 @@ const routes: RouteRecordRaw[] = [
     path: '/agents/:id/modifier',
     name: 'agent-edit',
     component: () => import('@/views/agents/AgentEditView.vue'),
-    meta: { auth: true, permission: 'agents.write' },
+    meta: { auth: true, permission: 'personnel.gerer' },
   },
   {
     path: '/mon-profil',
@@ -107,13 +108,13 @@ const routes: RouteRecordRaw[] = [
     path: '/ordres/:id/valider-n1',
     name: 'mission-validate-n1',
     component: () => import('@/views/missions/MissionValidation1View.vue'),
-    meta: { auth: true, permission: 'ordres.validate' },
+    meta: { auth: true, permission: 'om.valider' },
   },
   {
     path: '/ordres/:id/valider-dg',
     name: 'mission-validate-dg',
     component: () => import('@/views/missions/MissionValidation2View.vue'),
-    meta: { auth: true, permission: 'ordres.validate' },
+    meta: { auth: true, permission: 'om.valider' },
   },
   {
     path: '/ordres/:id/pdf',
@@ -139,13 +140,13 @@ const routes: RouteRecordRaw[] = [
     path: '/paiements/moov',
     name: 'paiement-moov',
     component: () => import('@/views/paiements/PaiementMoovView.vue'),
-    meta: { auth: true, permission: 'paiements.generate' },
+    meta: { auth: true, permission: 'paiements.generer' },
   },
   {
     path: '/paiements/mtn',
     name: 'paiement-mtn',
     component: () => import('@/views/paiements/PaiementMtnView.vue'),
-    meta: { auth: true, permission: 'paiements.generate' },
+    meta: { auth: true, permission: 'paiements.generer' },
   },
   {
     path: '/paiements/statuts',
@@ -157,7 +158,7 @@ const routes: RouteRecordRaw[] = [
     path: '/paiements/reconciliation',
     name: 'paiement-reconciliation',
     component: () => import('@/views/paiements/PaiementReconciliationView.vue'),
-    meta: { auth: true, permission: 'paiements.read' },
+    meta: { auth: true, permission: 'paiements.consulter' },
   },
   {
     path: '/paiements/historique',
@@ -177,7 +178,7 @@ const routes: RouteRecordRaw[] = [
     path: '/taux/configurer',
     name: 'taux-edit',
     component: () => import('@/views/taux/TauxEditView.vue'),
-    meta: { auth: true, permission: 'baremes.write' },
+    meta: { auth: true, permission: 'baremes.modifier' },
   },
 
   // ── RAPPORTS ──
@@ -185,25 +186,25 @@ const routes: RouteRecordRaw[] = [
     path: '/rapports',
     name: 'rapports',
     component: () => import('@/views/rapports/RapportDashboardView.vue'),
-    meta: { auth: true, permission: 'rapports.read' },
+    meta: { auth: true, permission: 'rapports.consulter' },
   },
   {
     path: '/rapports/mensuel',
     name: 'rapport-mensuel',
     component: () => import('@/views/rapports/RapportMensuelView.vue'),
-    meta: { auth: true, permission: 'rapports.read' },
+    meta: { auth: true, permission: 'rapports.consulter' },
   },
   {
     path: '/rapports/agents',
     name: 'rapport-agents',
     component: () => import('@/views/rapports/RapportAgentView.vue'),
-    meta: { auth: true, permission: 'rapports.read' },
+    meta: { auth: true, permission: 'rapports.consulter' },
   },
   {
     path: '/rapports/export',
     name: 'rapport-export',
     component: () => import('@/views/rapports/RapportExportView.vue'),
-    meta: { auth: true, permission: 'rapports.export' },
+    meta: { auth: true, permission: 'rapports.consulter' },
   },
 
   // ── AUDIT ──
@@ -211,51 +212,51 @@ const routes: RouteRecordRaw[] = [
     path: '/audit',
     name: 'audit',
     component: () => import('@/views/audit/AuditListView.vue'),
-    meta: { auth: true, permission: 'audit.read' },
+    meta: { auth: true, permission: 'audit.consulter' },
   },
   {
     path: '/audit/:id',
     name: 'audit-detail',
     component: () => import('@/views/audit/AuditDetailView.vue'),
-    meta: { auth: true, permission: 'audit.read' },
+    meta: { auth: true, permission: 'audit.consulter' },
   },
 
   // ── ADMINISTRATION ──
   {
     path: '/admin/utilisateurs',
-    name: 'admin-users',
+    name: 'utilisateurs.gerer',
     component: () => import('@/views/admin/UserManagementView.vue'),
-    meta: { auth: true, permission: 'admin.users' },
+    meta: { auth: true, permission: 'utilisateurs.gerer' },
   },
   {
     path: '/admin/utilisateurs/nouveau',
     name: 'admin-user-create',
     component: () => import('@/views/admin/UserCreateView.vue'),
-    meta: { auth: true, permission: 'admin.users' },
+    meta: { auth: true, permission: 'utilisateurs.gerer' },
   },
   {
     path: '/admin/roles',
     name: 'admin-roles',
     component: () => import('@/views/admin/RolesView.vue'),
-    meta: { auth: true, permission: 'admin.users' },
+    meta: { auth: true, permission: 'utilisateurs.gerer' },
   },
   {
     path: '/admin/parametres',
-    name: 'admin-settings',
+    name: 'parametres.gerer',
     component: () => import('@/views/admin/SettingsView.vue'),
-    meta: { auth: true, permission: 'admin.settings' },
+    meta: { auth: true, permission: 'parametres.gerer' },
   },
   {
     path: '/admin/email',
     name: 'admin-email',
     component: () => import('@/views/admin/EmailConfigView.vue'),
-    meta: { auth: true, permission: 'admin.settings' },
+    meta: { auth: true, permission: 'parametres.gerer' },
   },
   {
     path: '/admin/sauvegardes',
-    name: 'admin-backups',
+    name: 'parametres.gerer',
     component: () => import('@/views/admin/BackupView.vue'),
-    meta: { auth: true, permission: 'admin.backups' },
+    meta: { auth: true, permission: 'parametres.gerer' },
   },
 
   // ── PAGES SYSTEME ──
@@ -286,36 +287,6 @@ const router = createRouter({
   routes,
 })
 
-const rolePermissions: Record<string, string[]> = {
-  ADMIN: [
-    'dashboard.view', 'agents.read', 'agents.write', 'agents.import',
-    'ordres.read', 'ordres.write', 'ordres.submit',
-    'ordres.validate_n1', 'ordres.approve_dg', 'ordres.reject',
-    'paiements.read', 'paiements.generate', 'paiements.reconcile',
-    'taux.read', 'taux.write', 'rapports.read', 'rapports.export',
-    'audit.read', 'admin.users', 'admin.roles', 'admin.settings', 'admin.backups',
-  ],
-  DIRECTEUR: [
-    'dashboard.view', 'agents.read',
-    'ordres.read', 'ordres.write', 'ordres.submit', 'ordres.approve_dg', 'ordres.reject',
-    'paiements.read', 'taux.read', 'rapports.read', 'rapports.export', 'audit.read',
-  ],
-  CHEF_SERVICE: [
-    'dashboard.view', 'agents.read',
-    'ordres.read', 'ordres.write', 'ordres.submit', 'ordres.validate_n1', 'ordres.reject',
-    'paiements.read', 'taux.read', 'rapports.read', 'rapports.export',
-  ],
-  DRH: [
-    'dashboard.view', 'agents.read', 'agents.write', 'agents.import',
-    'ordres.read', 'ordres.write', 'ordres.submit',
-    'paiements.read', 'paiements.generate', 'paiements.reconcile',
-    'taux.read', 'taux.write', 'rapports.read', 'rapports.export',
-  ],
-  AGENT: [
-    'dashboard.view', 'agents.read', 'ordres.read', 'ordres.submit', 'paiements.read', 'taux.read',
-  ],
-}
-
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
@@ -345,7 +316,7 @@ router.beforeEach(async (to) => {
     const userRole = auth.user?.role
     if (!userRole) return { name: 'forbidden' }
 
-    const perms = rolePermissions[userRole] || []
+    const perms = permissionsForRole(userRole)
     const required = Array.isArray(to.meta.permission) ? to.meta.permission : [to.meta.permission]
     const hasAny = required.some((p) => perms.includes(p))
 

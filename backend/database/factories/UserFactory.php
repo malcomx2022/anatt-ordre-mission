@@ -33,23 +33,46 @@ class UserFactory extends Factory
         });
     }
 
+    public function role(string $role): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->assignRole($role));
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->role(User::ROLE_SUPER_ADMIN);
+    }
+
     public function admin(): static
     {
-        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_ADMIN));
+        return $this->role(User::ROLE_ADMIN);
     }
 
     public function gestionnaireOm(): static
     {
-        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_GESTIONNAIRE_OM));
+        return $this->role(User::ROLE_GESTIONNAIRE_OM);
     }
 
     public function agentFinancier(): static
     {
-        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_AGENT_FINANCIER));
+        return $this->role(User::ROLE_AGENT_FINANCIER);
+    }
+
+    public function controleur(): static
+    {
+        return $this->role(User::ROLE_CONTROLEUR);
     }
 
     public function lecteur(): static
     {
-        return $this->afterCreating(fn (User $user) => $user->assignRole(User::ROLE_LECTEUR));
+        return $this->role(User::ROLE_LECTEUR);
+    }
+
+    public function inactif(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            $user->actif = false;
+            $user->saveQuietly();
+        });
     }
 }

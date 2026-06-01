@@ -27,6 +27,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if (! $user->actif) {
+            throw ValidationException::withMessages([
+                'email' => ['Ce compte est désactivé.'],
+            ]);
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return $this->success([

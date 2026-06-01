@@ -17,9 +17,12 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            // RBAC : admin (total) / gestionnaire_om (retranscription OM, agents, missions)
-            //        / agent_financier (génération & confirmation des fichiers de paiement) / lecteur (lecture seule)
-            $table->enum('role', ['admin', 'gestionnaire_om', 'agent_financier', 'lecteur'])->default('lecteur');
+            // RBAC : 6 profils (cf. App\Support\Permissions). SUPER_ADMIN = accès total.
+            $table->enum('role', [
+                'SUPER_ADMIN', 'ADMIN', 'GESTIONNAIRE_OM', 'AGENT_FINANCIER', 'CONTROLEUR', 'LECTEUR',
+            ])->default('LECTEUR');
+            // Compte actif ? Un compte désactivé ne peut plus se connecter.
+            $table->boolean('actif')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });
