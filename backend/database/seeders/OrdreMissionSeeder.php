@@ -10,6 +10,7 @@ class OrdreMissionSeeder extends Seeder
     public function run(): void
     {
         $now = now();
+        $gestionId = DB::table('users')->where('email', 'gestion@anatt.bj')->value('id');
 
         $missionId = DB::table('missions')
             ->where('destination', 'BOHICON')
@@ -75,6 +76,22 @@ class OrdreMissionSeeder extends Seeder
             // Versements AVANCE + RELIQUAT (EN_ATTENTE) — téléphone/opérateur depuis le référentiel agent.
             $omId = DB::table('ordre_missions')->where('reference_semo', $om['reference_semo'])->value('id');
             $agent = DB::table('agents')->where('id', $om['agent_id'])->first();
+
+            // Journal d'audit : retranscription (OM au statut IMPORTE, en attente de validation).
+            DB::table('audit_logs')->insert([
+                'user_id' => $gestionId,
+                'action' => 'IMPORT_OM',
+                'entite' => 'ordre_mission',
+                'entite_id' => $omId,
+                'donnees' => json_encode([
+                    'reference_semo' => $om['reference_semo'],
+                    'agent' => trim($agent->nom.' '.$agent->prenoms),
+                    'role' => $om['role'],
+                    'montant_total' => $total,
+                ], JSON_UNESCAPED_UNICODE),
+                'ip_address' => '127.0.0.1',
+                'created_at' => $now,
+            ]);
 
             foreach (['AVANCE' => $avance, 'RELIQUAT' => $reliquat] as $type => $montant) {
                 DB::table('versements')->updateOrInsert(

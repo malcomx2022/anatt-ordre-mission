@@ -6,19 +6,25 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Entrées d'audit « générales » pour le journal d'activité (connexions, barème).
+ *
+ * L'historique des OM (IMPORT_OM / VALIDATE_OM) et des lots (GENERATE_LOT /
+ * CONFIRM_LOT) est désormais journalisé par OrdreMissionSeeder et
+ * PaiementDemoSeeder au plus près des données réelles : ce seeder ne les duplique pas.
+ */
 class AuditLogSeeder extends Seeder
 {
     public function run(): void
     {
         $admin = User::where('role', 'ADMIN')->first();
-        $drh = User::where('role', 'DRH')->first();
+        $gestion = User::where('role', 'GESTIONNAIRE_OM')->first();
+        $controle = User::where('role', 'CONTROLEUR')->first();
 
         $logs = [
             ['user' => $admin, 'action' => 'LOGIN', 'entite' => 'session', 'entite_id' => null, 'donnees' => ['ip' => '192.168.1.100'], 'ip' => '192.168.1.100', 'ago' => 0],
-            ['user' => $drh, 'action' => 'IMPORT_OM', 'entite' => 'ordre_mission', 'entite_id' => 1, 'donnees' => ['reference_semo' => '0541405636', 'agent' => 'DADA Richard', 'destination' => 'BOHICON'], 'ip' => '192.168.1.115', 'ago' => 2],
-            ['user' => $drh, 'action' => 'IMPORT_OM', 'entite' => 'ordre_mission', 'entite_id' => 2, 'donnees' => ['reference_semo' => '0541405637', 'agent' => 'AKPACA Gérard', 'role' => 'CAV'], 'ip' => '192.168.1.115', 'ago' => 2],
-            ['user' => $drh, 'action' => 'GENERATE_LOT', 'entite' => 'lot_paiement', 'entite_id' => 1, 'donnees' => ['mission' => 'BOHICON', 'tranche' => 'AVANCE', 'operateur' => 'MTN', 'nb_lignes' => 1, 'fichier' => 'MTN_BOHICON_AVANCE.txt'], 'ip' => '192.168.1.115', 'ago' => 1],
-            ['user' => $drh, 'action' => 'CONFIRM_LOT', 'entite' => 'lot_paiement', 'entite_id' => 1, 'donnees' => ['tranche' => 'AVANCE', 'operateur' => 'MTN', 'statut' => 'GENERE -> CONFIRME'], 'ip' => '192.168.1.115', 'ago' => 1],
+            ['user' => $gestion, 'action' => 'LOGIN', 'entite' => 'session', 'entite_id' => null, 'donnees' => ['ip' => '192.168.1.115'], 'ip' => '192.168.1.115', 'ago' => 0],
+            ['user' => $controle, 'action' => 'LOGIN', 'entite' => 'session', 'entite_id' => null, 'donnees' => ['ip' => '192.168.1.120'], 'ip' => '192.168.1.120', 'ago' => 1],
             ['user' => $admin, 'action' => 'UPDATE_BAREME', 'entite' => 'bareme', 'entite_id' => 1, 'donnees' => ['categorie' => 'ORDRE_1', 'zone' => 'INTERIEUR', 'type' => 'JOURNEE_COMPLETE'], 'ip' => '192.168.1.100', 'ago' => 10],
         ];
 

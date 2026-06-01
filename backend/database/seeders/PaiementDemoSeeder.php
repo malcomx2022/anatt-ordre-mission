@@ -22,9 +22,14 @@ use Illuminate\Validation\ValidationException;
  */
 class PaiementDemoSeeder extends Seeder
 {
+    private ?int $gestionId = null;
+    private ?int $controleId = null;
+
     public function run(): void
     {
         $finance = User::where('email', 'finance@anatt.bj')->first();
+        $this->gestionId = User::where('email', 'gestion@anatt.bj')->value('id');
+        $this->controleId = User::where('email', 'controle@anatt.bj')->value('id');
         $mtn = app(MtnFileGenerator::class);
         $moov = app(MoovFileGenerator::class);
 
@@ -138,6 +143,13 @@ class PaiementDemoSeeder extends Seeder
             );
             $omId = DB::table('ordre_missions')->where('reference_semo', $om['ref'])->value('id');
 
+            // Journal d'audit de l'OM : retranscription puis validation (avant paiement).
+            $nomComplet = trim($agent->nom.' '.$agent->prenoms);
+            $this->journaliserOm((int) $omId, 'IMPORT_OM', $this->gestionId, [
+                'reference_semo' => $om['ref'], 'agent' => $nomComplet, 'role' => $om['role'], 'montant_total' => $total,
+            ], $now->copy()->subSeconds(3));
+            $this->journaliserOm((int) $omId, 'VALIDATE_OM', $this->controleId, [], $now->copy()->subSeconds(2));
+
             foreach (['AVANCE' => $avance, 'RELIQUAT' => $reliquat] as $type => $montant) {
                 DB::table('versements')->updateOrInsert(
                     ['ordre_mission_id' => $omId, 'type' => $type],
@@ -163,8 +175,22 @@ class PaiementDemoSeeder extends Seeder
         $now = now();
         DB::table('versements')->where('lot_id', $lotId)->where('statut', '!=', 'CONFIRME')
             ->update(['statut' => 'CONFIRME', 'date_paiement' => $now, 'updated_at' => $now]);
+        $lot = DB::table('lots_paiement')->where('id', $lotId)->first();
         DB::table('lots_paiement')->where('id', $lotId)
             ->update(['statut' => 'CONFIRME', 'confirme_le' => $now, 'confirme_par' => $financeId, 'updated_at' => $now]);
+
+        // Audit de la confirmation (alimente le journal d'activité).
+        DB::table('audit_logs')->insert([
+            'user_id' => $financeId,
+            'action' => 'CONFIRM_LOT',
+            'entite' => 'lot_paiement',
+            'entite_id' => $lotId,
+            'donnees' => json_encode([
+                'tranche' => $lot->tranche, 'operateur' => $lot->operateur, 'montant_total' => $lot->montant_total,
+            ], JSON_UNESCAPED_UNICODE),
+            'ip_address' => '127.0.0.1',
+            'created_at' => $now,
+        ]);
     }
 
     /** Passe à SOLDE les OM dont tous les versements sont confirmés. */
@@ -177,5 +203,19 @@ class PaiementDemoSeeder extends Seeder
                 DB::table('ordre_missions')->where('id', $omId)->update(['statut' => 'SOLDE', 'updated_at' => now()]);
             }
         }
+    }
+
+    /** Insère une entrée d'audit pour un OM (alimente l'écran d'historique). */
+    private function journaliserOm(int $omId, string $action, ?int $userId, array $donnees, $createdAt): void
+    {
+        DB::table('audit_logs')->insert([
+            'user_id' => $userId,
+            'action' => $action,
+            'entite' => 'ordre_mission',
+            'entite_id' => $omId,
+            'donnees' => json_encode($donnees, JSON_UNESCAPED_UNICODE),
+            'ip_address' => '127.0.0.1',
+            'created_at' => $createdAt,
+        ]);
     }
 }
