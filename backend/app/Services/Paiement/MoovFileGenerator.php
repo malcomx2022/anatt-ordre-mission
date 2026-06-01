@@ -3,7 +3,6 @@
 namespace App\Services\Paiement;
 
 use App\Models\Mission;
-use App\Services\Paiement\Concerns\NormaliseBeneficiaire;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -17,11 +16,11 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  *  - Ligne 1 : en-tête FIXE de 9 colonnes (ordre exact).
  *  - Lignes 2..N+1 : A="MSISDN", B=229+tel EN TEXTE, C-F vides, G=montant (entier),
  *    H=libellé normalisé, I=vide.
+ *
+ * Périmètre, lot (GENERE), statuts versements et idempotence : classe de base FileGenerator.
  */
-class MoovFileGenerator
+class MoovFileGenerator extends FileGenerator
 {
-    use NormaliseBeneficiaire;
-
     private const ENTETE = [
         'Receiver Identifier Type',
         'IdentifierValue',
@@ -34,11 +33,16 @@ class MoovFileGenerator
         'VoucherSecretCode',
     ];
 
+    protected function operateur(): string
+    {
+        return 'MOOV';
+    }
+
     /**
-     * @param  Collection<int,\App\Models\Versement>  $versements  versements éligibles (avec ordreMission.agent)
+     * @param  Collection<int,\App\Models\Versement>  $versements
      * @return array{chemin:string, nom_fichier:string, nb_lignes:int, montant_total:int}
      */
-    public function generer(Mission $mission, string $tranche, Collection $versements): array
+    protected function construireFichier(Mission $mission, string $tranche, Collection $versements): array
     {
         $theme = $mission->objet;
 
