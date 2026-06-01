@@ -9,7 +9,7 @@ lerna-debug.log*
 
 node_modules
 .DS_Store
-dist
+# dist/ est volontairement VERSIONNÉ (déploiement FTP sans build sur le serveur) — cf. DEPLOY-CPANEL.md
 dist-ssr
 coverage
 *.local

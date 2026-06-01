@@ -8,7 +8,7 @@ vendor/
 *.env.backup
 
 # Builds
-frontend/dist/
+# frontend/dist/ est volontairement VERSIONNÉ (déploiement FTP sans build serveur) — cf. DEPLOY-CPANEL.md
 backend/public/storage
 
 # Logs
