@@ -13,6 +13,13 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         Schema::defaultStringLength(191);
+
+        // Telescope (require-dev) : chargé uniquement en local ET s'il est installé.
+        // Évite un crash en production où le paquet est absent (composer --no-dev).
+        if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(\App\Providers\TelescopeServiceProvider::class);
+        }
     }
 
     public function boot(): void
