@@ -1,6 +1,9 @@
 ﻿# Dépendances
 node_modules/
 vendor/
+# Archive de déploiement (régénérable) — cf. UPLOAD-VENDOR.md
+vendor.zip
+*.zip
 
 # Environnement
 .env
