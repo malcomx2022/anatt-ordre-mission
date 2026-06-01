@@ -5,7 +5,7 @@ Guide pas-à-pas pour déployer **sans accès SSH** (FTP + phpMyAdmin), avec :
 - **SPA Vue** sur le domaine principal — `https://omsemo.anatt.bj`
 - **API Laravel** sur un sous-domaine — `https://api-omsemo.anatt.bj`
 
-> Adaptez partout `omsemo.anatt.bj` et `cpaneluser` à vos valeurs réelles.
+> Compte cPanel : utilisateur système **`anatt`** (préfixe BDD `anatt_`, dossier `/home/anatt/`).
 
 ```
 public_html/                 -> SPA Vue (contenu de frontend/dist/)
@@ -86,8 +86,8 @@ npm run build      # produit frontend/dist/
 ## 3. cPanel — Base de données
 
 1. **cPanel > MySQL® Databases**
-   - Créez une base : `cpaneluser_anatt`
-   - Créez un utilisateur : `cpaneluser_anatt` + mot de passe fort
+   - Créez une base : nom `missions` → cPanel donne **`anatt_missions`**
+   - Créez un utilisateur : nom `oms` → **`anatt_oms`** + mot de passe fort
    - Ajoutez l'utilisateur à la base avec **ALL PRIVILEGES**
 2. **cPanel > phpMyAdmin** : sélectionnez la base, onglet **Import**, envoyez `anatt_prod.sql`.
 
@@ -187,10 +187,10 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 ```bash
 # cPanel > Cron Jobs (chemin PHP de l'hébergeur, souvent /usr/local/bin/php)
 # Sauvegarde quotidienne à 02h00
-0 2 * * *  /usr/local/bin/php /home/cpaneluser/anatt-api/artisan db:backup --compress
+0 2 * * *  /usr/local/bin/php /home/anatt/anatt-api/artisan db:backup --compress
 
 # (si QUEUE_CONNECTION=database) traiter la file chaque minute
-* * * * *  /usr/local/bin/php /home/cpaneluser/anatt-api/artisan queue:work --stop-when-empty
+* * * * *  /usr/local/bin/php /home/anatt/anatt-api/artisan queue:work --stop-when-empty
 ```
 
 ---
