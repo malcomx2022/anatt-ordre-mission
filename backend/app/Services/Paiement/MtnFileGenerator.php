@@ -3,7 +3,6 @@
 namespace App\Services\Paiement;
 
 use App\Models\Mission;
-use App\Services\Paiement\Concerns\NormaliseBeneficiaire;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -15,18 +14,21 @@ use RuntimeException;
  *  - Ligne 1 (en-tête) : HDR,{COMPTE},{NB_LIGNES},{MONTANT_TOTAL}
  *  - Lignes détail (seq 1..N) : {seq},MSISDN,{msisdn},{montant},{libelle}
  *
- * Le périmètre (mission × tranche × operateur=MTN × statut != CONFIRME) est fixé
- * par l'appelant (LotPaiementService) qui transmet les versements éligibles.
+ * Le périmètre, le lot (GENERE) et le passage des versements à GENERE sont gérés
+ * par la classe de base FileGenerator (flux transactionnel commun MTN/Moov).
  */
-class MtnFileGenerator
+class MtnFileGenerator extends FileGenerator
 {
-    use NormaliseBeneficiaire;
+    protected function operateur(): string
+    {
+        return 'MTN';
+    }
 
     /**
-     * @param  Collection<int,\App\Models\Versement>  $versements  versements éligibles (avec ordreMission.agent)
+     * @param  Collection<int,\App\Models\Versement>  $versements
      * @return array{chemin:string, nom_fichier:string, nb_lignes:int, montant_total:int}
      */
-    public function generer(Mission $mission, string $tranche, Collection $versements): array
+    protected function construireFichier(Mission $mission, string $tranche, Collection $versements): array
     {
         $compte = config('paiement.mtn.compte');
         $theme = $mission->objet;
