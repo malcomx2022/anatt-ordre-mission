@@ -1,0 +1,27 @@
+# SPA Vue Router (history mode) — sert index.html pour toutes les routes côté client.
+# Ce fichier est copié dans dist/ par Vite ; à déposer dans public_html (domaine principal).
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Cache long pour les assets versionnés (hash dans le nom de fichier).
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 week"
+</IfModule>
+
+# Ne jamais mettre en cache l'index ni la config runtime (sinon nouvelle version non prise).
+<FilesMatch "(index\.html|runtime-config\.js)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </IfModule>
+</FilesMatch>

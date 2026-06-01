@@ -1,0 +1,1 @@
+var e=[`UN_REPAS`,`DEUX_REPAS`,`JOURNEE_COMPLETE`],t=[`JOURNEE_COMPLETE`,`LOGE_NOURRI`,`LOGE_SEUL`,`NOURRI_SEUL`];function n(n){return n===`INTERIEUR`?e:n?t:[]}var r={SUPER_ADMIN:`Super administrateur`,ADMIN:`Administrateur`,GESTIONNAIRE_OM:`Gestionnaire OM`,AGENT_FINANCIER:`Agent financier`,CONTROLEUR:`Contrôleur`,LECTEUR:`Lecteur`};export{n,r as t};
