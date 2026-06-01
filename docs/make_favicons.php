@@ -49,6 +49,14 @@ imagefill($markWhite, 0, 0, imagecolorallocatealpha($markWhite, 0, 0, 0, 127));
 imagecopy($markWhite, $mark, 0, 0, 0, 0, $cw, $ch);
 imagefilter($markWhite, IMG_FILTER_NEGATE); // noir -> blanc, transparence conservée
 
+// Wordmark "ANaTT" autonome (couleur + blanc) — utilisé en variante compacte (sidebar).
+imagesavealpha($mark, true);
+imagepng($mark, $assets . '/logo-anatt-wordmark.png');
+echo "wordmark couleur -> src/assets/logo-anatt-wordmark.png\n";
+imagesavealpha($markWhite, true);
+imagepng($markWhite, $assets . '/logo-anatt-wordmark-white.png');
+echo "wordmark blanc -> src/assets/logo-anatt-wordmark-white.png\n";
+
 // ── Icône carrée : fond vert ANaTT (#1D9E4F) + ANaTT blanc centré ──
 function makeIcon($markWhite, $cw, $ch, $size): \GdImage {
     $icon = imagecreatetruecolor($size, $size);

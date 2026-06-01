@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import logoColor from '@/assets/logo-anatt.png'
 import logoWhite from '@/assets/logo-anatt-white.png'
+import wordmarkColor from '@/assets/logo-anatt-wordmark.png'
+import wordmarkWhite from '@/assets/logo-anatt-wordmark-white.png'
 import iconSquare from '@/assets/icon-anatt.png'
 
 const props = defineProps<{
@@ -14,6 +16,7 @@ const props = defineProps<{
 // (texte blanc, barre tricolore conservée). Le PNG est transparent : il ressort
 // sur n'importe quelle interface.
 const src = computed(() => (props.dark ? logoWhite : logoColor))
+const wordmark = computed(() => (props.dark ? wordmarkWhite : wordmarkColor))
 
 const fullHeight = computed(() => ({
   sm: 'h-8',
@@ -43,14 +46,19 @@ const iconSize = computed(() => ({
     draggable="false"
   >
 
-  <!-- Variante compact : logo réduit (barres latérales, en-têtes) -->
-  <img
-    v-else-if="variant === 'compact'"
-    :src="src"
-    alt="ANaTT"
-    class="h-9 w-auto object-contain select-none"
-    draggable="false"
-  >
+  <!-- Variante compact : wordmark ANaTT + sous-titre (sidebar, en-têtes étroits) -->
+  <div v-else-if="variant === 'compact'" class="flex flex-col gap-1">
+    <img
+      :src="wordmark"
+      alt="ANaTT"
+      class="h-7 w-auto object-contain select-none"
+      draggable="false"
+    >
+    <span
+      class="font-display font-medium tracking-wide text-[10px] leading-none"
+      :class="dark ? 'text-anatt-200' : 'text-gray-500'"
+    >Gestion des Missions</span>
+  </div>
 
   <!-- Variante icon : marque carrée (vert ANaTT + ANaTT blanc) -->
   <img
