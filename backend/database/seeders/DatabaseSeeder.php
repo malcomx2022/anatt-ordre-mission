@@ -13,8 +13,9 @@ class DatabaseSeeder extends Seeder
             ZoneSeeder::class,        // 4 zones de référence
             BaremeSeeder::class,      // barème officiel ANaTT
             AgentSeeder::class,       // référentiel bénéficiaires (dont CAV)
-            MissionSeeder::class,     // mission de démonstration (BOHICON)
-            OrdreMissionSeeder::class, // OM participant + OM CAV
+            MissionSeeder::class,     // mission de démonstration (BOHICON, à traiter)
+            OrdreMissionSeeder::class, // OM participant + OM CAV (statut IMPORTE)
+            PaiementDemoSeeder::class, // missions soldées + versements CONFIRMÉS (mois courant)
             AuditLogSeeder::class,    // journal d'activité
         ]);
     }
