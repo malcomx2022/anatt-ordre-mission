@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'ordre.owner' => \App\Http\Middleware\CheckOrdreOwnership::class,
+            // Autorisation par clé de permission (adossée aux Gates) : permission:{cle}
+            'permission' => \Illuminate\Auth\Middleware\Authorize::class,
         ]);
 
         // Headers de securite pour les reponses API

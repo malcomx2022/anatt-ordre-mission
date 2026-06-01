@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
@@ -65,4 +66,78 @@ it('un compte désactivé ne peut pas se connecter', function () {
 
     $this->postJson('/api/auth/login', ['email' => $user->email, 'password' => 'secret123'])
         ->assertStatus(422);
+});
+
+it('le login renvoie les permissions et trace la dernière connexion', function () {
+    $user = User::factory()->controleur()->create(['password' => bcrypt('secret123')]);
+
+    $this->postJson('/api/auth/login', ['email' => $user->email, 'password' => 'secret123'])
+        ->assertOk()
+        ->assertJsonPath('data.user.role', 'CONTROLEUR')
+        ->assertJsonFragment(['om.valider']);
+
+    expect($user->fresh()->derniere_connexion)->not->toBeNull();
+});
+
+it('expose les permissions du profil courant via /auth/me/permissions', function () {
+    $controleur = User::factory()->controleur()->create();
+
+    $reponse = $this->actingAs($controleur)->getJson('/api/auth/me/permissions')->assertOk();
+    $perms = $reponse->json('data');
+
+    expect($perms)->toContain('om.valider', 'audit.consulter')
+        ->and($perms)->not->toContain('paiements.generer');
+
+    // Le super admin a toutes les permissions.
+    $perms = $this->actingAs($this->superAdmin)->getJson('/api/auth/me/permissions')->json('data');
+    expect($perms)->toContain('superadmins.gerer', 'parametres.gerer');
+});
+
+it('active et désactive un compte via la route dédiée', function () {
+    $cible = User::factory()->lecteur()->create(['actif' => true]);
+
+    $this->actingAs($this->admin)->postJson("/api/admin/users/{$cible->id}/statut", ['actif' => false])
+        ->assertOk()->assertJsonPath('data.actif', false);
+    expect($cible->fresh()->actif)->toBeFalse();
+
+    $this->actingAs($this->admin)->postJson("/api/admin/users/{$cible->id}/statut", ['actif' => true])
+        ->assertOk()->assertJsonPath('data.actif', true);
+});
+
+it('interdit de se désactiver soi-même', function () {
+    // Un second super admin pour que l'admin courant ne soit pas "le dernier".
+    User::factory()->superAdmin()->create();
+
+    $this->actingAs($this->admin)->postJson("/api/admin/users/{$this->admin->id}/statut", ['actif' => false])
+        ->assertStatus(422);
+});
+
+it('réinitialise le mot de passe et renvoie un mot de passe temporaire', function () {
+    $cible = User::factory()->lecteur()->create();
+
+    $reponse = $this->actingAs($this->admin)->postJson("/api/admin/users/{$cible->id}/reset-password")
+        ->assertOk();
+    $nouveau = $reponse->json('data.password');
+
+    expect($nouveau)->toBeString()->and(strlen($nouveau))->toBeGreaterThanOrEqual(8);
+    expect(Hash::check($nouveau, $cible->fresh()->password))->toBeTrue();
+});
+
+it('un admin ne peut pas réinitialiser le mot de passe d’un super_admin', function () {
+    $cible = User::factory()->superAdmin()->create();
+
+    $this->actingAs($this->admin)->postJson("/api/admin/users/{$cible->id}/reset-password")
+        ->assertStatus(403);
+});
+
+it('journalise la création et le changement de profil', function () {
+    $reponse = $this->actingAs($this->admin)->postJson('/api/admin/users', [
+        'name' => 'Audité', 'email' => 'audit@anatt.bj', 'password' => 'secret123', 'role' => User::ROLE_LECTEUR,
+    ])->assertStatus(201);
+    $id = $reponse->json('data.id');
+
+    $this->actingAs($this->admin)->putJson("/api/admin/users/{$id}", ['role' => User::ROLE_CONTROLEUR])->assertOk();
+
+    $this->assertDatabaseHas('audit_logs', ['action' => 'CREATE_USER', 'entite' => 'user', 'entite_id' => $id]);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'CHANGE_ROLE_USER', 'entite' => 'user', 'entite_id' => $id]);
 });

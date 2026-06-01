@@ -10,10 +10,11 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Compte SUPER_ADMIN initial (créé à l'installation).
+        // Compte SUPER_ADMIN initial (créé à l'installation, paramétrable via .env).
+        $sa = config('profils.superadmin');
         User::updateOrCreate(
-            ['email' => 'superadmin@anatt.bj'],
-            ['name' => 'Super Administrateur', 'password' => Hash::make('password'), 'role' => User::ROLE_SUPER_ADMIN, 'actif' => true],
+            ['email' => $sa['email']],
+            ['name' => $sa['name'], 'password' => Hash::make($sa['password']), 'role' => User::ROLE_SUPER_ADMIN, 'actif' => true],
         );
 
         // Un compte de démonstration par profil.

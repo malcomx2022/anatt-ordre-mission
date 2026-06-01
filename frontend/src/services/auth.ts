@@ -12,6 +12,11 @@ export const authService = {
     return unwrap<User>(data)
   },
 
+  async mePermissions(): Promise<string[]> {
+    const { data } = await api.get('/api/auth/me/permissions')
+    return unwrap<string[]>(data)
+  },
+
   async logout(): Promise<void> {
     await api.post('/api/auth/logout')
   },

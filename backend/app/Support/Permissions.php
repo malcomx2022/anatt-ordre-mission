@@ -116,13 +116,19 @@ class Permissions
         ],
     ];
 
-    /** Permissions effectives d'un profil (SUPER_ADMIN -> toutes). */
+    /**
+     * Permissions effectives d'un profil (SUPER_ADMIN -> toutes).
+     * La matrice est lue depuis config/profils.php (source de vérité éditable),
+     * avec repli sur la constante MATRICE si la config est indisponible.
+     */
     public static function pour(string $profil): array
     {
         if ($profil === self::SUPER_ADMIN) {
             return self::TOUTES;
         }
 
-        return self::MATRICE[$profil] ?? [];
+        $matrice = config('profils.matrice', self::MATRICE);
+
+        return $matrice[$profil] ?? self::MATRICE[$profil] ?? [];
     }
 }
