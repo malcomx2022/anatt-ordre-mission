@@ -3,69 +3,91 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\Paiement\MoovFileGenerator;
+use App\Services\Paiement\MtnFileGenerator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Données de démonstration « cycle complet » : missions entièrement traitées avec
- * versements CONFIRMÉS (date_paiement = maintenant) regroupés en lots MTN/Moov.
+ * versements CONFIRMÉS regroupés en lots MTN/Moov.
  *
- * Objectif : peupler le tableau de bord et les états du MOIS COURANT (les rapports
- * s'appuient sur versements.date_paiement). En utilisant now(), les données tombent
- * toujours dans le mois en cours, à chaque migrate:fresh --seed.
+ * Les fichiers de paiement sont produits par les VRAIS générateurs (MtnFileGenerator
+ * / MoovFileGenerator) : les lots seedés sont donc réellement téléchargeables, avec un
+ * nom_fichier pointant vers un fichier physique (storage/app/paiements/…), comme via l'app.
+ *
+ * date_paiement = now() à la confirmation => données toujours dans le mois courant
+ * (dashboard + états mensuels peuplés) à chaque migrate:fresh --seed.
  */
 class PaiementDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $finance = User::where('email', 'finance@anatt.bj')->value('id');
+        $finance = User::where('email', 'finance@anatt.bj')->first();
+        $mtn = app(MtnFileGenerator::class);
+        $moov = app(MoovFileGenerator::class);
 
-        // Mission interne (PARAKOU) — participants MTN + CAV Moov.
-        $this->seedMissionPayee([
-            'objet' => 'Atelier régional sur la sécurité routière',
-            'destination' => 'PARAKOU',
-            'zone_code' => 'INTERIEUR',
-            'imputation' => 'ANATT-2026-DT-021',
-            'nb_jours' => 3,
-            'oms' => [
-                ['ref' => '0541405640', 'matricule' => 'ANT-1007', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_1', 'type' => 'JOURNEE_COMPLETE'],
-                ['ref' => '0541405641', 'matricule' => 'ANT-1003', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_2', 'type' => 'JOURNEE_COMPLETE'],
-                ['ref' => '0541405642', 'matricule' => 'ANT-1006', 'role' => 'CAV', 'categorie' => 'ORDRE_3', 'type' => 'JOURNEE_COMPLETE'],
+        $missions = [
+            [
+                'objet' => 'Atelier régional sur la sécurité routière',
+                'destination' => 'PARAKOU', 'zone_code' => 'INTERIEUR',
+                'imputation' => 'ANATT-2026-DT-021', 'nb_jours' => 3,
+                'oms' => [
+                    ['ref' => '0541405640', 'matricule' => 'ANT-1007', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_1', 'type' => 'JOURNEE_COMPLETE'],
+                    ['ref' => '0541405641', 'matricule' => 'ANT-1003', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_2', 'type' => 'JOURNEE_COMPLETE'],
+                    ['ref' => '0541405642', 'matricule' => 'ANT-1006', 'role' => 'CAV', 'categorie' => 'ORDRE_3', 'type' => 'JOURNEE_COMPLETE'],
+                ],
             ],
-        ], $finance);
+            [
+                'objet' => 'Coordination sous-régionale des transports',
+                'destination' => 'LOMÉ (TOGO)', 'zone_code' => 'EXT_ZONE_I',
+                'imputation' => 'ANATT-2026-DG-007', 'nb_jours' => 2,
+                'oms' => [
+                    ['ref' => '0541405643', 'matricule' => 'ANT-1004', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_2', 'type' => 'LOGE_NOURRI'],
+                    ['ref' => '0541405644', 'matricule' => 'ANT-1005', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_3', 'type' => 'LOGE_NOURRI'],
+                ],
+            ],
+            [
+                'objet' => 'Inspection des gares routières',
+                'destination' => 'ABOMEY', 'zone_code' => 'INTERIEUR',
+                'imputation' => 'ANATT-2026-DT-022', 'nb_jours' => 1,
+                'oms' => [
+                    ['ref' => '0541405645', 'matricule' => 'ANT-1001', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_1', 'type' => 'DEUX_REPAS'],
+                    ['ref' => '0541405646', 'matricule' => 'ANT-1002', 'role' => 'CAV', 'categorie' => 'ORDRE_3', 'type' => 'DEUX_REPAS'],
+                ],
+            ],
+        ];
 
-        // Mission extérieure (LOMÉ, EXT_ZONE_I) — logé/nourri.
-        $this->seedMissionPayee([
-            'objet' => 'Coordination sous-régionale des transports',
-            'destination' => 'LOMÉ (TOGO)',
-            'zone_code' => 'EXT_ZONE_I',
-            'imputation' => 'ANATT-2026-DG-007',
-            'nb_jours' => 2,
-            'oms' => [
-                ['ref' => '0541405643', 'matricule' => 'ANT-1004', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_2', 'type' => 'LOGE_NOURRI'],
-                ['ref' => '0541405644', 'matricule' => 'ANT-1005', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_3', 'type' => 'LOGE_NOURRI'],
-            ],
-        ], $finance);
+        foreach ($missions as $m) {
+            $missionId = $this->creerMissionEtOms($m);
 
-        // Mission courte (ABOMEY) — deux repas.
-        $this->seedMissionPayee([
-            'objet' => 'Inspection des gares routières',
-            'destination' => 'ABOMEY',
-            'zone_code' => 'INTERIEUR',
-            'imputation' => 'ANATT-2026-DT-022',
-            'nb_jours' => 1,
-            'oms' => [
-                ['ref' => '0541405645', 'matricule' => 'ANT-1001', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_1', 'type' => 'DEUX_REPAS'],
-                ['ref' => '0541405646', 'matricule' => 'ANT-1002', 'role' => 'CAV', 'categorie' => 'ORDRE_3', 'type' => 'DEUX_REPAS'],
-            ],
-        ], $finance);
+            // Génération RÉELLE des fichiers (lot GENERE + versements GENERE) puis confirmation.
+            $operateurs = DB::table('ordre_missions')
+                ->join('agents', 'ordre_missions.agent_id', '=', 'agents.id')
+                ->where('ordre_missions.mission_id', $missionId)
+                ->distinct()->pluck('agents.operateur');
+
+            foreach (['AVANCE', 'RELIQUAT'] as $tranche) {
+                foreach ($operateurs as $operateur) {
+                    $generateur = $operateur === 'MTN' ? $mtn : $moov;
+                    try {
+                        $res = $generateur->generer($missionId, $tranche, $finance);
+                        $this->confirmerLot((int) $res['lot']->id, (int) $finance->id);
+                    } catch (ValidationException) {
+                        // Aucun versement éligible pour cet opérateur/tranche : on ignore.
+                    }
+                }
+            }
+
+            $this->soldeOms($missionId);
+        }
     }
 
-    /** Crée une mission, ses OM (SOLDE) et confirme tous les versements via des lots. */
-    private function seedMissionPayee(array $m, ?int $finance): void
+    /** Crée la mission, ses OM (statut VALIDE) et les versements AVANCE/RELIQUAT (EN_ATTENTE). */
+    private function creerMissionEtOms(array $m): int
     {
         $now = now();
-        $paiement = $now->copy();                       // date_paiement dans le mois courant
         $depart = $now->copy()->subDays(20);
         $retour = $depart->copy()->addDays($m['nb_jours'] - 1);
 
@@ -77,7 +99,7 @@ class PaiementDemoSeeder extends Seeder
                 'date_retour' => $retour->toDateString(),
                 'imputation_budgetaire' => $m['imputation'],
                 'prise_en_charge_tiers' => false,
-                'observations' => 'Mission de démonstration — cycle de paiement complet (versements confirmés).',
+                'observations' => 'Mission de démonstration — cycle de paiement complet (fichiers générés et confirmés).',
                 'created_at' => $now, 'updated_at' => $now,
             ]
         );
@@ -108,7 +130,7 @@ class PaiementDemoSeeder extends Seeder
                     'montant_total' => $total,
                     'avance' => $avance,
                     'reliquat' => $reliquat,
-                    'statut' => 'SOLDE',                // tous versements confirmés => OM soldé
+                    'statut' => 'VALIDE',                 // validé, prêt au paiement
                     'reference_autorisation' => 'AUT-2026-'.substr($om['ref'], -4),
                     'moyen_transport' => 'Véhicule administratif',
                     'created_at' => $now, 'updated_at' => $now,
@@ -124,52 +146,35 @@ class PaiementDemoSeeder extends Seeder
                         'operateur' => $agent->operateur,
                         'telephone' => $agent->telephone,
                         'statut' => 'EN_ATTENTE',
+                        'lot_id' => null,
+                        'date_paiement' => null,
                         'created_at' => $now, 'updated_at' => $now,
                     ]
                 );
             }
         }
 
-        // Regroupement en lots (1 mission × 1 tranche × 1 opérateur) puis confirmation.
-        foreach (['AVANCE', 'RELIQUAT'] as $tranche) {
-            foreach (['MTN', 'MOOV'] as $operateur) {
-                $versements = DB::table('versements')
-                    ->join('ordre_missions', 'versements.ordre_mission_id', '=', 'ordre_missions.id')
-                    ->where('ordre_missions.mission_id', $missionId)
-                    ->where('versements.type', $tranche)
-                    ->where('versements.operateur', $operateur)
-                    ->select('versements.id', 'versements.montant')
-                    ->get();
+        return (int) $missionId;
+    }
 
-                if ($versements->isEmpty()) {
-                    continue;
-                }
+    /** Confirme un lot et ses versements (date_paiement = maintenant) sans notification. */
+    private function confirmerLot(int $lotId, int $financeId): void
+    {
+        $now = now();
+        DB::table('versements')->where('lot_id', $lotId)->where('statut', '!=', 'CONFIRME')
+            ->update(['statut' => 'CONFIRME', 'date_paiement' => $now, 'updated_at' => $now]);
+        DB::table('lots_paiement')->where('id', $lotId)
+            ->update(['statut' => 'CONFIRME', 'confirme_le' => $now, 'confirme_par' => $financeId, 'updated_at' => $now]);
+    }
 
-                $ext = $operateur === 'MTN' ? 'txt' : 'xlsx';
-                $fichier = "{$operateur}_{$missionId}_{$tranche}.{$ext}";
-
-                DB::table('lots_paiement')->updateOrInsert(
-                    ['mission_id' => $missionId, 'tranche' => $tranche, 'operateur' => $operateur],
-                    [
-                        'statut' => 'CONFIRME',
-                        'nom_fichier' => $fichier,
-                        'nb_lignes' => $versements->count(),
-                        'montant_total' => (int) $versements->sum('montant'),
-                        'genere_le' => $now, 'genere_par' => $finance,
-                        'confirme_le' => $paiement, 'confirme_par' => $finance,
-                        'created_at' => $now, 'updated_at' => $now,
-                    ]
-                );
-                $lotId = DB::table('lots_paiement')
-                    ->where('mission_id', $missionId)->where('tranche', $tranche)->where('operateur', $operateur)
-                    ->value('id');
-
-                DB::table('versements')->whereIn('id', $versements->pluck('id'))->update([
-                    'lot_id' => $lotId,
-                    'statut' => 'CONFIRME',
-                    'date_paiement' => $paiement,
-                    'updated_at' => $now,
-                ]);
+    /** Passe à SOLDE les OM dont tous les versements sont confirmés. */
+    private function soldeOms(int $missionId): void
+    {
+        $omIds = DB::table('ordre_missions')->where('mission_id', $missionId)->pluck('id');
+        foreach ($omIds as $omId) {
+            $reste = DB::table('versements')->where('ordre_mission_id', $omId)->where('statut', '!=', 'CONFIRME')->exists();
+            if (! $reste) {
+                DB::table('ordre_missions')->where('id', $omId)->update(['statut' => 'SOLDE', 'updated_at' => now()]);
             }
         }
     }
