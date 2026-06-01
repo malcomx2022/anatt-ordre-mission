@@ -2,6 +2,7 @@
 
 use App\Models\Bareme;
 use App\Services\CalculIndemniteService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -43,4 +44,20 @@ it('compte les jours de façon inclusive (12/11 -> 14/11 = 3)', function () {
 
 it('compte 1 jour pour départ et retour le même jour', function () {
     expect($this->service->nbJours('2025-11-12', '2025-11-12'))->toBe(1);
+});
+
+it('applique la règle des 12 h : fraction >= 12 h = jour entier', function () {
+    // 12/11 08h -> 13/11 21h = 37 h = 1 jour plein + 13 h (>= 12 h) => 2 jours.
+    expect($this->service->nbJours(
+        Carbon::parse('2025-11-12 08:00'),
+        Carbon::parse('2025-11-13 21:00'),
+    ))->toBe(2);
+});
+
+it('applique la règle des 12 h : retour 0-12 h ne compte pas un jour de plus', function () {
+    // 12/11 08h -> 13/11 14h = 30 h = 1 jour plein + 6 h (< 12 h) => 1 jour.
+    expect($this->service->nbJours(
+        Carbon::parse('2025-11-12 08:00'),
+        Carbon::parse('2025-11-13 14:00'),
+    ))->toBe(1);
 });
