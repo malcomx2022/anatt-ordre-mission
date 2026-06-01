@@ -4,9 +4,11 @@ import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { useApi, getValidationErrors } from '@/composables/useApi'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const api = useApi()
+const { isSuperAdmin } = useAuth()
 const loading = ref(false)
 const errors = ref<Record<string, string[]>>({})
 const showSuccess = ref(false)
@@ -33,6 +35,9 @@ const roles = [
   { value: 'CONTROLEUR', label: 'Contrôleur', desc: 'Valide/rejette les OM ; consulte paiements et audit', color: 'blue', perms: ['Validation OM', 'Audit', 'Rapports'] },
   { value: 'LECTEUR', label: 'Lecteur', desc: 'Consultation seule (tableau de bord, OM, états)', color: 'gray', perms: ['Dashboard', 'OM', 'Rapports'] },
 ]
+
+// Le profil SUPER_ADMIN n'est proposé que si l'utilisateur courant est SUPER_ADMIN.
+const availableRoles = computed(() => roles.filter(r => r.value !== 'SUPER_ADMIN' || isSuperAdmin()))
 
 const selectedRole = computed(() => roles.find(r => r.value === form.value.role))
 
@@ -65,8 +70,10 @@ async function handleSubmit() {
     await api.post('/api/admin/users', {
       name: `${form.value.prenom} ${form.value.nom}`.trim(),
       email: form.value.email,
+      telephone: form.value.telephone || null,
       password: form.value.password,
       role: form.value.role,
+      actif: form.value.activateNow,
     })
     showSuccess.value = true
   } catch (e) {
@@ -141,7 +148,7 @@ async function handleSubmit() {
         </h3>
         <div class="grid grid-cols-2 gap-3">
           <label
-            v-for="role in roles"
+            v-for="role in availableRoles"
             :key="role.value"
             class="border-2 rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all hover:border-anatt-500"
             :class="[

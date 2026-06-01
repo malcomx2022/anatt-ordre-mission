@@ -20,6 +20,11 @@ export interface User {
   name: string
   email: string
   role: UserRole
+  role_libelle?: string
+  telephone?: string | null
+  actif?: boolean
+  derniere_connexion?: string | null
+  cree_par?: number | null
   email_verified_at?: string
   created_at?: string
   updated_at?: string
@@ -33,6 +38,7 @@ export interface ApiErrorResponse {
 export interface LoginResponse {
   token: string
   user: User
+  permissions: string[]
 }
 
 export interface PaginationMeta {

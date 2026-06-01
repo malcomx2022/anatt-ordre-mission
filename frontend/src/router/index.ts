@@ -316,9 +316,13 @@ router.beforeEach(async (to) => {
     const userRole = auth.user?.role
     if (!userRole) return { name: 'forbidden' }
 
-    const perms = permissionsForRole(userRole)
+    // Permissions renvoyées par l'API (repli sur la matrice locale si non chargées).
+    const perms = auth.permissions.length
+      ? (auth.permissions as Permission[])
+      : permissionsForRole(userRole)
+    const isSuperAdmin = userRole === 'SUPER_ADMIN'
     const required = Array.isArray(to.meta.permission) ? to.meta.permission : [to.meta.permission]
-    const hasAny = required.some((p) => perms.includes(p))
+    const hasAny = isSuperAdmin || required.some((p) => perms.includes(p))
 
     if (!hasAny) return { name: 'forbidden' }
     return true

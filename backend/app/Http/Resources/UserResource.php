@@ -16,7 +16,10 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'role' => $this->role,
             'role_libelle' => Permissions::LIBELLES[$this->role] ?? $this->role,
+            'telephone' => $this->telephone,
             'actif' => (bool) $this->actif,
+            'derniere_connexion' => $this->derniere_connexion?->toISOString(),
+            'cree_par' => $this->cree_par,
             'created_at' => $this->created_at?->toISOString(),
         ];
     }
