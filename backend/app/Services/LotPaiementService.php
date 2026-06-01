@@ -32,7 +32,7 @@ class LotPaiementService
     public function previsualiser(int $missionId, string $tranche, string $operateur): array
     {
         $mission = Mission::findOrFail($missionId);
-        $versements = $this->versementsEligibles($missionId, $tranche, $operateur);
+        $versements = Versement::eligiblesLot($missionId, $tranche, $operateur)->get();
 
         $lignes = $versements->map(fn (Versement $v) => [
             'versement_id' => $v->id,
@@ -54,69 +54,16 @@ class LotPaiementService
     }
 
     /**
-     * Génère (ou régénère) le fichier d'un lot. Régénération autorisée tant que le lot
-     * n'est pas CONFIRME ; seuls les versements non confirmés sont (ré)inclus.
+     * Génère (ou régénère) le fichier d'un lot en déléguant au générateur autonome
+     * de l'opérateur (qui pilote périmètre, lot GENERE, statuts versements, idempotence).
      *
      * @return array{lot:LotPaiement, chemin:string}
      */
     public function generer(int $missionId, string $tranche, string $operateur, User $user): array
     {
-        return DB::transaction(function () use ($missionId, $tranche, $operateur, $user) {
-            $mission = Mission::findOrFail($missionId);
+        $generateur = $operateur === 'MTN' ? $this->mtnGenerator : $this->moovGenerator;
 
-            $lot = LotPaiement::where('mission_id', $missionId)
-                ->where('tranche', $tranche)
-                ->where('operateur', $operateur)
-                ->lockForUpdate()
-                ->first();
-
-            if ($lot && $lot->statut === 'CONFIRME') {
-                throw ValidationException::withMessages([
-                    'lot' => ['Ce lot est déjà confirmé : régénération interdite (anti-double-paiement).'],
-                ]);
-            }
-
-            $versements = $this->versementsEligibles($missionId, $tranche, $operateur);
-
-            if ($versements->isEmpty()) {
-                throw ValidationException::withMessages([
-                    'lot' => ['Aucun versement éligible (non confirmé) pour ce lot.'],
-                ]);
-            }
-
-            // Génération du fichier au format exact opérateur (.txt MTN / .xlsx Moov).
-            $generateur = $operateur === 'MTN' ? $this->mtnGenerator : $this->moovGenerator;
-            $meta = $generateur->generer($mission, $tranche, $versements);
-
-            $lot = LotPaiement::updateOrCreate(
-                ['mission_id' => $missionId, 'tranche' => $tranche, 'operateur' => $operateur],
-                [
-                    'statut' => 'GENERE',
-                    'nom_fichier' => $meta['chemin'],
-                    'nb_lignes' => $meta['nb_lignes'],
-                    'montant_total' => $meta['montant_total'],
-                    'genere_le' => now(),
-                    'genere_par' => $user->id,
-                    'confirme_le' => null,
-                    'confirme_par' => null,
-                ],
-            );
-
-            // Rattachement des versements inclus + passage au statut GENERE.
-            Versement::whereIn('id', $versements->pluck('id'))
-                ->update(['lot_id' => $lot->id, 'statut' => 'GENERE']);
-
-            AuditService::log($user, 'GENERATE_LOT', 'lot_paiement', $lot->id, [
-                'mission' => $mission->destination,
-                'tranche' => $tranche,
-                'operateur' => $operateur,
-                'nb_lignes' => $meta['nb_lignes'],
-                'montant_total' => $meta['montant_total'],
-                'fichier' => $meta['chemin'],
-            ]);
-
-            return ['lot' => $lot, 'chemin' => $meta['chemin']];
-        });
+        return $generateur->generer($missionId, $tranche, $user);
     }
 
     /**
@@ -179,23 +126,5 @@ class LotPaiementService
         ]);
 
         return $lot->fresh();
-    }
-
-    /**
-     * Versements éligibles : tranche + opérateur donnés, statut != CONFIRME,
-     * OM ni rejeté ni annulé.
-     */
-    private function versementsEligibles(int $missionId, string $tranche, string $operateur)
-    {
-        return Versement::query()
-            ->where('type', $tranche)
-            ->where('operateur', $operateur)
-            ->where('statut', '!=', 'CONFIRME')
-            ->whereHas('ordreMission', fn ($q) => $q
-                ->where('mission_id', $missionId)
-                ->whereNotIn('statut', ['REJETE', 'ANNULE']))
-            ->with('ordreMission.agent')
-            ->orderBy('id')
-            ->get();
     }
 }
