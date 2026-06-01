@@ -4,78 +4,92 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class DatabaseBackup extends Command
 {
-    protected $signature = 'db:backup {--compress : Compresser le fichier avec gzip}';
+    protected $signature = 'db:backup {--compress : Compresser le fichier avec gzip (si disponible)}';
 
     protected $description = 'Sauvegarder la base de donnees ANaTT';
 
     public function handle(): int
     {
-        $database = config('database.connections.mysql.database', 'anatt_missions');
-        $username = config('database.connections.mysql.username', 'root');
-        $password = config('database.connections.mysql.password', '');
-        $host = config('database.connections.mysql.host', '127.0.0.1');
-        $port = config('database.connections.mysql.port', '3306');
+        $cfg = config('database.connections.mysql');
+        $database = $cfg['database'] ?? 'anatt_missions';
+        $username = $cfg['username'] ?? 'root';
+        $password = (string) ($cfg['password'] ?? '');
+        $host = $cfg['host'] ?? '127.0.0.1';
+        $port = (string) ($cfg['port'] ?? '3306');
+        $binary = config('database.dump_binary', 'mysqldump');
+
+        // Répertoire unique, cohérent avec la route GET /admin/backups.
+        $dir = storage_path('app/backups');
+        if (! is_dir($dir) && ! @mkdir($dir, 0775, true) && ! is_dir($dir)) {
+            $this->error("Impossible de créer le répertoire de sauvegarde : {$dir}");
+
+            return self::FAILURE;
+        }
 
         $timestamp = now()->format('Y-m-d_His');
         $filename = "backup_{$timestamp}.sql";
-        $directory = 'backups';
+        $filepath = $dir.DIRECTORY_SEPARATOR.$filename;
+        $errfile = $filepath.'.err';
 
-        // Creer le repertoire si necessaire
-        Storage::disk('local')->makeDirectory($directory);
-        $filepath = storage_path("app/{$directory}/{$filename}");
-
-        // Construire la commande mysqldump
-        $passwordArg = $password ? "-p" . escapeshellarg($password) : '';
+        // stdout -> fichier .sql ; stderr -> fichier .err (ne pollue pas le dump).
+        $passwordArg = $password !== '' ? '-p'.escapeshellarg($password) : '';
         $command = sprintf(
-            'mysqldump -h %s -P %s -u %s %s %s > %s 2>&1',
+            '%s -h %s -P %s -u %s %s %s > %s 2> %s',
+            escapeshellarg($binary),
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($username),
             $passwordArg,
             escapeshellarg($database),
             escapeshellarg($filepath),
+            escapeshellarg($errfile),
         );
 
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
-            $this->error("Echec du backup: " . implode("\n", $output));
-            Log::error("Database backup failed", ['output' => $output, 'code' => $returnCode]);
+            $err = is_file($errfile) ? trim((string) file_get_contents($errfile)) : '';
+            @unlink($errfile);
+            @unlink($filepath); // dump vide/partiel
+            $message = $err ?: "code {$returnCode} — vérifiez DB_DUMP_BINARY (mysqldump introuvable ?).";
+            $this->error('Échec du backup : '.$message);
+            Log::error('Database backup failed', ['code' => $returnCode, 'stderr' => $err]);
+
             return self::FAILURE;
         }
+        @unlink($errfile);
 
-        // Compression optionnelle
-        if ($this->option('compress') && file_exists($filepath)) {
-            exec("gzip " . escapeshellarg($filepath));
-            $filename .= '.gz';
-            $filepath .= '.gz';
+        // Compression best-effort : si gzip est indisponible, on conserve le .sql.
+        if ($this->option('compress')) {
+            exec('gzip '.escapeshellarg($filepath), $g, $gzipCode);
+            if ($gzipCode === 0 && is_file($filepath.'.gz')) {
+                $filename .= '.gz';
+                $filepath .= '.gz';
+            } else {
+                $this->warn('gzip indisponible : sauvegarde conservée en .sql non compressé.');
+            }
         }
 
-        $size = file_exists($filepath) ? $this->formatSize(filesize($filepath)) : '0 B';
+        $size = is_file($filepath) ? $this->formatSize(filesize($filepath)) : '0 B';
+        $this->cleanOldBackups($dir, 30);
 
-        // Nettoyage des anciens backups (garder 30 jours)
-        $this->cleanOldBackups($directory, 30);
-
-        $this->info("Backup cree: {$filename} ({$size})");
-        Log::info("Database backup created", ['file' => $filename, 'size' => $size]);
+        $this->info("Backup créé : {$filename} ({$size})");
+        Log::info('Database backup created', ['file' => $filename, 'size' => $size]);
 
         return self::SUCCESS;
     }
 
-    private function cleanOldBackups(string $directory, int $retentionDays): void
+    /** Supprime les sauvegardes plus anciennes que la rétention (jours). */
+    private function cleanOldBackups(string $dir, int $retentionDays): void
     {
-        $files = Storage::disk('local')->files($directory);
         $cutoff = now()->subDays($retentionDays)->timestamp;
-
-        foreach ($files as $file) {
-            $lastModified = Storage::disk('local')->lastModified($file);
-            if ($lastModified < $cutoff) {
-                Storage::disk('local')->delete($file);
-                $this->line("Ancien backup supprime: " . basename($file));
+        foreach (glob($dir.DIRECTORY_SEPARATOR.'backup_*.sql*') ?: [] as $file) {
+            if (filemtime($file) < $cutoff) {
+                @unlink($file);
+                $this->line('Ancien backup supprimé : '.basename($file));
             }
         }
     }
@@ -88,6 +102,7 @@ class DatabaseBackup extends Command
             $bytes /= 1024;
             $i++;
         }
-        return round($bytes, 1) . ' ' . $units[$i];
+
+        return round($bytes, 1).' '.$units[$i];
     }
 }

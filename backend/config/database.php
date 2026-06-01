@@ -20,6 +20,12 @@ return [
     'default' => env('DB_CONNECTION', 'sqlite'),
 
     /*
+    | Binaire mysqldump utilisé par la commande db:backup. Renseigner le chemin
+    | complet s'il n'est pas dans le PATH (ex. WAMP : C:\wamp64\bin\mysql\mysqlX.Y\bin\mysqldump.exe).
+    */
+    'dump_binary' => env('DB_DUMP_BINARY', 'mysqldump'),
+
+    /*
     |--------------------------------------------------------------------------
     | Database Connections
     |--------------------------------------------------------------------------

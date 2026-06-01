@@ -160,9 +160,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
                 return response()->json(['data' => $files]);
             });
             Route::post('backups', function () {
-                \Illuminate\Support\Facades\Artisan::call('db:backup', ['--compress' => true]);
+                $code = \Illuminate\Support\Facades\Artisan::call('db:backup', ['--compress' => true]);
+                $sortie = trim(\Illuminate\Support\Facades\Artisan::output());
 
-                return response()->json(['message' => 'Sauvegarde creee.']);
+                if ($code !== 0) {
+                    return response()->json([
+                        'message' => 'Échec de la sauvegarde.',
+                        'details' => $sortie,
+                    ], 500);
+                }
+
+                return response()->json(['message' => 'Sauvegarde creee.', 'details' => $sortie]);
             });
             Route::delete('backups/{name}', function (string $name) {
                 $path = storage_path('app/backups/'.basename($name));
