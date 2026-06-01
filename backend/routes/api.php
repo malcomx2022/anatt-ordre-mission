@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | API Routes - ANaTT Gestion des Missions
 |--------------------------------------------------------------------------
-| Autorisation par PERMISSION (middleware `can:`), adossée aux Gates définies
+| Autorisation par PERMISSION (middleware `permission:`), adossée aux Gates définies
 | dans AuthServiceProvider. Le SUPER_ADMIN passe toute garde (Gate::before).
 */
 
@@ -32,14 +32,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Auth (tous les utilisateurs connectés)
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('auth/me', [AuthController::class, 'me']);
+    // Permissions de l'utilisateur courant (pilote l'UI du frontend).
+    Route::get('auth/me/permissions', [AuthController::class, 'permissions']);
 
     // Agents (référentiel personnel)
-    Route::middleware('can:personnel.consulter')->group(function () {
+    Route::middleware('permission:personnel.consulter')->group(function () {
         Route::get('agents', [AgentController::class, 'index']);
         Route::get('agents/recherche', [AgentController::class, 'recherche']);
         Route::get('agents/{agent}', [AgentController::class, 'show']);
     });
-    Route::middleware('can:personnel.gerer')->group(function () {
+    Route::middleware('permission:personnel.gerer')->group(function () {
         Route::post('agents', [AgentController::class, 'store']);
         Route::put('agents/{agent}', [AgentController::class, 'update']);
         Route::delete('agents/{agent}', [AgentController::class, 'destroy']);
@@ -47,7 +49,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // Ordres de mission - consultation
-    Route::middleware('can:om.consulter')->group(function () {
+    Route::middleware('permission:om.consulter')->group(function () {
         Route::get('ordres', [MissionController::class, 'index']);
         Route::get('ordres/{ordre}', [MissionController::class, 'show']);
         Route::get('ordres/{ordre}/pdf', [MissionController::class, 'pdf']);
@@ -56,16 +58,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // Missions (retranscription SEMO : 1 mission + N OM)
-    Route::post('missions', [MissionController::class, 'storeMission'])->middleware('can:om.retranscrire');
+    Route::post('missions', [MissionController::class, 'storeMission'])->middleware('permission:om.retranscrire');
 
     // Validation / rejet des OM
-    Route::middleware('can:om.valider')->group(function () {
+    Route::middleware('permission:om.valider')->group(function () {
         Route::post('ordres/{ordre}/valider', [ValidationController::class, 'valider']);
         Route::post('ordres/{ordre}/rejeter', [ValidationController::class, 'rejeter']);
     });
 
     // Paiements (mode GÉNÉRATION)
-    Route::middleware('can:paiements.consulter')->group(function () {
+    Route::middleware('permission:paiements.consulter')->group(function () {
         Route::get('paiements/lots', [PaiementController::class, 'index']);
         Route::get('paiements/lots/previsualiser', [PaiementController::class, 'previsualiser']);
         Route::get('paiements/statuts', [PaiementController::class, 'statuts']);
@@ -74,25 +76,25 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('paiements/lots/job/{trackingId}', [PaiementController::class, 'statutJob']);
     });
     Route::middleware('throttle:paiement')->group(function () {
-        Route::post('paiements/lots/generer', [PaiementController::class, 'generer'])->middleware('can:paiements.generer');
-        Route::post('paiements/lots/{lot}/erreur', [PaiementController::class, 'marquerErreur'])->middleware('can:paiements.generer');
-        Route::post('paiements/lots/{lot}/confirmer', [PaiementController::class, 'confirmer'])->middleware('can:paiements.confirmer');
+        Route::post('paiements/lots/generer', [PaiementController::class, 'generer'])->middleware('permission:paiements.generer');
+        Route::post('paiements/lots/{lot}/erreur', [PaiementController::class, 'marquerErreur'])->middleware('permission:paiements.generer');
+        Route::post('paiements/lots/{lot}/confirmer', [PaiementController::class, 'confirmer'])->middleware('permission:paiements.confirmer');
     });
 
     // Barème (per diem)
-    Route::middleware('can:baremes.consulter')->group(function () {
+    Route::middleware('permission:baremes.consulter')->group(function () {
         Route::get('baremes', [BaremeController::class, 'index']);
         Route::get('baremes/{bareme}', [BaremeController::class, 'show']);
         Route::get('taux', [BaremeController::class, 'index']); // alias rétro-compatible
     });
-    Route::middleware('can:baremes.modifier')->group(function () {
+    Route::middleware('permission:baremes.modifier')->group(function () {
         Route::post('baremes', [BaremeController::class, 'store']);
         Route::put('baremes/{bareme}', [BaremeController::class, 'update']);
         Route::delete('baremes/{bareme}', [BaremeController::class, 'destroy']);
     });
 
     // États & Rapports
-    Route::middleware('can:rapports.consulter')->group(function () {
+    Route::middleware('permission:rapports.consulter')->group(function () {
         Route::get('rapports/mensuel', [RapportController::class, 'mensuel']);
         Route::get('rapports/agents', [RapportController::class, 'agents']);
         Route::get('rapports/operateurs', [RapportController::class, 'operateurs']);
@@ -105,7 +107,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     });
 
     // Journal d'audit
-    Route::middleware('can:audit.consulter')->group(function () {
+    Route::middleware('permission:audit.consulter')->group(function () {
         Route::get('audit', [AuditController::class, 'index']);
         Route::get('audit/{audit}', [AuditController::class, 'show']);
     });
@@ -113,15 +115,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Administration
     Route::prefix('admin')->group(function () {
         // Gestion des utilisateurs (les actions sur les SUPER_ADMIN exigent superadmins.gerer, géré dans le contrôleur).
-        Route::middleware('can:utilisateurs.gerer')->group(function () {
+        Route::middleware('permission:utilisateurs.gerer')->group(function () {
             Route::get('users', [UserController::class, 'index']);
             Route::post('users', [UserController::class, 'store']);
             Route::put('users/{user}', [UserController::class, 'update']);
             Route::delete('users/{user}', [UserController::class, 'destroy']);
+            Route::post('users/{user}/statut', [UserController::class, 'setActif']);
+            Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
         });
 
         // Paramètres & sauvegardes : SUPER_ADMIN uniquement (parametres.gerer).
-        Route::middleware('can:parametres.gerer')->group(function () {
+        Route::middleware('permission:parametres.gerer')->group(function () {
             Route::get('settings', function () {
                 $path = storage_path('app/settings.json');
                 $settings = file_exists($path) ? json_decode(file_get_contents($path), true) : [];

@@ -4,16 +4,22 @@ import AppLayout from '@/components/shared/AppLayout.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import { useApi } from '@/composables/useApi'
 import { useSearch } from '@/composables/useSearch'
-import type { User, UserRole } from '@/types'
+import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
+import type { User } from '@/types'
 
 const api = useApi()
+const toast = useToast()
+const { user: currentUser, isSuperAdmin } = useAuth()
 const { query: searchQuery, debouncedQuery } = useSearch(300)
 const roleFilter = ref('')
+const statutFilter = ref('')
 const loading = ref(true)
 const users = ref<User[]>([])
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalItems = ref(0)
+const resetResult = ref<{ name: string; password: string } | null>(null)
 
 const stats = computed(() => [
   { label: 'Utilisateurs total', value: String(totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
@@ -28,6 +34,7 @@ async function loadUsers() {
     const params: Record<string, string | number> = { page: currentPage.value }
     if (debouncedQuery.value) params.search = debouncedQuery.value
     if (roleFilter.value) params.role = roleFilter.value
+    if (statutFilter.value) params.actif = statutFilter.value
 
     const { data } = await api.get('/api/admin/users', { params })
     users.value = data.data || []
@@ -43,10 +50,19 @@ async function loadUsers() {
   }
 }
 
-watch([debouncedQuery, roleFilter], () => {
+watch([debouncedQuery, roleFilter, statutFilter], () => {
   currentPage.value = 1
   loadUsers()
 })
+
+// Un super admin n'est gérable que par un super admin ; on ne s'auto-désactive/supprime pas.
+function peutGerer(u: User): boolean {
+  if (u.role === 'SUPER_ADMIN' && !isSuperAdmin()) return false
+  return true
+}
+function estSoiMeme(u: User): boolean {
+  return u.id === currentUser.value?.id
+}
 
 function handlePageChange(page: number) {
   currentPage.value = page
@@ -76,6 +92,33 @@ async function deleteUser(user: User) {
   } catch {
     // Geree par useApi
   }
+}
+
+async function toggleActif(user: User) {
+  const cible = !user.actif
+  if (!confirm(`${cible ? 'Activer' : 'Désactiver'} le compte de ${user.name} ?`)) return
+  try {
+    await api.post(`/api/admin/users/${user.id}/statut`, { actif: cible })
+    toast.success(cible ? 'Compte activé.' : 'Compte désactivé.')
+    loadUsers()
+  } catch {
+    // Geree par useApi
+  }
+}
+
+async function resetPassword(user: User) {
+  if (!confirm(`Réinitialiser le mot de passe de ${user.name} ?`)) return
+  try {
+    const { data } = await api.post(`/api/admin/users/${user.id}/reset-password`)
+    resetResult.value = { name: user.name, password: data.data?.password ?? '' }
+  } catch {
+    // Geree par useApi
+  }
+}
+
+function copier(texte: string) {
+  navigator.clipboard?.writeText(texte)
+  toast.success('Copié dans le presse-papiers.')
 }
 </script>
 
@@ -117,6 +160,11 @@ async function deleteUser(user: User) {
           <option value="CONTROLEUR">Contrôleur</option>
           <option value="LECTEUR">Lecteur</option>
         </select>
+        <select v-model="statutFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
+          <option value="">Tous les statuts</option>
+          <option value="1">Actifs</option>
+          <option value="0">Inactifs</option>
+        </select>
       </div>
     </div>
 
@@ -156,17 +204,28 @@ async function deleteUser(user: User) {
               <span :class="[roleConfig[u.role]?.bg || 'bg-gray-100', roleConfig[u.role]?.color || 'text-gray-600', 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']">{{ u.role }}</span>
             </td>
             <td class="px-5 py-4">
-              <span class="text-sm font-body text-gray-600">{{ u.role }}</span>
+              <span v-if="u.actif" class="px-2.5 py-1 text-xs font-display font-semibold rounded-lg bg-anatt-50 text-anatt-600">Actif</span>
+              <span v-else class="px-2.5 py-1 text-xs font-display font-semibold rounded-lg bg-gray-100 text-gray-500">Inactif</span>
             </td>
             <td class="px-5 py-4">
-              <p class="text-sm font-body text-gray-500">{{ u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '--' }}</p>
+              <p class="text-sm font-body text-gray-500">{{ u.derniere_connexion ? new Date(u.derniere_connexion).toLocaleString('fr-FR') : 'Jamais' }}</p>
             </td>
             <td class="px-5 py-4">
               <span class="text-xs font-display text-gray-500">--</span>
             </td>
             <td class="px-5 py-4 text-center">
               <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button v-if="u.role !== 'SUPER_ADMIN'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500" @click="deleteUser(u)">
+                <!-- Réinitialiser le mot de passe -->
+                <button v-if="peutGerer(u)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-500" title="Réinitialiser le mot de passe" @click="resetPassword(u)">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                </button>
+                <!-- Activer / désactiver -->
+                <button v-if="peutGerer(u) && !estSoiMeme(u)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-amber-500" :title="u.actif ? 'Désactiver' : 'Activer'" @click="toggleActif(u)">
+                  <svg v-if="u.actif" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </button>
+                <!-- Supprimer -->
+                <button v-if="peutGerer(u) && !estSoiMeme(u)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500" title="Supprimer" @click="deleteUser(u)">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                 </button>
               </div>
@@ -181,5 +240,20 @@ async function deleteUser(user: User) {
         @page-change="handlePageChange"
       />
     </div>
+
+    <!-- Mot de passe réinitialisé -->
+    <teleport to="body">
+      <div v-if="resetResult" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Mot de passe réinitialisé</h3>
+          <p class="text-sm font-body text-gray-500 mb-4">Nouveau mot de passe temporaire pour <span class="font-semibold">{{ resetResult.name }}</span>. Communiquez-le de façon sécurisée — il ne sera plus affiché.</p>
+          <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-5">
+            <code class="flex-1 text-sm font-mono text-gray-800 break-all">{{ resetResult.password }}</code>
+            <button class="px-2 py-1 text-xs font-display rounded-lg bg-gray-200 hover:bg-gray-300" @click="copier(resetResult.password)">Copier</button>
+          </div>
+          <button class="w-full px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600" @click="resetResult = null">Fermer</button>
+        </div>
+      </div>
+    </teleport>
   </AppLayout>
 </template>

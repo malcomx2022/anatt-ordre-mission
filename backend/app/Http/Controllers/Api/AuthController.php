@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,11 +34,15 @@ class AuthController extends Controller
             ]);
         }
 
+        // Trace la dernière connexion réussie (sans toucher updated_at).
+        $user->forceFill(['derniere_connexion' => now()])->saveQuietly();
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return $this->success([
             'token' => $token,
-            'user' => $user,
+            'user' => new UserResource($user),
+            'permissions' => $user->permissions(),
         ]);
     }
 
@@ -50,7 +55,13 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return $this->success($request->user());
+        return $this->success(new UserResource($request->user()));
+    }
+
+    /** Liste des permissions effectives de l'utilisateur courant (pilote l'UI). */
+    public function permissions(Request $request): JsonResponse
+    {
+        return $this->success($request->user()->permissions());
     }
 
     public function sendResetLink(Request $request): JsonResponse

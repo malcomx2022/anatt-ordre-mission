@@ -601,8 +601,25 @@ POST   /api/auth/login              → { data: { token, user } }
 POST   /api/auth/logout
 POST   /api/auth/mot-de-passe/email
 POST   /api/auth/mot-de-passe/reset
-GET    /api/auth/me                 → User connecté
+GET    /api/auth/me                 → User connecté (UserResource)
+GET    /api/auth/me/permissions     → Liste des permissions effectives (pilote l'UI)
 ```
+> Le login renvoie `{ token, user, permissions[] }` et met à jour `derniere_connexion`.
+
+### Utilisateurs (administration — `utilisateurs.gerer`)
+```
+GET    /api/admin/users                       → Liste (filtres: search, role, actif)
+POST   /api/admin/users                       → Créer (role, telephone ; cree_par auto)
+PUT    /api/admin/users/:id                    → Modifier (role, actif, telephone…)
+DELETE /api/admin/users/:id                    → Supprimer
+POST   /api/admin/users/:id/statut            → Activer/désactiver { actif }
+POST   /api/admin/users/:id/reset-password    → Réinitialise → { password } temporaire
+```
+> Toute action touchant un SUPER_ADMIN exige `superadmins.gerer`. Le dernier SUPER_ADMIN
+> actif ne peut être supprimé/désactivé/rétrogradé ; on ne se désactive/supprime pas soi-même.
+> Autorisation par middleware `permission:{cle}` (Gates + `Gate::before` super admin).
+> Matrice éditable : `config/profils.php`. SUPER_ADMIN initial paramétrable via `.env`
+> (`SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`).
 
 ### Agents
 ```

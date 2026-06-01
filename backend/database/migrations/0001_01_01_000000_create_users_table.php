@@ -21,8 +21,13 @@ return new class extends Migration
             $table->enum('role', [
                 'SUPER_ADMIN', 'ADMIN', 'GESTIONNAIRE_OM', 'AGENT_FINANCIER', 'CONTROLEUR', 'LECTEUR',
             ])->default('LECTEUR');
+            $table->string('telephone')->nullable();
             // Compte actif ? Un compte désactivé ne peut plus se connecter.
             $table->boolean('actif')->default(true);
+            // Dernière connexion réussie (mise à jour à chaque login).
+            $table->timestamp('derniere_connexion')->nullable();
+            // Auteur du compte (FK auto-référencée vers users).
+            $table->foreignId('cree_par')->nullable()->constrained('users')->nullOnDelete();
             $table->rememberToken();
             $table->timestamps();
         });

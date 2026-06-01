@@ -28,6 +28,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'telephone',
+        'cree_par',
     ];
 
     /**
@@ -53,7 +55,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'actif' => 'boolean',
+            'derniere_connexion' => 'datetime',
         ];
+    }
+
+    /** Compte ayant créé cet utilisateur (auteur). */
+    public function creePar()
+    {
+        return $this->belongsTo(self::class, 'cree_par');
     }
 
     public function isSuperAdmin(): bool

@@ -19,6 +19,7 @@ class StoreUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
+            'telephone' => 'nullable|string|max:30',
             'role' => ['required', Rule::in(Permissions::PROFILS)],
             'actif' => 'sometimes|boolean',
         ];

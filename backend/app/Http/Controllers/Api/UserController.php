@@ -11,6 +11,7 @@ use App\Services\AuditService;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -23,6 +24,9 @@ class UserController extends Controller
         }
         if ($role = $request->get('role')) {
             $query->where('role', $role);
+        }
+        if ($request->filled('actif')) {
+            $query->where('actif', $request->boolean('actif'));
         }
 
         $users = $query->orderBy('name')->paginate($this->getPerPage($request));
@@ -41,6 +45,8 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
+            'telephone' => $data['telephone'] ?? null,
+            'cree_par' => $request->user()->id,
         ]);
         $user->assignRole($data['role']);
         $user->actif = $data['actif'] ?? true;
@@ -67,11 +73,23 @@ class UserController extends Controller
             abort_if($retrograde || $desactive, 422, "Impossible : c'est le dernier super administrateur actif.");
         }
 
+        // On ne peut pas se désactiver soi-même.
+        abort_if(
+            $user->id === $request->user()->id && array_key_exists('actif', $data) && ! $data['actif'],
+            422,
+            'Vous ne pouvez pas désactiver votre propre compte.',
+        );
+
+        $ancienRole = $user->role;
+
         if (isset($data['name'])) {
             $user->name = $data['name'];
         }
         if (isset($data['email'])) {
             $user->email = $data['email'];
+        }
+        if (array_key_exists('telephone', $data)) {
+            $user->telephone = $data['telephone'];
         }
         if (isset($data['password'])) {
             $user->password = $data['password'];
@@ -89,7 +107,55 @@ class UserController extends Controller
             'email' => $user->email, 'role' => $user->role, 'actif' => $user->actif,
         ]);
 
+        // Trace explicitement tout changement de profil.
+        if (isset($data['role']) && $data['role'] !== $ancienRole) {
+            AuditService::log($request->user(), 'CHANGE_ROLE_USER', 'user', $user->id, [
+                'ancien_role' => $ancienRole, 'nouveau_role' => $user->role,
+            ]);
+        }
+
         return $this->success(new UserResource($user->fresh()), 'Utilisateur mis à jour.');
+    }
+
+    /** Active ou désactive un compte (action dédiée, journalisée). */
+    public function setActif(Request $request, User $user): JsonResponse
+    {
+        $request->validate(['actif' => 'required|boolean']);
+        $actif = $request->boolean('actif');
+
+        $this->verrouSuperAdmin($request, null, $user);
+
+        // Le dernier super admin actif ne peut être désactivé.
+        abort_if(! $actif && $this->estDernierSuperAdmin($user), 422, "Impossible : c'est le dernier super administrateur actif.");
+        // On ne peut pas se désactiver soi-même.
+        abort_if(! $actif && $user->id === $request->user()->id, 422, 'Vous ne pouvez pas désactiver votre propre compte.');
+
+        $user->actif = $actif;
+        $user->save();
+
+        AuditService::log($request->user(), $actif ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', 'user', $user->id, [
+            'email' => $user->email,
+        ]);
+
+        return $this->success(new UserResource($user->fresh()), $actif ? 'Compte activé.' : 'Compte désactivé.');
+    }
+
+    /** Réinitialise le mot de passe : génère un mot de passe temporaire et le renvoie. */
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $this->verrouSuperAdmin($request, null, $user);
+
+        $request->validate(['password' => 'sometimes|string|min:8']);
+
+        $nouveau = $request->input('password') ?: Str::password(14);
+        $user->password = $nouveau;
+        $user->save();
+
+        AuditService::log($request->user(), 'RESET_PASSWORD_USER', 'user', $user->id, [
+            'email' => $user->email,
+        ]);
+
+        return $this->success(['password' => $nouveau], 'Mot de passe réinitialisé.');
     }
 
     public function destroy(Request $request, User $user): JsonResponse

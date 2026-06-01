@@ -13,7 +13,11 @@ export function useAuth() {
   const user = computed(() => store.user)
   const role = computed(() => store.user?.role)
 
-  const permissions = computed<Permission[]>(() => permissionsForRole(store.user?.role))
+  // Source : permissions renvoyées par l'API (store). Repli sur la matrice
+  // locale tant que l'appel /me/permissions n'a pas encore peuplé le store.
+  const permissions = computed<Permission[]>(() =>
+    store.permissions.length ? (store.permissions as Permission[]) : permissionsForRole(store.user?.role),
+  )
 
   function hasRole(...roles: UserRole[]): boolean {
     return !!store.user && roles.includes(store.user.role)
