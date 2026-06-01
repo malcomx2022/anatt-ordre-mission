@@ -1,1 +1,0 @@
-import{o as e,r as t,s as n}from"./index-CILvlc76.js";var r={async list(n={}){let{data:r}=await t.get(`/api/audit`,{params:n});return e(r)},async get(e){let{data:r}=await t.get(`/api/audit/${e}`);return n(r)}};export{r as t};

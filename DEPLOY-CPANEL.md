@@ -2,15 +2,15 @@
 
 Guide pas-à-pas pour déployer **sans accès SSH** (FTP + phpMyAdmin), avec :
 
-- **SPA Vue** sur le domaine principal — `https://votre-domaine.tld`
-- **API Laravel** sur un sous-domaine — `https://api.votre-domaine.tld`
+- **SPA Vue** sur le domaine principal — `https://omsemo.anatt.bj`
+- **API Laravel** sur un sous-domaine — `https://api-omsemo.anatt.bj`
 
-> Adaptez partout `votre-domaine.tld` et `cpaneluser` à vos valeurs réelles.
+> Adaptez partout `omsemo.anatt.bj` et `cpaneluser` à vos valeurs réelles.
 
 ```
 public_html/                 -> SPA Vue (contenu de frontend/dist/)
 anatt-api/                   -> application Laravel (hors web)
-anatt-api/public/            -> racine du sous-domaine api.votre-domaine.tld
+anatt-api/public/            -> racine du sous-domaine api-omsemo.anatt.bj
 ```
 
 ---
@@ -95,7 +95,7 @@ npm run build      # produit frontend/dist/
 
 ## 4. cPanel — Sous-domaine de l'API
 
-1. **cPanel > Domains (ou Subdomains)** : créez `api.votre-domaine.tld`.
+1. **cPanel > Domains (ou Subdomains)** : créez `api-omsemo.anatt.bj`.
 2. Réglez sa **Document Root** sur `anatt-api/public`
    (créez le dossier `anatt-api` à la racine du compte, **au même niveau** que `public_html`, pas dedans).
 3. **cPanel > Select PHP Version** : choisissez **PHP 8.2 ou 8.3** et activez les extensions :
@@ -120,9 +120,9 @@ anatt-api/
 Copiez `backend/.env.production.example` en `anatt-api/.env` (via l'éditeur de fichiers cPanel) et renseignez :
 
 - `APP_KEY=` la clé générée en 1.2
-- `APP_URL=https://api.votre-domaine.tld`
+- `APP_URL=https://api-omsemo.anatt.bj`
 - `DB_DATABASE / DB_USERNAME / DB_PASSWORD` de l'étape 3
-- `CORS_ALLOWED_ORIGINS=https://votre-domaine.tld`
+- `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`
 - `DB_DUMP_BINARY=` chemin mysqldump de l'hébergeur si vous utilisez les sauvegardes (sinon laissez `mysqldump`)
 - Bloc `MAIL_*` (SMTP de l'hébergeur)
 
@@ -140,8 +140,8 @@ Via FileZilla : clic droit > *Attributs de fichier* > 755, « Récursif dans les
 
 ### 5.3 Vérifier l'API
 
-Ouvrez `https://api.votre-domaine.tld/up` → doit afficher la page de santé Laravel (200).
-Puis `https://api.votre-domaine.tld/api/auth/login` (en POST) répondra ; un simple GET renverra une erreur JSON, c'est normal.
+Ouvrez `https://api-omsemo.anatt.bj/up` → doit afficher la page de santé Laravel (200).
+Puis `https://api-omsemo.anatt.bj/api/auth/login` (en POST) répondra ; un simple GET renverra une erreur JSON, c'est normal.
 
 ---
 
@@ -155,7 +155,7 @@ Envoyez le **contenu** de `frontend/dist/` dans `public_html/`
 Éditez `public_html/runtime-config.js` :
 ```js
 window.__ANATT_CONFIG__ = {
-  apiUrl: "https://api.votre-domaine.tld"
+  apiUrl: "https://api-omsemo.anatt.bj"
 };
 ```
 > C'est l'avantage du runtime-config : **aucune recompilation** pour changer l'URL de l'API.
@@ -164,15 +164,15 @@ window.__ANATT_CONFIG__ = {
 
 ## 7. HTTPS
 
-**cPanel > SSL/TLS Status** : lancez **AutoSSL** (Let's Encrypt) sur `votre-domaine.tld`
-**et** `api.votre-domaine.tld`. Vérifiez que les deux sont en HTTPS (sinon le navigateur
+**cPanel > SSL/TLS Status** : lancez **AutoSSL** (Let's Encrypt) sur `omsemo.anatt.bj`
+**et** `api-omsemo.anatt.bj`. Vérifiez que les deux sont en HTTPS (sinon le navigateur
 bloquera les appels mixtes).
 
 ---
 
 ## 8. Vérification finale
 
-1. `https://votre-domaine.tld` → écran de connexion (logo, favicon).
+1. `https://omsemo.anatt.bj` → écran de connexion (logo, favicon).
 2. Connexion avec le SUPER_ADMIN.
 3. Le tableau de bord charge les KPIs (preuve que le SPA atteint l'API en HTTPS).
 4. Testez une génération de fichier MTN/Moov et un export PDF.
@@ -200,7 +200,7 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 | Symptôme | Cause probable | Solution |
 |---|---|---|
 | **500** sur l'API, page blanche | `storage/` non inscriptible ou `APP_KEY` vide | Permissions 755 sur `storage/` + `bootstrap/cache/` ; remplir `APP_KEY` |
-| Erreur **CORS** dans la console | origine du SPA non autorisée | `CORS_ALLOWED_ORIGINS=https://votre-domaine.tld` dans le `.env` API |
+| Erreur **CORS** dans la console | origine du SPA non autorisée | `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj` dans le `.env` API |
 | Le SPA affiche **404** sur une route (ex. /agents) au rafraîchissement | `.htaccess` SPA absent | Vérifier `public_html/.htaccess` (fourni dans dist) |
 | Appels API en **http** bloqués (mixed content) | API pas en HTTPS | AutoSSL sur le sous-domaine + `apiUrl` en `https://` |
 | Connexion impossible / « Network error » | mauvaise `apiUrl` | Corriger `public_html/runtime-config.js` |

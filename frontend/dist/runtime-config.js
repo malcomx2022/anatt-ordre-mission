@@ -4,5 +4,5 @@
 //
 // Exemple en production : apiUrl: "https://api.votre-domaine.tld"
 window.__ANATT_CONFIG__ = {
-  apiUrl: ""
+  apiUrl: "https://api-omsemo.anatt.bj"
 };
