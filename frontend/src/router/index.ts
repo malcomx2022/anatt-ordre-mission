@@ -224,7 +224,7 @@ const routes: RouteRecordRaw[] = [
   // ── ADMINISTRATION ──
   {
     path: '/admin/utilisateurs',
-    name: 'utilisateurs.gerer',
+    name: 'admin-users',
     component: () => import('@/views/admin/UserManagementView.vue'),
     meta: { auth: true, permission: 'utilisateurs.gerer' },
   },
@@ -242,7 +242,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/parametres',
-    name: 'parametres.gerer',
+    name: 'admin-settings',
     component: () => import('@/views/admin/SettingsView.vue'),
     meta: { auth: true, permission: 'parametres.gerer' },
   },
@@ -254,7 +254,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/sauvegardes',
-    name: 'parametres.gerer',
+    name: 'admin-backups',
     component: () => import('@/views/admin/BackupView.vue'),
     meta: { auth: true, permission: 'parametres.gerer' },
   },
