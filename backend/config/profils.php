@@ -93,9 +93,12 @@ return [
     ],
 
     // Compte SUPER_ADMIN initial (créé par le seeder à l'installation).
+    // SÉCURITÉ : aucun mot de passe de repli. En production, SUPERADMIN_PASSWORD
+    // DOIT être défini dans le .env ; à défaut le seeder lève une exception.
+    // En local/testing, le seeder retombe sur un mot de passe de développement.
     'superadmin' => [
         'name' => env('SUPERADMIN_NAME', 'Super Administrateur'),
         'email' => env('SUPERADMIN_EMAIL', 'superadmin@anatt.bj'),
-        'password' => env('SUPERADMIN_PASSWORD', 'password'),
+        'password' => env('SUPERADMIN_PASSWORD'),
     ],
 ];

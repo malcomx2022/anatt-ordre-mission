@@ -14,3 +14,9 @@ Schedule::command('db:backup --compress')
     ->withoutOverlapping()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/backup.log'));
+
+// Purge des tokens Sanctum expires (hygiene : ils sont deja refuses passe
+// SANCTUM_EXPIRATION ; ceci nettoie la table personal_access_tokens).
+Schedule::command('sanctum:prune-expired --hours=24')
+    ->daily()
+    ->onOneServer();

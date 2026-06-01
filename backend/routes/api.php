@@ -133,9 +133,30 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
                 return response()->json(['data' => $settings]);
             });
             Route::put('settings', function (\Illuminate\Http\Request $request) {
-                file_put_contents(storage_path('app/settings.json'), json_encode($request->all(), JSON_PRETTY_PRINT));
+                // Liste blanche stricte : on n'écrit QUE des clés connues (anti-pollution
+                // d'écriture arbitraire). Les clés inconnues sont ignorées silencieusement.
+                $clesAutorisees = [
+                    // Paramètres généraux (SettingsView)
+                    'appName', 'appVersion', 'fiscalYear', 'batchSize', 'reconciliationDays',
+                    'sessionDuration', 'maxLoginAttempts', 'mtnEnabled', 'moovEnabled',
+                    'doubleValidation', 'forceHttps', 'logConnections', 'maintenanceMode',
+                    'notifications',
+                    // Configuration email (EmailConfigView)
+                    'smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'smtpEncryption',
+                    'fromAddress', 'fromName',
+                ];
 
-                return response()->json(['data' => $request->all(), 'message' => 'Parametres enregistres.']);
+                $entrant = array_intersect_key($request->all(), array_flip($clesAutorisees));
+
+                // Fusion avec l'existant : une sauvegarde partielle (ex. paramètres généraux)
+                // ne doit pas effacer les autres clés (ex. configuration email).
+                $path = storage_path('app/settings.json');
+                $existant = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
+                $settings = array_merge($existant, $entrant);
+
+                file_put_contents($path, json_encode($settings, JSON_PRETTY_PRINT));
+
+                return response()->json(['data' => $settings, 'message' => 'Parametres enregistres.']);
             });
 
             Route::get('backups', function () {

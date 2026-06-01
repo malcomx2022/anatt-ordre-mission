@@ -12,13 +12,13 @@ it('admin liste et crée des comptes non super-admin', function () {
     $this->actingAs($this->admin)->getJson('/api/admin/users')->assertOk();
 
     $this->actingAs($this->admin)->postJson('/api/admin/users', [
-        'name' => 'Nouveau', 'email' => 'n@anatt.bj', 'password' => 'secret123', 'role' => User::ROLE_CONTROLEUR,
+        'name' => 'Nouveau', 'email' => 'n@anatt.bj', 'password' => 'MotDePasse123!', 'role' => User::ROLE_CONTROLEUR,
     ])->assertStatus(201)->assertJsonPath('data.role', 'CONTROLEUR');
 });
 
 it('admin ne peut pas créer un SUPER_ADMIN', function () {
     $this->actingAs($this->admin)->postJson('/api/admin/users', [
-        'name' => 'X', 'email' => 'x@anatt.bj', 'password' => 'secret123', 'role' => User::ROLE_SUPER_ADMIN,
+        'name' => 'X', 'email' => 'x@anatt.bj', 'password' => 'MotDePasse123!', 'role' => User::ROLE_SUPER_ADMIN,
     ])->assertStatus(403);
 });
 
@@ -31,7 +31,7 @@ it('admin ne peut pas modifier un SUPER_ADMIN', function () {
 
 it('super_admin peut créer un autre super_admin', function () {
     $this->actingAs($this->superAdmin)->postJson('/api/admin/users', [
-        'name' => 'SU2', 'email' => 'su2@anatt.bj', 'password' => 'secret123', 'role' => User::ROLE_SUPER_ADMIN,
+        'name' => 'SU2', 'email' => 'su2@anatt.bj', 'password' => 'MotDePasse123!', 'role' => User::ROLE_SUPER_ADMIN,
     ])->assertStatus(201)->assertJsonPath('data.role', 'SUPER_ADMIN');
 });
 
@@ -132,7 +132,7 @@ it('un admin ne peut pas réinitialiser le mot de passe d’un super_admin', fun
 
 it('journalise la création et le changement de profil', function () {
     $reponse = $this->actingAs($this->admin)->postJson('/api/admin/users', [
-        'name' => 'Audité', 'email' => 'audit@anatt.bj', 'password' => 'secret123', 'role' => User::ROLE_LECTEUR,
+        'name' => 'Audité', 'email' => 'audit@anatt.bj', 'password' => 'MotDePasse123!', 'role' => User::ROLE_LECTEUR,
     ])->assertStatus(201);
     $id = $reponse->json('data.id');
 

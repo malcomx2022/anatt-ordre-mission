@@ -10,6 +10,11 @@ vendor.zip
 .env.local
 *.env.backup
 
+# Dumps & sauvegardes de base de données (données sensibles : ne JAMAIS versionner)
+*.sql
+*.sql.gz
+backend/storage/app/backups/
+
 # Builds
 # frontend/dist/ est volontairement VERSIONNÉ (déploiement FTP sans build serveur) — cf. DEPLOY-CPANEL.md
 backend/public/storage
