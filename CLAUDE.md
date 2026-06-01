@@ -111,7 +111,9 @@ anatt-ordre-mission/
 ├── frontend/                    ← Application Vue 3
 │   ├── src/
 │   │   ├── assets/
-│   │   │   └── logo-anatt.jpg  ← Logo base64 (NE PAS supprimer)
+│   │   │   ├── logo-anatt.png        ← Logo officiel couleur (fonds clairs)
+│   │   │   ├── logo-anatt-white.png  ← Logo blanc, barre tricolore conservée (fonds sombres)
+│   │   │   └── icon-anatt.png         ← Marque carrée (vert ANaTT + ANaTT blanc) — base favicon
 │   │   ├── components/
 │   │   │   ├── shared/         ← Composants réutilisables
 │   │   │   │   ├── AppLayout.vue
@@ -207,7 +209,7 @@ anatt-ordre-mission/
 
 ### ⚠️ RÈGLES ABSOLUES — ne jamais déroger
 
-1. Le logo ANaTT DOIT être en base64 embarqué — jamais de lien externe
+1. Le logo ANaTT (`src/assets/logo-anatt*.png`) est embarqué/bundlé en local — jamais de lien externe. Composant `AppLogo` (`dark` → variante blanche). Source du logo : `docs/logoannat.png` ; favicons régénérables via `docs/make_favicons.php`
 2. `Sora` pour TOUS les titres, boutons, labels
 3. `DM Sans` pour TOUT le corps de texte, paragraphes, inputs
 4. La `flag-bar` (barre tricolore) avant CHAQUE footer
