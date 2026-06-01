@@ -89,9 +89,11 @@ function isActive(to: string): boolean {
       <div class="flex-1 bg-benin-red"></div>
     </div>
 
-    <!-- Logo ANaTT -->
-    <div class="p-5 border-b border-white/10">
-      <AppLogo variant="compact" dark />
+    <!-- Logo ANaTT (logo officiel couleur sur badge blanc) -->
+    <div class="p-4 border-b border-white/10">
+      <div class="bg-white rounded-xl p-3 flex justify-center shadow-sm">
+        <AppLogo size="md" />
+      </div>
     </div>
 
     <!-- Navigation -->
