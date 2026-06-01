@@ -62,7 +62,9 @@ async function handleSubmit() {
 
     <div class="w-full max-w-md login-card">
       <div class="flex justify-center mb-8">
-        <AppLogo size="lg" dark />
+        <div class="bg-white rounded-2xl shadow-xl px-8 py-5">
+          <AppLogo size="lg" />
+        </div>
       </div>
 
       <div class="bg-white rounded-2xl shadow-2xl p-8">
