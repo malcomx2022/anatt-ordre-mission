@@ -4,9 +4,8 @@ import AppCard from '@/components/shared/AppCard.vue'
 import { ROLE_LABELS } from '@/types'
 import type { UserRole } from '@/types'
 
-// Ordre des colonnes : conforme à useAuth.ts
-const roleKeys: UserRole[] = ['admin', 'gestionnaire_om', 'agent_financier', 'lecteur']
-
+// Colonnes : ordre conforme à App\Support\Permissions.
+const roleKeys: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'GESTIONNAIRE_OM', 'AGENT_FINANCIER', 'CONTROLEUR', 'LECTEUR']
 const roleHeaders = roleKeys.map((r) => ({ key: r, label: ROLE_LABELS[r] }))
 
 interface PermissionModule {
@@ -14,50 +13,52 @@ interface PermissionModule {
   permissions: { label: string; values: boolean[] }[]
 }
 
-// Matrice [admin, gestionnaire_om, agent_financier, lecteur]
+const T = true
+const F = false
+
+// Matrice [SUPER_ADMIN, ADMIN, GESTIONNAIRE_OM, AGENT_FINANCIER, CONTROLEUR, LECTEUR]
 const modules: PermissionModule[] = [
   { name: 'Tableau de bord', permissions: [
-    { label: 'Voir le dashboard', values: [true, true, true, true] },
+    { label: 'Consulter', values: [T, T, T, T, T, T] },
   ]},
   { name: 'Personnel', permissions: [
-    { label: 'Consulter', values: [true, true, true, true] },
-    { label: 'Créer / Modifier', values: [true, true, false, false] },
-    { label: 'Importer en masse', values: [true, true, false, false] },
+    { label: 'Consulter', values: [T, T, T, T, T, F] },
+    { label: 'Gérer (créer / modifier)', values: [T, T, T, F, F, F] },
   ]},
   { name: 'Ordres de mission', permissions: [
-    { label: 'Consulter', values: [true, true, true, true] },
-    { label: 'Retranscrire (mission)', values: [true, true, false, false] },
-    { label: 'Valider / Rejeter', values: [true, true, false, false] },
+    { label: 'Consulter', values: [T, T, T, T, T, T] },
+    { label: 'Retranscrire (mission)', values: [T, F, T, F, F, F] },
+    { label: 'Valider / Rejeter', values: [T, F, F, F, T, F] },
   ]},
   { name: 'Paiements', permissions: [
-    { label: 'Consulter', values: [true, true, true, true] },
-    { label: 'Générer les fichiers', values: [true, false, true, false] },
-    { label: 'Confirmer', values: [true, false, true, false] },
+    { label: 'Consulter', values: [T, T, T, T, T, F] },
+    { label: 'Générer les fichiers', values: [T, F, F, T, F, F] },
+    { label: 'Confirmer', values: [T, F, F, T, F, F] },
   ]},
   { name: 'Barème', permissions: [
-    { label: 'Consulter', values: [true, true, true, true] },
-    { label: 'Modifier', values: [true, false, false, false] },
+    { label: 'Consulter', values: [T, T, T, T, T, F] },
+    { label: 'Modifier', values: [T, T, F, F, F, F] },
   ]},
   { name: 'Rapports', permissions: [
-    { label: 'Consulter', values: [true, true, true, true] },
-    { label: 'Exporter', values: [true, true, true, false] },
+    { label: 'Consulter', values: [T, T, T, T, T, T] },
   ]},
   { name: 'Administration', permissions: [
-    { label: "Journal d'audit", values: [true, false, false, false] },
-    { label: 'Utilisateurs / Paramètres', values: [true, false, false, false] },
+    { label: "Journal d'audit", values: [T, T, F, F, T, F] },
+    { label: 'Gérer les utilisateurs', values: [T, T, F, F, F, F] },
+    { label: 'Gérer les super admins & paramètres', values: [T, F, F, F, F, F] },
   ]},
 ]
 </script>
 
 <template>
-  <AppLayout title="Matrice des permissions" subtitle="Droits par rôle (admin / gestionnaire OM / agent financier / lecteur)">
+  <AppLayout title="Matrice des permissions" subtitle="Droits par profil (6 profils RBAC)">
     <AppCard>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-50 text-left text-xs font-display text-gray-500 uppercase">
               <th class="px-4 py-3">Permission</th>
-              <th v-for="h in roleHeaders" :key="h.key" class="px-4 py-3 text-center">{{ h.label }}</th>
+              <th v-for="h in roleHeaders" :key="h.key" class="px-3 py-3 text-center">{{ h.label }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -67,7 +68,7 @@ const modules: PermissionModule[] = [
               </tr>
               <tr v-for="perm in mod.permissions" :key="perm.label" class="hover:bg-gray-50">
                 <td class="px-4 py-2.5 font-body text-gray-700">{{ perm.label }}</td>
-                <td v-for="(v, i) in perm.values" :key="i" class="px-4 py-2.5 text-center">
+                <td v-for="(v, i) in perm.values" :key="i" class="px-3 py-2.5 text-center">
                   <span v-if="v" class="text-anatt-500 font-bold">✓</span>
                   <span v-else class="text-gray-200">—</span>
                 </td>
@@ -76,6 +77,7 @@ const modules: PermissionModule[] = [
           </tbody>
         </table>
       </div>
+      <p class="text-[11px] text-gray-400 font-body mt-3">Le super administrateur a accès implicite à tout (Gate::before).</p>
     </AppCard>
   </AppLayout>
 </template>

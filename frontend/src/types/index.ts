@@ -3,13 +3,16 @@ export * from './mission'
 export * from './paiement'
 export * from './bareme'
 
-export type UserRole = 'admin' | 'gestionnaire_om' | 'agent_financier' | 'lecteur'
+export type UserRole =
+  | 'SUPER_ADMIN' | 'ADMIN' | 'GESTIONNAIRE_OM' | 'AGENT_FINANCIER' | 'CONTROLEUR' | 'LECTEUR'
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: 'Administrateur',
-  gestionnaire_om: 'Gestionnaire OM',
-  agent_financier: 'Agent financier',
-  lecteur: 'Lecteur',
+  SUPER_ADMIN: 'Super administrateur',
+  ADMIN: 'Administrateur',
+  GESTIONNAIRE_OM: 'Gestionnaire OM',
+  AGENT_FINANCIER: 'Agent financier',
+  CONTROLEUR: 'Contrôleur',
+  LECTEUR: 'Lecteur',
 }
 
 export interface User {

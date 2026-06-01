@@ -40,12 +40,14 @@ Application : **http://localhost:5173**
 
 ### Comptes de démonstration (mot de passe : `password`)
 
-| Email | Rôle | Peut |
+| Email | Profil | Peut |
 |---|---|---|
-| `admin@anatt.bj` | admin | tout |
-| `gestion@anatt.bj` | gestionnaire_om | agents, retranscription/validation des OM |
-| `finance@anatt.bj` | agent_financier | génération & confirmation des paiements |
-| `lecteur@anatt.bj` | lecteur | lecture seule |
+| `superadmin@anatt.bj` | SUPER_ADMIN | tout (dont super admins & paramètres) |
+| `admin@anatt.bj` | ADMIN | utilisateurs, référentiels, barème, audit |
+| `gestion@anatt.bj` | GESTIONNAIRE_OM | agents, retranscription des missions/OM |
+| `finance@anatt.bj` | AGENT_FINANCIER | génération & confirmation des paiements |
+| `controle@anatt.bj` | CONTROLEUR | validation/rejet des OM, audit |
+| `lecteur@anatt.bj` | LECTEUR | lecture seule |
 
 ---
 

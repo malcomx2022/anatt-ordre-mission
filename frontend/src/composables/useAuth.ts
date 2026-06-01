@@ -1,53 +1,10 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import type { UserRole } from '@/types'
+import { permissionsForRole } from '@/utils/permissions'
+import type { Permission } from '@/utils/permissions'
 
-export type Permission =
-  | 'dashboard.view'
-  | 'agents.read' | 'agents.write' | 'agents.import'
-  | 'ordres.read' | 'missions.create' | 'ordres.validate' | 'ordres.reject'
-  | 'paiements.read' | 'paiements.generate' | 'paiements.confirm'
-  | 'baremes.read' | 'baremes.write'
-  | 'rapports.read' | 'rapports.export'
-  | 'audit.read'
-  | 'admin.users' | 'admin.settings' | 'admin.backups'
-
-const rolePermissions: Record<UserRole, Permission[]> = {
-  admin: [
-    'dashboard.view',
-    'agents.read', 'agents.write', 'agents.import',
-    'ordres.read', 'missions.create', 'ordres.validate', 'ordres.reject',
-    'paiements.read', 'paiements.generate', 'paiements.confirm',
-    'baremes.read', 'baremes.write',
-    'rapports.read', 'rapports.export',
-    'audit.read',
-    'admin.users', 'admin.settings', 'admin.backups',
-  ],
-  gestionnaire_om: [
-    'dashboard.view',
-    'agents.read', 'agents.write', 'agents.import',
-    'ordres.read', 'missions.create', 'ordres.validate', 'ordres.reject',
-    'paiements.read',
-    'baremes.read',
-    'rapports.read', 'rapports.export',
-  ],
-  agent_financier: [
-    'dashboard.view',
-    'agents.read',
-    'ordres.read',
-    'paiements.read', 'paiements.generate', 'paiements.confirm',
-    'baremes.read',
-    'rapports.read', 'rapports.export',
-  ],
-  lecteur: [
-    'dashboard.view',
-    'agents.read',
-    'ordres.read',
-    'paiements.read',
-    'baremes.read',
-    'rapports.read',
-  ],
-}
+export type { Permission }
 
 export function useAuth() {
   const store = useAuthStore()
@@ -56,10 +13,7 @@ export function useAuth() {
   const user = computed(() => store.user)
   const role = computed(() => store.user?.role)
 
-  const permissions = computed<Permission[]>(() => {
-    if (!store.user?.role) return []
-    return rolePermissions[store.user.role] || []
-  })
+  const permissions = computed<Permission[]>(() => permissionsForRole(store.user?.role))
 
   function hasRole(...roles: UserRole[]): boolean {
     return !!store.user && roles.includes(store.user.role)
@@ -73,44 +27,52 @@ export function useAuth() {
     return perms.some((p) => permissions.value.includes(p))
   }
 
+  function isSuperAdmin(): boolean {
+    return hasRole('SUPER_ADMIN')
+  }
+
   function isAdmin(): boolean {
-    return hasRole('admin')
+    return hasRole('ADMIN')
   }
 
   function canManageAgents(): boolean {
-    return can('agents.write')
+    return can('personnel.gerer')
   }
 
   function canCreerMissions(): boolean {
-    return can('missions.create')
+    return can('om.retranscrire')
   }
 
   function canValiderOM(): boolean {
-    return can('ordres.validate')
+    return can('om.valider')
   }
 
   function canGenererPaiements(): boolean {
-    return can('paiements.generate')
+    return can('paiements.generer')
   }
 
   function canConfirmerPaiements(): boolean {
-    return can('paiements.confirm')
+    return can('paiements.confirmer')
   }
 
   function canManageBaremes(): boolean {
-    return can('baremes.write')
+    return can('baremes.modifier')
   }
 
   function canAccessRapports(): boolean {
-    return can('rapports.read')
+    return can('rapports.consulter')
   }
 
   function canAccessAudit(): boolean {
-    return can('audit.read')
+    return can('audit.consulter')
+  }
+
+  function canGererUtilisateurs(): boolean {
+    return can('utilisateurs.gerer')
   }
 
   function canAccessAdmin(): boolean {
-    return canAny('admin.users', 'admin.settings', 'admin.backups')
+    return canAny('utilisateurs.gerer', 'parametres.gerer')
   }
 
   return {
@@ -121,6 +83,7 @@ export function useAuth() {
     hasRole,
     can,
     canAny,
+    isSuperAdmin,
     isAdmin,
     canManageAgents,
     canCreerMissions,
@@ -130,6 +93,7 @@ export function useAuth() {
     canManageBaremes,
     canAccessRapports,
     canAccessAudit,
+    canGererUtilisateurs,
     canAccessAdmin,
     login: store.login,
     logout: store.logout,

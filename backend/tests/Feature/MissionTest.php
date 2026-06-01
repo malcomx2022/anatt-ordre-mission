@@ -8,7 +8,8 @@ use Database\Seeders\BaremeSeeder;
 
 beforeEach(function () {
     $this->seed(BaremeSeeder::class);
-    $this->gestion = User::factory()->gestionnaireOm()->create();
+    $this->gestion = User::factory()->gestionnaireOm()->create();   // retranscription (om.retranscrire)
+    $this->controleur = User::factory()->controleur()->create();     // validation/rejet (om.valider)
     $this->dada = Agent::factory()->categorie('ORDRE_1')->create();
     $this->cav = Agent::factory()->categorie('ORDRE_3')->moov()->create();
 });
@@ -91,7 +92,7 @@ it('liste les ordres de mission', function () {
 it('valide un OM (IMPORTE -> VALIDE)', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $this->actingAs($this->gestion)->postJson("/api/ordres/{$om->id}/valider")
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")
         ->assertOk()
         ->assertJsonPath('data.statut', 'VALIDE');
 });
@@ -99,7 +100,7 @@ it('valide un OM (IMPORTE -> VALIDE)', function () {
 it('rejette un OM avec motif', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $this->actingAs($this->gestion)->postJson("/api/ordres/{$om->id}/rejeter", [
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/rejeter", [
         'motif' => 'Document non conforme au dossier',
     ])->assertOk()->assertJsonPath('data.statut', 'REJETE');
 });
@@ -107,6 +108,6 @@ it('rejette un OM avec motif', function () {
 it('refuse un rejet sans motif suffisant', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $this->actingAs($this->gestion)->postJson("/api/ordres/{$om->id}/rejeter", ['motif' => 'court'])
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/rejeter", ['motif' => 'court'])
         ->assertStatus(422);
 });

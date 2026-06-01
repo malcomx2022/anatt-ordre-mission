@@ -32,35 +32,35 @@ const allNavigation: NavGroup[] = [
   {
     title: 'Principal',
     items: [
-      { label: 'Tableau de bord', icon: 'grid', to: '/', permission: 'dashboard.view' },
+      { label: 'Tableau de bord', icon: 'grid', to: '/', permission: 'dashboard.consulter' },
     ],
   },
   {
     title: 'Gestion',
     items: [
-      { label: 'Personnel', icon: 'users', to: '/agents', permission: 'agents.read' },
-      { label: 'Ordres de Mission', icon: 'file-text', to: '/ordres', permission: 'ordres.read' },
+      { label: 'Personnel', icon: 'users', to: '/agents', permission: 'personnel.consulter' },
+      { label: 'Ordres de Mission', icon: 'file-text', to: '/ordres', permission: 'om.consulter' },
     ],
   },
   {
     title: 'Finances',
     items: [
-      { label: 'Paiements', icon: 'credit-card', to: '/paiements', permission: 'paiements.read' },
-      { label: 'Baremes', icon: 'calculator', to: '/taux', permission: 'baremes.read' },
+      { label: 'Paiements', icon: 'credit-card', to: '/paiements', permission: 'paiements.consulter' },
+      { label: 'Baremes', icon: 'calculator', to: '/taux', permission: 'baremes.consulter' },
     ],
   },
   {
     title: 'Analyses',
     items: [
-      { label: 'Rapports', icon: 'bar-chart-2', to: '/rapports', permission: 'rapports.read' },
-      { label: 'Audit', icon: 'clock', to: '/audit', permission: 'audit.read' },
+      { label: 'Rapports', icon: 'bar-chart-2', to: '/rapports', permission: 'rapports.consulter' },
+      { label: 'Audit', icon: 'clock', to: '/audit', permission: 'audit.consulter' },
     ],
   },
   {
     title: 'Systeme',
     items: [
-      { label: 'Utilisateurs', icon: 'shield', to: '/admin/utilisateurs', permission: 'admin.users' },
-      { label: 'Parametres', icon: 'settings', to: '/admin/parametres', permission: 'admin.settings' },
+      { label: 'Utilisateurs', icon: 'shield', to: '/admin/utilisateurs', permission: 'utilisateurs.gerer' },
+      { label: 'Parametres', icon: 'settings', to: '/admin/parametres', permission: 'parametres.gerer' },
     ],
   },
 ]
