@@ -12,6 +12,7 @@ use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -145,9 +146,9 @@ class UserController extends Controller
     {
         $this->verrouSuperAdmin($request, null, $user);
 
-        $request->validate(['password' => 'sometimes|string|min:8']);
+        $request->validate(['password' => ['sometimes', 'string', Password::defaults()]]);
 
-        $nouveau = $request->input('password') ?: Str::password(14);
+        $nouveau = $request->input('password') ?: Str::password(16);
         $user->password = $nouveau;
         $user->save();
 

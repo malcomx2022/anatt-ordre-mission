@@ -47,7 +47,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Expiration des tokens d'accès. Application financière : on borne la durée
+    // de vie d'un token (défaut 8 h = 480 min) pour limiter l'impact d'un vol de
+    // token (stocké côté client). Paramétrable via SANCTUM_EXPIRATION.
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 480),
 
     /*
     |--------------------------------------------------------------------------

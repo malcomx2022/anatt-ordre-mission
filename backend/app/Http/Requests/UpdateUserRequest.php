@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Support\Permissions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -20,7 +21,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => 'sometimes|string|max:255',
             'email' => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($userId)],
-            'password' => 'sometimes|string|min:8',
+            'password' => ['sometimes', 'string', Password::defaults()],
             'telephone' => 'sometimes|nullable|string|max:30',
             'role' => ['sometimes', Rule::in(Permissions::PROFILS)],
             'actif' => 'sometimes|boolean',

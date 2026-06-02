@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Politique de mot de passe par défaut (application financière) :
+        // ≥ 12 caractères, majuscules + minuscules, chiffres et symboles.
+        // Utilisée partout via Password::defaults() (création/MAJ/réinitialisation).
+        Password::defaults(fn () => Password::min(12)->mixedCase()->numbers()->symbols());
+
         // Rate limiting global API: 60 req/min par utilisateur
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
