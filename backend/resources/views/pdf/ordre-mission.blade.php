@@ -9,11 +9,6 @@
 
         .flag-bar { height: 4px; background: linear-gradient(90deg, #1D9E4F 0%, #1D9E4F 33%, #D4A843 33%, #D4A843 66%, #CE1126 66%, #CE1126 100%); margin-bottom: 20px; }
 
-        .header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #1D9E4F; }
-        .header-country { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 3px; }
-        .header-org { font-size: 14px; font-weight: bold; color: #1D9E4F; margin-bottom: 2px; }
-        .header-sub { font-size: 9px; color: #9ca3af; }
-
         .doc-title { text-align: center; margin: 16px 0; }
         .doc-title h1 { font-size: 18px; color: #0F5C2E; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 5px; }
         .doc-title .ref { font-size: 13px; color: #1D9E4F; font-weight: bold; }

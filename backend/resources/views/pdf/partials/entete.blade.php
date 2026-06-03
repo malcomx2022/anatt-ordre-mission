@@ -27,4 +27,6 @@
         </td>
     </tr>
 </table>
-<div class="flag-bar" style="height:4px; margin:0 0 16px;"></div>
+{{-- Barre tricolore autonome : style complet en inline pour un rendu identique
+     dans tous les PDF, sans dépendre d'une classe .flag-bar définie par l'hôte. --}}
+<div style="height:4px; margin:0 0 16px; background:linear-gradient(90deg, #1D9E4F 0%, #1D9E4F 33%, #D4A843 33%, #D4A843 66%, #CE1126 66%, #CE1126 100%);"></div>
