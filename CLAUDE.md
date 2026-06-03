@@ -151,7 +151,7 @@ anatt-ordre-mission/
 │   │   │   ├── agent.ts
 │   │   │   ├── mission.ts
 │   │   │   └── paiement.ts
-│   │   ├── views/              ← Pages (41 écrans)
+│   │   ├── views/              ← Pages (42 écrans)
 │   │   └── main.ts
 │   ├── tailwind.config.ts
 │   └── vite.config.ts
@@ -382,7 +382,7 @@ extend: {
 
 ---
 
-## 5. REGISTRE DES 41 ÉCRANS
+## 5. REGISTRE DES 42 ÉCRANS
 
 ### Module AUTH (3 écrans)
 
@@ -456,15 +456,16 @@ extend: {
 | AUD-01 | `views/audit/AuditListView.vue` | `/audit` | Journal d'activité système filtrable |
 | AUD-02 | `views/audit/AuditDetailView.vue` | `/audit/:id` | Détail d'une action : qui, quoi, quand, IP |
 
-### Module ADMINISTRATION (5 écrans)
+### Module ADMINISTRATION (6 écrans)
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
-| ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles |
-| ADM-02 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
-| ADM-03 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
-| ADM-04 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP, templates notifications |
-| ADM-05 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration |
+| ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles (liste, filtres, statut, reset mot de passe) |
+| ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle, téléphone) |
+| ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
+| ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
+| ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP, templates notifications |
+| ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration |
 
 ### Pages SYSTÈME (4 écrans)
 

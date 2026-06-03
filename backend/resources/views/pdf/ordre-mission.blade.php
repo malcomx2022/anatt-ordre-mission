@@ -47,13 +47,7 @@
     </style>
 </head>
 <body>
-    <div class="flag-bar"></div>
-
-    <div class="header">
-        <div class="header-country">République du Bénin</div>
-        <div class="header-org">ANaTT — Agence Nationale des Transports Terrestres</div>
-        <div class="header-sub">Système de gestion des ordres de mission (retranscription SEMO)</div>
-    </div>
+    @include('pdf.partials.entete')
 
     <div class="doc-title">
         <h1>Ordre de Mission</h1>
