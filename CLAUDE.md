@@ -644,8 +644,8 @@ POST   /api/missions                → Retranscription : crée la mission + N O
                                                          categorie?, nb_jours? }] }
 GET    /api/ordres                  → Liste filtrée (statut, zone, agent_id, operateur, dates, search)
 GET    /api/ordres/:id              → Détail OM (mission, agent, versements)
-POST   /api/ordres/:id/valider      → IMPORTE → VALIDE
-POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars)
+POST   /api/ordres/:id/valider      → IMPORTE → VALIDE (rôle controleur : om.valider)
+POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars ; rôle controleur : om.valider)
 GET    /api/ordres/:id/pdf          → Génère le PDF de l'OM → { url, fichier }
 GET    /api/ordres/:id/pdf/download → Télécharge le PDF
 GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
@@ -733,7 +733,7 @@ HDR,SARALY,1,45000
 
 - Les OM sont **retranscrits** depuis SEMO (statut initial `IMPORTE`) — jamais créés/modifiés à la main.
 - `reference_semo` est **UNIQUE** (anti-doublon) ; rejet clair en cas de collision.
-- Validation : `IMPORTE → VALIDE` (rôle `gestionnaire_om`). Rejet : `IMPORTE → REJETE` avec motif ≥ 10 chars.
+- Validation : `IMPORTE → VALIDE` (rôle `controleur`, permission `om.valider`). Rejet : `IMPORTE → REJETE` avec motif ≥ 10 chars.
 - Contrainte type↔zone : repas (`UN_REPAS`/`DEUX_REPAS`) ⇒ INTERIEUR ; hébergement (`LOGE_*`/`NOURRI_SEUL`) ⇒ EXTÉRIEUR.
 - Téléphone/opérateur viennent du **référentiel agent** ; cohérence numéro↔opérateur validée.
 - Paiement : cycle `EN_ATTENTE → GENERE → CONFIRME`. Confirmation **manuelle** après dépôt. Régénération tant que non confirmé ; **idempotence** (un versement CONFIRME n'est jamais réinclus).
