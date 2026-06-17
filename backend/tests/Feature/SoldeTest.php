@@ -15,7 +15,7 @@ beforeEach(function () {
     $this->user = User::factory()->agentFinancier()->create();
     $this->mission = Mission::factory()->create();
     $agent = Agent::factory()->mtn()->create();
-    $this->om = OrdreMission::factory()->create([
+    $this->om = OrdreMission::factory()->statut('VALIDE')->create([
         'mission_id' => $this->mission->id, 'agent_id' => $agent->id,
         'montant_total' => 135000, 'avance' => 45000, 'reliquat' => 90000,
     ]);

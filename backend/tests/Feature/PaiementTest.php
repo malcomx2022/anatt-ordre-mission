@@ -14,7 +14,7 @@ beforeEach(function () {
 
     $this->mission = Mission::factory()->create(['objet' => 'Mission paiement', 'destination' => 'Bohicon']);
     $agent = Agent::factory()->mtn()->create(['nom' => 'DADA', 'prenoms' => 'Richard']);
-    $this->om = OrdreMission::factory()->create([
+    $this->om = OrdreMission::factory()->statut('VALIDE')->create([
         'mission_id' => $this->mission->id, 'agent_id' => $agent->id,
     ]);
     $this->versement = Versement::factory()->create([
@@ -84,4 +84,21 @@ it('liste les lots de paiement', function () {
 
 it('expose la synthèse des statuts de versement', function () {
     $this->actingAs($this->finance)->getJson('/api/paiements/statuts')->assertOk();
+});
+
+it('exclut un OM non validé : ni prévisualisé ni payable', function () {
+    // L'OM redevient IMPORTE (non validé par le CONTROLEUR).
+    $this->om->update(['statut' => 'IMPORTE']);
+
+    $this->actingAs($this->finance)->getJson('/api/paiements/lots/previsualiser?'.http_build_query($this->selection))
+        ->assertOk()
+        ->assertJsonPath('data.nb_lignes', 0)
+        ->assertJsonPath('data.total', 0);
+
+    // La génération échoue faute de bénéficiaire éligible.
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)
+        ->assertStatus(422);
+
+    expect(LotPaiement::count())->toBe(0);
+    expect(Versement::find($this->versement->id)->statut)->toBe('EN_ATTENTE');
 });

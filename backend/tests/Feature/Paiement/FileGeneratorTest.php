@@ -32,7 +32,7 @@ function fabriquerVersement(Mission $mission, array $agentAttrs, string $tranche
         'montant_total' => $montant * 3,
         'avance' => $montant,
         'reliquat' => $montant * 2,
-        'statut' => 'IMPORTE',
+        'statut' => 'VALIDE', // prérequis : seul un OM validé est payable
     ]);
 
     Versement::create([
