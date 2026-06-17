@@ -53,6 +53,13 @@ it('déroule le scénario complet SEMO 0541405636 jusqu’à l’état mensuel',
     // Versements AVANCE + RELIQUAT par OM.
     expect(Versement::count())->toBe(4);
 
+    // ── 1bis. Validation des OM (prérequis au paiement) : IMPORTE -> VALIDE ──
+    foreach ([$omDada, $omCav] as $om) {
+        $this->actingAs($this->admin)->postJson("/api/ordres/{$om->id}/valider")
+            ->assertOk();
+        expect($om->fresh()->statut)->toBe('VALIDE');
+    }
+
     // ── 2. AVANCE : MTN (DADA) + Moov (CAV), génération puis confirmation ──
     foreach (['MTN', 'MOOV'] as $op) {
         $this->actingAs($this->admin)->postJson('/api/paiements/lots/generer', [

@@ -17,7 +17,7 @@ beforeEach(function () {
     $this->finance = User::factory()->agentFinancier()->create();
     $this->mission = Mission::factory()->create(['objet' => 'Mission async', 'destination' => 'Bohicon']);
     $agent = Agent::factory()->mtn()->create();
-    $om = OrdreMission::factory()->create(['mission_id' => $this->mission->id, 'agent_id' => $agent->id]);
+    $om = OrdreMission::factory()->statut('VALIDE')->create(['mission_id' => $this->mission->id, 'agent_id' => $agent->id]);
     Versement::factory()->create([
         'ordre_mission_id' => $om->id, 'type' => 'AVANCE',
         'operateur' => 'MTN', 'telephone' => $agent->telephone, 'montant' => 45000, 'statut' => 'EN_ATTENTE',

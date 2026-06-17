@@ -44,7 +44,9 @@ class Versement extends Model
 
     /**
      * Versements éligibles à un lot : mission × tranche × opérateur, statut != CONFIRME,
-     * dont l'OM n'est ni rejeté ni annulé. Agent eager-loadé pour la génération.
+     * dont l'OM est VALIDE. Un OM non validé (IMPORTE) ou rejeté/annulé n'est jamais
+     * payable : la validation par le CONTROLEUR est un prérequis au paiement.
+     * Agent eager-loadé pour la génération.
      */
     public function scopeEligiblesLot(Builder $query, int $missionId, string $tranche, string $operateur): Builder
     {
@@ -54,7 +56,7 @@ class Versement extends Model
             ->where('statut', '!=', 'CONFIRME')
             ->whereHas('ordreMission', fn (Builder $q) => $q
                 ->where('mission_id', $missionId)
-                ->whereNotIn('statut', ['REJETE', 'ANNULE']))
+                ->where('statut', 'VALIDE'))
             ->with('ordreMission.agent')
             ->orderBy('id');
     }
