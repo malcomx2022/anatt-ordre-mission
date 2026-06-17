@@ -63,6 +63,43 @@ class AuthController extends Controller
         return $this->success(null, 'Deconnexion reussie.');
     }
 
+    /**
+     * Changement de mot de passe par l'utilisateur lui-même.
+     * Lève l'indicateur must_change_password et révoque les autres sessions
+     * (le token courant est conservé pour ne pas déconnecter l'utilisateur).
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'confirmed', 'different:current_password', PasswordRule::defaults()],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->input('current_password'), $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Mot de passe actuel incorrect.'],
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->input('password')),
+            'must_change_password' => false,
+        ])->save();
+
+        // Révoque toutes les autres sessions, conserve le token courant.
+        // (En contexte de test, le token courant est transient et n'a pas d'id.)
+        $courant = $request->user()->currentAccessToken();
+        $autres = $user->tokens();
+        if ($courant instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $autres->where('id', '!=', $courant->id);
+        }
+        $autres->delete();
+
+        return $this->success(null, 'Mot de passe mis à jour.');
+    }
+
     public function me(Request $request): JsonResponse
     {
         return $this->success(new UserResource($request->user()));

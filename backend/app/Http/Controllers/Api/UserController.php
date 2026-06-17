@@ -51,6 +51,9 @@ class UserController extends Controller
         ]);
         $user->assignRole($data['role']);
         $user->actif = $data['actif'] ?? true;
+        // Le mot de passe initial est défini par l'administrateur (connu d'un tiers) :
+        // l'utilisateur devra le changer à sa première connexion.
+        $user->must_change_password = true;
         $user->save();
 
         AuditService::log($request->user(), 'CREATE_USER', 'user', $user->id, [
@@ -164,9 +167,16 @@ class UserController extends Controller
 
         $nouveau = $request->input('password') ?: Str::password(16);
         $user->password = $nouveau;
+        // Mot de passe temporaire connu de l'administrateur : changement forcé à la
+        // prochaine connexion. On révoque aussi les sessions actives de la cible.
+        $user->must_change_password = true;
         $user->save();
+        $user->tokens()->delete();
 
-        AuditService::log($request->user(), 'RESET_PASSWORD_USER', 'user', $user->id, [
+        // Journalisation distincte quand la cible est un SUPER_ADMIN : un reset par un
+        // pair est un vecteur de prise de contrôle latérale qui doit rester traçable.
+        $action = $user->isSuperAdmin() ? 'RESET_PASSWORD_SUPERADMIN' : 'RESET_PASSWORD_USER';
+        AuditService::log($request->user(), $action, 'user', $user->id, [
             'email' => $user->email,
         ]);
 

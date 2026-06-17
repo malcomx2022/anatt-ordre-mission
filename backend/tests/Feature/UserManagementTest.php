@@ -162,3 +162,14 @@ it('révoque les tokens actifs lors d’un changement de rôle', function () {
 
     expect($cible->fresh()->tokens()->count())->toBe(0);
 });
+
+it('journalise distinctement la réinitialisation du mot de passe d’un super_admin', function () {
+    $autreSuperAdmin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($this->superAdmin)->postJson("/api/admin/users/{$autreSuperAdmin->id}/reset-password")
+        ->assertOk();
+
+    $this->assertDatabaseHas('audit_logs', [
+        'action' => 'RESET_PASSWORD_SUPERADMIN', 'entite' => 'user', 'entite_id' => $autreSuperAdmin->id,
+    ]);
+});

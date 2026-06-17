@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'role_libelle' => Permissions::LIBELLES[$this->role] ?? $this->role,
             'telephone' => $this->telephone,
             'actif' => (bool) $this->actif,
+            'must_change_password' => (bool) $this->must_change_password,
             'derniere_connexion' => $this->derniere_connexion?->toISOString(),
             'cree_par' => $this->cree_par,
             'created_at' => $this->created_at?->toISOString(),

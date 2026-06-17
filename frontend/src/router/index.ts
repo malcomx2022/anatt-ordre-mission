@@ -32,6 +32,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/auth/ResetPasswordView.vue'),
     meta: { guest: true },
   },
+  {
+    path: '/changer-mot-de-passe',
+    name: 'force-password-change',
+    component: () => import('@/views/auth/ForcePasswordChangeView.vue'),
+    meta: { auth: true },
+  },
 
   // ── DASHBOARD ──
   {
@@ -306,6 +312,12 @@ router.beforeEach(async (to) => {
   // Redirect to dashboard if guest route and authenticated
   if (to.meta.guest && auth.isAuthenticated) {
     return { name: 'dashboard' }
+  }
+
+  // Changement de mot de passe imposé : on confine l'utilisateur à l'écran dédié
+  // tant que must_change_password n'est pas levé (cohérent avec le verrou backend 423).
+  if (auth.isAuthenticated && auth.mustChangePassword && to.name !== 'force-password-change') {
+    return { name: 'force-password-change' }
   }
 
   return checkPermission()
