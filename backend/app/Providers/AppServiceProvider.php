@@ -35,9 +35,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Rate limiting strict pour login: 5 tentatives/min par IP
+        // Rate limiting strict pour login : 5 tentatives/min, verrou combiné email + IP.
+        // Le verrou par identifiant bloque le credential stuffing ciblé multi-IP ;
+        // le verrou par IP bloque le balayage d'emails depuis une même source.
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(5)->by($request->ip());
+            $email = \Illuminate\Support\Str::lower((string) $request->input('email'));
+
+            return [
+                Limit::perMinute(5)->by('login|'.$request->ip()),
+                Limit::perMinute(5)->by('login|'.$email.'|'.$request->ip()),
+            ];
         });
 
         // Rate limiting pour les exports: 10/min (operations lourdes)

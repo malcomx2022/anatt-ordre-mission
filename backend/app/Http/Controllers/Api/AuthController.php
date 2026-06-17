@@ -14,6 +14,13 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    /**
+     * Hash bcrypt (coût 12) utilisé pour le hachage factice anti-timing au login.
+     * Sa seule fonction est de faire travailler bcrypt quand l'email est inconnu ;
+     * il ne correspond à aucun mot de passe réel.
+     */
+    private const HASH_FACTICE = '$2y$12$zCYxJ0ykvFyUeiSoV60tUuSo27cxsuLEfCcKzq0PzVnUNrQOa6LKe';
+
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -23,15 +30,17 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        // Anti-énumération : on exécute TOUJOURS un hachage, même si l'utilisateur est
+        // introuvable, pour égaliser le temps de réponse (sinon le coût bcrypt distingue
+        // un email connu d'un email inconnu — timing oracle).
+        $motDePasseValide = $user
+            ? Hash::check($request->password, $user->password)
+            : Hash::check($request->password, self::HASH_FACTICE);
+
+        // Message unique : ne jamais révéler si l'email existe ni si le compte est désactivé.
+        if (! $user || ! $motDePasseValide || ! $user->actif) {
             throw ValidationException::withMessages([
                 'email' => ['Identifiants incorrects.'],
-            ]);
-        }
-
-        if (! $user->actif) {
-            throw ValidationException::withMessages([
-                'email' => ['Ce compte est désactivé.'],
             ]);
         }
 
@@ -69,15 +78,11 @@ class AuthController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink($request->only('email'));
+        // Anti-énumération : on déclenche l'envoi mais on renvoie TOUJOURS la même réponse,
+        // que l'email existe ou non (ne pas révéler l'existence d'un compte).
+        Password::sendResetLink($request->only('email'));
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return $this->success(null, 'Lien de reinitialisation envoye.');
-        }
-
-        throw ValidationException::withMessages([
-            'email' => [__($status)],
-        ]);
+        return $this->success(null, "Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.");
     }
 
     public function resetPassword(Request $request): JsonResponse

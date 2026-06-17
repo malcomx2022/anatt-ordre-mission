@@ -139,3 +139,32 @@ it('génère le fichier Moov .xlsx au format exact', function () {
     expect($sheet->getCell('H2')->getValue())->toBe('AKPACA GERARD ATELIER REGIONAL');
     expect($sheet->getCell('I2')->getValue())->toBeNull();
 });
+
+it('neutralise l’injection de formule dans le libellé (MTN .txt)', function () {
+    // Un nom d'agent débutant par "=" serait réinterprété comme formule à l'ouverture
+    // du fichier dans un tableur. Le libellé doit être préfixé d'une apostrophe.
+    fabriquerVersement($this->mission, [
+        'nom' => '=HYPERLINK("http://evil")', 'prenoms' => 'X', 'telephone' => '0167000099', 'operateur' => 'MTN',
+    ], 'AVANCE', 45000);
+
+    $contenu = Storage::disk('local')->get(
+        app(MtnFileGenerator::class)->generer($this->mission->id, 'AVANCE', $this->user)['chemin']
+    );
+
+    // Le libellé (dernier champ) ne doit jamais commencer par = + - @.
+    $detail = explode("\r\n", $contenu)[1];
+    $libelle = substr($detail, strrpos($detail, ',') + 1);
+    expect($libelle[0])->toBe("'");
+});
+
+it('neutralise l’injection de formule dans le libellé (Moov .xlsx)', function () {
+    fabriquerVersement($this->mission, [
+        'nom' => '@SUM(A1)', 'prenoms' => 'Y', 'telephone' => '0140000099', 'operateur' => 'MOOV',
+    ], 'AVANCE', 30000);
+
+    $sheet = IOFactory::load(Storage::disk('local')->path(
+        app(MoovFileGenerator::class)->generer($this->mission->id, 'AVANCE', $this->user)['chemin']
+    ))->getActiveSheet();
+
+    expect($sheet->getCell('H2')->getValue())->toStartWith("'@SUM");
+});

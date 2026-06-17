@@ -104,12 +104,21 @@ class UserController extends Controller
             $user->assignRole($data['role']);
         }
 
+        // Révoque les tokens si le compte est désactivé ou son rôle modifié : sans cela,
+        // une session déjà ouverte conserverait ses anciennes permissions (la vérification
+        // `actif`/permissions n'a lieu qu'à la connexion).
+        $roleChange = isset($data['role']) && $data['role'] !== $ancienRole;
+        $desactivation = array_key_exists('actif', $data) && ! $data['actif'];
+        if ($roleChange || $desactivation) {
+            $user->tokens()->delete();
+        }
+
         AuditService::log($request->user(), 'UPDATE_USER', 'user', $user->id, [
             'email' => $user->email, 'role' => $user->role, 'actif' => $user->actif,
         ]);
 
         // Trace explicitement tout changement de profil.
-        if (isset($data['role']) && $data['role'] !== $ancienRole) {
+        if ($roleChange) {
             AuditService::log($request->user(), 'CHANGE_ROLE_USER', 'user', $user->id, [
                 'ancien_role' => $ancienRole, 'nouveau_role' => $user->role,
             ]);
@@ -133,6 +142,11 @@ class UserController extends Controller
 
         $user->actif = $actif;
         $user->save();
+
+        // Désactivation : on révoque immédiatement les sessions actives du compte.
+        if (! $actif) {
+            $user->tokens()->delete();
+        }
 
         AuditService::log($request->user(), $actif ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', 'user', $user->id, [
             'email' => $user->email,
@@ -166,6 +180,8 @@ class UserController extends Controller
         abort_if($this->estDernierSuperAdmin($user), 422, "Impossible : c'est le dernier super administrateur actif.");
         abort_if($user->id === $request->user()->id, 422, 'Vous ne pouvez pas supprimer votre propre compte.');
 
+        // Révoque les sessions actives avant suppression du compte.
+        $user->tokens()->delete();
         $user->delete();
 
         AuditService::log($request->user(), 'DELETE_USER', 'user', $user->id, ['email' => $user->email]);
