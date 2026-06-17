@@ -141,3 +141,35 @@ it('journalise la création et le changement de profil', function () {
     $this->assertDatabaseHas('audit_logs', ['action' => 'CREATE_USER', 'entite' => 'user', 'entite_id' => $id]);
     $this->assertDatabaseHas('audit_logs', ['action' => 'CHANGE_ROLE_USER', 'entite' => 'user', 'entite_id' => $id]);
 });
+
+it('révoque les tokens actifs du compte lorsqu’il est désactivé', function () {
+    $cible = User::factory()->controleur()->create(['actif' => true]);
+    $cible->createToken('auth-token');
+    expect($cible->tokens()->count())->toBe(1);
+
+    $this->actingAs($this->admin)->postJson("/api/admin/users/{$cible->id}/statut", ['actif' => false])
+        ->assertOk();
+
+    expect($cible->fresh()->tokens()->count())->toBe(0);
+});
+
+it('révoque les tokens actifs lors d’un changement de rôle', function () {
+    $cible = User::factory()->controleur()->create(['actif' => true]);
+    $cible->createToken('auth-token');
+
+    $this->actingAs($this->admin)->putJson("/api/admin/users/{$cible->id}", ['role' => User::ROLE_LECTEUR])
+        ->assertOk();
+
+    expect($cible->fresh()->tokens()->count())->toBe(0);
+});
+
+it('journalise distinctement la réinitialisation du mot de passe d’un super_admin', function () {
+    $autreSuperAdmin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($this->superAdmin)->postJson("/api/admin/users/{$autreSuperAdmin->id}/reset-password")
+        ->assertOk();
+
+    $this->assertDatabaseHas('audit_logs', [
+        'action' => 'RESET_PASSWORD_SUPERADMIN', 'entite' => 'user', 'entite_id' => $autreSuperAdmin->id,
+    ]);
+});

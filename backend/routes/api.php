@@ -27,13 +27,17 @@ Route::prefix('auth')->middleware('throttle:login')->group(function () {
 });
 
 // ── Routes protégées par Sanctum + rate limiting global ──
-Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+// ForcePasswordChange bloque l'API tant qu'un changement de mot de passe est requis
+// (création/réinitialisation administrative), sauf l'échappatoire de changement.
+Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePasswordChange::class])->group(function () {
 
     // Auth (tous les utilisateurs connectés)
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('auth/me', [AuthController::class, 'me']);
     // Permissions de l'utilisateur courant (pilote l'UI du frontend).
     Route::get('auth/me/permissions', [AuthController::class, 'permissions']);
+    // Changement de mot de passe par l'utilisateur lui-même (lève must_change_password).
+    Route::post('auth/mot-de-passe/changer', [AuthController::class, 'changePassword']);
 
     // Agents (référentiel personnel)
     Route::middleware('permission:personnel.consulter')->group(function () {
@@ -130,6 +134,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
                 $path = storage_path('app/settings.json');
                 $settings = file_exists($path) ? json_decode(file_get_contents($path), true) : [];
 
+                // Ne JAMAIS renvoyer le secret SMTP : on expose un masque si une valeur existe.
+                if (! empty($settings['smtpPassword'])) {
+                    $settings['smtpPassword'] = '********';
+                }
+
                 return response()->json(['data' => $settings]);
             });
             Route::put('settings', function (\Illuminate\Http\Request $request) {
@@ -152,11 +161,29 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
                 // ne doit pas effacer les autres clés (ex. configuration email).
                 $path = storage_path('app/settings.json');
                 $existant = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
+
+                // Secret SMTP : jamais stocké en clair. Si le client renvoie le masque
+                // (champ inchangé), on conserve la valeur chiffrée existante ; sinon on
+                // chiffre la nouvelle valeur avant écriture sur disque.
+                if (array_key_exists('smtpPassword', $entrant)) {
+                    if (in_array($entrant['smtpPassword'], ['', '********'], true)) {
+                        unset($entrant['smtpPassword']); // inchangé → ne pas écraser
+                    } else {
+                        $entrant['smtpPassword'] = \Illuminate\Support\Facades\Crypt::encryptString($entrant['smtpPassword']);
+                    }
+                }
+
                 $settings = array_merge($existant, $entrant);
 
                 file_put_contents($path, json_encode($settings, JSON_PRETTY_PRINT));
 
-                return response()->json(['data' => $settings, 'message' => 'Parametres enregistres.']);
+                // Réponse masquée : ne jamais renvoyer le secret au client.
+                $reponse = $settings;
+                if (! empty($reponse['smtpPassword'])) {
+                    $reponse['smtpPassword'] = '********';
+                }
+
+                return response()->json(['data' => $reponse, 'message' => 'Parametres enregistres.']);
             });
 
             Route::get('backups', function () {

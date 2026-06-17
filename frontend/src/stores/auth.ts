@@ -11,6 +11,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isSuperAdmin = computed(() => user.value?.role === 'SUPER_ADMIN')
+  /** L'utilisateur doit changer son mot de passe (création/réinitialisation admin). */
+  const mustChangePassword = computed(() => user.value?.must_change_password === true)
 
   /** Le SUPER_ADMIN a toujours la permission (cohérent avec Gate::before backend). */
   function can(permission: string): boolean {
@@ -59,5 +61,5 @@ export const useAuthStore = defineStore('auth', () => {
     sessionStorage.clear()
   }
 
-  return { user, token, permissions, loading, isAuthenticated, isSuperAdmin, can, login, fetchUser, logout }
+  return { user, token, permissions, loading, isAuthenticated, isSuperAdmin, mustChangePassword, can, login, fetchUser, logout }
 })

@@ -64,6 +64,14 @@ apiClient.interceptors.response.use(
         break
       }
 
+      case 423: {
+        // Changement de mot de passe imposé par le backend (PASSWORD_CHANGE_REQUIRED).
+        if (router.currentRoute.value.name !== 'force-password-change') {
+          router.push({ name: 'force-password-change' })
+        }
+        break
+      }
+
       case 500: {
         const { error: toastError } = useToast()
         toastError(message || 'Erreur interne du serveur. Veuillez reessayer.')

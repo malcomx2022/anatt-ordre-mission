@@ -38,6 +38,9 @@ onMounted(async () => {
     if (s.smtpHost) smtpHost.value = s.smtpHost
     if (s.smtpPort) smtpPort.value = s.smtpPort
     if (s.smtpUser) smtpUser.value = s.smtpUser
+    // Le backend renvoie un masque ('********') si un mot de passe est enregistré ;
+    // on le reflète dans le champ sans jamais exposer le secret réel.
+    if (s.smtpPassword) smtpPassword.value = s.smtpPassword
     if (s.smtpEncryption) smtpEncryption.value = s.smtpEncryption
     if (s.fromAddress) fromAddress.value = s.fromAddress
     if (s.fromName) fromName.value = s.fromName

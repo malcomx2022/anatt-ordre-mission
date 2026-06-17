@@ -51,6 +51,9 @@ class UserController extends Controller
         ]);
         $user->assignRole($data['role']);
         $user->actif = $data['actif'] ?? true;
+        // Le mot de passe initial est défini par l'administrateur (connu d'un tiers) :
+        // l'utilisateur devra le changer à sa première connexion.
+        $user->must_change_password = true;
         $user->save();
 
         AuditService::log($request->user(), 'CREATE_USER', 'user', $user->id, [
@@ -104,12 +107,21 @@ class UserController extends Controller
             $user->assignRole($data['role']);
         }
 
+        // Révoque les tokens si le compte est désactivé ou son rôle modifié : sans cela,
+        // une session déjà ouverte conserverait ses anciennes permissions (la vérification
+        // `actif`/permissions n'a lieu qu'à la connexion).
+        $roleChange = isset($data['role']) && $data['role'] !== $ancienRole;
+        $desactivation = array_key_exists('actif', $data) && ! $data['actif'];
+        if ($roleChange || $desactivation) {
+            $user->tokens()->delete();
+        }
+
         AuditService::log($request->user(), 'UPDATE_USER', 'user', $user->id, [
             'email' => $user->email, 'role' => $user->role, 'actif' => $user->actif,
         ]);
 
         // Trace explicitement tout changement de profil.
-        if (isset($data['role']) && $data['role'] !== $ancienRole) {
+        if ($roleChange) {
             AuditService::log($request->user(), 'CHANGE_ROLE_USER', 'user', $user->id, [
                 'ancien_role' => $ancienRole, 'nouveau_role' => $user->role,
             ]);
@@ -134,6 +146,11 @@ class UserController extends Controller
         $user->actif = $actif;
         $user->save();
 
+        // Désactivation : on révoque immédiatement les sessions actives du compte.
+        if (! $actif) {
+            $user->tokens()->delete();
+        }
+
         AuditService::log($request->user(), $actif ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', 'user', $user->id, [
             'email' => $user->email,
         ]);
@@ -150,9 +167,16 @@ class UserController extends Controller
 
         $nouveau = $request->input('password') ?: Str::password(16);
         $user->password = $nouveau;
+        // Mot de passe temporaire connu de l'administrateur : changement forcé à la
+        // prochaine connexion. On révoque aussi les sessions actives de la cible.
+        $user->must_change_password = true;
         $user->save();
+        $user->tokens()->delete();
 
-        AuditService::log($request->user(), 'RESET_PASSWORD_USER', 'user', $user->id, [
+        // Journalisation distincte quand la cible est un SUPER_ADMIN : un reset par un
+        // pair est un vecteur de prise de contrôle latérale qui doit rester traçable.
+        $action = $user->isSuperAdmin() ? 'RESET_PASSWORD_SUPERADMIN' : 'RESET_PASSWORD_USER';
+        AuditService::log($request->user(), $action, 'user', $user->id, [
             'email' => $user->email,
         ]);
 
@@ -166,6 +190,8 @@ class UserController extends Controller
         abort_if($this->estDernierSuperAdmin($user), 422, "Impossible : c'est le dernier super administrateur actif.");
         abort_if($user->id === $request->user()->id, 422, 'Vous ne pouvez pas supprimer votre propre compte.');
 
+        // Révoque les sessions actives avant suppression du compte.
+        $user->tokens()->delete();
         $user->delete();
 
         AuditService::log($request->user(), 'DELETE_USER', 'user', $user->id, ['email' => $user->email]);

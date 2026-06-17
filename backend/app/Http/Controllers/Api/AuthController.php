@@ -14,6 +14,13 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    /**
+     * Hash bcrypt (coût 12) utilisé pour le hachage factice anti-timing au login.
+     * Sa seule fonction est de faire travailler bcrypt quand l'email est inconnu ;
+     * il ne correspond à aucun mot de passe réel.
+     */
+    private const HASH_FACTICE = '$2y$12$zCYxJ0ykvFyUeiSoV60tUuSo27cxsuLEfCcKzq0PzVnUNrQOa6LKe';
+
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -23,15 +30,17 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        // Anti-énumération : on exécute TOUJOURS un hachage, même si l'utilisateur est
+        // introuvable, pour égaliser le temps de réponse (sinon le coût bcrypt distingue
+        // un email connu d'un email inconnu — timing oracle).
+        $motDePasseValide = $user
+            ? Hash::check($request->password, $user->password)
+            : Hash::check($request->password, self::HASH_FACTICE);
+
+        // Message unique : ne jamais révéler si l'email existe ni si le compte est désactivé.
+        if (! $user || ! $motDePasseValide || ! $user->actif) {
             throw ValidationException::withMessages([
                 'email' => ['Identifiants incorrects.'],
-            ]);
-        }
-
-        if (! $user->actif) {
-            throw ValidationException::withMessages([
-                'email' => ['Ce compte est désactivé.'],
             ]);
         }
 
@@ -54,6 +63,43 @@ class AuthController extends Controller
         return $this->success(null, 'Deconnexion reussie.');
     }
 
+    /**
+     * Changement de mot de passe par l'utilisateur lui-même.
+     * Lève l'indicateur must_change_password et révoque les autres sessions
+     * (le token courant est conservé pour ne pas déconnecter l'utilisateur).
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'confirmed', 'different:current_password', PasswordRule::defaults()],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->input('current_password'), $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Mot de passe actuel incorrect.'],
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->input('password')),
+            'must_change_password' => false,
+        ])->save();
+
+        // Révoque toutes les autres sessions, conserve le token courant.
+        // (En contexte de test, le token courant est transient et n'a pas d'id.)
+        $courant = $request->user()->currentAccessToken();
+        $autres = $user->tokens();
+        if ($courant instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $autres->where('id', '!=', $courant->id);
+        }
+        $autres->delete();
+
+        return $this->success(null, 'Mot de passe mis à jour.');
+    }
+
     public function me(Request $request): JsonResponse
     {
         return $this->success(new UserResource($request->user()));
@@ -69,15 +115,11 @@ class AuthController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink($request->only('email'));
+        // Anti-énumération : on déclenche l'envoi mais on renvoie TOUJOURS la même réponse,
+        // que l'email existe ou non (ne pas révéler l'existence d'un compte).
+        Password::sendResetLink($request->only('email'));
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return $this->success(null, 'Lien de reinitialisation envoye.');
-        }
-
-        throw ValidationException::withMessages([
-            'email' => [__($status)],
-        ]);
+        return $this->success(null, "Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.");
     }
 
     public function resetPassword(Request $request): JsonResponse

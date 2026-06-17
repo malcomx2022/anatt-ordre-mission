@@ -63,9 +63,13 @@ class PdfGenerator
             'date_generation' => now()->format('d/m/Y H:i'),
         ];
 
+        // isRemoteEnabled volontairement absent : le logo est embarqué en data-URI,
+        // aucune ressource distante n'est nécessaire. Le laisser actif exposerait un
+        // SSRF / lecture de fichier local si une donnée utilisateur atterrissait un jour
+        // dans un attribut src / url() du gabarit.
         $pdf = Pdf::loadView('pdf.ordre-mission', $data)
             ->setPaper('A4', 'portrait')
-            ->setOption(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
+            ->setOption(['defaultFont' => 'sans-serif']);
 
         $filename = $this->chemin($ordre);
         Storage::disk('local')->put($filename, $pdf->output());

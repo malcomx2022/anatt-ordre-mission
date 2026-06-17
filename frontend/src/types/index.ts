@@ -23,6 +23,7 @@ export interface User {
   role_libelle?: string
   telephone?: string | null
   actif?: boolean
+  must_change_password?: boolean
   derniere_connexion?: string | null
   cree_par?: number | null
   email_verified_at?: string

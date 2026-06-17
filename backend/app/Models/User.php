@@ -55,6 +55,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'actif' => 'boolean',
+            'must_change_password' => 'boolean',
             'derniere_connexion' => 'datetime',
         ];
     }

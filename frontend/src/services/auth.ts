@@ -21,6 +21,14 @@ export const authService = {
     await api.post('/api/auth/logout')
   },
 
+  async changePassword(payload: {
+    current_password: string
+    password: string
+    password_confirmation: string
+  }): Promise<void> {
+    await api.post('/api/auth/mot-de-passe/changer', payload)
+  },
+
   async sendResetLink(email: string): Promise<void> {
     await api.post('/api/auth/mot-de-passe/email', { email })
   },
