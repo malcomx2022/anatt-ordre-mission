@@ -111,8 +111,8 @@
                         <td style="text-align:right">{{ $taux_journalier }} FCFA</td>
                         <td style="text-align:right">{{ $montant_total }} FCFA</td>
                     </tr>
-                    <tr><td colspan="3">Avance (33,33 %)</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
-                    <tr><td colspan="3">Reliquat (66,67 %)</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
+                    <tr><td colspan="3">Avance (70 %)</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
+                    <tr><td colspan="3">Reliquat (30 %)</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
                     <tr class="total-row"><td colspan="3">Total</td><td style="text-align:right">{{ $montant_total }} FCFA</td></tr>
                 </tbody>
             </table>

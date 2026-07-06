@@ -78,7 +78,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     return b.nb_jours && b.nb_jours > 0 ? b.nb_jours : nbJoursMission.value
   }
 
-  /** Per diem temps réel d'un bénéficiaire (avance 33,33 % / reliquat 66,67 %). */
+  /** Per diem temps réel d'un bénéficiaire (avance 70 % / reliquat 30 %). */
   function calculer(b: BeneficiaireForm): PerDiem {
     const nb = nbJoursDe(b)
     if (contexte.value.prise_en_charge_tiers) {
@@ -89,7 +89,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
       return { taux: null, nb_jours: nb, total: 0, avance: 0, reliquat: 0 }
     }
     const total = t * nb
-    const avance = Math.round(total / 3)
+    const avance = Math.round(total * 0.7)   // 70 %
     return { taux: t, nb_jours: nb, total, avance, reliquat: total - avance }
   }
 

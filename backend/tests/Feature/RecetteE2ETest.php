@@ -45,8 +45,8 @@ it('déroule le scénario complet SEMO 0541405636 jusqu’à l’état mensuel',
 
     // Per diem ORDRE_1 / INTERIEUR / JOURNEE_COMPLETE = 45000 × 3 jours.
     expect($omDada->montant_total)->toBe(135000)        // 45000 × 3
-        ->and($omDada->avance)->toBe(45000)
-        ->and($omDada->reliquat)->toBe(90000);
+        ->and($omDada->avance)->toBe(94500)             // 70 %
+        ->and($omDada->reliquat)->toBe(40500);          // 30 %
     // CAV payé selon SA catégorie (ORDRE_3 = 30000 × 3).
     expect($omCav->montant_total)->toBe(90000);
 

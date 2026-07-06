@@ -55,8 +55,8 @@ class OrdreMissionSeeder extends Seeder
                 ->value('taux_journalier');
 
             $total = $taux * $nbJours;
-            $avance = (int) round($total / 3);        // AVANCE 33,33 %
-            $reliquat = $total - $avance;             // RELIQUAT 66,67 %
+            $avance = (int) round($total * 0.70);     // AVANCE 70 %
+            $reliquat = $total - $avance;             // RELIQUAT 30 %
 
             DB::table('ordre_missions')->updateOrInsert(
                 ['reference_semo' => $om['reference_semo']],

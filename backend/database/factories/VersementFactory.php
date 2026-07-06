@@ -16,7 +16,7 @@ class VersementFactory extends Factory
         return [
             'ordre_mission_id' => OrdreMission::factory(),
             'type' => 'AVANCE',
-            'montant' => 45000,
+            'montant' => 94500,   // 70 % de 135000
             'operateur' => 'MTN',
             'telephone' => '0190000000',
             'statut' => 'EN_ATTENTE',
@@ -25,7 +25,7 @@ class VersementFactory extends Factory
 
     public function reliquat(): static
     {
-        return $this->state(fn () => ['type' => 'RELIQUAT', 'montant' => 90000]);
+        return $this->state(fn () => ['type' => 'RELIQUAT', 'montant' => 40500]);
     }
 
     public function moov(): static

@@ -20,8 +20,8 @@ it('calcule le per diem et répartit avance / reliquat', function () {
     $r = $this->service->calculer('ORDRE_1', 'INTERIEUR', 'JOURNEE_COMPLETE', 3);
 
     expect($r['montant_total'])->toBe(135000)   // 45000 x 3
-        ->and($r['avance'])->toBe(45000)         // round(135000/3)
-        ->and($r['reliquat'])->toBe(90000)       // 135000 - 45000
+        ->and($r['avance'])->toBe(94500)         // round(135000 x 0,70)
+        ->and($r['reliquat'])->toBe(40500)       // 135000 - 94500
         ->and($r['exonere'])->toBeFalse();
 });
 

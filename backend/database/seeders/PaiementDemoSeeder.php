@@ -119,8 +119,8 @@ class PaiementDemoSeeder extends Seeder
                 ->value('taux_journalier');
 
             $total = $taux * $m['nb_jours'];
-            $avance = (int) round($total / 3);
-            $reliquat = $total - $avance;
+            $avance = (int) round($total * 0.70);   // 70 %
+            $reliquat = $total - $avance;           // 30 %
 
             DB::table('ordre_missions')->updateOrInsert(
                 ['reference_semo' => $om['ref']],

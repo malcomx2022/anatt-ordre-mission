@@ -73,8 +73,8 @@ async function telechargerPdf() {
       <table class="w-full text-sm font-body border-t border-gray-100 pt-3">
         <tbody>
           <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Montant total</td><td class="text-right font-display font-bold text-anatt-700">{{ fmt(ordre.montant_total) }} FCFA</td></tr>
-          <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Avance (33,33 %)</td><td class="text-right">{{ fmt(ordre.avance) }} FCFA</td></tr>
-          <tr><td class="py-2 text-gray-400">Reliquat (66,67 %)</td><td class="text-right">{{ fmt(ordre.reliquat) }} FCFA</td></tr>
+          <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Avance (70 %)</td><td class="text-right">{{ fmt(ordre.avance) }} FCFA</td></tr>
+          <tr><td class="py-2 text-gray-400">Reliquat (30 %)</td><td class="text-right">{{ fmt(ordre.reliquat) }} FCFA</td></tr>
         </tbody>
       </table>
 

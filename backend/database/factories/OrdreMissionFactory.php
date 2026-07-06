@@ -15,7 +15,7 @@ class OrdreMissionFactory extends Factory
     public function definition(): array
     {
         $total = 135000;
-        $avance = (int) round($total / 3);
+        $avance = (int) round($total * 0.70);   // 70 %
 
         return [
             'reference_semo' => fake()->unique()->numerify('##########'),

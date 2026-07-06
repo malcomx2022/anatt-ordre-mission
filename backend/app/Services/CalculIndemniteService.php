@@ -10,8 +10,8 @@ use Illuminate\Validation\ValidationException;
  * Calcul de l'indemnité de mission (per diem) selon le barème officiel ANaTT.
  *
  *   per_diem = taux_journalier(catégorie × zone × type) × nb_jours
- *   avance   = round(per_diem / 3)        (≈ 33,33 %)
- *   reliquat = per_diem - avance          (≈ 66,67 %)
+ *   avance   = round(per_diem × 0,70)     (70 %)
+ *   reliquat = per_diem - avance          (30 %)
  *
  * Exonération : si la prise en charge est assurée par un organisme tiers,
  * aucun frais n'est alloué (montants à 0, aucun versement généré).
@@ -48,8 +48,8 @@ class CalculIndemniteService
         }
 
         $montantTotal = $taux * $nbJours;
-        $avance = (int) round($montantTotal / 3);
-        $reliquat = $montantTotal - $avance;
+        $avance = (int) round($montantTotal * 0.70);   // 70 %
+        $reliquat = $montantTotal - $avance;           // 30 %
 
         return [
             'nb_jours' => $nbJours,

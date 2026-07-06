@@ -37,8 +37,8 @@ it('retranscrit une mission en N OM avec versements', function () {
     $om = OrdreMission::where('reference_semo', 'SEMO-1')->first();
     // ORDRE_1 / INTERIEUR / JOURNEE_COMPLETE = 45000 x 3 = 135000
     expect($om->montant_total)->toBe(135000)
-        ->and($om->avance)->toBe(45000)
-        ->and($om->reliquat)->toBe(90000)
+        ->and($om->avance)->toBe(94500)     // 70 %
+        ->and($om->reliquat)->toBe(40500)   // 30 %
         ->and($om->statut)->toBe('IMPORTE');
 
     expect(Versement::where('ordre_mission_id', $om->id)->count())->toBe(2);

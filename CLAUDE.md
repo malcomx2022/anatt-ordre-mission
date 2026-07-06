@@ -42,7 +42,7 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   - Types `INTERIEUR` : `UN_REPAS` / `DEUX_REPAS` / `JOURNEE_COMPLETE`.
   - Types `EXTERIEUR` : `JOURNEE_COMPLETE` / `LOGE_NOURRI` / `LOGE_SEUL` / `NOURRI_SEUL`.
   - **Règle des 12 h** pour le nb de jours (période ≥ 12 h = jour entier ; retour 0-12 h = rien).
-  - Répartition : **AVANCE 33,33 %** / **RELIQUAT 66,67 %**.
+  - Répartition : **AVANCE 70 %** / **RELIQUAT 30 %**.
   - **Exonération** si prise en charge par un organisme tiers (aucun frais alloué).
 - **Téléphone et opérateur** (MTN / Moov) viennent du **référentiel agents**, pas de l'OM.
 - **Référence SEMO** = clé naturelle **UNIQUE** (anti-doublon).
@@ -514,8 +514,8 @@ interface OrdreMission {
                        | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
   nb_jours: number
   montant_total: number         // taux_journalier × nb_jours (FCFA)
-  avance: number                // round(montant_total / 3)
-  reliquat: number              // montant_total - avance
+  avance: number                // round(montant_total × 0,70)  (70 %)
+  reliquat: number              // montant_total - avance       (30 %)
   statut: 'BROUILLON' | 'IMPORTE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
   conducteur_a_bord?: string    // mention logistique uniquement (≠ bénéficiaire)
   reference_autorisation?: string
@@ -709,8 +709,8 @@ $nbJours = abs(Carbon::parse($depart)->diffInDays(Carbon::parse($retour))) + 1;
 $taux = Bareme::taux($categorie, $zoneCode, $type);   // null => erreur de validation
 
 $montantTotal = $taux * $nbJours;
-$avance       = (int) round($montantTotal / 3);        // 33,33 %
-$reliquat     = $montantTotal - $avance;               // 66,67 %
+$avance       = (int) round($montantTotal * 0.70);     // 70 %
+$reliquat     = $montantTotal - $avance;               // 30 %
 
 // Exonération : si mission.prise_en_charge_tiers => montants à 0, aucun versement.
 ```

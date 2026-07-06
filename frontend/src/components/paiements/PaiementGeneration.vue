@@ -122,8 +122,8 @@ async function marquerErreur() {
         <div>
           <label class="text-[11px] text-gray-500 font-body block mb-1">Tranche</label>
           <select v-model="tranche" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-body focus:outline-none focus:border-anatt-500">
-            <option value="AVANCE">Avance (33,33 %)</option>
-            <option value="RELIQUAT">Reliquat (66,67 %)</option>
+            <option value="AVANCE">Avance (70 %)</option>
+            <option value="RELIQUAT">Reliquat (30 %)</option>
           </select>
         </div>
         <div>

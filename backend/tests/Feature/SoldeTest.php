@@ -17,9 +17,9 @@ beforeEach(function () {
     $agent = Agent::factory()->mtn()->create();
     $this->om = OrdreMission::factory()->statut('VALIDE')->create([
         'mission_id' => $this->mission->id, 'agent_id' => $agent->id,
-        'montant_total' => 135000, 'avance' => 45000, 'reliquat' => 90000,
+        'montant_total' => 135000, 'avance' => 94500, 'reliquat' => 40500,
     ]);
-    foreach (['AVANCE' => 45000, 'RELIQUAT' => 90000] as $type => $montant) {
+    foreach (['AVANCE' => 94500, 'RELIQUAT' => 40500] as $type => $montant) {
         Versement::factory()->create([
             'ordre_mission_id' => $this->om->id, 'type' => $type, 'montant' => $montant,
             'operateur' => 'MTN', 'telephone' => $agent->telephone, 'statut' => 'EN_ATTENTE',
