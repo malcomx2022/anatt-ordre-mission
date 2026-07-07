@@ -212,7 +212,7 @@ h2("1.2 Notions clés")
 bullet("Mission : un événement (atelier, supervision…) qui regroupe plusieurs ordres de mission.")
 bullet("Ordre de mission (OM) : 1 enregistrement = 1 bénéficiaire. Sa référence SEMO est unique.")
 bullet("CAV (conducteur de véhicule administratif) : bénéficiaire à part entière, payé selon SA catégorie.")
-bullet("Per diem : indemnité journalière, répartie en AVANCE (33,33 %) et RELIQUAT (66,67 %).")
+bullet("Per diem : indemnité journalière, répartie en AVANCE (70 %) et RELIQUAT (30 %).")
 bullet("Versement : une tranche (AVANCE ou RELIQUAT) d'un OM, pour un opérateur donné.")
 bullet("Lot de paiement : 1 mission × 1 tranche × 1 opérateur = 1 fichier généré.")
 
@@ -339,7 +339,13 @@ bullet("Objet, destination, zone (déduite de la destination), dates de départ 
 bullet("Indiquez s'il y a prise en charge par un tiers (exonération : aucun frais alloué).")
 h3("Étape 2 — Bénéficiaires")
 bullet("Ajoutez chaque bénéficiaire (participant ou CAV) avec sa référence SEMO unique et son type de prise en charge.")
-bullet("Le per diem (montant total, avance, reliquat) se calcule en temps réel pour chaque bénéficiaire.")
+bullet("Répartition détaillée (facultative) : cochez « Répartition détaillée par type de repas » pour "
+       "saisir le nombre de jours par type (ex. 1 jour « un repas » + 6 jours « journée complète »), "
+       "comme sur l'état de paiement officiel. Sinon, un seul type × le nombre de jours suffit.")
+bullet("Transport (facultatif) : renseignez un montant de transport ; il s'ajoute au total et entre "
+       "dans la répartition avance / reliquat.")
+bullet("Le per diem (per diem + transport = total, puis avance / reliquat) se calcule en temps réel "
+       "pour chaque bénéficiaire.")
 bullet("Les doublons de référence SEMO sont détectés immédiatement.")
 h3("Étape 3 — Récapitulatif")
 bullet("Vérifiez les totaux (avance / reliquat) puis enregistrez.")
@@ -365,10 +371,14 @@ encadre("Règle essentielle",
 # =========================================================================
 h1("7. Calcul du per diem")
 para("Le montant est calculé automatiquement par l'application :")
-para("Montant total = taux journalier (catégorie × zone × type de prise en charge) × nombre de jours.", bold=True)
+para("Per diem = somme, pour chaque type de prise en charge, de (taux journalier × nombre de jours). "
+     "Montant total = per diem + transport éventuel.", bold=True)
 bullet("Nombre de jours : décompte inclusif des dates (règle des 12 h : une période ≥ 12 h compte pour un jour entier).")
-bullet("Avance = arrondi de (montant total ÷ 3), soit 33,33 %.")
-bullet("Reliquat = montant total − avance, soit 66,67 %.")
+bullet("Répartition détaillée : un même bénéficiaire peut cumuler plusieurs types (ex. 1 jour « un repas » "
+       "à 15 000 + 6 jours « journée complète » à 45 000 = 285 000), comme sur l'état de paiement officiel.")
+bullet("Transport : montant facultatif ajouté au total avant la répartition avance / reliquat.")
+bullet("Avance = arrondi de (montant total × 70 %).")
+bullet("Reliquat = montant total − avance, soit 30 %.")
 bullet("Exonération (prise en charge par un tiers) : tous les montants sont à 0, aucun versement n'est créé.")
 para("Les 4 zones sont : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II et EXT_ZONE_III (les zones II et III ont des "
      "taux identiques). Les types « repas » (un repas, deux repas) ne s'appliquent qu'à l'intérieur ; les "
@@ -505,7 +515,7 @@ tableau(["Terme", "Définition"],
          ["OM", "Ordre de mission : 1 enregistrement = 1 bénéficiaire."],
          ["CAV", "Conducteur de véhicule administratif, payé selon sa propre catégorie."],
          ["Per diem", "Indemnité journalière de mission."],
-         ["Avance / Reliquat", "Tranches du per diem : 33,33 % puis 66,67 %."],
+         ["Avance / Reliquat", "Tranches du per diem : 70 % puis 30 %."],
          ["Lot", "1 mission × 1 tranche × 1 opérateur = 1 fichier de paiement."],
          ["MSISDN", "Numéro de téléphone au format international (229 + numéro)."],
          ["Exonération", "Prise en charge par un tiers : aucun frais alloué."]],
