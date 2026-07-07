@@ -23,7 +23,13 @@ return new class extends Migration
                 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL',
             ]);
             $table->integer('nb_jours');
-            // Montants en FCFA entiers : total = avance + reliquat.
+            // Répartition des jours par type de prise en charge (état ANaTT réel) :
+            // [{type, taux, nb_jours, montant}] — ex. 1 jour UN_REPAS + 6 jours JOURNEE_COMPLETE.
+            // null => per diem simple = type_prise_en_charge × nb_jours.
+            $table->json('lignes_per_diem')->nullable();
+            // Montant de transport (colonne TRANSPORT de l'état), ajouté au total.
+            $table->unsignedBigInteger('montant_transport')->default(0);
+            // Montants en FCFA entiers : total = per_diem + transport = avance + reliquat.
             $table->unsignedBigInteger('montant_total')->default(0);
             $table->unsignedBigInteger('avance')->default(0);
             $table->unsignedBigInteger('reliquat')->default(0);

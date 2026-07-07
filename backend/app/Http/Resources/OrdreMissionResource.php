@@ -21,6 +21,8 @@ class OrdreMissionResource extends JsonResource
             'zone_code' => $this->zone_code,
             'type_prise_en_charge' => $this->type_prise_en_charge,
             'nb_jours' => $this->nb_jours,
+            'lignes_per_diem' => $this->lignes_per_diem ?? [],
+            'montant_transport' => $this->montant_transport,
             'montant_total' => $this->montant_total,
             'avance' => $this->avance,
             'reliquat' => $this->reliquat,

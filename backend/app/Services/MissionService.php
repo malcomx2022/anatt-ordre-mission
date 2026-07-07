@@ -48,12 +48,20 @@ class MissionService
 
                 $nbJours = $o['nb_jours'] ?? $this->calcul->nbJours($mission->date_depart, $mission->date_retour);
 
-                $calc = $this->calcul->calculer(
+                // Répartition des jours par type : soit détaillée (état ANaTT), soit
+                // une ligne unique déduite de type_prise_en_charge × nb_jours.
+                $lignes = ! empty($o['lignes'])
+                    ? array_map(fn ($l) => ['type' => $l['type'], 'nb_jours' => (int) $l['nb_jours']], $o['lignes'])
+                    : [['type' => $o['type_prise_en_charge'], 'nb_jours' => $nbJours]];
+
+                $transport = (int) ($o['montant_transport'] ?? 0);
+
+                $calc = $this->calcul->calculerDetaille(
                     $categorie,
                     $mission->zone_code,
-                    $o['type_prise_en_charge'],
-                    $nbJours,
+                    $lignes,
                     $exonere,
+                    $transport,
                 );
 
                 $ordre = OrdreMission::create([
@@ -63,8 +71,10 @@ class MissionService
                     'role' => $o['role'],
                     'categorie' => $categorie,
                     'zone_code' => $mission->zone_code,
-                    'type_prise_en_charge' => $o['type_prise_en_charge'],
+                    'type_prise_en_charge' => $calc['type_principal'] ?? $o['type_prise_en_charge'],
                     'nb_jours' => $calc['nb_jours'],
+                    'lignes_per_diem' => $calc['lignes'],
+                    'montant_transport' => $calc['montant_transport'],
                     'montant_total' => $calc['montant_total'],
                     'avance' => $calc['avance'],
                     'reliquat' => $calc['reliquat'],

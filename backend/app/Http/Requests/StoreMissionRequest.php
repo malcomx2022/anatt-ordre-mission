@@ -48,6 +48,13 @@ class StoreMissionRequest extends FormRequest
             'ordres.*.categorie' => 'nullable|in:ORDRE_1,ORDRE_2,ORDRE_3',
             'ordres.*.type_prise_en_charge' => 'required|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',
             'ordres.*.nb_jours' => 'nullable|integer|min:1',
+            // Répartition détaillée des jours par type (état ANaTT). Optionnelle :
+            // si absente, per diem = type_prise_en_charge × nb_jours.
+            'ordres.*.lignes' => 'nullable|array',
+            'ordres.*.lignes.*.type' => 'required_with:ordres.*.lignes|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',
+            'ordres.*.lignes.*.nb_jours' => 'required_with:ordres.*.lignes|integer|min:0',
+            // Montant de transport (colonne TRANSPORT), ajouté au total.
+            'ordres.*.montant_transport' => 'nullable|integer|min:0',
             'ordres.*.conducteur_a_bord' => 'nullable|string|max:255',
             'ordres.*.reference_autorisation' => 'nullable|string|max:255',
             'ordres.*.moyen_transport' => 'nullable|string|max:255',
@@ -79,6 +86,17 @@ class StoreMissionRequest extends FormRequest
                         "ordres.{$i}.type_prise_en_charge",
                         "Le type « {$type} » est incompatible avec la zone {$zone}.",
                     );
+                }
+
+                // Chaque ligne détaillée doit aussi être compatible avec la zone.
+                foreach ((array) ($ordre['lignes'] ?? []) as $j => $ligne) {
+                    $lt = $ligne['type'] ?? null;
+                    if ($lt && ! in_array($lt, $typesAutorises, true)) {
+                        $validator->errors()->add(
+                            "ordres.{$i}.lignes.{$j}.type",
+                            "Le type « {$lt} » est incompatible avec la zone {$zone}.",
+                        );
+                    }
                 }
             }
         });

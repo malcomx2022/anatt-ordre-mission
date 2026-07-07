@@ -34,6 +34,16 @@ class PdfGenerator
         $tauxJournalier = $ordre->nb_jours > 0 ? intdiv($ordre->montant_total, $ordre->nb_jours) : 0;
         $fmt = fn (int $n) => number_format($n, 0, ',', ' ');
 
+        // Détail des lignes de per diem (état ANaTT) : type × taux × nb_jours = montant.
+        $lignes = array_map(fn (array $l) => [
+            'type' => self::TYPES[$l['type']] ?? $l['type'],
+            'taux' => $fmt((int) $l['taux']),
+            'nb_jours' => (int) $l['nb_jours'],
+            'montant' => $fmt((int) $l['montant']),
+        ], $ordre->lignes_per_diem ?? []);
+        $montantTransport = (int) $ordre->montant_transport;
+        $perDiem = $ordre->montant_total - $montantTransport;
+
         $data = [
             'reference_semo' => $ordre->reference_semo,
             'role' => $ordre->role,
@@ -57,6 +67,10 @@ class PdfGenerator
             'reference_autorisation' => $ordre->reference_autorisation,
             'exonere' => (bool) $mission?->prise_en_charge_tiers,
             'taux_journalier' => $fmt($tauxJournalier),
+            'lignes' => $lignes,
+            'montant_transport' => $fmt($montantTransport),
+            'a_transport' => $montantTransport > 0,
+            'per_diem' => $fmt($perDiem),
             'montant_total' => $fmt($ordre->montant_total),
             'avance' => $fmt($ordre->avance),
             'reliquat' => $fmt($ordre->reliquat),

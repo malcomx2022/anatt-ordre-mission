@@ -48,8 +48,7 @@ class CalculIndemniteService
         }
 
         $montantTotal = $taux * $nbJours;
-        $avance = (int) round($montantTotal * 0.70);   // 70 %
-        $reliquat = $montantTotal - $avance;           // 30 %
+        [$avance, $reliquat] = $this->repartir($montantTotal);
 
         return [
             'nb_jours' => $nbJours,
@@ -59,6 +58,104 @@ class CalculIndemniteService
             'reliquat' => $reliquat,
             'exonere' => false,
         ];
+    }
+
+    /**
+     * Calcul détaillé « état ANaTT » : un bénéficiaire cumule plusieurs types de
+     * prise en charge (ex. 1 jour UN_REPAS + 6 jours JOURNEE_COMPLETE) + un
+     * éventuel montant de transport.
+     *
+     *   per_diem       = Σ (taux(type) × nb_jours)   sur chaque ligne
+     *   montant_total  = per_diem + montant_transport
+     *   avance         = round(montant_total × 0,70)  (70 %)
+     *   reliquat       = montant_total - avance       (30 %)
+     *
+     * @param  array<int,array{type:string,nb_jours:int}>  $lignes
+     * @return array{lignes:array<int,array{type:string,taux:int,nb_jours:int,montant:int}>, type_principal:?string, nb_jours:int, per_diem:int, montant_transport:int, montant_total:int, avance:int, reliquat:int, exonere:bool}
+     */
+    public function calculerDetaille(
+        string $categorie,
+        string $zoneCode,
+        array $lignes,
+        bool $exonere = false,
+        int $montantTransport = 0,
+    ): array {
+        // Ne conserver que les lignes avec au moins un jour.
+        $lignes = array_values(array_filter(
+            $lignes,
+            fn ($l) => (int) ($l['nb_jours'] ?? 0) > 0,
+        ));
+
+        if ($exonere || empty($lignes)) {
+            return [
+                'lignes' => [],
+                'type_principal' => $lignes[0]['type'] ?? null,
+                'nb_jours' => array_sum(array_map(fn ($l) => (int) $l['nb_jours'], $lignes)),
+                'per_diem' => 0,
+                'montant_transport' => 0,
+                'montant_total' => 0,
+                'avance' => 0,
+                'reliquat' => 0,
+                'exonere' => true,
+            ];
+        }
+
+        $detail = [];
+        $perDiem = 0;
+        $nbJoursTotal = 0;
+        $typePrincipal = null;
+        $joursPrincipal = -1;
+
+        foreach ($lignes as $ligne) {
+            $type = $ligne['type'];
+            $nbJours = (int) $ligne['nb_jours'];
+            $taux = Bareme::taux($categorie, $zoneCode, $type);
+
+            if ($taux === null) {
+                throw ValidationException::withMessages([
+                    'bareme' => ["Aucun barème pour {$categorie} / {$zoneCode} / {$type}."],
+                ]);
+            }
+
+            $montant = $taux * $nbJours;
+            $detail[] = ['type' => $type, 'taux' => $taux, 'nb_jours' => $nbJours, 'montant' => $montant];
+            $perDiem += $montant;
+            $nbJoursTotal += $nbJours;
+
+            // Type dominant = celui totalisant le plus de jours (pour l'affichage/compat).
+            if ($nbJours > $joursPrincipal) {
+                $joursPrincipal = $nbJours;
+                $typePrincipal = $type;
+            }
+        }
+
+        $montantTotal = $perDiem + max(0, $montantTransport);
+        [$avance, $reliquat] = $this->repartir($montantTotal);
+
+        return [
+            'lignes' => $detail,
+            'type_principal' => $typePrincipal,
+            'nb_jours' => $nbJoursTotal,
+            'per_diem' => $perDiem,
+            'montant_transport' => max(0, $montantTransport),
+            'montant_total' => $montantTotal,
+            'avance' => $avance,
+            'reliquat' => $reliquat,
+            'exonere' => false,
+        ];
+    }
+
+    /**
+     * Répartition AVANCE 70 % / RELIQUAT 30 % (le reliquat absorbe l'arrondi).
+     *
+     * @return array{0:int,1:int} [avance, reliquat]
+     */
+    private function repartir(int $montantTotal): array
+    {
+        $avance = (int) round($montantTotal * 0.70);   // 70 %
+        $reliquat = $montantTotal - $avance;           // 30 %
+
+        return [$avance, $reliquat];
     }
 
     /**

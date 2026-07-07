@@ -105,12 +105,31 @@
                     <tr><th>Désignation</th><th style="text-align:right">Nb jours</th><th style="text-align:right">Taux journalier</th><th style="text-align:right">Montant</th></tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Per diem ({{ $type_prise_en_charge }} — {{ $zone }})</td>
-                        <td style="text-align:right">{{ $nb_jours }}</td>
-                        <td style="text-align:right">{{ $taux_journalier }} FCFA</td>
-                        <td style="text-align:right">{{ $montant_total }} FCFA</td>
-                    </tr>
+                    @if(!empty($lignes))
+                        @foreach($lignes as $ligne)
+                            <tr>
+                                <td>{{ $ligne['type'] }} — {{ $zone }}</td>
+                                <td style="text-align:right">{{ $ligne['nb_jours'] }}</td>
+                                <td style="text-align:right">{{ $ligne['taux'] }} FCFA</td>
+                                <td style="text-align:right">{{ $ligne['montant'] }} FCFA</td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td>Per diem ({{ $type_prise_en_charge }} — {{ $zone }})</td>
+                            <td style="text-align:right">{{ $nb_jours }}</td>
+                            <td style="text-align:right">{{ $taux_journalier }} FCFA</td>
+                            <td style="text-align:right">{{ $per_diem }} FCFA</td>
+                        </tr>
+                    @endif
+                    @if($a_transport)
+                        <tr>
+                            <td>Transport</td>
+                            <td style="text-align:right">—</td>
+                            <td style="text-align:right">—</td>
+                            <td style="text-align:right">{{ $montant_transport }} FCFA</td>
+                        </tr>
+                    @endif
                     <tr><td colspan="3">Avance (70 %)</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
                     <tr><td colspan="3">Reliquat (30 %)</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
                     <tr class="total-row"><td colspan="3">Total</td><td style="text-align:right">{{ $montant_total }} FCFA</td></tr>

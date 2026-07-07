@@ -27,6 +27,8 @@ class OrdreMission extends Model
         'zone_code',
         'type_prise_en_charge',
         'nb_jours',
+        'lignes_per_diem',      // répartition jours par type [{type, taux, nb_jours, montant}]
+        'montant_transport',
         'montant_total',
         'avance',
         'reliquat',
@@ -41,6 +43,8 @@ class OrdreMission extends Model
     {
         return [
             'nb_jours' => 'integer',
+            'lignes_per_diem' => 'array',
+            'montant_transport' => 'integer',
             'montant_total' => 'integer',
             'avance' => 'integer',
             'reliquat' => 'integer',
