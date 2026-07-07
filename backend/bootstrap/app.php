@@ -62,6 +62,17 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        // Toute HttpException volontaire (abort(403), abort(422), abort(405)…) doit
+        // conserver SON code de statut et son message, et non être avalée par le
+        // catch-all \Throwable ci-dessous (qui renverrait un 500 trompeur).
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage() ?: 'Requete non aboutie.',
+                ], $e->getStatusCode());
+            }
+        });
+
         $exceptions->renderable(function (\Throwable $e, $request) {
             if ($request->expectsJson() && !app()->hasDebugModeEnabled()) {
                 return response()->json([
