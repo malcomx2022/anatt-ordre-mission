@@ -11,6 +11,20 @@ export type TypePriseEnCharge =
 export type StatutOM =
   | 'BROUILLON' | 'IMPORTE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
 
+/** Saisie : nombre de jours pour un type de prise en charge donné. */
+export interface LignePerDiemInput {
+  type: TypePriseEnCharge
+  nb_jours: number
+}
+
+/** Ligne calculée renvoyée par l'API (état ANaTT détaillé). */
+export interface LignePerDiem {
+  type: TypePriseEnCharge
+  taux: number
+  nb_jours: number
+  montant: number
+}
+
 /** Types de prise en charge autorisés selon la portée de la zone. */
 export const TYPES_INTERIEUR: TypePriseEnCharge[] = ['UN_REPAS', 'DEUX_REPAS', 'JOURNEE_COMPLETE']
 export const TYPES_EXTERIEUR: TypePriseEnCharge[] = ['JOURNEE_COMPLETE', 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL']
@@ -46,6 +60,8 @@ export interface OrdreMission {
   zone_code: ZoneCode
   type_prise_en_charge: TypePriseEnCharge
   nb_jours: number
+  lignes_per_diem?: LignePerDiem[]
+  montant_transport?: number
   montant_total: number
   avance: number
   reliquat: number
@@ -80,6 +96,10 @@ export interface BeneficiaireForm {
   categorie?: Categorie
   type_prise_en_charge: TypePriseEnCharge | ''
   nb_jours?: number | null
+  /** Répartition détaillée jours/type (état ANaTT). Vide => type unique × nb_jours. */
+  lignes?: LignePerDiemInput[]
+  /** Montant de transport (colonne TRANSPORT de l'état). */
+  montant_transport?: number | null
   conducteur_a_bord?: string | null
   reference_autorisation?: string | null
   moyen_transport?: string | null
@@ -102,6 +122,8 @@ export interface MissionFormData {
     categorie?: Categorie
     type_prise_en_charge: TypePriseEnCharge
     nb_jours?: number | null
+    lignes?: LignePerDiemInput[]
+    montant_transport?: number | null
     conducteur_a_bord?: string | null
     reference_autorisation?: string | null
     moyen_transport?: string | null

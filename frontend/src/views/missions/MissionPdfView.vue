@@ -72,6 +72,15 @@ async function telechargerPdf() {
 
       <table class="w-full text-sm font-body border-t border-gray-100 pt-3">
         <tbody>
+          <template v-if="ordre.lignes_per_diem && ordre.lignes_per_diem.length">
+            <tr v-for="(l, i) in ordre.lignes_per_diem" :key="i" class="border-b border-gray-50">
+              <td class="py-2 text-gray-400">{{ l.type }} — {{ l.nb_jours }} j × {{ fmt(l.taux) }}</td>
+              <td class="text-right">{{ fmt(l.montant) }} FCFA</td>
+            </tr>
+          </template>
+          <tr v-if="ordre.montant_transport && ordre.montant_transport > 0" class="border-b border-gray-50">
+            <td class="py-2 text-gray-400">Transport</td><td class="text-right">{{ fmt(ordre.montant_transport) }} FCFA</td>
+          </tr>
           <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Montant total</td><td class="text-right font-display font-bold text-anatt-700">{{ fmt(ordre.montant_total) }} FCFA</td></tr>
           <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Avance (70 %)</td><td class="text-right">{{ fmt(ordre.avance) }} FCFA</td></tr>
           <tr><td class="py-2 text-gray-400">Reliquat (30 %)</td><td class="text-right">{{ fmt(ordre.reliquat) }} FCFA</td></tr>

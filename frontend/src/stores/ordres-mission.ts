@@ -29,6 +29,8 @@ function beneficiaireVierge(): BeneficiaireForm {
     categorie: undefined,
     type_prise_en_charge: '',
     nb_jours: null,
+    lignes: [],
+    montant_transport: null,
     conducteur_a_bord: '',
     reference_autorisation: '',
     moyen_transport: '',
@@ -45,8 +47,11 @@ function joursInclusifs(depart: string, retour: string): number {
 }
 
 export interface PerDiem {
-  taux: number | null
+  ok: boolean          // false => barème introuvable pour un des types
+  taux: number | null  // taux unique (mode simple) ; null en mode multi-lignes
   nb_jours: number
+  per_diem: number
+  transport: number
   total: number
   avance: number
   reliquat: number
@@ -78,19 +83,43 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     return b.nb_jours && b.nb_jours > 0 ? b.nb_jours : nbJoursMission.value
   }
 
-  /** Per diem temps réel d'un bénéficiaire (avance 70 % / reliquat 30 %). */
+  /**
+   * Per diem temps réel d'un bénéficiaire (avance 70 % / reliquat 30 %).
+   * Prend en compte la répartition détaillée par type (état ANaTT) si présente,
+   * sinon type unique × nb_jours, plus l'éventuel montant de transport.
+   */
   function calculer(b: BeneficiaireForm): PerDiem {
-    const nb = nbJoursDe(b)
+    const lignes = (b.lignes ?? []).filter((l) => l.type && l.nb_jours > 0)
+    const transport = Math.max(0, Number(b.montant_transport) || 0)
+
     if (contexte.value.prise_en_charge_tiers) {
-      return { taux: 0, nb_jours: nb, total: 0, avance: 0, reliquat: 0 }
+      const nb = lignes.length ? lignes.reduce((s, l) => s + l.nb_jours, 0) : nbJoursDe(b)
+      return { ok: true, taux: 0, nb_jours: nb, per_diem: 0, transport: 0, total: 0, avance: 0, reliquat: 0 }
     }
-    const t = taux(b.categorie, contexte.value.zone_code, b.type_prise_en_charge)
-    if (t == null) {
-      return { taux: null, nb_jours: nb, total: 0, avance: 0, reliquat: 0 }
+
+    let perDiem = 0
+    let nbJours = 0
+    let tauxAffiche: number | null = null
+
+    if (lignes.length) {
+      for (const l of lignes) {
+        const t = taux(b.categorie, contexte.value.zone_code, l.type)
+        if (t == null) return { ok: false, taux: null, nb_jours: 0, per_diem: 0, transport, total: transport, avance: 0, reliquat: 0 }
+        perDiem += t * l.nb_jours
+        nbJours += l.nb_jours
+      }
+    } else {
+      const nb = nbJoursDe(b)
+      const t = taux(b.categorie, contexte.value.zone_code, b.type_prise_en_charge)
+      if (t == null) return { ok: false, taux: null, nb_jours: nb, per_diem: 0, transport, total: transport, avance: 0, reliquat: 0 }
+      tauxAffiche = t
+      perDiem = t * nb
+      nbJours = nb
     }
-    const total = t * nb
+
+    const total = perDiem + transport
     const avance = Math.round(total * 0.7)   // 70 %
-    return { taux: t, nb_jours: nb, total, avance, reliquat: total - avance }
+    return { ok: true, taux: tauxAffiche, nb_jours: nbJours, per_diem: perDiem, transport, total, avance, reliquat: total - avance }
   }
 
   const totalMission = computed(() => beneficiaires.value.reduce((s, b) => s + calculer(b).total, 0))
@@ -116,11 +145,13 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
 
   function beneficiaireValide(b: BeneficiaireForm): boolean {
     const ref = b.reference_semo.trim()
+    // Répartition valide : un type unique OU au moins une ligne détaillée > 0 jour.
+    const aLignes = (b.lignes ?? []).some((l) => l.type && l.nb_jours > 0)
     return !!b.agent_id
       && !!ref
       && !referencesEnDoublon.value.has(ref)
       && !!b.categorie
-      && !!b.type_prise_en_charge
+      && (!!b.type_prise_en_charge || aLignes)
   }
 
   const etape2Valide = computed(() =>
@@ -157,6 +188,11 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
         categorie: b.categorie,
         type_prise_en_charge: b.type_prise_en_charge as TypePriseEnCharge,
         nb_jours: b.nb_jours || undefined,
+        // Répartition détaillée (jours > 0 uniquement) ; omise si vide.
+        lignes: (b.lignes ?? []).filter((l) => l.type && l.nb_jours > 0).length
+          ? (b.lignes ?? []).filter((l) => l.type && l.nb_jours > 0)
+          : undefined,
+        montant_transport: b.montant_transport ? Number(b.montant_transport) : undefined,
         conducteur_a_bord: b.role === 'PARTICIPANT' ? (b.conducteur_a_bord || undefined) : undefined,
         reference_autorisation: b.reference_autorisation || undefined,
         moyen_transport: b.moyen_transport || undefined,

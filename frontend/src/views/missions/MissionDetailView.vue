@@ -119,9 +119,18 @@ async function rejeter() {
             <dt class="text-gray-400">Catégorie</dt><dd class="font-semibold text-anatt-600">{{ ordre.categorie }}</dd>
             <dt class="text-gray-400">Type</dt><dd>{{ ordre.type_prise_en_charge }}</dd>
             <dt class="text-gray-400">Nb jours</dt><dd>{{ ordre.nb_jours }}</dd>
+            <template v-if="ordre.lignes_per_diem && ordre.lignes_per_diem.length > 1">
+              <dt class="text-gray-400">Répartition</dt>
+              <dd class="text-[12px] text-gray-600">
+                <span v-for="(l, i) in ordre.lignes_per_diem" :key="i" class="block">{{ l.type }} : {{ l.nb_jours }} j × {{ fmt(l.taux) }} = {{ fmt(l.montant) }}</span>
+              </dd>
+            </template>
+            <template v-if="ordre.montant_transport && ordre.montant_transport > 0">
+              <dt class="text-gray-400">Transport</dt><dd>{{ fmt(ordre.montant_transport) }} FCFA</dd>
+            </template>
             <dt class="text-gray-400">Total</dt><dd class="font-display font-bold text-anatt-700">{{ fmt(ordre.montant_total) }} FCFA</dd>
-            <dt class="text-gray-400">Avance</dt><dd>{{ fmt(ordre.avance) }}</dd>
-            <dt class="text-gray-400">Reliquat</dt><dd>{{ fmt(ordre.reliquat) }}</dd>
+            <dt class="text-gray-400">Avance (70 %)</dt><dd>{{ fmt(ordre.avance) }}</dd>
+            <dt class="text-gray-400">Reliquat (30 %)</dt><dd>{{ fmt(ordre.reliquat) }}</dd>
           </dl>
         </AppCard>
       </div>

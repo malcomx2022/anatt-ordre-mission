@@ -205,7 +205,7 @@ function terminer() {
                 <td>{{ b.role }}</td>
                 <td>{{ b.reference_semo }}</td>
                 <td>{{ b.categorie }}</td>
-                <td>{{ b.type_prise_en_charge }}</td>
+                <td>{{ (b.lignes ?? []).some(l => l.nb_jours > 0) ? 'Réparti' : b.type_prise_en_charge }}</td>
                 <td class="text-right font-semibold">{{ fmt(store.calculer(b).total) }}</td>
                 <td class="text-right text-gray-500">{{ fmt(store.calculer(b).avance) }}</td>
                 <td class="text-right text-gray-500">{{ fmt(store.calculer(b).reliquat) }}</td>
