@@ -16,7 +16,7 @@ import type { OrdreMission } from '@/types'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { canValiderOM } = useAuth()
+const { canValiderOM, canViserOM, canApprouverOM, canRejeterOM } = useAuth()
 const id = Number(route.params.id)
 
 const ordre = ref<OrdreMission | null>(null)
@@ -26,13 +26,69 @@ const showRejet = ref(false)
 const motif = ref('')
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
-const peutValider = computed(() => canValiderOM() && ordre.value?.statut === 'IMPORTE')
 
-// Le brouillon reste proposé tant que le circuit de validation n'est pas achevé :
-// c'est précisément l'épreuve que l'on relit AVANT de valider.
-const peutTelechargerBrouillon = computed(
-  () => !!ordre.value && ['BROUILLON', 'IMPORTE', 'VISA_DAF'].includes(ordre.value.statut),
+// Circuit de validation en trois étapes : le contrôleur vérifie, le DAF vise,
+// le Directeur Général valide en dernier (verrouillage). Chaque bouton n'apparaît
+// qu'à l'acteur concerné et au statut correspondant.
+const peutValider = computed(() => canValiderOM() && ordre.value?.statut === 'IMPORTE')
+const peutViser = computed(() => canViserOM() && ordre.value?.statut === 'VERIFIE')
+const peutApprouver = computed(() => canApprouverOM() && ordre.value?.statut === 'VISA_DAF')
+const peutRejeter = computed(
+  () => canRejeterOM() && !!ordre.value && ['IMPORTE', 'VERIFIE', 'VISA_DAF'].includes(ordre.value.statut),
 )
+
+// Le brouillon reste proposé tant que le circuit n'est pas achevé : c'est
+// précisément l'épreuve que l'on relit AVANT de valider.
+const peutTelechargerBrouillon = computed(
+  () => !!ordre.value && ['BROUILLON', 'IMPORTE', 'VERIFIE', 'VISA_DAF'].includes(ordre.value.statut),
+)
+
+// En circuit complet le contrôleur « vérifie » ; en circuit simple il valide
+// directement. Le mode vient du serveur pour ne pas dupliquer la règle ici.
+const libelleActionControle = computed(() =>
+  ordre.value?.circuit_complet ? 'Vérifier' : 'Valider',
+)
+
+/** Où en est l'OM dans le circuit, exprimé pour l'utilisateur. */
+const etapeCircuit = computed(() => {
+  if (!ordre.value?.circuit_complet) return null
+  switch (ordre.value?.statut) {
+    case 'IMPORTE':
+      return 'Étape 1 sur 3 — en attente de vérification par le contrôleur'
+    case 'VERIFIE':
+      return 'Étape 2 sur 3 — vérifié, en attente du visa du DAF'
+    case 'VISA_DAF':
+      return 'Étape 3 sur 3 — visé par le DAF, en attente de la validation du Directeur Général'
+    case 'VALIDE':
+      return 'Circuit achevé — validé et verrouillé par le Directeur Général'
+    default:
+      return null
+  }
+})
+
+async function viser() {
+  action.value = true
+  try {
+    ordre.value = await ordresService.viser(id)
+    toast.success('Visa du DAF apposé. Transmis au Directeur Général.')
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
+
+async function approuver() {
+  action.value = true
+  try {
+    ordre.value = await ordresService.approuver(id)
+    toast.success('Ordre de mission validé et verrouillé.')
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
 
 async function telechargerBrouillon() {
   action.value = true
@@ -59,7 +115,11 @@ async function valider() {
   action.value = true
   try {
     ordre.value = await ordresService.valider(id)
-    toast.success('Ordre de mission validé.')
+    toast.success(
+      ordre.value.statut === 'VERIFIE'
+        ? 'Ordre de mission vérifié. Transmis au DAF pour visa.'
+        : 'Ordre de mission validé.',
+    )
   } catch (e) {
     toast.error(getErrorMessage(e))
   } finally {
@@ -121,12 +181,17 @@ async function rejeter() {
                 Télécharger le brouillon
               </span>
             </AppButton>
-            <template v-if="peutValider">
-              <AppButton variant="danger" :loading="action" @click="showRejet = true">Rejeter</AppButton>
-              <AppButton :loading="action" @click="valider">Valider</AppButton>
-            </template>
+            <AppButton v-if="peutRejeter" variant="danger" :loading="action" @click="showRejet = true">
+              Rejeter
+            </AppButton>
+            <AppButton v-if="peutValider" :loading="action" @click="valider">{{ libelleActionControle }}</AppButton>
+            <AppButton v-if="peutViser" :loading="action" @click="viser">Apposer le visa DAF</AppButton>
+            <AppButton v-if="peutApprouver" :loading="action" @click="approuver">
+              Valider définitivement
+            </AppButton>
           </div>
         </div>
+        <p v-if="etapeCircuit" class="mt-3 text-xs font-body text-gray-500">{{ etapeCircuit }}</p>
         <p v-if="ordre.statut === 'REJETE' && ordre.commentaire_rejet" class="mt-3 text-sm text-red-600 font-body">Motif du rejet : {{ ordre.commentaire_rejet }}</p>
       </AppCard>
 

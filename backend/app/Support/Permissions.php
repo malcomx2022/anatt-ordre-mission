@@ -53,6 +53,8 @@ class Permissions
     public const OM_VISER = 'om.viser';
     /** 2e et dernière signature : VISA_DAF -> VALIDE (rend l'OM payable). */
     public const OM_APPROUVER = 'om.approuver';
+    /** Rejet d'un OM : partagé par les trois acteurs du circuit. */
+    public const OM_REJETER = 'om.rejeter';
     public const PAIEMENTS_CONSULTER = 'paiements.consulter';
     public const PAIEMENTS_GENERER = 'paiements.generer';
     public const PAIEMENTS_CONFIRMER = 'paiements.confirmer';
@@ -69,7 +71,7 @@ class Permissions
         self::DASHBOARD_CONSULTER,
         self::PERSONNEL_CONSULTER, self::PERSONNEL_GERER,
         self::OM_CONSULTER, self::OM_RETRANSCRIRE, self::OM_VALIDER,
-        self::OM_VISER, self::OM_APPROUVER,
+        self::OM_VISER, self::OM_APPROUVER, self::OM_REJETER,
         self::PAIEMENTS_CONSULTER, self::PAIEMENTS_GENERER, self::PAIEMENTS_CONFIRMER,
         self::BAREMES_CONSULTER, self::BAREMES_MODIFIER,
         self::RAPPORTS_CONSULTER,
@@ -114,7 +116,7 @@ class Permissions
         self::DAF => [
             self::DASHBOARD_CONSULTER,
             self::PERSONNEL_CONSULTER,
-            self::OM_CONSULTER, self::OM_VISER,
+            self::OM_CONSULTER, self::OM_VISER, self::OM_REJETER,
             self::PAIEMENTS_CONSULTER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,
@@ -123,7 +125,7 @@ class Permissions
         self::DG => [
             self::DASHBOARD_CONSULTER,
             self::PERSONNEL_CONSULTER,
-            self::OM_CONSULTER, self::OM_APPROUVER,
+            self::OM_CONSULTER, self::OM_APPROUVER, self::OM_REJETER,
             self::PAIEMENTS_CONSULTER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,
@@ -132,7 +134,7 @@ class Permissions
         self::CONTROLEUR => [
             self::DASHBOARD_CONSULTER,
             self::PERSONNEL_CONSULTER,
-            self::OM_CONSULTER, self::OM_VALIDER,
+            self::OM_CONSULTER, self::OM_VALIDER, self::OM_REJETER,
             self::PAIEMENTS_CONSULTER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,

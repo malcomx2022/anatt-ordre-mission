@@ -66,11 +66,19 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
     // Missions (retranscription SEMO : 1 mission + N OM)
     Route::post('missions', [MissionController::class, 'storeMission'])->middleware('permission:om.retranscrire');
 
-    // Validation / rejet des OM
-    Route::middleware('permission:om.valider')->group(function () {
-        Route::post('ordres/{ordre}/valider', [ValidationController::class, 'valider']);
-        Route::post('ordres/{ordre}/rejeter', [ValidationController::class, 'rejeter']);
-    });
+    // Circuit de validation en trois étapes : CONTROLEUR -> DAF -> DG.
+    // Étape 1 — contrôle de conformité (IMPORTE -> VERIFIE ; -> VALIDE si circuit simple).
+    Route::post('ordres/{ordre}/valider', [ValidationController::class, 'valider'])
+        ->middleware('permission:om.valider');
+    // Étape 2 — visa du DAF (VERIFIE -> VISA_DAF).
+    Route::post('ordres/{ordre}/viser', [ValidationController::class, 'viser'])
+        ->middleware('permission:om.viser');
+    // Étape 3 — validation finale du DG (VISA_DAF -> VALIDE : verrouillage, OM payable).
+    Route::post('ordres/{ordre}/approuver', [ValidationController::class, 'approuver'])
+        ->middleware('permission:om.approuver');
+    // Rejet motivé, ouvert aux trois acteurs du circuit.
+    Route::post('ordres/{ordre}/rejeter', [ValidationController::class, 'rejeter'])
+        ->middleware('permission:om.rejeter');
 
     // Paiements (mode GÉNÉRATION)
     Route::middleware('permission:paiements.consulter')->group(function () {

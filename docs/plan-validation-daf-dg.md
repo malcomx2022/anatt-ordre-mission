@@ -1,6 +1,7 @@
-# Plan d'implémentation — Brouillon d'OM + double validation DAF → DG avec signatures
+# Plan d'implémentation — Brouillon d'OM + circuit de validation CONTROLEUR → DAF → DG
 
-> Document de planification. **Aucun code applicatif n'est modifié par ce document.**
+> Circuit en **trois** étapes : le contrôleur vérifie, le DAF vise, le Directeur Général
+> valide en dernier — c'est lui qui verrouille l'OM et ouvre le paiement.
 > Référence métier : état de paiement scanné `N°0069/ANaTT/DAF/C-SFC` du 23/06/2026.
 
 ---
@@ -56,6 +57,7 @@ identiques au scan. Rien à corriger de ce côté.
 |---|---|---|
 | Répartition avance / reliquat (§2) | **70/30 conservé** — le code actuel reste la référence | `CalculIndemniteService::repartir()` **non modifié**. L'écart avec l'état scanné est assumé : voir la note ci-dessous |
 | Portée de la signature (§12.6) | **Scellé d'intégrité interne** | HMAC-SHA256 + code de vérification imprimé. Pas de PKI, pas de certificat, pas de valeur probante au sens de la signature électronique qualifiée |
+| Rôle du CONTROLEUR (§12.2) | **Première vérification, en amont du DAF** | Le circuit compte **trois** étapes : CONTROLEUR → DAF → **DG en dernier**, qui verrouille l'OM. Le contrôleur ne valide plus directement |
 
 > **Note de traçabilité sur le 70/30.** La décision est enregistrée telle quelle. Elle
 > implique que les montants calculés par l'application diffèrent de ceux de l'état de
@@ -111,19 +113,29 @@ Points d'appui repérés dans le code :
 ## 4. Machine à états cible
 
 ```
-                        ┌───── rejeter (motif ≥ 10) ─────────────────┐
-                        │                                            ▼
-IMPORTE ──viser (DAF)──▶ VISA_DAF ──approuver (DG)──▶ VALIDE ──▶ SOLDE
-   │                        │                         (payable)
-   └── rejeter ─────────────┴──────────────────────▶ REJETE
+IMPORTE ──vérifier──▶ VERIFIE ──viser──▶ VISA_DAF ──valider──▶ VALIDE ──▶ SOLDE
+        (CONTROLEUR)          (DAF)              (DG, final)   (verrouillé,
+             │                   │                   │           payable)
+             └───────────────────┴───────────────────┴──▶ REJETE
+                        rejeter (motif ≥ 10), à chaque étape
 ```
+
+Trois étapes, dans cet ordre strict :
+
+| # | Acteur | Permission | Transition | Effet |
+|---|--------|-----------|------------|-------|
+| 1 | `CONTROLEUR` | `om.valider` | `IMPORTE → VERIFIE` | première vérification de conformité |
+| 2 | `DAF` | `om.viser` | `VERIFIE → VISA_DAF` | « Vu » du DAF — **pas encore payable** |
+| 3 | `DG` | `om.approuver` | `VISA_DAF → VALIDE` | **validation finale : verrouille l'OM et ouvre le paiement** |
 
 Règles :
 
-1. `VALIDE` **garde exactement son sens actuel** = double signature obtenue = payable.
-2. `VISA_DAF` **n'est pas payable** : `scopeEligiblesLot` reste inchangé, ligne pour ligne.
-3. Le rejet reste possible aux **deux** étapes (le DG peut rejeter un OM déjà visé DAF) ;
-   le rejet depuis `VISA_DAF` efface le visa DAF (il n'a plus d'objet).
+1. `VALIDE` **garde exactement son sens actuel** = circuit achevé = payable. C'est le DG,
+   en dernière position, qui l'accorde — d'où le terme « validation finale ».
+2. Ni `VERIFIE` ni `VISA_DAF` ne sont payables : `scopeEligiblesLot` reste inchangé,
+   ligne pour ligne.
+3. Le rejet reste possible aux **trois** étapes ; il efface les signatures amont, qui
+   n'ont plus d'objet.
 4. **Séparation des tâches** : le signataire du visa DAF ne peut pas être le signataire DG
    du même OM (contrôle vidé de sens sinon). Y compris pour un SUPER_ADMIN.
 5. Toute évolution future rendant un OM modifiable après visa **doit invalider les visas**
@@ -138,7 +150,7 @@ Règles :
 | Flag | Comportement | Effet sur l'existant |
 |---|---|---|
 | **OFF** (valeur de déploiement) | `IMPORTE --/valider--> VALIDE`, un seul acteur | **Strictement identique à aujourd'hui.** Toute la suite de tests passe sans être touchée |
-| **ON** (après création des comptes DAF/DG) | `IMPORTE --/viser--> VISA_DAF --/valider--> VALIDE` | Nouveau circuit |
+| **ON** (après création des comptes DAF/DG) | `IMPORTE --/valider--> VERIFIE --/viser--> VISA_DAF --/approuver--> VALIDE` | Nouveau circuit à trois étapes |
 
 C'est le cœur de la stratégie « sans casser l'existant » : le code des deux circuits cohabite,
 et la bascule est une décision d'exploitation, réversible, prise dans l'écran Paramètres.
@@ -164,9 +176,13 @@ et la bascule est une décision d'exploitation, réversible, prise dans l'écran
 | `om.viser` | `IMPORTE → VISA_DAF` | `DAF` |
 | `om.approuver` | `VISA_DAF → VALIDE` | `DG` |
 
-`om.valider` est **conservée telle quelle** : elle pilote le circuit simple (flag OFF) et reste
-la permission du `CONTROLEUR`. Aucune permission existante n'est renommée ni retirée — c'est
-ce qui garantit que `RoleMiddlewareTest` et les guards frontend restent valides.
+`om.valider` est **conservée telle quelle** et reste la permission du `CONTROLEUR` : en circuit
+simple elle valide directement, en circuit complet elle déclenche la première vérification.
+Aucune permission existante n'est renommée ni retirée — c'est ce qui garantit que
+`RoleMiddlewareTest` et les guards frontend restent valides.
+
+`om.rejeter` est ajoutée et partagée par les **trois** acteurs (CONTROLEUR, DAF, DG) :
+chacun doit pouvoir rejeter à son tour.
 
 ### 5.3 Matrice cible (ajouts uniquement)
 
@@ -399,7 +415,7 @@ impact sur le circuit de validation.
 | 2.4 | Routes brouillon + final, séquence de numérotation |
 | 2.5 | Tests : totaux = Σ des lignes ; le scan reproduit à l'identique sur un jeu de données équivalent |
 
-### Phase 3 — Double validation
+### Phase 3 — Circuit de validation à trois étapes — ✅ LIVRÉE
 
 | # | Tâche |
 |---|---|
@@ -412,7 +428,7 @@ impact sur le circuit de validation.
 | 3.7 | Audit : `VISA_DAF_OM`, `APPROVE_DG_OM`, `GENERATE_ETAT` |
 | 3.8 | Notifications : DAF prévenu à la retranscription, DG prévenu après visa DAF, gestionnaire prévenu au rejet |
 
-### Phase 4 — Frontend & profilage
+### Phase 4 — Frontend & profilage — ✅ LIVRÉE (hors upload de signature)
 
 | # | Tâche |
 |---|---|
@@ -475,8 +491,8 @@ impact sur le circuit de validation.
 ## 12. Questions ouvertes (arbitrage client)
 
 1. ~~**Répartition avance/reliquat**~~ — **tranché : 70/30 conservé** (cf. §1 bis).
-2. **Rôle du CONTROLEUR** en flag ON : disparaît du circuit de signature, ou conserve un
-   contrôle de conformité préalable au DAF (`IMPORTE → CONTROLE → VISA_DAF`) ?
+2. ~~**Rôle du CONTROLEUR** en flag ON~~ — **tranché : il assure la première vérification**,
+   en amont du DAF (`IMPORTE → VERIFIE → VISA_DAF → VALIDE`). Cf. §1 bis.
 3. **Délégation / intérim** : en cas d'absence du DAF ou du DG, qui signe ? (profil
    `DAF_INTERIM` ? délégation nominative datée ? aucun mécanisme ?)
 4. **Granularité de signature** : confirmez-vous l'action groupée par mission (recommandée)

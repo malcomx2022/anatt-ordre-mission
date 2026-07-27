@@ -8,56 +8,94 @@ use App\Models\User;
 /**
  * Règles du circuit de validation des ordres de mission.
  *
- * Centralise la lecture du mode (simple/double), les transitions autorisées et le
- * scellé d'intégrité apposé à chaque signature.
+ * Circuit complet (flag workflow.double_validation actif) — trois étapes :
+ *
+ *   IMPORTE ──vérifier (CONTROLEUR, om.valider)──▶ VERIFIE
+ *           ──viser    (DAF,        om.viser)   ──▶ VISA_DAF
+ *           ──approuver(DG,         om.approuver)▶ VALIDE   ← verrouillage final
+ *
+ * Circuit historique (flag inactif) — une seule étape :
+ *
+ *   IMPORTE ──valider (CONTROLEUR, om.valider)──▶ VALIDE
+ *
+ * Dans les deux cas VALIDE a le même sens : l'OM est verrouillé et payable.
+ * Versement::scopeEligiblesLot() n'est donc jamais à modifier.
  */
 class Workflow
 {
-    /** Statut intermédiaire : visa DAF obtenu, approbation DG en attente. */
+    /** Étape 1 : conformité vérifiée par le CONTROLEUR. */
+    public const STATUT_VERIFIE = 'VERIFIE';
+
+    /** Étape 2 : visa du DAF obtenu, validation finale du DG en attente. */
     public const STATUT_VISA_DAF = 'VISA_DAF';
 
-    /** Le circuit double (DAF puis DG) est-il actif ? */
+    /** Étape 3 : validation finale du DG — l'OM est verrouillé. */
+    public const STATUT_VALIDE = 'VALIDE';
+
+    /** Identifiants d'étape (utilisés pour le scellé et l'audit). */
+    public const ETAPE_VERIFICATION = 'CONTROLE';
+
+    public const ETAPE_VISA_DAF = 'DAF';
+
+    public const ETAPE_VALIDATION_DG = 'DG';
+
+    /** Le circuit complet (CONTROLEUR → DAF → DG) est-il actif ? */
     public static function doubleValidationActive(): bool
     {
         return (bool) config('workflow.double_validation', false);
     }
 
-    /** La séparation des tâches entre les deux signataires est-elle exigée ? */
+    /** La séparation des tâches entre signataires est-elle exigée ? */
     public static function separationDesTaches(): bool
     {
         return (bool) config('workflow.separation_des_taches', true);
     }
 
     /**
-     * Statut requis en entrée de l'étape finale (celle qui rend l'OM payable).
-     * Circuit simple : on approuve un OM tout juste retranscrit.
-     * Circuit double : on n'approuve qu'un OM déjà visé par le DAF.
+     * Statut atteint par l'action du CONTROLEUR.
+     *
+     * Circuit complet : première vérification, l'OM attend ensuite le DAF.
+     * Circuit historique : le contrôleur valide directement (comportement d'origine).
      */
-    public static function statutAvantApprobation(): string
+    public static function statutApresControle(): string
     {
-        return self::doubleValidationActive() ? self::STATUT_VISA_DAF : 'IMPORTE';
+        return self::doubleValidationActive() ? self::STATUT_VERIFIE : self::STATUT_VALIDE;
+    }
+
+    /** Statut requis pour que le DAF puisse apposer son visa. */
+    public static function statutAvantVisaDaf(): string
+    {
+        return self::STATUT_VERIFIE;
+    }
+
+    /** Statut requis pour que le DG puisse valider définitivement. */
+    public static function statutAvantValidationDg(): string
+    {
+        return self::STATUT_VISA_DAF;
     }
 
     /**
      * Statuts depuis lesquels un rejet reste possible.
-     * Le DG doit pouvoir rejeter un OM que le DAF a déjà visé.
+     * Chacun des trois acteurs doit pouvoir rejeter à son tour.
+     *
+     * @return array<int,string>
      */
     public static function statutsRejetables(): array
     {
         return self::doubleValidationActive()
-            ? ['IMPORTE', self::STATUT_VISA_DAF]
+            ? ['IMPORTE', self::STATUT_VERIFIE, self::STATUT_VISA_DAF]
             : ['IMPORTE'];
     }
 
     /**
      * Scellé d'intégrité d'une signature.
      *
-     * HMAC-SHA256 sur la charge financière signée + l'identité du signataire, clé
-     * APP_KEY. Permet de détecter une altération des montants postérieure à la
-     * signature et d'imprimer un code de vérification sur le document.
+     * HMAC-SHA256 sur la charge financière signée + l'identité du signataire,
+     * clé APP_KEY. Permet de détecter une altération des montants postérieure à
+     * la signature et d'imprimer un code de vérification sur le document.
      *
-     * Ce n'est PAS une signature électronique à valeur légale (aucune PKI, aucun
-     * certificat) : c'est un scellé interne, arbitrage retenu avec le client.
+     * Ce n'est PAS une signature électronique à valeur légale (aucune PKI,
+     * aucun certificat) : c'est un scellé interne, arbitrage retenu avec le client.
      */
     public static function sceller(OrdreMission $ordre, User $signataire, string $etape, string $horodatage): string
     {

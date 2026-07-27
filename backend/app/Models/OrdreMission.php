@@ -32,12 +32,14 @@ class OrdreMission extends Model
         'montant_total',
         'avance',
         'reliquat',
-        'statut',               // BROUILLON|IMPORTE|VISA_DAF|EN_ATTENTE|VALIDE|REJETE|SOLDE|ANNULE
+        'statut',               // BROUILLON|IMPORTE|VERIFIE|VISA_DAF|EN_ATTENTE|VALIDE|REJETE|SOLDE|ANNULE
         'conducteur_a_bord',    // mention logistique uniquement
         'reference_autorisation',
         'moyen_transport',
         'commentaire_rejet',
         // ── Signatures du circuit de validation (instantanés + scellé d'intégrité) ──
+        'verifie_par', 'verifie_le', 'verifie_nom', 'verifie_fonction',
+        'verifie_commentaire', 'signature_verif_hash',
         'visa_daf_par', 'visa_daf_le', 'visa_daf_nom', 'visa_daf_fonction',
         'visa_daf_commentaire', 'signature_daf_hash',
         'valide_dg_par', 'valide_dg_le', 'valide_dg_nom', 'valide_dg_fonction',
@@ -53,18 +55,25 @@ class OrdreMission extends Model
             'montant_total' => 'integer',
             'avance' => 'integer',
             'reliquat' => 'integer',
+            'verifie_le' => 'datetime',
             'visa_daf_le' => 'datetime',
             'valide_dg_le' => 'datetime',
         ];
     }
 
-    /** Signataire du visa DAF (1re signature). */
+    /** Vérificateur (étape 1 : contrôle de conformité). */
+    public function verifiePar(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verifie_par');
+    }
+
+    /** Signataire du visa DAF (étape 2). */
     public function visaDaf(): BelongsTo
     {
         return $this->belongsTo(User::class, 'visa_daf_par');
     }
 
-    /** Signataire de l'approbation DG (2e et dernière signature). */
+    /** Signataire de la validation finale du DG (étape 3 : verrouillage). */
     public function valideDg(): BelongsTo
     {
         return $this->belongsTo(User::class, 'valide_dg_par');

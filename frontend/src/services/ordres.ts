@@ -29,6 +29,18 @@ export const ordresService = {
     return unwrap<OrdreMission>(data)
   },
 
+  /** Étape 2 du circuit — visa du DAF : VERIFIE → VISA_DAF. */
+  async viser(id: number, commentaire?: string): Promise<OrdreMission> {
+    const { data } = await api.post(`/api/ordres/${id}/viser`, { commentaire })
+    return unwrap<OrdreMission>(data)
+  },
+
+  /** Étape 3 — validation finale du DG : VISA_DAF → VALIDE (verrouillage). */
+  async approuver(id: number): Promise<OrdreMission> {
+    const { data } = await api.post(`/api/ordres/${id}/approuver`)
+    return unwrap<OrdreMission>(data)
+  },
+
   async rejeter(id: number, motif: string): Promise<OrdreMission> {
     const { data } = await api.post(`/api/ordres/${id}/rejeter`, { motif })
     return unwrap<OrdreMission>(data)
