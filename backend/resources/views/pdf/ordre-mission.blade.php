@@ -34,7 +34,7 @@
         .exonere-box { background: #FBF3E0; border: 1px solid #EBCF8A; color: #6B5010; border-radius: 4px; padding: 10px; text-align: center; font-size: 11px; font-weight: bold; margin: 12px 0; }
 
         .signatures { width: 100%; margin-top: 28px; }
-        .signatures td { width: 33.33%; text-align: center; vertical-align: top; padding: 8px 6px; }
+        .signatures td { width: 50%; text-align: center; vertical-align: top; padding: 8px 10px 18px; }
         .sig-line { border-top: 1px solid #9ca3af; margin: 30px 10px 6px; }
         .sig-role { font-size: 8.5px; color: #6b7280; text-transform: uppercase; line-height: 1.35; }
         .sig-name { font-size: 10px; font-weight: bold; color: #1f2937; margin-top: 2px; }
@@ -163,58 +163,44 @@
         @endif
     </div>
 
-    {{-- Trois blocs : le bénéficiaire, puis les deux signataires du circuit
-         (DAF « Vu », puis DG en dernière position, conformément à l'état ANaTT). --}}
+    {{-- Circuit de validation en trois étapes, dans l'ordre : le contrôleur
+         vérifie, le DAF vise (« Vu »), le Directeur Général valide en dernier
+         (verrouillage). Deux rangées de deux blocs : plus lisible que quatre
+         colonnes sur A4 portrait. --}}
+    @php
+        $blocs = [
+            ['role' => 'Le bénéficiaire', 'signature' => null, 'nom_fixe' => $beneficiaire, 'attente' => null],
+            ['role' => $libelle_controle, 'signature' => $verification, 'nom_fixe' => null, 'attente' => 'En attente de vérification'],
+            ['role' => 'Vu<br>'.$libelle_daf, 'signature' => $visa_daf, 'nom_fixe' => null, 'attente' => 'En attente de visa'],
+            ['role' => $libelle_dg.'<br>(validation finale)', 'signature' => $valide_dg, 'nom_fixe' => null, 'attente' => 'En attente de validation'],
+        ];
+    @endphp
+
     <table class="signatures">
-        <tr>
-            <td>
-                <div class="sig-box">
-                    <div class="sig-line"></div>
-                </div>
-                <div class="sig-role">Le bénéficiaire</div>
-                <div class="sig-name">{{ $beneficiaire }}</div>
-            </td>
-
-            <td>
-                <div class="sig-box">
-                    @if($visa_daf)
-                        @if($visa_daf['image'])
-                            <img class="sig-img" src="{{ $visa_daf['image'] }}" alt="">
+        @foreach(array_chunk($blocs, 2) as $rangee)
+            <tr>
+                @foreach($rangee as $bloc)
+                    <td>
+                        <div class="sig-box">
+                            @if($bloc['signature'] && $bloc['signature']['image'])
+                                <img class="sig-img" src="{{ $bloc['signature']['image'] }}" alt="">
+                            @elseif(! $bloc['signature'] && $bloc['attente'])
+                                <div class="sig-attente">{{ $bloc['attente'] }}</div>
+                            @endif
+                            <div class="sig-line"></div>
+                        </div>
+                        <div class="sig-role">{!! $bloc['role'] !!}</div>
+                        @if($bloc['nom_fixe'])
+                            <div class="sig-name">{{ $bloc['nom_fixe'] }}</div>
+                        @elseif($bloc['signature'])
+                            <div class="sig-name">{{ $bloc['signature']['nom'] }}</div>
+                            <div class="sig-date">Le {{ $bloc['signature']['date'] }}</div>
+                            <div class="sig-code">Vérification : {{ $bloc['signature']['code'] }}</div>
                         @endif
-                        <div class="sig-line"></div>
-                    @else
-                        <div class="sig-attente">En attente de visa</div>
-                        <div class="sig-line"></div>
-                    @endif
-                </div>
-                <div class="sig-role">Vu<br>{{ $libelle_daf }}</div>
-                @if($visa_daf)
-                    <div class="sig-name">{{ $visa_daf['nom'] }}</div>
-                    <div class="sig-date">Le {{ $visa_daf['date'] }}</div>
-                    <div class="sig-code">Vérification : {{ $visa_daf['code'] }}</div>
-                @endif
-            </td>
-
-            <td>
-                <div class="sig-box">
-                    @if($valide_dg)
-                        @if($valide_dg['image'])
-                            <img class="sig-img" src="{{ $valide_dg['image'] }}" alt="">
-                        @endif
-                        <div class="sig-line"></div>
-                    @else
-                        <div class="sig-attente">En attente d'approbation</div>
-                        <div class="sig-line"></div>
-                    @endif
-                </div>
-                <div class="sig-role">{{ $libelle_dg }}</div>
-                @if($valide_dg)
-                    <div class="sig-name">{{ $valide_dg['nom'] }}</div>
-                    <div class="sig-date">Le {{ $valide_dg['date'] }}</div>
-                    <div class="sig-code">Vérification : {{ $valide_dg['code'] }}</div>
-                @endif
-            </td>
-        </tr>
+                    </td>
+                @endforeach
+            </tr>
+        @endforeach
     </table>
 
     <div class="flag-bar" style="margin-top:20px"></div>

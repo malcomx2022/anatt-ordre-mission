@@ -69,18 +69,25 @@ it('n’attribue que des permissions existantes', function () {
 
 // ── Mode par défaut : aucun changement de comportement ──
 
-it('démarre avec le circuit double désactivé', function () {
+it('démarre avec le circuit complet désactivé', function () {
+    // Circuit historique : le contrôleur valide directement, en une seule étape.
     expect(Workflow::doubleValidationActive())->toBeFalse()
-        ->and(Workflow::statutAvantApprobation())->toBe('IMPORTE')
+        ->and(Workflow::statutApresControle())->toBe('VALIDE')
         ->and(Workflow::statutsRejetables())->toBe(['IMPORTE']);
 });
 
-it('bascule le circuit sur VISA_DAF une fois le flag activé', function () {
+it('enchaîne CONTROLEUR puis DAF puis DG une fois le flag activé', function () {
     config(['workflow.double_validation' => true]);
 
     expect(Workflow::doubleValidationActive())->toBeTrue()
-        ->and(Workflow::statutAvantApprobation())->toBe('VISA_DAF')
-        ->and(Workflow::statutsRejetables())->toBe(['IMPORTE', 'VISA_DAF']);
+        // Étape 1 : le contrôle ne valide plus, il vérifie.
+        ->and(Workflow::statutApresControle())->toBe('VERIFIE')
+        // Étape 2 : le DAF ne vise qu'un OM déjà vérifié.
+        ->and(Workflow::statutAvantVisaDaf())->toBe('VERIFIE')
+        // Étape 3 : le DG ne valide qu'un OM déjà visé.
+        ->and(Workflow::statutAvantValidationDg())->toBe('VISA_DAF')
+        // Chacun des trois acteurs peut rejeter à son tour.
+        ->and(Workflow::statutsRejetables())->toBe(['IMPORTE', 'VERIFIE', 'VISA_DAF']);
 });
 
 // ── Scellé d'intégrité ──

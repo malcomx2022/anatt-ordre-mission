@@ -29,7 +29,9 @@ class PdfGenerator
         'NOURRI_SEUL' => 'Nourri seul',
     ];
 
-    /** Libellés officiels des deux signataires (blocs de l'état de paiement ANaTT). */
+    /** Libellés officiels des intervenants du circuit (blocs de signature). */
+    private const LIBELLE_CONTROLE = 'Le Contrôleur — vérification';
+
     private const LIBELLE_DAF = "Le Directeur de l'Administration et des Finances";
 
     private const LIBELLE_DG = 'Le Directeur Général';
@@ -126,8 +128,15 @@ class PdfGenerator
             // Sur un brouillon, les signatures ne sont JAMAIS rendues, même si
             // l'OM en porte déjà : une épreuve ne doit pas exhiber de visa.
             'brouillon' => $brouillon,
+            'libelle_controle' => self::LIBELLE_CONTROLE,
             'libelle_daf' => self::LIBELLE_DAF,
             'libelle_dg' => self::LIBELLE_DG,
+            'verification' => $brouillon ? null : $this->signature(
+                $ordre->verifie_nom,
+                $ordre->verifie_le,
+                $ordre->signature_verif_hash,
+                $ordre->verifiePar,
+            ),
             'visa_daf' => $brouillon ? null : $this->signature(
                 $ordre->visa_daf_nom,
                 $ordre->visa_daf_le,

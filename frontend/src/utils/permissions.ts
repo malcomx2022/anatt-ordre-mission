@@ -7,7 +7,7 @@ import type { UserRole } from '@/types'
 export type Permission =
   | 'dashboard.consulter'
   | 'personnel.consulter' | 'personnel.gerer'
-  | 'om.consulter' | 'om.retranscrire' | 'om.valider' | 'om.viser' | 'om.approuver'
+  | 'om.consulter' | 'om.retranscrire' | 'om.valider' | 'om.viser' | 'om.approuver' | 'om.rejeter'
   | 'paiements.consulter' | 'paiements.generer' | 'paiements.confirmer'
   | 'baremes.consulter' | 'baremes.modifier'
   | 'rapports.consulter'
@@ -19,7 +19,7 @@ export type Permission =
 export const TOUTES_PERMISSIONS: Permission[] = [
   'dashboard.consulter',
   'personnel.consulter', 'personnel.gerer',
-  'om.consulter', 'om.retranscrire', 'om.valider', 'om.viser', 'om.approuver',
+  'om.consulter', 'om.retranscrire', 'om.valider', 'om.viser', 'om.approuver', 'om.rejeter',
   'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
   'baremes.consulter', 'baremes.modifier',
   'rapports.consulter',
@@ -61,7 +61,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   DAF: [
     'dashboard.consulter',
     'personnel.consulter',
-    'om.consulter', 'om.viser',
+    'om.consulter', 'om.viser', 'om.rejeter',
     'paiements.consulter',
     'baremes.consulter',
     'rapports.consulter',
@@ -71,7 +71,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   DG: [
     'dashboard.consulter',
     'personnel.consulter',
-    'om.consulter', 'om.approuver',
+    'om.consulter', 'om.approuver', 'om.rejeter',
     'paiements.consulter',
     'baremes.consulter',
     'rapports.consulter',
@@ -80,7 +80,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   CONTROLEUR: [
     'dashboard.consulter',
     'personnel.consulter',
-    'om.consulter', 'om.valider',
+    'om.consulter', 'om.valider', 'om.rejeter',
     'paiements.consulter',
     'baremes.consulter',
     'rapports.consulter',

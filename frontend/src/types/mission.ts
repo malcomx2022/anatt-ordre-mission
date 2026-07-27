@@ -4,12 +4,20 @@ import type { Versement } from './paiement'
 export type ZoneCode = 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III'
 export type RoleOM = 'PARTICIPANT' | 'CAV'
 
+/** Étape franchie du circuit de validation (instantané du signataire). */
+export interface EtapeCircuit {
+  nom: string
+  fonction?: string | null
+  date?: string | null
+  code?: string | null
+}
+
 export type TypePriseEnCharge =
   | 'UN_REPAS' | 'DEUX_REPAS' | 'JOURNEE_COMPLETE'
   | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
 
 export type StatutOM =
-  | 'BROUILLON' | 'IMPORTE' | 'VISA_DAF' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
+  | 'BROUILLON' | 'IMPORTE' | 'VERIFIE' | 'VISA_DAF' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
 
 /** Saisie : nombre de jours pour un type de prise en charge donné. */
 export interface LignePerDiemInput {
@@ -66,6 +74,11 @@ export interface OrdreMission {
   avance: number
   reliquat: number
   statut: StatutOM
+  /** Circuit complet (CONTROLEUR -> DAF -> DG) actif côté serveur. */
+  circuit_complet?: boolean
+  verification?: EtapeCircuit | null
+  visa_daf?: EtapeCircuit | null
+  validation_dg?: EtapeCircuit | null
   conducteur_a_bord?: string | null
   reference_autorisation?: string | null
   moyen_transport?: string | null

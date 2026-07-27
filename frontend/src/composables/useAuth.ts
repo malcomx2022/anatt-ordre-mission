@@ -51,6 +51,21 @@ export function useAuth() {
     return can('om.valider')
   }
 
+  /** Étape 2 du circuit : visa du DAF. */
+  function canViserOM(): boolean {
+    return can('om.viser')
+  }
+
+  /** Étape 3 du circuit : validation finale du Directeur Général. */
+  function canApprouverOM(): boolean {
+    return can('om.approuver')
+  }
+
+  /** Rejet motivé : ouvert aux trois acteurs du circuit. */
+  function canRejeterOM(): boolean {
+    return canAny('om.rejeter', 'om.valider')
+  }
+
   function canGenererPaiements(): boolean {
     return can('paiements.generer')
   }
@@ -92,6 +107,9 @@ export function useAuth() {
     canManageAgents,
     canCreerMissions,
     canValiderOM,
+    canViserOM,
+    canApprouverOM,
+    canRejeterOM,
     canGenererPaiements,
     canConfirmerPaiements,
     canManageBaremes,

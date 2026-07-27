@@ -7,6 +7,8 @@ use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Support\Permissions;
+use App\Support\Workflow;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -112,23 +114,146 @@ class MissionService
     }
 
     /** Validation d'un OM : IMPORTE → VALIDE. */
-    public function valider(OrdreMission $ordre, User $user): OrdreMission
+    public function valider(OrdreMission $ordre, User $user, ?string $commentaire = null): OrdreMission
     {
-        $ordre = $this->transition($ordre, ['IMPORTE'], 'VALIDE', $user, 'VALIDATE_OM');
+        $cible = Workflow::statutApresControle();
+
+        $ordre = $this->transition(
+            $ordre,
+            ['IMPORTE'],
+            $cible,
+            $user,
+            $cible === Workflow::STATUT_VALIDE ? 'VALIDATE_OM' : 'VERIFY_OM',
+            $this->empreinteSignature($ordre, $user, Workflow::ETAPE_VERIFICATION, [
+                'verifie_commentaire' => $commentaire,
+            ]),
+        );
+
+        // Le circuit complet n'est pas terminé : c'est la validation finale du DG
+        // qui notifie le bénéficiaire. Ici on prévient le DAF que la main lui passe.
+        if ($cible === Workflow::STATUT_VALIDE) {
+            $this->notifications->omValide($ordre);
+        }
+
+        return $ordre;
+    }
+
+    /**
+     * Visa du DAF (étape 2 sur 3) : VERIFIE → VISA_DAF.
+     * L'OM n'est pas encore payable — seul le DG verrouille.
+     */
+    public function viser(OrdreMission $ordre, User $user, ?string $commentaire = null): OrdreMission
+    {
+        $this->exigerCircuitComplet('viser');
+
+        return $this->transition(
+            $ordre,
+            [Workflow::statutAvantVisaDaf()],
+            Workflow::STATUT_VISA_DAF,
+            $user,
+            'VISA_DAF_OM',
+            $this->empreinteSignature($ordre, $user, Workflow::ETAPE_VISA_DAF, [
+                'visa_daf_commentaire' => $commentaire,
+            ]),
+        );
+    }
+
+    /**
+     * Validation finale du DG (étape 3 sur 3) : VISA_DAF → VALIDE.
+     * C'est cette étape qui VERROUILLE l'OM et le rend payable.
+     */
+    public function approuver(OrdreMission $ordre, User $user): OrdreMission
+    {
+        $this->exigerCircuitComplet('approuver');
+
+        // Séparation des tâches : une même personne ne peut pas porter deux
+        // signatures du même OM, sinon le contrôle perd toute substance.
+        if (Workflow::separationDesTaches() && (int) $ordre->visa_daf_par === (int) $user->id) {
+            throw ValidationException::withMessages([
+                'signataire' => ['Vous avez déjà apposé le visa DAF sur cet OM : la validation finale revient à une autre personne.'],
+            ]);
+        }
+
+        $ordre = $this->transition(
+            $ordre,
+            [Workflow::statutAvantValidationDg()],
+            Workflow::STATUT_VALIDE,
+            $user,
+            'APPROVE_DG_OM',
+            $this->empreinteSignature($ordre, $user, Workflow::ETAPE_VALIDATION_DG),
+        );
+
         $this->notifications->omValide($ordre);
 
         return $ordre;
     }
 
-    /** Rejet d'un OM avec motif obligatoire : IMPORTE → REJETE. */
+    /**
+     * Rejet d'un OM avec motif obligatoire. Possible à chacune des étapes du
+     * circuit ; le rejet efface les signatures amont, qui n'ont plus d'objet.
+     */
     public function rejeter(OrdreMission $ordre, string $motif, User $user): OrdreMission
     {
-        $ordre = $this->transition($ordre, ['IMPORTE'], 'REJETE', $user, 'REJECT_OM', [
-            'commentaire_rejet' => $motif,
-        ]);
+        $ordre = $this->transition(
+            $ordre,
+            Workflow::statutsRejetables(),
+            'REJETE',
+            $user,
+            'REJECT_OM',
+            [
+                'commentaire_rejet' => $motif,
+                // Les visas obtenus portaient sur un OM désormais rejeté.
+                'verifie_par' => null, 'verifie_le' => null, 'verifie_nom' => null,
+                'verifie_fonction' => null, 'signature_verif_hash' => null,
+                'visa_daf_par' => null, 'visa_daf_le' => null, 'visa_daf_nom' => null,
+                'visa_daf_fonction' => null, 'signature_daf_hash' => null,
+            ],
+        );
         $this->notifications->omRejete($ordre);
 
         return $ordre;
+    }
+
+    /** Les étapes DAF et DG n'existent que si le circuit complet est actif. */
+    private function exigerCircuitComplet(string $action): void
+    {
+        if (! Workflow::doubleValidationActive()) {
+            throw ValidationException::withMessages([
+                'workflow' => ["Le circuit de double validation est désactivé : l'action « {$action} » n'est pas disponible."],
+            ]);
+        }
+    }
+
+    /**
+     * Champs d'une signature : instantanés du signataire + scellé d'intégrité.
+     *
+     * Le nom et la fonction sont figés au moment de la signature : un renommage,
+     * une mutation ou la suppression du compte ne doit pas réécrire un document
+     * déjà signé.
+     *
+     * @param  array<string,mixed>  $extra
+     * @return array<string,mixed>
+     */
+    private function empreinteSignature(OrdreMission $ordre, User $user, string $etape, array $extra = []): array
+    {
+        $maintenant = now();
+        $hash = Workflow::sceller($ordre, $user, $etape, $maintenant->toISOString());
+
+        $prefixe = match ($etape) {
+            Workflow::ETAPE_VERIFICATION => ['verifie', 'signature_verif_hash'],
+            Workflow::ETAPE_VISA_DAF => ['visa_daf', 'signature_daf_hash'],
+            Workflow::ETAPE_VALIDATION_DG => ['valide_dg', 'signature_dg_hash'],
+        };
+
+        [$champ, $champHash] = $prefixe;
+
+        return array_merge([
+            "{$champ}_par" => $user->id,
+            "{$champ}_le" => $maintenant,
+            "{$champ}_nom" => $user->name,
+            "{$champ}_fonction" => $user->fonction ?: Permissions::LIBELLES[$user->role] ?? null,
+            $champHash => $hash,
+        ], array_filter($extra, fn ($v) => $v !== null));
     }
 
     /**
