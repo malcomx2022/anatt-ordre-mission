@@ -50,7 +50,22 @@ identiques au scan. Rien à corriger de ce côté.
 
 ---
 
-## 2. Anomalie à trancher avant la bascule (bloquante pour la conformité)
+## 1 bis. Arbitrages rendus par le client (27/07/2026)
+
+| Question | Décision | Conséquence |
+|---|---|---|
+| Répartition avance / reliquat (§2) | **70/30 conservé** — le code actuel reste la référence | `CalculIndemniteService::repartir()` **non modifié**. L'écart avec l'état scanné est assumé : voir la note ci-dessous |
+| Portée de la signature (§12.6) | **Scellé d'intégrité interne** | HMAC-SHA256 + code de vérification imprimé. Pas de PKI, pas de certificat, pas de valeur probante au sens de la signature électronique qualifiée |
+
+> **Note de traçabilité sur le 70/30.** La décision est enregistrée telle quelle. Elle
+> implique que les montants calculés par l'application diffèrent de ceux de l'état de
+> paiement `N°0069` fourni en référence (210 000 → 147 000/63 000 au lieu de
+> 140 000/70 000). Si un état officiel devait un jour être reproduit à l'identique, ce
+> serait le point à reprendre. Aucun recalcul rétroactif n'est effectué.
+
+---
+
+## 2. Écart relevé sur la répartition (arbitré : 70/30 conservé)
 
 **La répartition avance/reliquat du code ne correspond pas au document officiel.**
 
@@ -63,17 +78,12 @@ Les deux lignes du scan confirment le 2/3 – 1/3 (`140 000 / 210 000 = 0,6667`,
 `90 000 / 135 000 = 0,6667`). En 70/30, les fichiers MTN/Moov générés porteraient des
 montants faux.
 
-**Décision requise** (hors périmètre strict de la demande, mais à arbitrer avant toute mise
-en production du circuit de validation, puisque le DG signerait des montants erronés) :
+**→ Arbitrage rendu : Option B — 70/30 conservé.** `CalculIndemniteService::repartir()`
+n'est pas modifié, les libellés « Avance (70 %) / Reliquat (30 %) » du gabarit PDF restent
+valides, et aucun recalcul rétroactif n'est effectué. L'écart avec l'état scanné est
+documenté au §1 bis à titre de traçabilité.
 
-- **Option A** — passer à `avance = intdiv(total × 2, 3)`, reliquat = reste. Conforme au scan.
-- **Option B** — conserver 70/30 si une note de service récente le prévoit, et corriger
-  l'état de référence.
-
-Impact Option A : `CalculIndemniteService::repartir()` (1 méthode), plus la mise à jour des
-libellés « Avance (70 %) / Reliquat (30 %) » dans `resources/views/pdf/ordre-mission.blade.php`
-et du CLAUDE.md. Les OM déjà enregistrés garderaient leurs montants historiques (pas de
-recalcul rétroactif) — à confirmer.
+*(Option A, écartée : `avance = intdiv(total × 2, 3)` — aurait aligné le calcul sur le scan.)*
 
 ---
 
@@ -321,7 +331,7 @@ ligne de totaux, phrase d'arrêt, puis les **deux blocs de signature**.
 Chaque phase est livrable, testable et déployable seule. Les phases 1 et 2 n'ont **aucun**
 impact sur le circuit de validation.
 
-### Phase 0 — Socle (aucun changement de comportement)
+### Phase 0 — Socle (aucun changement de comportement) — ✅ LIVRÉE
 
 | # | Tâche | Fichiers |
 |---|---|---|
@@ -339,7 +349,7 @@ impact sur le circuit de validation.
 > faible, mais prévoir la migration hors heures de service. Vérifier aussi que SQLite (tests)
 > avale les migrations — SQLite ignore les ENUM, donc pas de souci côté CI.
 
-### Phase 1 — Brouillon (indépendante)
+### Phase 1 — Brouillon (indépendante) — ✅ LIVRÉE
 
 | # | Tâche |
 |---|---|
@@ -348,6 +358,36 @@ impact sur le circuit de validation.
 | 1.3 | Route + méthode `pdfBrouillon` |
 | 1.4 | Front : bouton « Télécharger le brouillon » (`MissionDetailView`, `MissionPdfView`) |
 | 1.5 | Tests : le brouillon porte le filigrane, aucun code de vérification, pas d'écrasement du final |
+
+#### Notes d'implémentation relevées en livrant les phases 0 et 1
+
+1. **DomPDF ignore silencieusement `transform: rotate()`.** Un filigrane CSS pivoté
+   n'apparaît tout simplement pas dans le PDF produit — vérifié en isolant les variantes
+   (`position:fixed` seul fonctionne, dès qu'on ajoute la rotation l'élément disparaît).
+   Le filigrane est donc tracé via l'API canvas (`page_text()`, cf.
+   `PdfGenerator::apposerFiligrane()`), qui gère l'angle nativement et s'applique à
+   toutes les pages. Piège associé : `pdftotext` n'extrait pas le texte pivoté, un
+   contrôle par extraction de texte donne un faux négatif — la vérification doit être
+   visuelle (rendu en image).
+
+2. **Le toggle `doubleValidation` n'est volontairement PAS encore branché.**
+   `SettingsView.vue` initialise ce toggle à `true` et le persiste dans
+   `storage/app/settings.json`. Le brancher en phase 0 aurait basculé le circuit en
+   production sans action délibérée, exactement ce que le flag doit empêcher. Le pilotage
+   se fait donc par `WORKFLOW_DOUBLE_VALIDATION` (défaut `false`) ; le branchement du
+   toggle appartient à la phase 5 et devra commencer par forcer la clé à `false` dans
+   `settings.json`.
+
+3. **Le chemin de cache PDF portait bien une collision.** `ordres/OM-{slug}.pdf` était
+   unique par OM et `telecharger()` servait le cache : un brouillon aurait écrasé le
+   document officiel. Le chemin porte désormais l'état
+   (`-BROUILLON` / `-VISA-DAF` / `-FINAL` / statut courant). Un test existant qui
+   vérifiait l'ancien nom a été mis à jour en conséquence — c'est la seule modification
+   apportée à un test préexistant.
+
+4. **Le garde-fou d'exhaustivité TypeScript a joué son rôle** : l'ajout de `DAF`/`DG` à
+   `UserRole` a fait échouer `vue-tsc` sur `ROLE_LABELS` (`Record<UserRole, string>`
+   incomplet), exactement le comportement recherché.
 
 ### Phase 2 — État de paiement
 
@@ -434,7 +474,7 @@ impact sur le circuit de validation.
 
 ## 12. Questions ouvertes (arbitrage client)
 
-1. **Répartition avance/reliquat** : 2/3 – 1/3 (conforme au scan) ou 70/30 ? — *bloquant*
+1. ~~**Répartition avance/reliquat**~~ — **tranché : 70/30 conservé** (cf. §1 bis).
 2. **Rôle du CONTROLEUR** en flag ON : disparaît du circuit de signature, ou conserve un
    contrôle de conformité préalable au DAF (`IMPORTE → CONTROLE → VISA_DAF`) ?
 3. **Délégation / intérim** : en cas d'absence du DAF ou du DG, qui signe ? (profil
@@ -443,8 +483,8 @@ impact sur le circuit de validation.
    plutôt qu'OM par OM ?
 5. **Rejet par le DG** d'un OM déjà visé DAF : retour à `IMPORTE` pour re-visa, ou `REJETE`
    définitif ? (le plan retient `REJETE`)
-6. **Portée juridique** de la signature : scellé d'intégrité interne (proposé) ou vraie
-   signature électronique avec certificat (autre projet, autre budget) ?
+6. ~~**Portée juridique** de la signature~~ — **tranché : scellé d'intégrité interne** (HMAC,
+   pas de PKI) — cf. §1 bis.
 7. **Numérotation** `N°xxxx/ANaTT/DAF/C-SFC` : séquence annuelle repartant à 1 chaque année ?
    Le `0069` du scan est-il un compteur d'états ou de courrier ?
 8. **Signature sur l'OM individuel** aussi, ou uniquement sur l'état de paiement ?

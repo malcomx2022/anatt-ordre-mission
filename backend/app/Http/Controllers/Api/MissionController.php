@@ -97,6 +97,21 @@ class MissionController extends Controller
         return $this->pdfGenerator->telecharger($ordre);
     }
 
+    /**
+     * Brouillon de l'OM : épreuve filigranée téléchargeable AVANT validation.
+     *
+     * Route distincte de /pdf plutôt qu'un paramètre : la sémantique du PDF
+     * officiel reste intacte et les deux usages se distinguent dans l'audit.
+     * Toujours régénéré (jamais servi depuis le cache) : un brouillon doit
+     * refléter l'état courant de l'OM au moment où on le demande.
+     */
+    public function pdfBrouillon(OrdreMission $ordre)
+    {
+        $this->pdfGenerator->genererOrdreMission($ordre, brouillon: true);
+
+        return $this->pdfGenerator->telecharger($ordre, brouillon: true);
+    }
+
     public function historique(OrdreMission $ordre): JsonResponse
     {
         $logs = AuditLog::where('entite', 'ordre_mission')

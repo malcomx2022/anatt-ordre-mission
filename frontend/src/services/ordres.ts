@@ -45,4 +45,14 @@ export const ordresService = {
     const nom = filenameFromDisposition(res.headers['content-disposition'], `OM-${id}.pdf`)
     saveBlob(res.data as Blob, nom)
   },
+
+  /**
+   * Télécharge le BROUILLON de l'OM : épreuve filigranée, consultable avant
+   * toute validation et sans valeur d'autorisation de paiement.
+   */
+  async telechargerBrouillon(id: number): Promise<void> {
+    const res = await api.get(`/api/ordres/${id}/pdf/brouillon`, { responseType: 'blob' })
+    const nom = filenameFromDisposition(res.headers['content-disposition'], `OM-${id}-BROUILLON.pdf`)
+    saveBlob(res.data as Blob, nom)
+  },
 }

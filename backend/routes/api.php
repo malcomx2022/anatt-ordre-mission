@@ -58,6 +58,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
         Route::get('ordres/{ordre}', [MissionController::class, 'show']);
         Route::get('ordres/{ordre}/pdf', [MissionController::class, 'pdf']);
         Route::get('ordres/{ordre}/pdf/download', [MissionController::class, 'pdfDownload']);
+        // Épreuve filigranée, consultable avant toute validation.
+        Route::get('ordres/{ordre}/pdf/brouillon', [MissionController::class, 'pdfBrouillon']);
         Route::get('ordres/{ordre}/historique', [MissionController::class, 'historique']);
     });
 

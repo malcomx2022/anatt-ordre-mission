@@ -58,6 +58,16 @@ class UserFactory extends Factory
         return $this->role(User::ROLE_AGENT_FINANCIER);
     }
 
+    public function daf(): static
+    {
+        return $this->role(User::ROLE_DAF);
+    }
+
+    public function dg(): static
+    {
+        return $this->role(User::ROLE_DG);
+    }
+
     public function controleur(): static
     {
         return $this->role(User::ROLE_CONTROLEUR);

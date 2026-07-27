@@ -7,7 +7,7 @@ import type { UserRole } from '@/types'
 export type Permission =
   | 'dashboard.consulter'
   | 'personnel.consulter' | 'personnel.gerer'
-  | 'om.consulter' | 'om.retranscrire' | 'om.valider'
+  | 'om.consulter' | 'om.retranscrire' | 'om.valider' | 'om.viser' | 'om.approuver'
   | 'paiements.consulter' | 'paiements.generer' | 'paiements.confirmer'
   | 'baremes.consulter' | 'baremes.modifier'
   | 'rapports.consulter'
@@ -19,7 +19,7 @@ export type Permission =
 export const TOUTES_PERMISSIONS: Permission[] = [
   'dashboard.consulter',
   'personnel.consulter', 'personnel.gerer',
-  'om.consulter', 'om.retranscrire', 'om.valider',
+  'om.consulter', 'om.retranscrire', 'om.valider', 'om.viser', 'om.approuver',
   'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
   'baremes.consulter', 'baremes.modifier',
   'rapports.consulter',
@@ -56,6 +56,26 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
     'baremes.consulter',
     'rapports.consulter',
+  ],
+  // 1re signature du circuit double : « Vu » du DAF.
+  DAF: [
+    'dashboard.consulter',
+    'personnel.consulter',
+    'om.consulter', 'om.viser',
+    'paiements.consulter',
+    'baremes.consulter',
+    'rapports.consulter',
+    'audit.consulter',
+  ],
+  // 2e et derniere signature : le DG arrete l'etat, l'OM devient payable.
+  DG: [
+    'dashboard.consulter',
+    'personnel.consulter',
+    'om.consulter', 'om.approuver',
+    'paiements.consulter',
+    'baremes.consulter',
+    'rapports.consulter',
+    'audit.consulter',
   ],
   CONTROLEUR: [
     'dashboard.consulter',
