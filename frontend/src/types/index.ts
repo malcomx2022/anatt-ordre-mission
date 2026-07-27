@@ -4,13 +4,16 @@ export * from './paiement'
 export * from './bareme'
 
 export type UserRole =
-  | 'SUPER_ADMIN' | 'ADMIN' | 'GESTIONNAIRE_OM' | 'AGENT_FINANCIER' | 'CONTROLEUR' | 'LECTEUR'
+  | 'SUPER_ADMIN' | 'ADMIN' | 'GESTIONNAIRE_OM' | 'AGENT_FINANCIER'
+  | 'DAF' | 'DG' | 'CONTROLEUR' | 'LECTEUR'
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   SUPER_ADMIN: 'Super administrateur',
   ADMIN: 'Administrateur',
   GESTIONNAIRE_OM: 'Gestionnaire OM',
   AGENT_FINANCIER: 'Agent financier',
+  DAF: "Directeur de l'Administration et des Finances",
+  DG: 'Directeur Général',
   CONTROLEUR: 'Contrôleur',
   LECTEUR: 'Lecteur',
 }

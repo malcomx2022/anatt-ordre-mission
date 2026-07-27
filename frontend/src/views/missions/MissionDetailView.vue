@@ -28,6 +28,23 @@ const motif = ref('')
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 const peutValider = computed(() => canValiderOM() && ordre.value?.statut === 'IMPORTE')
 
+// Le brouillon reste proposé tant que le circuit de validation n'est pas achevé :
+// c'est précisément l'épreuve que l'on relit AVANT de valider.
+const peutTelechargerBrouillon = computed(
+  () => !!ordre.value && ['BROUILLON', 'IMPORTE', 'VISA_DAF'].includes(ordre.value.statut),
+)
+
+async function telechargerBrouillon() {
+  action.value = true
+  try {
+    await ordresService.telechargerBrouillon(id)
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
+
 async function load() {
   loading.value = true
   try {
@@ -87,9 +104,27 @@ async function rejeter() {
             <MissionStatusBadge :statut="ordre.statut" />
             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">{{ ordre.role }}</span>
           </div>
-          <div v-if="peutValider" class="flex gap-3">
-            <AppButton variant="danger" :loading="action" @click="showRejet = true">Rejeter</AppButton>
-            <AppButton :loading="action" @click="valider">Valider</AppButton>
+          <div class="flex flex-wrap gap-3">
+            <AppButton
+              v-if="peutTelechargerBrouillon"
+              variant="outline"
+              :loading="action"
+              @click="telechargerBrouillon"
+            >
+              <span class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Télécharger le brouillon
+              </span>
+            </AppButton>
+            <template v-if="peutValider">
+              <AppButton variant="danger" :loading="action" @click="showRejet = true">Rejeter</AppButton>
+              <AppButton :loading="action" @click="valider">Valider</AppButton>
+            </template>
           </div>
         </div>
         <p v-if="ordre.statut === 'REJETE' && ordre.commentaire_rejet" class="mt-3 text-sm text-red-600 font-body">Motif du rejet : {{ ordre.commentaire_rejet }}</p>

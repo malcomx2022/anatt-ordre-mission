@@ -45,4 +45,44 @@ class PdfAssets
 
         return self::$enteteDataUri = 'data:image/jpeg;base64,'.base64_encode((string) file_get_contents($chemin));
     }
+
+    /**
+     * Data-URI base64 d'une image de signature stockée sur le disque PRIVÉ.
+     *
+     * L'image est embarquée dans le PDF plutôt que référencée par un chemin :
+     * DomPDF n'accède ainsi à aucun fichier disque (isRemoteEnabled reste désactivé)
+     * et la signature ne transite jamais par une URL publique.
+     *
+     * Retourne null si le chemin est vide, hors du dossier autorisé, introuvable
+     * ou si le contenu n'est pas une image PNG/JPEG réelle.
+     */
+    public static function signatureDataUri(?string $chemin): ?string
+    {
+        if (empty($chemin)) {
+            return null;
+        }
+
+        // Cloisonnement : on n'embarque que ce qui vit sous storage/app/signatures.
+        // Empêche qu'un chemin manipulé en base fasse lire un fichier arbitraire.
+        $relatif = ltrim(str_replace('\\', '/', $chemin), '/');
+        if (! str_starts_with($relatif, 'signatures/') || str_contains($relatif, '..')) {
+            return null;
+        }
+
+        $absolu = storage_path('app/'.$relatif);
+
+        if (! is_file($absolu)) {
+            return null;
+        }
+
+        // Type déterminé par le contenu réel, jamais par l'extension.
+        $info = @getimagesize($absolu);
+        $mime = $info['mime'] ?? null;
+
+        if (! in_array($mime, ['image/png', 'image/jpeg'], true)) {
+            return null;
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($absolu));
+    }
 }

@@ -34,15 +34,34 @@
         .exonere-box { background: #FBF3E0; border: 1px solid #EBCF8A; color: #6B5010; border-radius: 4px; padding: 10px; text-align: center; font-size: 11px; font-weight: bold; margin: 12px 0; }
 
         .signatures { width: 100%; margin-top: 28px; }
-        .signatures td { width: 50%; text-align: center; vertical-align: top; padding: 10px; }
-        .sig-line { border-top: 1px solid #9ca3af; margin: 30px 16px 6px; }
-        .sig-role { font-size: 9px; color: #6b7280; text-transform: uppercase; }
+        .signatures td { width: 33.33%; text-align: center; vertical-align: top; padding: 8px 6px; }
+        .sig-line { border-top: 1px solid #9ca3af; margin: 30px 10px 6px; }
+        .sig-role { font-size: 8.5px; color: #6b7280; text-transform: uppercase; line-height: 1.35; }
+        .sig-name { font-size: 10px; font-weight: bold; color: #1f2937; margin-top: 2px; }
+        .sig-date { font-size: 8px; color: #6b7280; margin-top: 1px; }
+        .sig-code { font-size: 7px; color: #9ca3af; letter-spacing: 0.5px; margin-top: 2px; }
+        .sig-img { height: 42px; margin-bottom: -6px; }
+        .sig-attente { font-size: 8.5px; color: #b45309; font-style: italic; margin-top: 30px; }
+        .sig-box { min-height: 72px; }
+
+        /* Le filigrane diagonal du brouillon n'est PAS posé ici : DomPDF ignore
+           purement et simplement tout élément portant `transform: rotate()`.
+           Il est tracé sur chaque page via l'API canvas (cf. PdfGenerator::apposerFiligrane). */
+        .provisoire-bandeau { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C;
+            border-radius: 4px; padding: 7px 10px; text-align: center; font-size: 10px;
+            font-weight: bold; letter-spacing: 1px; margin-bottom: 12px; }
 
         .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 8px; color: #9ca3af; text-align: center; }
     </style>
 </head>
 <body>
     @include('pdf.partials.entete')
+
+    @if($brouillon)
+        <div class="provisoire-bandeau">
+            DOCUMENT PROVISOIRE — SANS VALEUR D'AUTORISATION DE PAIEMENT
+        </div>
+    @endif
 
     <div class="doc-title">
         <h1>Ordre de Mission</h1>
@@ -144,21 +163,67 @@
         @endif
     </div>
 
+    {{-- Trois blocs : le bénéficiaire, puis les deux signataires du circuit
+         (DAF « Vu », puis DG en dernière position, conformément à l'état ANaTT). --}}
     <table class="signatures">
         <tr>
             <td>
-                <div class="sig-line"></div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                </div>
                 <div class="sig-role">Le bénéficiaire</div>
-                <div class="value">{{ $beneficiaire }}</div>
+                <div class="sig-name">{{ $beneficiaire }}</div>
             </td>
+
             <td>
-                <div class="sig-line"></div>
-                <div class="sig-role">L'autorité compétente</div>
+                <div class="sig-box">
+                    @if($visa_daf)
+                        @if($visa_daf['image'])
+                            <img class="sig-img" src="{{ $visa_daf['image'] }}" alt="">
+                        @endif
+                        <div class="sig-line"></div>
+                    @else
+                        <div class="sig-attente">En attente de visa</div>
+                        <div class="sig-line"></div>
+                    @endif
+                </div>
+                <div class="sig-role">Vu<br>{{ $libelle_daf }}</div>
+                @if($visa_daf)
+                    <div class="sig-name">{{ $visa_daf['nom'] }}</div>
+                    <div class="sig-date">Le {{ $visa_daf['date'] }}</div>
+                    <div class="sig-code">Vérification : {{ $visa_daf['code'] }}</div>
+                @endif
+            </td>
+
+            <td>
+                <div class="sig-box">
+                    @if($valide_dg)
+                        @if($valide_dg['image'])
+                            <img class="sig-img" src="{{ $valide_dg['image'] }}" alt="">
+                        @endif
+                        <div class="sig-line"></div>
+                    @else
+                        <div class="sig-attente">En attente d'approbation</div>
+                        <div class="sig-line"></div>
+                    @endif
+                </div>
+                <div class="sig-role">{{ $libelle_dg }}</div>
+                @if($valide_dg)
+                    <div class="sig-name">{{ $valide_dg['nom'] }}</div>
+                    <div class="sig-date">Le {{ $valide_dg['date'] }}</div>
+                    <div class="sig-code">Vérification : {{ $valide_dg['code'] }}</div>
+                @endif
             </td>
         </tr>
     </table>
 
     <div class="flag-bar" style="margin-top:20px"></div>
-    <div class="footer">Document généré le {{ $date_generation }} | ANaTT — Réf. SEMO {{ $reference_semo }}</div>
+    <div class="footer">
+        @if($brouillon)
+            DOCUMENT PROVISOIRE — édité le {{ $date_generation }} | ANaTT — Réf. SEMO {{ $reference_semo }}
+        @else
+            Document généré le {{ $date_generation }} | ANaTT — Réf. SEMO {{ $reference_semo }}
+        @endif
+    </div>
 </body>
 </html>

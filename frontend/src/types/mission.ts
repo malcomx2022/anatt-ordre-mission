@@ -9,7 +9,7 @@ export type TypePriseEnCharge =
   | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
 
 export type StatutOM =
-  | 'BROUILLON' | 'IMPORTE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
+  | 'BROUILLON' | 'IMPORTE' | 'VISA_DAF' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
 
 /** Saisie : nombre de jours pour un type de prise en charge donné. */
 export interface LignePerDiemInput {

@@ -27,6 +27,8 @@ class UserSeeder extends Seeder
             ['name' => 'Gislain AHOUANSOU', 'email' => 'admin@anatt.bj', 'role' => User::ROLE_ADMIN],
             ['name' => 'Marie DOSSOU', 'email' => 'gestion@anatt.bj', 'role' => User::ROLE_GESTIONNAIRE_OM],
             ['name' => 'Amina BELLO', 'email' => 'finance@anatt.bj', 'role' => User::ROLE_AGENT_FINANCIER],
+            ['name' => 'Euloge D. ATOHOUN', 'email' => 'daf@anatt.bj', 'role' => User::ROLE_DAF],
+            ['name' => 'Richard DADA', 'email' => 'dg@anatt.bj', 'role' => User::ROLE_DG],
             ['name' => 'Paul AGBO', 'email' => 'controle@anatt.bj', 'role' => User::ROLE_CONTROLEUR],
             ['name' => 'Pierre HOUNGBO', 'email' => 'lecteur@anatt.bj', 'role' => User::ROLE_LECTEUR],
         ];

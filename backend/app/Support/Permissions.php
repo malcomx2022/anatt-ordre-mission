@@ -15,6 +15,8 @@ class Permissions
     public const ADMIN = 'ADMIN';
     public const GESTIONNAIRE_OM = 'GESTIONNAIRE_OM';
     public const AGENT_FINANCIER = 'AGENT_FINANCIER';
+    public const DAF = 'DAF';
+    public const DG = 'DG';
     public const CONTROLEUR = 'CONTROLEUR';
     public const LECTEUR = 'LECTEUR';
 
@@ -23,6 +25,8 @@ class Permissions
         self::ADMIN,
         self::GESTIONNAIRE_OM,
         self::AGENT_FINANCIER,
+        self::DAF,
+        self::DG,
         self::CONTROLEUR,
         self::LECTEUR,
     ];
@@ -32,6 +36,8 @@ class Permissions
         self::ADMIN => 'Administrateur',
         self::GESTIONNAIRE_OM => 'Gestionnaire OM',
         self::AGENT_FINANCIER => 'Agent financier',
+        self::DAF => "Directeur de l'Administration et des Finances",
+        self::DG => 'Directeur Général',
         self::CONTROLEUR => 'Contrôleur',
         self::LECTEUR => 'Lecteur',
     ];
@@ -43,6 +49,10 @@ class Permissions
     public const OM_CONSULTER = 'om.consulter';
     public const OM_RETRANSCRIRE = 'om.retranscrire';
     public const OM_VALIDER = 'om.valider';
+    /** 1re signature du circuit double : IMPORTE -> VISA_DAF. */
+    public const OM_VISER = 'om.viser';
+    /** 2e et dernière signature : VISA_DAF -> VALIDE (rend l'OM payable). */
+    public const OM_APPROUVER = 'om.approuver';
     public const PAIEMENTS_CONSULTER = 'paiements.consulter';
     public const PAIEMENTS_GENERER = 'paiements.generer';
     public const PAIEMENTS_CONFIRMER = 'paiements.confirmer';
@@ -59,6 +69,7 @@ class Permissions
         self::DASHBOARD_CONSULTER,
         self::PERSONNEL_CONSULTER, self::PERSONNEL_GERER,
         self::OM_CONSULTER, self::OM_RETRANSCRIRE, self::OM_VALIDER,
+        self::OM_VISER, self::OM_APPROUVER,
         self::PAIEMENTS_CONSULTER, self::PAIEMENTS_GENERER, self::PAIEMENTS_CONFIRMER,
         self::BAREMES_CONSULTER, self::BAREMES_MODIFIER,
         self::RAPPORTS_CONSULTER,
@@ -99,6 +110,24 @@ class Permissions
             self::PAIEMENTS_CONSULTER, self::PAIEMENTS_GENERER, self::PAIEMENTS_CONFIRMER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,
+        ],
+        self::DAF => [
+            self::DASHBOARD_CONSULTER,
+            self::PERSONNEL_CONSULTER,
+            self::OM_CONSULTER, self::OM_VISER,
+            self::PAIEMENTS_CONSULTER,
+            self::BAREMES_CONSULTER,
+            self::RAPPORTS_CONSULTER,
+            self::AUDIT_CONSULTER,
+        ],
+        self::DG => [
+            self::DASHBOARD_CONSULTER,
+            self::PERSONNEL_CONSULTER,
+            self::OM_CONSULTER, self::OM_APPROUVER,
+            self::PAIEMENTS_CONSULTER,
+            self::BAREMES_CONSULTER,
+            self::RAPPORTS_CONSULTER,
+            self::AUDIT_CONSULTER,
         ],
         self::CONTROLEUR => [
             self::DASHBOARD_CONSULTER,

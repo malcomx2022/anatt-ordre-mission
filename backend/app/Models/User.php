@@ -19,6 +19,10 @@ class User extends Authenticatable
     public const ROLE_ADMIN = Permissions::ADMIN;
     public const ROLE_GESTIONNAIRE_OM = Permissions::GESTIONNAIRE_OM;
     public const ROLE_AGENT_FINANCIER = Permissions::AGENT_FINANCIER;
+    /** 1re signature du circuit de validation (« Vu » du DAF). */
+    public const ROLE_DAF = Permissions::DAF;
+    /** 2e et dernière signature : le DG arrête l'état, l'OM devient payable. */
+    public const ROLE_DG = Permissions::DG;
     public const ROLE_CONTROLEUR = Permissions::CONTROLEUR;
     public const ROLE_LECTEUR = Permissions::LECTEUR;
 

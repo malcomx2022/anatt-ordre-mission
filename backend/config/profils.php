@@ -21,6 +21,8 @@ return [
         'ADMIN',
         'GESTIONNAIRE_OM',
         'AGENT_FINANCIER',
+        'DAF',
+        'DG',
         'CONTROLEUR',
         'LECTEUR',
     ],
@@ -30,6 +32,8 @@ return [
         'ADMIN' => 'Administrateur',
         'GESTIONNAIRE_OM' => 'Gestionnaire OM',
         'AGENT_FINANCIER' => 'Agent financier',
+        'DAF' => "Directeur de l'Administration et des Finances",
+        'DG' => 'Directeur Général',
         'CONTROLEUR' => 'Contrôleur',
         'LECTEUR' => 'Lecteur',
     ],
@@ -38,7 +42,7 @@ return [
     'permissions' => [
         'dashboard.consulter',
         'personnel.consulter', 'personnel.gerer',
-        'om.consulter', 'om.retranscrire', 'om.valider',
+        'om.consulter', 'om.retranscrire', 'om.valider', 'om.viser', 'om.approuver',
         'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
         'baremes.consulter', 'baremes.modifier',
         'rapports.consulter',
@@ -75,6 +79,28 @@ return [
             'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
             'baremes.consulter',
             'rapports.consulter',
+        ],
+        // 1re signature du circuit double : « Vu » du DAF.
+        'DAF' => [
+            'dashboard.consulter',
+            'personnel.consulter',
+            'om.consulter', 'om.viser',
+            'paiements.consulter',
+            'baremes.consulter',
+            'rapports.consulter',
+            'audit.consulter',
+        ],
+        // 2e et dernière signature : le DG arrête l'état, l'OM devient payable.
+        // Ni le DAF ni le DG ne reçoivent paiements.generer/confirmer : ils
+        // autorisent, l'AGENT_FINANCIER exécute (séparation ordonnateur/payeur).
+        'DG' => [
+            'dashboard.consulter',
+            'personnel.consulter',
+            'om.consulter', 'om.approuver',
+            'paiements.consulter',
+            'baremes.consulter',
+            'rapports.consulter',
+            'audit.consulter',
         ],
         'CONTROLEUR' => [
             'dashboard.consulter',
