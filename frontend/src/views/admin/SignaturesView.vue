@@ -118,7 +118,7 @@ async function supprimer(poste: PosteSignataire) {
     <p v-if="loading" class="text-center text-gray-400 font-body py-10">Chargement…</p>
 
     <div v-else class="space-y-6">
-      <AppAlert variant="info">
+      <AppAlert type="info">
         Ces identités et signatures sont celles des <strong>titulaires en poste</strong>.
         Elles sont imprimées sur l’état de paiement, indépendamment du compte qui
         effectue la validation — lequel reste enregistré au journal d’audit.

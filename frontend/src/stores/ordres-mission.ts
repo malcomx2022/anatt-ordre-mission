@@ -154,8 +154,33 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
       && (!!b.type_prise_en_charge || aLignes)
   }
 
+  /**
+   * Ce qui manque à un bénéficiaire pour être valide, en clair.
+   * Sert à dire à l'utilisateur QUOI corriger, et pas seulement que ça bloque.
+   */
+  function champsManquants(b: BeneficiaireForm): string[] {
+    const manques: string[] = []
+    const ref = b.reference_semo.trim()
+    const aLignes = (b.lignes ?? []).some((l) => l.type && l.nb_jours > 0)
+
+    if (!b.agent_id) manques.push('agent')
+    if (!ref) manques.push('référence SEMO')
+    else if (referencesEnDoublon.value.has(ref)) manques.push('référence SEMO en doublon')
+    if (!b.categorie) manques.push('catégorie')
+    if (!b.type_prise_en_charge && !aLignes) manques.push('type de prise en charge')
+
+    return manques
+  }
+
   const etape2Valide = computed(() =>
     beneficiaires.value.length > 0 && beneficiaires.value.every(beneficiaireValide),
+  )
+
+  /** Bénéficiaires incomplets, repérés par leur rang d'affichage. */
+  const beneficiairesIncomplets = computed(() =>
+    beneficiaires.value
+      .map((b, i) => ({ rang: i + 1, manques: champsManquants(b) }))
+      .filter((x) => x.manques.length > 0),
   )
 
   function ajouterBeneficiaire(prefill: Partial<BeneficiaireForm> = {}): void {
@@ -212,7 +237,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
   return {
     contexte, beneficiaires, baremes, submitting,
     nbJoursMission, totalMission, referencesEnDoublon,
-    etape1Valide, etape2Valide,
+    etape1Valide, etape2Valide, beneficiairesIncomplets, champsManquants,
     chargerBaremes, taux, calculer, beneficiaireValide,
     ajouterBeneficiaire, retirerBeneficiaire, reset, construirePayload, enregistrer,
   }
