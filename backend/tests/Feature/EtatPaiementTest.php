@@ -264,6 +264,43 @@ it('renvoie vers l’état lorsqu’on tente d’agir OM par OM', function () {
     expect($etat->fresh()->statut)->toBe('BROUILLON');
 });
 
+// ── File de travail (écran d'entrée du circuit) ──
+
+it('liste les états avec le résumé de leur mission', function () {
+    conduire($this, 'CONTROLE');
+
+    $this->actingAs($this->daf)->getJson('/api/etats')
+        ->assertOk()
+        ->assertJsonPath('data.0.statut', 'CONTROLE')
+        ->assertJsonPath('data.0.mission.objet', 'Vérification des hangars')
+        ->assertJsonStructure(['data' => [['id', 'mission_id', 'mission', 'statut', 'montant_total']], 'meta']);
+});
+
+it('filtre la file de travail par statut', function () {
+    conduire($this, 'CONTROLE');
+
+    // Le DAF ne traite que les états contrôlés.
+    $this->actingAs($this->daf)->getJson('/api/etats?statut=CONTROLE')
+        ->assertOk()->assertJsonCount(1, 'data');
+
+    // Rien n'attend encore le DG.
+    $this->actingAs($this->dg)->getJson('/api/etats?statut=VISA_DAF')
+        ->assertOk()->assertJsonCount(0, 'data');
+});
+
+it('recherche un état par numéro ou par objet de mission', function () {
+    conduire($this, 'VALIDE');
+
+    $this->actingAs($this->daf)->getJson('/api/etats?search=0069')
+        ->assertOk()->assertJsonCount(1, 'data');
+
+    $this->actingAs($this->daf)->getJson('/api/etats?search=hangars')
+        ->assertOk()->assertJsonCount(1, 'data');
+
+    $this->actingAs($this->daf)->getJson('/api/etats?search=introuvable')
+        ->assertOk()->assertJsonCount(0, 'data');
+});
+
 // ── Journal d'audit ──
 
 it('journalise le récapitulatif et les trois étapes', function () {

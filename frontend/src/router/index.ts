@@ -135,6 +135,20 @@ const routes: RouteRecordRaw[] = [
     meta: { auth: true },
   },
 
+  // ── ÉTATS DE PAIEMENT (circuit contrôle -> DAF -> DG) ──
+  {
+    path: '/etats',
+    name: 'etats',
+    component: () => import('@/views/etats/EtatListView.vue'),
+    meta: { auth: true, permission: 'om.consulter' },
+  },
+  {
+    path: '/missions/:missionId/etat',
+    name: 'etat-mission',
+    component: () => import('@/views/etats/EtatDetailView.vue'),
+    meta: { auth: true, permission: 'om.consulter' },
+  },
+
   // ── PAIEMENTS ──
   {
     path: '/paiements',
@@ -245,6 +259,12 @@ const routes: RouteRecordRaw[] = [
     name: 'admin-roles',
     component: () => import('@/views/admin/RolesView.vue'),
     meta: { auth: true, permission: 'utilisateurs.gerer' },
+  },
+  {
+    path: '/admin/signatures',
+    name: 'admin-signatures',
+    component: () => import('@/views/admin/SignaturesView.vue'),
+    meta: { auth: true, permission: 'parametres.gerer' },
   },
   {
     path: '/admin/parametres',

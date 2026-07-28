@@ -40,6 +40,7 @@ const allNavigation: NavGroup[] = [
     items: [
       { label: 'Personnel', icon: 'users', to: '/agents', permission: 'personnel.consulter' },
       { label: 'Ordres de Mission', icon: 'file-text', to: '/ordres', permission: 'om.consulter' },
+      { label: 'Etats de paiement', icon: 'check-square', to: '/etats', permission: 'om.consulter' },
     ],
   },
   {
@@ -60,6 +61,7 @@ const allNavigation: NavGroup[] = [
     title: 'Systeme',
     items: [
       { label: 'Utilisateurs', icon: 'shield', to: '/admin/utilisateurs', permission: 'utilisateurs.gerer' },
+      { label: 'Signatures', icon: 'edit-3', to: '/admin/signatures', permission: 'parametres.gerer' },
       { label: 'Parametres', icon: 'settings', to: '/admin/parametres', permission: 'parametres.gerer' },
     ],
   },
@@ -114,6 +116,8 @@ function isActive(to: string): boolean {
               <template v-if="item.icon === 'grid'"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></template>
               <template v-if="item.icon === 'users'"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></template>
               <template v-if="item.icon === 'file-text'"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></template>
+              <template v-if="item.icon === 'check-square'"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></template>
+              <template v-if="item.icon === 'edit-3'"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></template>
               <template v-if="item.icon === 'credit-card'"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></template>
               <template v-if="item.icon === 'calculator'"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="12.01" y1="18" y2="18"/></template>
               <template v-if="item.icon === 'bar-chart-2'"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></template>

@@ -72,6 +72,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
     // Un état = 1 mission, N bénéficiaires, colonnes AVANCE et RELIQUAT.
     // Sa validation finale par le DG ouvre la génération des fichiers de paiement.
     Route::middleware('permission:om.consulter')->group(function () {
+        // File de travail du circuit, filtrable par statut.
+        Route::get('etats', [EtatPaiementController::class, 'index']);
         Route::get('missions/{mission}/etat', [EtatPaiementController::class, 'show']);
         Route::get('missions/{mission}/etat/brouillon', [EtatPaiementController::class, 'brouillon']);
         Route::get('missions/{mission}/etat/telecharger', [EtatPaiementController::class, 'telecharger']);
