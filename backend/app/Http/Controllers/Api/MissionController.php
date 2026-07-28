@@ -7,6 +7,7 @@ use App\Http\Requests\StoreMissionRequest;
 use App\Http\Resources\MissionResource;
 use App\Http\Resources\OrdreMissionResource;
 use App\Models\AuditLog;
+use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Services\MissionService;
 use App\Services\PdfGenerator;
@@ -59,6 +60,57 @@ class MissionController extends Controller
         $ordres = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
 
         return OrdreMissionResource::collection($ordres)->response();
+    }
+
+    /**
+     * Liste des missions — point d'entrée naturel du circuit.
+     *
+     * Une mission est l'unité de travail réelle : elle porte N ordres de mission
+     * et UN état de paiement. Chaque ligne indique donc où en est son état, ce qui
+     * évite d'avoir à passer par un OM pour retrouver le document à signer.
+     */
+    public function missions(Request $request): JsonResponse
+    {
+        $missions = Mission::query()
+            ->with('etatPaiement')
+            ->withCount(['ordresMission as nb_ordres' => fn ($q) => $q->whereNotIn('statut', ['REJETE', 'ANNULE'])])
+            ->withSum(['ordresMission as montant_total' => fn ($q) => $q->whereNotIn('statut', ['REJETE', 'ANNULE'])], 'montant_total')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $like = '%'.$request->string('search').'%';
+                $q->where(fn ($inner) => $inner->where('objet', 'like', $like)
+                    ->orWhere('destination', 'like', $like)
+                    ->orWhere('imputation_budgetaire', 'like', $like));
+            })
+            // « sans_etat » : les missions dont le récapitulatif reste à établir.
+            ->when($request->input('etat') === 'sans_etat', fn ($q) => $q->whereDoesntHave('etatPaiement'))
+            ->when($request->filled('etat') && $request->input('etat') !== 'sans_etat',
+                fn ($q) => $q->whereHas('etatPaiement', fn ($e) => $e->where('statut', $request->string('etat'))))
+            ->orderByDesc('id')
+            ->paginate((int) $request->integer('per_page', 20));
+
+        return response()->json([
+            'data' => collect($missions->items())->map(fn (Mission $m) => [
+                'id' => $m->id,
+                'objet' => $m->objet,
+                'destination' => $m->destination,
+                'zone_code' => $m->zone_code,
+                'date_depart' => $m->date_depart?->toDateString(),
+                'date_retour' => $m->date_retour?->toDateString(),
+                'imputation_budgetaire' => $m->imputation_budgetaire,
+                'prise_en_charge_tiers' => (bool) $m->prise_en_charge_tiers,
+                'nb_ordres' => (int) $m->nb_ordres,
+                'montant_total' => (int) $m->montant_total,
+                // null tant que le récapitulatif n'a pas été établi.
+                'etat_statut' => $m->etatPaiement?->statut,
+                'etat_numero' => $m->etatPaiement?->numero,
+            ]),
+            'meta' => [
+                'current_page' => $missions->currentPage(),
+                'last_page' => $missions->lastPage(),
+                'per_page' => $missions->perPage(),
+                'total' => $missions->total(),
+            ],
+        ]);
     }
 
     public function show(OrdreMission $ordre): JsonResponse

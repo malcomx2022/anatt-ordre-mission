@@ -135,6 +135,14 @@ const routes: RouteRecordRaw[] = [
     meta: { auth: true },
   },
 
+  // ── MISSIONS (point d'entrée : N OM + 1 état de paiement) ──
+  {
+    path: '/missions',
+    name: 'missions',
+    component: () => import('@/views/missions/MissionsIndexView.vue'),
+    meta: { auth: true, permission: 'om.consulter' },
+  },
+
   // ── ÉTATS DE PAIEMENT (circuit contrôle -> DAF -> DG) ──
   {
     path: '/etats',

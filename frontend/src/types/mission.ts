@@ -4,6 +4,25 @@ import type { Versement } from './paiement'
 export type ZoneCode = 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III'
 export type RoleOM = 'PARTICIPANT' | 'CAV'
 
+/**
+ * Ligne de la liste des missions : agrégats des OM et avancement de l'état.
+ * `etat_statut` est null tant que le récapitulatif n'a pas été établi.
+ */
+export interface MissionResume {
+  id: number
+  objet: string
+  destination: string
+  zone_code: string
+  date_depart?: string | null
+  date_retour?: string | null
+  imputation_budgetaire?: string | null
+  prise_en_charge_tiers: boolean
+  nb_ordres: number
+  montant_total: number
+  etat_statut?: import('./etat').StatutEtat | null
+  etat_numero?: string | null
+}
+
 /** Étape franchie du circuit de validation (instantané du signataire). */
 export interface EtapeCircuit {
   nom: string

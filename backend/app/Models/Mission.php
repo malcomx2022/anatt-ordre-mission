@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Une mission (événement) regroupe N ordres de mission individuels
@@ -40,6 +41,12 @@ class Mission extends Model
     public function ordresMission(): HasMany
     {
         return $this->hasMany(OrdreMission::class);
+    }
+
+    /** État de paiement de la mission : le document que le circuit valide. */
+    public function etatPaiement(): HasOne
+    {
+        return $this->hasOne(EtatPaiement::class);
     }
 
     public function zone(): BelongsTo
