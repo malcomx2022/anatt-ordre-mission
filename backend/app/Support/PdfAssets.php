@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Storage;
+
 /**
  * Assets partagés pour les documents PDF (DomPDF).
  *
@@ -69,20 +71,25 @@ class PdfAssets
             return null;
         }
 
-        $absolu = storage_path('app/'.$relatif);
+        // Lecture par la façade Storage, et non par storage_path() : c'est le même
+        // canal que l'écriture, donc la lecture reste cohérente quel que soit le
+        // disque configuré (y compris un disque simulé en test).
+        $disque = Storage::disk('local');
 
-        if (! is_file($absolu)) {
+        if (! $disque->exists($relatif)) {
             return null;
         }
 
+        $contenu = (string) $disque->get($relatif);
+
         // Type déterminé par le contenu réel, jamais par l'extension.
-        $info = @getimagesize($absolu);
+        $info = @getimagesizefromstring($contenu);
         $mime = $info['mime'] ?? null;
 
         if (! in_array($mime, ['image/png', 'image/jpeg'], true)) {
             return null;
         }
 
-        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($absolu));
+        return 'data:'.$mime.';base64,'.base64_encode($contenu);
     }
 }

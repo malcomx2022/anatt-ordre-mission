@@ -4,9 +4,11 @@ use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BaremeController;
+use App\Http\Controllers\Api\EtatPaiementController;
 use App\Http\Controllers\Api\MissionController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportController;
+use App\Http\Controllers\Api\SignatureController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ValidationController;
 use Illuminate\Support\Facades\Route;
@@ -66,7 +68,36 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
     // Missions (retranscription SEMO : 1 mission + N OM)
     Route::post('missions', [MissionController::class, 'storeMission'])->middleware('permission:om.retranscrire');
 
-    // Circuit de validation en trois étapes : CONTROLEUR -> DAF -> DG.
+    // ── ÉTAT DE PAIEMENT d'une mission : l'objet que le circuit valide ──
+    // Un état = 1 mission, N bénéficiaires, colonnes AVANCE et RELIQUAT.
+    // Sa validation finale par le DG ouvre la génération des fichiers de paiement.
+    Route::middleware('permission:om.consulter')->group(function () {
+        Route::get('missions/{mission}/etat', [EtatPaiementController::class, 'show']);
+        Route::get('missions/{mission}/etat/brouillon', [EtatPaiementController::class, 'brouillon']);
+        Route::get('missions/{mission}/etat/telecharger', [EtatPaiementController::class, 'telecharger']);
+    });
+    // Récapitulatif : produit ou rafraîchit le brouillon de l'état.
+    Route::post('missions/{mission}/etat/recapituler', [EtatPaiementController::class, 'recapituler'])
+        ->middleware('permission:om.retranscrire');
+    // Numérotation manuelle, selon le registre papier de l'agence.
+    Route::put('etats/{etat}/numero', [EtatPaiementController::class, 'definirNumero'])
+        ->middleware('permission:om.rejeter');
+    // Étape 1 — contrôle de conformité.
+    Route::post('etats/{etat}/controler', [EtatPaiementController::class, 'controler'])
+        ->middleware('permission:om.valider');
+    // Étape 2 — visa du DAF.
+    Route::post('etats/{etat}/viser', [EtatPaiementController::class, 'viser'])
+        ->middleware('permission:om.viser');
+    // Étape 3 — validation finale du DG : verrouille l'état, ouvre le paiement.
+    Route::post('etats/{etat}/approuver', [EtatPaiementController::class, 'approuver'])
+        ->middleware('permission:om.approuver');
+    // Rejet motivé, ouvert aux trois acteurs.
+    Route::post('etats/{etat}/rejeter', [EtatPaiementController::class, 'rejeter'])
+        ->middleware('permission:om.rejeter');
+
+    // Circuit de validation OM par OM (missions sans état : reprise de données,
+    // correction unitaire). Refusé dès qu'un état existe, pour garder une seule
+    // source de vérité sur le statut.
     // Étape 1 — contrôle de conformité (IMPORTE -> VERIFIE ; -> VALIDE si circuit simple).
     Route::post('ordres/{ordre}/valider', [ValidationController::class, 'valider'])
         ->middleware('permission:om.valider');
@@ -140,6 +171,12 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
 
         // Paramètres & sauvegardes : SUPER_ADMIN uniquement (parametres.gerer).
         Route::middleware('permission:parametres.gerer')->group(function () {
+            // Signatures électroniques des signataires du circuit (nom, prénoms,
+            // fonction et image scannée). L'image n'est jamais renvoyée par l'API.
+            Route::get('signatures', [SignatureController::class, 'index']);
+            Route::post('signatures/{poste}', [SignatureController::class, 'store']);
+            Route::delete('signatures/{poste}', [SignatureController::class, 'destroy']);
+
             Route::get('settings', function () {
                 $path = storage_path('app/settings.json');
                 $settings = file_exists($path) ? json_decode(file_get_contents($path), true) : [];
@@ -163,6 +200,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
                     // Configuration email (EmailConfigView)
                     'smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'smtpEncryption',
                     'fromAddress', 'fromName',
+                    // Identités des signataires du circuit, imprimées sur l'état
+                    // de paiement (l'image de signature passe par sa propre route).
+                    'controleurNom', 'controleurPrenoms', 'controleurFonction',
+                    'dafNom', 'dafPrenoms', 'dafFonction',
+                    'dgNom', 'dgPrenoms', 'dgFonction',
                 ];
 
                 $entrant = array_intersect_key($request->all(), array_flip($clesAutorisees));
