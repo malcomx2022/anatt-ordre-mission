@@ -23,6 +23,36 @@ class EtatPaiementController extends Controller
         private readonly EtatPaiementPdf $pdf,
     ) {}
 
+    /**
+     * File de travail : les états, filtrables par statut.
+     *
+     * C'est l'écran d'entrée du circuit — le contrôleur, le DAF et le DG y
+     * retrouvent les états qui attendent leur intervention.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $etats = EtatPaiement::with('mission')
+            ->when($request->filled('statut'), fn ($q) => $q->where('statut', $request->string('statut')))
+            ->when($request->filled('search'), fn ($q) => $q->where(function ($inner) use ($request) {
+                $like = '%'.$request->string('search').'%';
+                $inner->where('numero', 'like', $like)
+                    ->orWhereHas('mission', fn ($m) => $m->where('objet', 'like', $like)
+                        ->orWhere('destination', 'like', $like));
+            }))
+            ->orderByDesc('id')
+            ->paginate((int) $request->integer('per_page', 20));
+
+        return response()->json([
+            'data' => collect($etats->items())->map(fn (EtatPaiement $e) => $this->presenter($e)),
+            'meta' => [
+                'current_page' => $etats->currentPage(),
+                'last_page' => $etats->lastPage(),
+                'per_page' => $etats->perPage(),
+                'total' => $etats->total(),
+            ],
+        ]);
+    }
+
     /** État de la mission (null si le récapitulatif n'a pas encore été produit). */
     public function show(Mission $mission): JsonResponse
     {
@@ -113,6 +143,15 @@ class EtatPaiementController extends Controller
         return [
             'id' => $etat->id,
             'mission_id' => $etat->mission_id,
+            'mission' => $etat->relationLoaded('mission') && $etat->mission
+                ? [
+                    'id' => $etat->mission->id,
+                    'objet' => $etat->mission->objet,
+                    'destination' => $etat->mission->destination,
+                    'date_depart' => $etat->mission->date_depart?->toDateString(),
+                    'date_retour' => $etat->mission->date_retour?->toDateString(),
+                ]
+                : null,
             'numero' => $etat->numero,
             'statut' => $etat->statut,
             'nb_beneficiaires' => $etat->nb_beneficiaires,

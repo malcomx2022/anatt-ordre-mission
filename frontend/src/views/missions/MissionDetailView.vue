@@ -151,6 +151,7 @@ async function rejeter() {
     <template #header-actions>
       <router-link to="/ordres" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">← Ordres</router-link>
       <router-link v-if="ordre" :to="`/ordres/${id}/historique`" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">Historique</router-link>
+      <router-link v-if="ordre" :to="`/missions/${ordre.mission_id}/etat`" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">État de paiement</router-link>
     </template>
 
     <p v-if="loading" class="text-center text-gray-400 font-body py-10">Chargement…</p>

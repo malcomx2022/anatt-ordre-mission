@@ -2,6 +2,7 @@ export * from './agent'
 export * from './mission'
 export * from './paiement'
 export * from './bareme'
+export * from './etat'
 
 export type UserRole =
   | 'SUPER_ADMIN' | 'ADMIN' | 'GESTIONNAIRE_OM' | 'AGENT_FINANCIER'
