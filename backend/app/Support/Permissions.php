@@ -49,6 +49,12 @@ class Permissions
     public const OM_CONSULTER = 'om.consulter';
     public const OM_RETRANSCRIRE = 'om.retranscrire';
     public const OM_VALIDER = 'om.valider';
+    /**
+     * Numérotation manuelle de l'état, selon le registre papier de l'agence.
+     * Détenue par les trois acteurs du circuit — exactement le même périmètre
+     * qu'auparavant, où la route empruntait om.rejeter faute de clé dédiée.
+     */
+    public const OM_NUMEROTER = 'om.numeroter';
     /** 1re signature du circuit double : IMPORTE -> VISA_DAF. */
     public const OM_VISER = 'om.viser';
     /** 2e et dernière signature : VISA_DAF -> VALIDE (rend l'OM payable). */
@@ -71,7 +77,7 @@ class Permissions
         self::DASHBOARD_CONSULTER,
         self::PERSONNEL_CONSULTER, self::PERSONNEL_GERER,
         self::OM_CONSULTER, self::OM_RETRANSCRIRE, self::OM_VALIDER,
-        self::OM_VISER, self::OM_APPROUVER, self::OM_REJETER,
+        self::OM_NUMEROTER, self::OM_VISER, self::OM_APPROUVER, self::OM_REJETER,
         self::PAIEMENTS_CONSULTER, self::PAIEMENTS_GENERER, self::PAIEMENTS_CONFIRMER,
         self::BAREMES_CONSULTER, self::BAREMES_MODIFIER,
         self::RAPPORTS_CONSULTER,
@@ -116,7 +122,7 @@ class Permissions
         self::DAF => [
             self::DASHBOARD_CONSULTER,
             self::PERSONNEL_CONSULTER,
-            self::OM_CONSULTER, self::OM_VISER, self::OM_REJETER,
+            self::OM_CONSULTER, self::OM_NUMEROTER, self::OM_VISER, self::OM_REJETER,
             self::PAIEMENTS_CONSULTER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,
@@ -125,7 +131,7 @@ class Permissions
         self::DG => [
             self::DASHBOARD_CONSULTER,
             self::PERSONNEL_CONSULTER,
-            self::OM_CONSULTER, self::OM_APPROUVER, self::OM_REJETER,
+            self::OM_CONSULTER, self::OM_NUMEROTER, self::OM_APPROUVER, self::OM_REJETER,
             self::PAIEMENTS_CONSULTER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,
@@ -134,7 +140,7 @@ class Permissions
         self::CONTROLEUR => [
             self::DASHBOARD_CONSULTER,
             self::PERSONNEL_CONSULTER,
-            self::OM_CONSULTER, self::OM_VALIDER, self::OM_REJETER,
+            self::OM_CONSULTER, self::OM_VALIDER, self::OM_NUMEROTER, self::OM_REJETER,
             self::PAIEMENTS_CONSULTER,
             self::BAREMES_CONSULTER,
             self::RAPPORTS_CONSULTER,

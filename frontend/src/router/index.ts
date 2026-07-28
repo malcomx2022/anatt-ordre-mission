@@ -12,7 +12,9 @@ declare module 'vue-router' {
   }
 }
 
-const routes: RouteRecordRaw[] = [
+// Exporté pour les contrôles de cohérence menu ↔ routes ↔ RBAC
+// (cf. __tests__/navigation.spec.ts).
+export const routes: RouteRecordRaw[] = [
   // ── AUTH ──
   {
     path: '/login',
@@ -44,7 +46,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'dashboard',
     component: () => import('@/views/dashboard/DashboardView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'dashboard.consulter' },
   },
 
   // ── PERSONNEL / AGENTS ──
@@ -52,7 +54,7 @@ const routes: RouteRecordRaw[] = [
     path: '/agents',
     name: 'agents',
     component: () => import('@/views/agents/AgentListView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'personnel.consulter' },
   },
   {
     path: '/agents/nouveau',
@@ -70,7 +72,7 @@ const routes: RouteRecordRaw[] = [
     path: '/agents/:id',
     name: 'agent-detail',
     component: () => import('@/views/agents/AgentDetailView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'personnel.consulter' },
   },
   {
     path: '/agents/:id/modifier',
@@ -86,53 +88,57 @@ const routes: RouteRecordRaw[] = [
   },
 
   // ── ORDRES DE MISSION ──
+  // `ordres` et non `missions` : ce nom était en collision avec la route
+  // /missions ci-dessous, et Vue Router garde alors la DERNIÈRE déclarée.
   {
     path: '/ordres',
-    name: 'missions',
+    name: 'ordres',
     component: () => import('@/views/missions/MissionListView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'om.consulter' },
   },
   {
     path: '/ordres/nouveau',
     name: 'mission-create',
     component: () => import('@/views/missions/MissionCreateView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'om.retranscrire' },
   },
   {
     path: '/ordres/:id',
     name: 'mission-detail',
     component: () => import('@/views/missions/MissionDetailView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'om.consulter' },
   },
   {
     path: '/ordres/:id/modifier',
     name: 'mission-edit',
     component: () => import('@/views/missions/MissionEditView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'om.consulter' },
   },
+  // Écrans de redirection vers la fiche : om.consulter suffit. Les guarder par
+  // om.valider renverrait un 403 au DAF et au DG, qui n'ont pas cette clé.
   {
     path: '/ordres/:id/valider-n1',
     name: 'mission-validate-n1',
     component: () => import('@/views/missions/MissionValidation1View.vue'),
-    meta: { auth: true, permission: 'om.valider' },
+    meta: { auth: true, permission: 'om.consulter' },
   },
   {
     path: '/ordres/:id/valider-dg',
     name: 'mission-validate-dg',
     component: () => import('@/views/missions/MissionValidation2View.vue'),
-    meta: { auth: true, permission: 'om.valider' },
+    meta: { auth: true, permission: 'om.consulter' },
   },
   {
     path: '/ordres/:id/pdf',
     name: 'mission-pdf',
     component: () => import('@/views/missions/MissionPdfView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'om.consulter' },
   },
   {
     path: '/ordres/:id/historique',
     name: 'mission-history',
     component: () => import('@/views/missions/MissionHistoryView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'om.consulter' },
   },
 
   // ── MISSIONS (point d'entrée : N OM + 1 état de paiement) ──
@@ -162,7 +168,7 @@ const routes: RouteRecordRaw[] = [
     path: '/paiements',
     name: 'paiements',
     component: () => import('@/views/paiements/PaiementListView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'paiements.consulter' },
   },
   {
     path: '/paiements/moov',
@@ -180,7 +186,7 @@ const routes: RouteRecordRaw[] = [
     path: '/paiements/statuts',
     name: 'paiement-statuts',
     component: () => import('@/views/paiements/PaiementStatutView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'paiements.consulter' },
   },
   {
     path: '/paiements/reconciliation',
@@ -192,7 +198,7 @@ const routes: RouteRecordRaw[] = [
     path: '/paiements/historique',
     name: 'paiement-historique',
     component: () => import('@/views/paiements/PaiementHistoriqueView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'paiements.consulter' },
   },
 
   // ── TAUX PER DIEM ──
@@ -200,7 +206,7 @@ const routes: RouteRecordRaw[] = [
     path: '/taux',
     name: 'taux',
     component: () => import('@/views/taux/TauxListView.vue'),
-    meta: { auth: true },
+    meta: { auth: true, permission: 'baremes.consulter' },
   },
   {
     path: '/taux/configurer',

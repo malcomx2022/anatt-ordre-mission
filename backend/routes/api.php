@@ -85,7 +85,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
         ->middleware('permission:om.retranscrire');
     // Numérotation manuelle, selon le registre papier de l'agence.
     Route::put('etats/{etat}/numero', [EtatPaiementController::class, 'definirNumero'])
-        ->middleware('permission:om.rejeter');
+        ->middleware('permission:om.numeroter');
     // Étape 1 — contrôle de conformité.
     Route::post('etats/{etat}/controler', [EtatPaiementController::class, 'controler'])
         ->middleware('permission:om.valider');

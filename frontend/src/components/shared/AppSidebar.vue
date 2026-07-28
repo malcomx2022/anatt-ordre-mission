@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useAuth, type Permission } from '@/composables/useAuth'
+import { useAuth } from '@/composables/useAuth'
+import { NAVIGATION, type NavItem } from '@/components/shared/navigation'
 
 import AppLogo from '@/components/shared/AppLogo.vue'
 
@@ -15,71 +16,28 @@ const userInitials = computed(() => {
   return (auth.user.name || '').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
-interface NavItem {
-  label: string
-  icon: string
-  to: string
-  badge?: number
-  permission?: Permission
-}
-
-interface NavGroup {
-  title: string
-  items: NavItem[]
-}
-
-const allNavigation: NavGroup[] = [
-  {
-    title: 'Principal',
-    items: [
-      { label: 'Tableau de bord', icon: 'grid', to: '/', permission: 'dashboard.consulter' },
-    ],
-  },
-  {
-    title: 'Gestion',
-    items: [
-      { label: 'Personnel', icon: 'users', to: '/agents', permission: 'personnel.consulter' },
-      { label: 'Missions', icon: 'briefcase', to: '/missions', permission: 'om.consulter' },
-      { label: 'Ordres de Mission', icon: 'file-text', to: '/ordres', permission: 'om.consulter' },
-      { label: 'Etats de paiement', icon: 'check-square', to: '/etats', permission: 'om.consulter' },
-    ],
-  },
-  {
-    title: 'Finances',
-    items: [
-      { label: 'Paiements', icon: 'credit-card', to: '/paiements', permission: 'paiements.consulter' },
-      { label: 'Baremes', icon: 'calculator', to: '/taux', permission: 'baremes.consulter' },
-    ],
-  },
-  {
-    title: 'Analyses',
-    items: [
-      { label: 'Rapports', icon: 'bar-chart-2', to: '/rapports', permission: 'rapports.consulter' },
-      { label: 'Audit', icon: 'clock', to: '/audit', permission: 'audit.consulter' },
-    ],
-  },
-  {
-    title: 'Systeme',
-    items: [
-      { label: 'Utilisateurs', icon: 'shield', to: '/admin/utilisateurs', permission: 'utilisateurs.gerer' },
-      { label: 'Signatures', icon: 'edit-3', to: '/admin/signatures', permission: 'parametres.gerer' },
-      { label: 'Parametres', icon: 'settings', to: '/admin/parametres', permission: 'parametres.gerer' },
-    ],
-  },
-]
-
-const navigation = computed(() => {
-  return allNavigation
+const navigation = computed(() =>
+  NAVIGATION
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.permission || can(item.permission)),
+      items: group.items
+        .filter((item) => !item.permission || can(item.permission))
+        .map((item) => ({
+          ...item,
+          children: (item.children ?? []).filter((c) => !c.permission || can(c.permission)),
+        })),
     }))
-    .filter((group) => group.items.length > 0)
-})
+    .filter((group) => group.items.length > 0),
+)
 
 function isActive(to: string): boolean {
   if (to === '/') return route.path === '/'
-  return route.path.startsWith(to)
+  return route.path === to || route.path.startsWith(`${to}/`)
+}
+
+/** Les sous-entrées ne s'affichent que dans la section où l'on se trouve. */
+function sectionOuverte(item: NavItem): boolean {
+  return isActive(item.to) || (item.children ?? []).some((c) => isActive(c.to))
 }
 </script>
 
@@ -105,9 +63,8 @@ function isActive(to: string): boolean {
         <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 first:mt-0 font-display font-semibold">
           {{ group.title }}
         </p>
+        <template v-for="item in group.items" :key="item.to">
         <router-link
-          v-for="item in group.items"
-          :key="item.to"
           :to="item.to"
           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
           :class="isActive(item.to) ? 'active text-white' : 'text-anatt-100'"
@@ -133,6 +90,20 @@ function isActive(to: string): boolean {
             {{ item.badge }}
           </span>
         </router-link>
+
+        <!-- Sous-écrans : dépliés uniquement dans la section courante, pour
+             garder un menu court sans laisser d'écran inaccessible. -->
+        <router-link
+          v-for="child in (sectionOuverte(item) ? item.children : [])"
+          :key="child.to"
+          :to="child.to"
+          class="sidebar-link flex items-center gap-3 pl-11 pr-3 py-2 rounded-lg text-[13px]"
+          :class="isActive(child.to) ? 'active text-white' : 'text-anatt-200/80'"
+        >
+          <span class="w-1 h-1 rounded-full bg-current opacity-60"></span>
+          {{ child.label }}
+        </router-link>
+        </template>
       </template>
     </nav>
 
