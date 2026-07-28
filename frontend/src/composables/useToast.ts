@@ -18,6 +18,11 @@ export function useToast() {
     }, duration)
   }
 
+  /** Ferme une notification avant son expiration (bouton de fermeture). */
+  function remove(id: number) {
+    toasts.value = toasts.value.filter((t) => t.id !== id)
+  }
+
   function success(message: string) {
     show(message, 'success')
   }
@@ -30,5 +35,5 @@ export function useToast() {
     show(message, 'warning')
   }
 
-  return { toasts, show, success, error, warning }
+  return { toasts, show, remove, success, error, warning }
 }

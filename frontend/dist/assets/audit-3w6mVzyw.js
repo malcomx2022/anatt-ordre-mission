@@ -1,1 +1,0 @@
-import{c as e,i as t,s as n}from"./index-BhAKz2H4.js";var r={async list(e={}){let{data:r}=await t.get(`/api/audit`,{params:e});return n(r)},async get(n){let{data:r}=await t.get(`/api/audit/${n}`);return e(r)}};export{r as t};

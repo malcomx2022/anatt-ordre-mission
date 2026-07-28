@@ -1,0 +1,1 @@
+import{c as e,i as t,s as n}from"./index-DtCSJM7o.js";var r={async list(e={}){let{data:r}=await t.get(`/api/missions`,{params:e});return n(r)},async create(n){let{data:r}=await t.post(`/api/missions`,n);return e(r)}};export{r as t};

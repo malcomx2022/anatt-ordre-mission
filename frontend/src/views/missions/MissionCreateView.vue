@@ -56,7 +56,14 @@ function suivant() {
     return
   }
   if (step.value === 2 && !store.etape2Valide) {
-    toast.warning('Chaque bénéficiaire doit avoir un agent, une référence SEMO unique, une catégorie et un type.')
+    // On nomme le bénéficiaire fautif et ce qui lui manque : un message
+    // générique laisserait l'utilisateur devant un bouton qui « ne fait rien ».
+    const premier = store.beneficiairesIncomplets[0]
+    toast.warning(
+      premier
+        ? `Bénéficiaire ${premier.rang} : ${premier.manques.join(', ')} à compléter.`
+        : 'Ajoutez au moins un bénéficiaire.',
+    )
     return
   }
   step.value = Math.min(3, step.value + 1)
@@ -174,6 +181,22 @@ function terminer() {
         <AppCard v-if="!store.beneficiaires.length">
           <p class="text-center text-sm text-gray-400 font-body py-6">Aucun bénéficiaire. Ajoutez-en au moins un.</p>
         </AppCard>
+
+        <!-- Ce qui empêche de passer au récapitulatif, affiché en permanence :
+             l'utilisateur ne doit pas avoir à deviner pourquoi « Suivant » ne
+             répond pas, ni à attendre une notification pour le savoir. -->
+        <AppAlert v-if="store.beneficiairesIncomplets.length" type="warning">
+          <div>
+            <p class="font-display font-semibold mb-1">
+              Complétez ces bénéficiaires pour accéder au récapitulatif :
+            </p>
+            <ul class="list-disc list-inside space-y-0.5">
+              <li v-for="x in store.beneficiairesIncomplets" :key="x.rang">
+                Bénéficiaire {{ x.rang }} — {{ x.manques.join(', ') }}
+              </li>
+            </ul>
+          </div>
+        </AppAlert>
       </div>
 
       <!-- ÉTAPE 3 — Récapitulatif -->
