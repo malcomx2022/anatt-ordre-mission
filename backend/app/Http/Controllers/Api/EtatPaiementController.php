@@ -1,0 +1,151 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\EtatPaiement;
+use App\Models\Mission;
+use App\Services\EtatPaiementPdf;
+use App\Services\EtatPaiementService;
+use App\Support\MontantEnLettres;
+use App\Support\Workflow;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * État de paiement d'une mission : récapitulatif, brouillon téléchargeable,
+ * puis circuit contrôle → visa DAF → validation finale du DG.
+ */
+class EtatPaiementController extends Controller
+{
+    public function __construct(
+        private readonly EtatPaiementService $service,
+        private readonly EtatPaiementPdf $pdf,
+    ) {}
+
+    /** État de la mission (null si le récapitulatif n'a pas encore été produit). */
+    public function show(Mission $mission): JsonResponse
+    {
+        $etat = EtatPaiement::where('mission_id', $mission->id)->first();
+
+        return $this->success($etat ? $this->presenter($etat) : null);
+    }
+
+    /** Récapitulatif : crée ou rafraîchit l'état en BROUILLON. */
+    public function recapituler(Request $request, Mission $mission): JsonResponse
+    {
+        $etat = $this->service->recapituler($mission, $request->user());
+
+        return $this->success($this->presenter($etat), 'Récapitulatif établi. Le brouillon est téléchargeable.');
+    }
+
+    /** Numérotation manuelle, selon le registre de l'agence. */
+    public function definirNumero(Request $request, EtatPaiement $etat): JsonResponse
+    {
+        $request->validate(['numero' => 'required|string|max:100']);
+
+        $etat = $this->service->definirNumero($etat, $request->string('numero'), $request->user());
+
+        return $this->success($this->presenter($etat), 'Numéro enregistré.');
+    }
+
+    /** Étape 1 — contrôle de conformité. */
+    public function controler(Request $request, EtatPaiement $etat): JsonResponse
+    {
+        $etat = $this->service->controler($etat, $request->user());
+
+        return $this->success($this->presenter($etat), 'État contrôlé : transmis au DAF pour visa.');
+    }
+
+    /** Étape 2 — visa du DAF. */
+    public function viser(Request $request, EtatPaiement $etat): JsonResponse
+    {
+        $etat = $this->service->viser($etat, $request->user());
+
+        return $this->success($this->presenter($etat), 'Visa du DAF apposé : transmis au Directeur Général.');
+    }
+
+    /** Étape 3 — validation finale : ouvre la génération des fichiers de paiement. */
+    public function approuver(Request $request, EtatPaiement $etat): JsonResponse
+    {
+        $etat = $this->service->approuver($etat, $request->user());
+
+        return $this->success(
+            $this->presenter($etat),
+            'État de paiement validé et verrouillé. Les fichiers de paiement peuvent être générés.',
+        );
+    }
+
+    /** Rejet motivé, possible à chaque étape. */
+    public function rejeter(Request $request, EtatPaiement $etat): JsonResponse
+    {
+        $request->validate(['motif' => 'required|string|min:10']);
+
+        $etat = $this->service->rejeter($etat, $request->string('motif'), $request->user());
+
+        return $this->success($this->presenter($etat), 'État de paiement rejeté.');
+    }
+
+    /** Brouillon filigrané : l'épreuve que l'on relit avant d'engager le circuit. */
+    public function brouillon(Mission $mission)
+    {
+        $etat = EtatPaiement::where('mission_id', $mission->id)->firstOrFail();
+
+        return $this->pdf->telecharger($etat, brouillon: true);
+    }
+
+    /** État définitif, avec les signatures apposées. */
+    public function telecharger(Mission $mission)
+    {
+        $etat = EtatPaiement::where('mission_id', $mission->id)->firstOrFail();
+
+        return $this->pdf->telecharger($etat, brouillon: ! $etat->estValide());
+    }
+
+    /**
+     * Représentation de l'état pour l'UI : statut, montants, étapes franchies et
+     * prochaine action attendue.
+     *
+     * @return array<string,mixed>
+     */
+    private function presenter(EtatPaiement $etat): array
+    {
+        return [
+            'id' => $etat->id,
+            'mission_id' => $etat->mission_id,
+            'numero' => $etat->numero,
+            'statut' => $etat->statut,
+            'nb_beneficiaires' => $etat->nb_beneficiaires,
+            'montant_total' => $etat->montant_total,
+            'montant_avance' => $etat->montant_avance,
+            'montant_reliquat' => $etat->montant_reliquat,
+            'montant_total_lettres' => MontantEnLettres::mention($etat->montant_total),
+            'controle' => $this->etape($etat->controle_nom, $etat->controle_fonction, $etat->controle_le, $etat->signature_controle_hash),
+            'visa_daf' => $this->etape($etat->visa_daf_nom, $etat->visa_daf_fonction, $etat->visa_daf_le, $etat->signature_daf_hash),
+            'validation_dg' => $this->etape($etat->valide_dg_nom, $etat->valide_dg_fonction, $etat->valide_dg_le, $etat->signature_dg_hash),
+            'commentaire_rejet' => $etat->commentaire_rejet,
+            'prochaine_etape' => match ($etat->statut) {
+                'BROUILLON' => 'CONTROLE',
+                'CONTROLE' => 'VISA_DAF',
+                'VISA_DAF' => 'VALIDATION_DG',
+                default => null,
+            },
+            'paiement_ouvert' => $etat->estValide(),
+        ];
+    }
+
+    /** @return array{nom:string, fonction:?string, date:?string, code:?string}|null */
+    private function etape(?string $nom, ?string $fonction, mixed $date, ?string $hash): ?array
+    {
+        if (empty($nom)) {
+            return null;
+        }
+
+        return [
+            'nom' => $nom,
+            'fonction' => $fonction,
+            'date' => $date?->toISOString(),
+            'code' => Workflow::codeVerification($hash),
+        ];
+    }
+}

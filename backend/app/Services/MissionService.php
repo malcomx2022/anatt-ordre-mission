@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Models\EtatPaiement;
 use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
@@ -116,6 +117,8 @@ class MissionService
     /** Validation d'un OM : IMPORTE → VALIDE. */
     public function valider(OrdreMission $ordre, User $user, ?string $commentaire = null): OrdreMission
     {
+        $this->exigerAbsenceDEtat($ordre, 'valider');
+
         $cible = Workflow::statutApresControle();
 
         $ordre = $this->transition(
@@ -144,6 +147,7 @@ class MissionService
      */
     public function viser(OrdreMission $ordre, User $user, ?string $commentaire = null): OrdreMission
     {
+        $this->exigerAbsenceDEtat($ordre, 'viser');
         $this->exigerCircuitComplet('viser');
 
         return $this->transition(
@@ -164,6 +168,7 @@ class MissionService
      */
     public function approuver(OrdreMission $ordre, User $user): OrdreMission
     {
+        $this->exigerAbsenceDEtat($ordre, 'approuver');
         $this->exigerCircuitComplet('approuver');
 
         // Séparation des tâches : une même personne ne peut pas porter deux
@@ -194,6 +199,8 @@ class MissionService
      */
     public function rejeter(OrdreMission $ordre, string $motif, User $user): OrdreMission
     {
+        $this->exigerAbsenceDEtat($ordre, 'rejeter');
+
         $ordre = $this->transition(
             $ordre,
             Workflow::statutsRejetables(),
@@ -212,6 +219,26 @@ class MissionService
         $this->notifications->omRejete($ordre);
 
         return $ordre;
+    }
+
+    /**
+     * Le circuit se joue sur l'état de paiement de la mission dès lors qu'il en
+     * existe un : agir OM par OM ferait diverger le statut de l'OM de celui de
+     * l'état signé. Les transitions unitaires restent donc réservées aux missions
+     * sans état (reprise de données, correction ponctuelle).
+     */
+    private function exigerAbsenceDEtat(OrdreMission $ordre, string $action): void
+    {
+        $etat = EtatPaiement::where('mission_id', $ordre->mission_id)->first();
+
+        if ($etat !== null) {
+            throw ValidationException::withMessages([
+                'etat' => [
+                    "Cette mission possède un état de paiement (statut « {$etat->statut} ») : "
+                    ."l'action « {$action} » doit être effectuée sur l'état, pas sur l'OM.",
+                ],
+            ]);
+        }
     }
 
     /** Les étapes DAF et DG n'existent que si le circuit complet est actif. */
