@@ -66,6 +66,11 @@ export function useAuth() {
     return canAny('om.rejeter', 'om.valider')
   }
 
+  /** Numérotation manuelle de l'état, selon le registre papier de l'agence. */
+  function canNumeroterEtat(): boolean {
+    return can('om.numeroter')
+  }
+
   function canGenererPaiements(): boolean {
     return can('paiements.generer')
   }
@@ -110,6 +115,7 @@ export function useAuth() {
     canViserOM,
     canApprouverOM,
     canRejeterOM,
+    canNumeroterEtat,
     canGenererPaiements,
     canConfirmerPaiements,
     canManageBaremes,

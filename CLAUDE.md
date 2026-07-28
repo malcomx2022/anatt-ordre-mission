@@ -65,7 +65,14 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 | `CONTROLEUR` | Valide/rejette les OM (`om.valider`) ; consulte paiements et audit |
 | `LECTEUR` | Lecture seule (dashboard, OM, rapports) |
 
-Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `om.consulter|retranscrire|valider` · `paiements.consulter|generer|confirmer` · `baremes.consulter|modifier` · `rapports.consulter` · `audit.consulter` · `utilisateurs.gerer` · `superadmins.gerer` · `parametres.gerer`.
+Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `om.consulter|retranscrire|valider|numeroter|viser|approuver|rejeter` · `paiements.consulter|generer|confirmer` · `baremes.consulter|modifier` · `rapports.consulter` · `audit.consulter` · `utilisateurs.gerer` · `superadmins.gerer` · `parametres.gerer`.
+
+> **Cohérence menu ↔ routes ↔ API.** Chaque entrée du menu latéral
+> (`components/shared/navigation.ts`) porte la **même** clé que le `meta.permission`
+> de sa route (`router/index.ts`), qui porte elle-même la clé exigée par l'API.
+> Les trois niveaux sont verrouillés par des tests : `tests/Feature/RoutesPermissionsTest.php`
+> (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
+> (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
 > **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `lecteur@anatt.bj`.
 

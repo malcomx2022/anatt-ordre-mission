@@ -14,7 +14,8 @@ import type { EtatPaiement } from '@/types'
 
 const route = useRoute()
 const toast = useToast()
-const { canCreerMissions, canValiderOM, canViserOM, canApprouverOM, canRejeterOM } = useAuth()
+const { canCreerMissions, canValiderOM, canViserOM, canApprouverOM, canRejeterOM, canNumeroterEtat } =
+  useAuth()
 const missionId = Number(route.params.missionId)
 
 const etat = ref<EtatPaiement | null>(null)
@@ -38,7 +39,7 @@ const peutRejeter = computed(
 )
 // Le numéro suit le registre papier : modifiable jusqu'à la validation finale.
 const peutNumeroter = computed(
-  () => canRejeterOM() && !!etat.value && etat.value.statut !== 'VALIDE',
+  () => canNumeroterEtat() && !!etat.value && etat.value.statut !== 'VALIDE',
 )
 
 /** Les trois étapes du circuit, pour la frise de suivi. */

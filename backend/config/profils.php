@@ -42,7 +42,8 @@ return [
     'permissions' => [
         'dashboard.consulter',
         'personnel.consulter', 'personnel.gerer',
-        'om.consulter', 'om.retranscrire', 'om.valider', 'om.viser', 'om.approuver', 'om.rejeter',
+        'om.consulter', 'om.retranscrire', 'om.valider', 'om.numeroter',
+        'om.viser', 'om.approuver', 'om.rejeter',
         'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
         'baremes.consulter', 'baremes.modifier',
         'rapports.consulter',
@@ -84,7 +85,7 @@ return [
         'DAF' => [
             'dashboard.consulter',
             'personnel.consulter',
-            'om.consulter', 'om.viser', 'om.rejeter',
+            'om.consulter', 'om.numeroter', 'om.viser', 'om.rejeter',
             'paiements.consulter',
             'baremes.consulter',
             'rapports.consulter',
@@ -96,7 +97,7 @@ return [
         'DG' => [
             'dashboard.consulter',
             'personnel.consulter',
-            'om.consulter', 'om.approuver', 'om.rejeter',
+            'om.consulter', 'om.numeroter', 'om.approuver', 'om.rejeter',
             'paiements.consulter',
             'baremes.consulter',
             'rapports.consulter',
@@ -105,7 +106,7 @@ return [
         'CONTROLEUR' => [
             'dashboard.consulter',
             'personnel.consulter',
-            'om.consulter', 'om.valider', 'om.rejeter',
+            'om.consulter', 'om.valider', 'om.numeroter', 'om.rejeter',
             'paiements.consulter',
             'baremes.consulter',
             'rapports.consulter',
