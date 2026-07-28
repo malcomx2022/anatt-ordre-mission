@@ -118,6 +118,35 @@ return [
         ],
     ],
 
+    /*
+    | Comptes nominatifs du circuit de validation (CONTROLEUR -> DAF -> DG),
+    | créés par ComptesCircuitSeeder au déploiement.
+    |
+    | Aucun mot de passe n'est stocké ici : le seeder en génère un aléatoire et
+    | pose must_change_password, l'intéressé le change à sa première connexion.
+    | Un compte laissé sans email n'est pas créé.
+    |
+    | La `fonction` est le libellé imprimé sous la signature sur les documents ;
+    | elle est figée en instantané au moment où la personne signe.
+    */
+    'circuit' => [
+        'controleur' => [
+            'name' => env('CONTROLEUR_NAME'),
+            'email' => env('CONTROLEUR_EMAIL'),
+            'fonction' => env('CONTROLEUR_FONCTION', 'Contrôleur'),
+        ],
+        'daf' => [
+            'name' => env('DAF_NAME'),
+            'email' => env('DAF_EMAIL'),
+            'fonction' => env('DAF_FONCTION', "Directeur de l'Administration et des Finances"),
+        ],
+        'dg' => [
+            'name' => env('DG_NAME'),
+            'email' => env('DG_EMAIL'),
+            'fonction' => env('DG_FONCTION', 'Directeur Général'),
+        ],
+    ],
+
     // Compte SUPER_ADMIN initial (créé par le seeder à l'installation).
     // SÉCURITÉ : aucun mot de passe de repli. En production, SUPERADMIN_PASSWORD
     // DOIT être défini dans le .env ; à défaut le seeder lève une exception.
