@@ -1,1 +1,0 @@
-import{l as e,o as t,u as n}from"./index-CskzxkKt.js";var r={async list(n={}){let{data:r}=await t.get(`/api/missions`,{params:n});return e(r)},async create(e){let{data:r}=await t.post(`/api/missions`,e);return n(r)}};export{r as t};

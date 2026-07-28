@@ -7,6 +7,8 @@ import { useSearch } from '@/composables/useSearch'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import type { User } from '@/types'
+import { ROLE_LABELS } from '@/types'
+import { PROFILS, badgeDeRole } from '@/utils/roles'
 
 const api = useApi()
 const toast = useToast()
@@ -71,14 +73,6 @@ function handlePageChange(page: number) {
 
 onMounted(loadUsers)
 
-const roleConfig: Record<string, { bg: string; color: string }> = {
-  SUPER_ADMIN: { bg: 'bg-red-100', color: 'text-red-700' },
-  ADMIN: { bg: 'bg-purple-100', color: 'text-purple-700' },
-  GESTIONNAIRE_OM: { bg: 'bg-green-100', color: 'text-green-700' },
-  AGENT_FINANCIER: { bg: 'bg-amber-100', color: 'text-amber-700' },
-  CONTROLEUR: { bg: 'bg-blue-100', color: 'text-blue-700' },
-  LECTEUR: { bg: 'bg-gray-100', color: 'text-gray-600' },
-}
 
 function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -153,12 +147,7 @@ function copier(texte: string) {
         </div>
         <select v-model="roleFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
           <option value="">Tous les rôles</option>
-          <option value="SUPER_ADMIN">Super administrateur</option>
-          <option value="ADMIN">Administrateur</option>
-          <option value="GESTIONNAIRE_OM">Gestionnaire OM</option>
-          <option value="AGENT_FINANCIER">Agent financier</option>
-          <option value="CONTROLEUR">Contrôleur</option>
-          <option value="LECTEUR">Lecteur</option>
+          <option v-for="p in PROFILS" :key="p.value" :value="p.value">{{ p.label }}</option>
         </select>
         <select v-model="statutFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
           <option value="">Tous les statuts</option>
@@ -201,7 +190,7 @@ function copier(texte: string) {
               </div>
             </td>
             <td class="px-5 py-4">
-              <span :class="[roleConfig[u.role]?.bg || 'bg-gray-100', roleConfig[u.role]?.color || 'text-gray-600', 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']">{{ u.role }}</span>
+              <span :class="[badgeDeRole(u.role), 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']" :title="ROLE_LABELS[u.role]">{{ u.role }}</span>
             </td>
             <td class="px-5 py-4">
               <span v-if="u.actif" class="px-2.5 py-1 text-xs font-display font-semibold rounded-lg bg-anatt-50 text-anatt-600">Actif</span>

@@ -5,6 +5,7 @@ import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { useApi, getValidationErrors } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
+import { PROFILS } from '@/utils/roles'
 
 const router = useRouter()
 const api = useApi()
@@ -27,19 +28,10 @@ const form = ref({
   activateNow: true,
 })
 
-const roles = [
-  { value: 'SUPER_ADMIN', label: 'Super administrateur', desc: 'Accès total ; gère les super admins et les paramètres système', color: 'red', perms: ['Tout'] },
-  { value: 'ADMIN', label: 'Administrateur', desc: 'Utilisateurs, référentiels, barème ; supervision', color: 'purple', perms: ['Personnel', 'Barème', 'Utilisateurs', 'Audit'] },
-  { value: 'GESTIONNAIRE_OM', label: 'Gestionnaire OM', desc: 'Retranscrit/gère missions, OM et agents', color: 'green', perms: ['Personnel', 'Missions/OM', 'Rapports'] },
-  { value: 'AGENT_FINANCIER', label: 'Agent financier', desc: 'Génère les fichiers MTN/Moov et confirme les paiements', color: 'amber', perms: ['Paiements', 'Rapports'] },
-  { value: 'CONTROLEUR', label: 'Contrôleur', desc: 'Valide/rejette les OM ; consulte paiements et audit', color: 'blue', perms: ['Validation OM', 'Audit', 'Rapports'] },
-  { value: 'LECTEUR', label: 'Lecteur', desc: 'Consultation seule (tableau de bord, OM, états)', color: 'gray', perms: ['Dashboard', 'OM', 'Rapports'] },
-]
-
 // Le profil SUPER_ADMIN n'est proposé que si l'utilisateur courant est SUPER_ADMIN.
-const availableRoles = computed(() => roles.filter(r => r.value !== 'SUPER_ADMIN' || isSuperAdmin()))
+const availableRoles = computed(() => PROFILS.filter(r => r.value !== 'SUPER_ADMIN' || isSuperAdmin()))
 
-const selectedRole = computed(() => roles.find(r => r.value === form.value.role))
+const selectedRole = computed(() => PROFILS.find(r => r.value === form.value.role))
 
 const directions = ['Direction Generale', 'Direction Technique', 'Direction Administrative', 'Direction Financiere', 'Service Informatique', 'Comptabilite']
 
@@ -165,7 +157,7 @@ async function handleSubmit() {
                   v-for="perm in role.perms"
                   :key="perm"
                   class="px-1.5 py-0.5 text-[9px] font-display font-semibold rounded"
-                  :class="`bg-${role.color}-100 text-${role.color}-600`"
+                  :class="role.puce"
                 >{{ perm }}</span>
               </div>
             </div>
