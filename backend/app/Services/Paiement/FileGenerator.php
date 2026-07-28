@@ -2,6 +2,7 @@
 
 namespace App\Services\Paiement;
 
+use App\Models\EtatPaiement;
 use App\Models\LotPaiement;
 use App\Models\Mission;
 use App\Models\User;
@@ -32,6 +33,37 @@ abstract class FileGenerator
     abstract protected function operateur(): string;
 
     /**
+     * Refuse de produire un fichier de paiement tant que l'état de la mission
+     * n'est pas définitivement validé par le Directeur Général.
+     *
+     * Le périmètre payable est déjà borné en amont — scopeEligiblesLot n'accepte
+     * que des OM VALIDE, et seule la validation de l'état les y amène. Ce contrôle
+     * est une SECONDE barrière, posée juste avant l'écriture du fichier : c'est le
+     * point où une erreur devient un virement, et il ne doit pas dépendre d'une
+     * seule règle, fût-elle correcte.
+     *
+     * Une mission sans état relève d'une reprise de données : on laisse alors le
+     * périmètre par OM faire foi, comme avant l'introduction des états.
+     */
+    private function exigerEtatValide(Mission $mission): void
+    {
+        $etat = EtatPaiement::where('mission_id', $mission->id)->first();
+
+        if ($etat === null) {
+            return;
+        }
+
+        if (! $etat->estValide()) {
+            throw ValidationException::withMessages([
+                'etat' => [
+                    "L'état de paiement de cette mission est au statut « {$etat->statut} » : "
+                    .'la génération des fichiers exige la validation finale du Directeur Général.',
+                ],
+            ]);
+        }
+    }
+
+    /**
      * Construit le fichier sur le disque et renvoie ses métadonnées.
      *
      * @param  Collection<int,Versement>  $versements
@@ -60,6 +92,8 @@ abstract class FileGenerator
                     'lot' => ['Ce lot est déjà confirmé : régénération interdite (anti-double-paiement).'],
                 ]);
             }
+
+            $this->exigerEtatValide($mission);
 
             $versements = Versement::eligiblesLot($missionId, $tranche, $this->operateur())->get();
 
