@@ -30,9 +30,29 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+/**
+ * Sur un téléchargement (responseType: 'blob'), un échec renvoie le corps
+ * d'erreur EN BLOB, pas en JSON : error.response.data.message est alors
+ * undefined et l'utilisateur ne voit qu'un message générique (« impossible de
+ * télécharger »), jamais la vraie cause. On relit le blob et on le reconvertit
+ * en objet { message, errors } pour que la suite du traitement le voie.
+ */
+export async function normaliserErreurBlob(error: AxiosError<ApiErrorResponse>): Promise<void> {
+  const data = error.response?.data as unknown
+  if (data instanceof Blob && data.type.includes('application/json')) {
+    try {
+      const texte = await data.text()
+      error.response!.data = JSON.parse(texte)
+    } catch {
+      // Blob illisible ou non-JSON : on laisse le message générique.
+    }
+  }
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<ApiErrorResponse>) => {
+  async (error: AxiosError<ApiErrorResponse>) => {
+    await normaliserErreurBlob(error)
     const status = error.response?.status
     const message = error.response?.data?.message
 
