@@ -256,7 +256,9 @@ class EtatPaiementService
         return [
             "{$champ}_par" => $user->id,
             "{$champ}_le" => $maintenant,
-            "{$champ}_nom" => $signataire['nom'] ?: $user->name,
+            // « Prénoms NOM », et non le seul patronyme : les prénoms sont saisis
+            // dans les paramètres justement pour figurer sous la signature.
+            "{$champ}_nom" => $signataire['nom_complet'] ?: $user->name,
             "{$champ}_fonction" => $signataire['fonction'] ?: ($user->fonction ?: Permissions::LIBELLES[$user->role] ?? null),
             $champHash => $this->sceller($etat, $user, $etape, $maintenant->toISOString()),
         ];
