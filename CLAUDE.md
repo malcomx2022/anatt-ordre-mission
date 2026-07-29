@@ -23,9 +23,42 @@ Elle **RETRANSCRIT** les OM, puis **GÉNÈRE** les fichiers de paiement à dépo
 
 ```
 SEMO émet l'OM → retranscription dans l'app → regroupement par mission
-→ calcul per diem (barème ANaTT) → génération fichier de paiement (.txt MTN / .xlsx Moov)
+→ calcul per diem (barème ANaTT) → RÉCAPITULATIF : état de paiement (BROUILLON)
+→ CONTRÔLE (contrôleur) → VISA DAF → VALIDATION DG (numéro requis)  ← circuit
+→ les OM de la mission deviennent payables (VALIDE)
+→ génération fichier de paiement (.txt MTN / .xlsx Moov), AVANCE puis RELIQUAT
 → dépôt manuel sur la plateforme opérateur → confirmation manuelle dans l'app
 ```
+
+### Circuit de validation sur l'ÉTAT DE PAIEMENT (cœur du workflow)
+
+L'unité validée est l'**état de paiement de la mission** (un seul par mission), **pas** les OM pris un à un.
+Un seul geste par étape vaut pour tous les bénéficiaires de la mission.
+
+```
+récapitulatif ─▶ BROUILLON ──contrôle──▶ CONTROLE ──visa DAF──▶ VISA_DAF ──validation DG──▶ VALIDE
+                    │  (om.valider)          (om.viser)             (om.approuver, numéro requis)
+                    └── rejet possible à chaque étape (om.rejeter, motif ≥ 10) ─▶ REJETE ─▶ refait
+```
+
+- **Les OM gardent leur statut SEMO (`IMPORTE`)** pendant tout le circuit ; ils ne passent `VALIDE` (payables)
+  qu'à la **validation finale du DG**, par propagation depuis l'état. Le contrôle, le visa et le rejet ne
+  touchent **pas** au statut des OM.
+- **Double barrière avant paiement** : (1) un OM n'est `VALIDE` qu'après le DG ; (2) la génération d'un fichier
+  vérifie en plus que l'état de la mission est `VALIDE`.
+- **Numéro** de l'état : saisi **manuellement** (registre de l'agence, `om.numeroter`), requis avant la
+  validation DG, puis figé. Unicité vérifiée.
+- **PDF** : brouillon filigrané « BROUILLON — NON VALIDE » **sans signature** ; état **définitif** signé
+  (visa DAF + validation DG) au format **paysage**. Toujours régénéré à la demande.
+- **Signatures** des titulaires (contrôleur/DAF/DG : nom, prénoms, fonction, paraphe scanné) configurées dans
+  **Administration → Signatures** ; ce sont les titulaires en poste, indépendamment du compte qui valide
+  (l'auteur réel reste tracé en audit).
+- **Rejet** : efface les signatures amont, remet l'état en correction (`REJETE`), sans figer les OM ; le
+  récapitulatif peut être **refait** (`REJETE → BROUILLON`).
+- **Circuit OM par OM** (`/api/ordres/:id/valider|viser|approuver|rejeter`) : conservé pour la **reprise de
+  données** sur une mission **sans** état ; refusé dès qu'un état existe.
+- Statuts de l'état : `BROUILLON | CONTROLE | VISA_DAF | VALIDE | REJETE`. Le circuit vit dans
+  `EtatPaiementService` ; barrière de génération dans `Paiement/FileGenerator::exigerEtatValide`.
 
 ### Règles métier (référence pour toutes les tâches)
 
@@ -54,16 +87,23 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 
 ### Profils utilisateurs (RBAC Sanctum par PERMISSION — middleware `can:`)
 
-6 profils, autorisation par **clé de permission** (Gates définies dans `AuthServiceProvider`, source : `App\Support\Permissions`).
+8 profils, autorisation par **clé de permission** (Gates définies dans `AuthServiceProvider`, source : `App\Support\Permissions`).
 
 | Profil | Rôle |
 |--------|------|
-| `SUPER_ADMIN` | Accès **total** (Gate::before). Seul à gérer les super admins et les paramètres système. Créé au seed. |
+| `SUPER_ADMIN` | Accès **total** (Gate::before). Seul à gérer les super admins et les paramètres système (dont les signatures). Créé au seed. |
 | `ADMIN` | Utilisateurs (sauf super admins), référentiels, barème, audit ; supervise sans exécuter les paiements |
-| `GESTIONNAIRE_OM` | Retranscrit/gère missions, OM et agents (`om.retranscrire`, `personnel.gerer`) |
+| `GESTIONNAIRE_OM` | Retranscrit/gère missions, OM et agents (`om.retranscrire`, `personnel.gerer`) ; établit le récapitulatif de l'état |
 | `AGENT_FINANCIER` | Génère les fichiers MTN/Moov et confirme les paiements (`paiements.generer/confirmer`) |
-| `CONTROLEUR` | Valide/rejette les OM (`om.valider`) ; consulte paiements et audit |
+| `CONTROLEUR` | **Étape 1** du circuit : contrôle l'état de paiement (`om.valider`) ; consulte paiements et audit |
+| `DAF` | **Étape 2** : appose le visa « Vu » sur l'état (`om.viser`) — Directeur de l'Administration et des Finances |
+| `DG` | **Étape 3** (dernière) : valide définitivement l'état (`om.approuver`), ce qui ouvre le paiement — Directeur Général |
 | `LECTEUR` | Lecture seule (dashboard, OM, rapports) |
+
+> **Séparation ordonnateur/payeur.** Le DAF et le DG **autorisent**, l'agent financier **exécute** : ni le DAF
+> ni le DG ne détiennent `paiements.generer/confirmer`. Une même personne ne peut porter le visa DAF **et**
+> la validation finale d'un même état (`separation_des_taches`). `om.numeroter` et `om.rejeter` sont partagés
+> par les trois acteurs du circuit (contrôleur, DAF, DG).
 
 Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `om.consulter|retranscrire|valider|numeroter|viser|approuver|rejeter` · `paiements.consulter|generer|confirmer` · `baremes.consulter|modifier` · `rapports.consulter` · `audit.consulter` · `utilisateurs.gerer` · `superadmins.gerer` · `parametres.gerer`.
 
@@ -74,7 +114,9 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
 > (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
-> **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `lecteur@anatt.bj`.
+> **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`, `UserSeeder`, local/testing uniquement) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `daf@`, `dg@`, `lecteur@anatt.bj`.
+>
+> **En production**, les comptes du circuit se créent via `ComptesCircuitSeeder` (mot de passe temporaire aléatoire, changement forcé à la 1ʳᵉ connexion), ou depuis l'écran **Administration → Utilisateurs** (profils DAF et DG disponibles dans le formulaire). Pour un essai complet du circuit en local : `php artisan db:seed --class=DemoCircuitSeeder` (refusé en production).
 
 ---
 
@@ -389,15 +431,16 @@ extend: {
 
 ---
 
-## 5. REGISTRE DES 42 ÉCRANS
+## 5. REGISTRE DES 47 ÉCRANS
 
-### Module AUTH (3 écrans)
+### Module AUTH (4 écrans)
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
 | AUTH-01 | `views/auth/LoginView.vue` | `/login` | Formulaire email + mot de passe, logo ANaTT centré |
 | AUTH-02 | `views/auth/ForgotPasswordView.vue` | `/mot-de-passe-oublie` | Saisie email, envoi lien reset |
 | AUTH-03 | `views/auth/ResetPasswordView.vue` | `/reinitialiser/:token` | Nouveau mot de passe + confirmation |
+| AUTH-04 | `views/auth/ForcePasswordChangeView.vue` | `/changer-mot-de-passe` | Changement imposé à la 1ʳᵉ connexion (création/réinit. admin) ; bloque l'API tant qu'il n'est pas fait |
 
 ### Module DASHBOARD (1 écran)
 
@@ -422,12 +465,20 @@ extend: {
 |----|-------------|-------|-------------|
 | OM-01 | `views/missions/MissionListView.vue` | `/ordres` | Table OM (réf. SEMO, bénéficiaire, statut) filtres statut/zone/opérateur |
 | OM-02 | `views/missions/MissionCreateView.vue` | `/ordres/nouveau` | Wizard retranscription : mission + N bénéficiaires (participants + CAV), per diem temps réel |
-| OM-03 | `views/missions/MissionDetailView.vue` | `/ordres/:id` | Détail complet + valider/rejeter + versements |
+| OM-03 | `views/missions/MissionDetailView.vue` | `/ordres/:id` | Détail complet + versements ; renvoie vers l'état de la mission (pas de validation sur l'OM) |
 | OM-04 | `views/missions/MissionEditView.vue` | `/ordres/:id/modifier` | Redirige vers la fiche (OM non éditables individuellement) |
 | OM-05 | `views/missions/MissionValidation1View.vue` | `/ordres/:id/valider-n1` | Redirection (validation unifiée sur la fiche) |
 | OM-06 | `views/missions/MissionValidation2View.vue` | `/ordres/:id/valider-dg` | Redirection (plus de double validation N1/DG) |
 | OM-07 | `views/missions/MissionPdfView.vue` | `/ordres/:id/pdf` | Aperçu imprimable + téléchargement du PDF serveur |
 | OM-08 | `views/missions/MissionHistoryView.vue` | `/ordres/:id/historique` | Journal d'audit de l'OM |
+
+### Module ÉTATS DE PAIEMENT (3 écrans) — CIRCUIT DE VALIDATION
+
+| ID | Fichier Vue | Route | Description |
+|----|-------------|-------|-------------|
+| ETAT-01 | `views/missions/MissionsIndexView.vue` | `/missions` | Liste des missions (point d'entrée) : N OM + 1 état, avancement du circuit, filtre par statut d'état |
+| ETAT-02 | `views/etats/EtatListView.vue` | `/etats` | File de travail : états filtrables par statut, ouverte d'emblée sur la file de l'acteur (contrôleur/DAF/DG) |
+| ETAT-03 | `views/etats/EtatDetailView.vue` | `/missions/:missionId/etat` | Détail de l'état : montants, frise du circuit, numérotation, actions (contrôler/viser/valider/rejeter/rafraîchir), PDF brouillon & définitif |
 
 ### Module PAIEMENTS (6 écrans)
 
@@ -463,16 +514,17 @@ extend: {
 | AUD-01 | `views/audit/AuditListView.vue` | `/audit` | Journal d'activité système filtrable |
 | AUD-02 | `views/audit/AuditDetailView.vue` | `/audit/:id` | Détail d'une action : qui, quoi, quand, IP |
 
-### Module ADMINISTRATION (6 écrans)
+### Module ADMINISTRATION (7 écrans)
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
 | ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles (liste, filtres, statut, reset mot de passe) |
-| ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle, téléphone) |
-| ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
-| ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
-| ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP, templates notifications |
-| ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration |
+| ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle — dont DAF/DG, téléphone) |
+| ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle (dérivée du RBAC, 8 profils) |
+| ADM-04 | `views/admin/SignaturesView.vue` | `/admin/signatures` | Signatures du circuit : identités + paraphes scannés du contrôleur, du DAF et du DG imprimés sur l'état |
+| ADM-05 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
+| ADM-06 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP, templates notifications |
+| ADM-07 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration |
 
 ### Pages SYSTÈME (4 écrans)
 

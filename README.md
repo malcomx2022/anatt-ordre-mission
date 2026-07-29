@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 11 · PHP 8.3+ · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (137 tests) · Vitest |
+| Tests | Pest / PHPUnit (312 tests) · Vitest |
 
 ---
 
@@ -40,14 +40,22 @@ Application : **http://localhost:5173**
 
 ### Comptes de démonstration (mot de passe : `password`)
 
+Créés par `UserSeeder` en **local/testing uniquement** — jamais en production. 8 profils :
+
 | Email | Profil | Peut |
 |---|---|---|
-| `superadmin@anatt.bj` | SUPER_ADMIN | tout (dont super admins & paramètres) |
+| `superadmin@anatt.bj` | SUPER_ADMIN | tout (dont super admins, paramètres & signatures) |
 | `admin@anatt.bj` | ADMIN | utilisateurs, référentiels, barème, audit |
-| `gestion@anatt.bj` | GESTIONNAIRE_OM | agents, retranscription des missions/OM |
+| `gestion@anatt.bj` | GESTIONNAIRE_OM | agents, retranscription des missions/OM, récapitulatif de l'état |
 | `finance@anatt.bj` | AGENT_FINANCIER | génération & confirmation des paiements |
-| `controle@anatt.bj` | CONTROLEUR | validation/rejet des OM, audit |
+| `controle@anatt.bj` | CONTROLEUR | **étape 1** : contrôle de l'état de paiement, audit |
+| `daf@anatt.bj` | DAF | **étape 2** : visa « Vu » sur l'état |
+| `dg@anatt.bj` | DG | **étape 3** : validation finale de l'état (ouvre le paiement) |
 | `lecteur@anatt.bj` | LECTEUR | lecture seule |
+
+> En **production**, les comptes du circuit se créent via `php artisan db:seed --class=ComptesCircuitSeeder`
+> (mot de passe temporaire, changement forcé) ou depuis **Administration → Utilisateurs**. Pour un essai complet
+> du circuit en local : `php artisan db:seed --class=DemoCircuitSeeder` (refusé en production).
 
 ---
 
@@ -76,11 +84,28 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - **Catégorie** d'agent = `ORDRE_1 / ORDRE_2 / ORDRE_3`, déduite de l'indice (ou du salaire brut), reprise de SEMO.
 - **Per diem** = `taux_journalier(catégorie × zone × type) × nb_jours` selon le **barème officiel ANaTT**
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
-  Répartition : **avance ≈ 1/3**, **reliquat ≈ 2/3**. Exonération si prise en charge par un tiers.
+  Répartition : **avance 70 %**, **reliquat 30 %**. Exonération si prise en charge par un tiers.
 - **Une mission** regroupe **N ordres de mission** (1 OM = 1 bénéficiaire). Le **CAV** (conducteur) est payé selon **sa** catégorie.
+- **État de paiement** = **un par mission**, l'unité validée par le circuit (voir ci-dessous).
 - **Paiement** = génération d'un fichier (**1 mission × 1 tranche × 1 opérateur**) : MTN → `.txt`, Moov → `.xlsx`.
   Cycle : `EN_ATTENTE → GENERE → CONFIRME` (confirmation **manuelle** après dépôt). Régénération tant que non confirmé ;
   **idempotence** : un versement confirmé n'est jamais réinclus. Un OM dont tous les versements sont confirmés passe à **SOLDE**.
+
+### Circuit de validation (sur l'état de paiement)
+
+La validation porte sur l'**état de paiement de la mission** (un seul par mission), **pas** sur les OM un par un :
+
+```
+récapitulatif ─▶ BROUILLON ──contrôle──▶ CONTROLE ──visa DAF──▶ VISA_DAF ──validation DG──▶ VALIDE
+                 (gestionnaire)  (contrôleur)         (DAF)        (DG, numéro requis)
+```
+
+- Les OM **gardent leur statut SEMO (`IMPORTE`)** pendant le circuit ; ils ne deviennent **payables (`VALIDE`)**
+  qu'à la **validation finale du DG**. Rejet motivé possible à chaque étape (l'état repart en correction).
+- **Numéro** de l'état saisi **manuellement** (registre de l'agence), requis avant la validation DG.
+- **PDF** : brouillon filigrané sans signature ; état **définitif** signé (DAF + DG) au format **paysage**.
+- **Signatures** des titulaires (contrôleur/DAF/DG) configurées dans **Administration → Signatures**.
+- Génération d'un fichier de paiement **conditionnée à un état `VALIDE`** (double barrière avec le statut de l'OM).
 
 ---
 
@@ -106,7 +131,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 137 tests, 300 assertions
+.\vendor\bin\pest                 # 312 tests, 876 assertions
 
 cd ..\frontend
 npm run type-check                # vérification TypeScript
