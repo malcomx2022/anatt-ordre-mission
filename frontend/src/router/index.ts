@@ -114,20 +114,10 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/missions/MissionEditView.vue'),
     meta: { auth: true, permission: 'om.consulter' },
   },
-  // Écrans de redirection vers la fiche : om.consulter suffit. Les guarder par
-  // om.valider renverrait un 403 au DAF et au DG, qui n'ont pas cette clé.
-  {
-    path: '/ordres/:id/valider-n1',
-    name: 'mission-validate-n1',
-    component: () => import('@/views/missions/MissionValidation1View.vue'),
-    meta: { auth: true, permission: 'om.consulter' },
-  },
-  {
-    path: '/ordres/:id/valider-dg',
-    name: 'mission-validate-dg',
-    component: () => import('@/views/missions/MissionValidation2View.vue'),
-    meta: { auth: true, permission: 'om.consulter' },
-  },
+  // La validation ne se fait plus OM par OM : elle vit sur l'état de paiement de
+  // la mission (EtatDetailView, /missions/:missionId/etat). Les anciennes routes
+  // de redirection /ordres/:id/valider-n1 et /valider-dg — vestiges de la double
+  // validation N1/DG abandonnée — ont été supprimées.
   {
     path: '/ordres/:id/pdf',
     name: 'mission-pdf',
