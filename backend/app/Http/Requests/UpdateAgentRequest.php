@@ -16,20 +16,30 @@ class UpdateAgentRequest extends FormRequest
     }
 
     /**
-     * Recalcule la catégorie si l'indice ou le salaire change et qu'aucune
-     * catégorie n'est explicitement transmise.
+     * Recalcule la catégorie dès que l'indice ou le salaire brut est modifié.
+     *
+     * La catégorie est une donnée DÉRIVÉE de l'indice/salaire, pas une saisie
+     * libre : dès que l'un des deux change, on la recalcule et on l'impose —
+     * y compris si l'ancienne catégorie figure dans le payload (le formulaire
+     * d'édition la renvoie systématiquement). Sans cela, changer l'indice
+     * laissait une catégorie périmée.
+     *
+     * La catégorie transmise n'est respectée que si NI l'indice NI le salaire
+     * ne sont fournis (reprise de données historiques sans indice ni salaire).
      */
     protected function prepareForValidation(): void
     {
-        if (! $this->has('categorie') && ($this->filled('indice') || $this->filled('salaire_brut'))) {
-            $agent = $this->route('agent');
-            $indice = $this->has('indice') ? ($this->integer('indice') ?: null) : $agent->indice;
-            $salaire = $this->has('salaire_brut') ? ($this->integer('salaire_brut') ?: null) : $agent->salaire_brut;
+        if (! $this->filled('indice') && ! $this->filled('salaire_brut')) {
+            return;
+        }
 
-            $categorie = Agent::determinerCategorie($indice, $salaire);
-            if ($categorie) {
-                $this->merge(['categorie' => $categorie]);
-            }
+        $agent = $this->route('agent');
+        $indice = $this->has('indice') ? ($this->integer('indice') ?: null) : $agent->indice;
+        $salaire = $this->has('salaire_brut') ? ($this->integer('salaire_brut') ?: null) : $agent->salaire_brut;
+
+        $categorie = Agent::determinerCategorie($indice, $salaire);
+        if ($categorie) {
+            $this->merge(['categorie' => $categorie]);
         }
     }
 
