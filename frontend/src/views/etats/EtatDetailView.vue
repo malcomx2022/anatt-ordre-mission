@@ -28,12 +28,18 @@ const numero = ref('')
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
 // Chaque bouton n'apparaît qu'à l'acteur concerné et au statut correspondant.
+// Un état REJETÉ se refait : le récapitulatif le ramène en BROUILLON (le backend
+// l'autorise, le rejet n'ayant pas figé les OM).
 const peutRecapituler = computed(
-  () => canCreerMissions() && (!etat.value || etat.value.statut === 'BROUILLON'),
+  () => canCreerMissions() && (!etat.value || ['BROUILLON', 'REJETE'].includes(etat.value.statut)),
 )
+const estRejete = computed(() => etat.value?.statut === 'REJETE')
 const peutControler = computed(() => canValiderOM() && etat.value?.statut === 'BROUILLON')
 const peutViser = computed(() => canViserOM() && etat.value?.statut === 'CONTROLE')
 const peutApprouver = computed(() => canApprouverOM() && etat.value?.statut === 'VISA_DAF')
+// Le DG ne peut arrêter l'état sans numéro : le backend l'exige, on le signale
+// avant le clic plutôt que de laisser tomber une erreur.
+const numeroRequisAvantDg = computed(() => peutApprouver.value && !etat.value?.numero)
 const peutRejeter = computed(
   () => canRejeterOM() && !!etat.value && ['BROUILLON', 'CONTROLE', 'VISA_DAF'].includes(etat.value.statut),
 )
@@ -183,20 +189,33 @@ async function telecharger(brouillon: boolean) {
             <AppButton variant="outline" :loading="action" @click="telecharger(etat.statut !== 'VALIDE')">
               {{ etat.statut === 'VALIDE' ? 'Télécharger l’état' : 'Télécharger le brouillon' }}
             </AppButton>
-            <AppButton v-if="peutRecapituler && etat" variant="ghost" :loading="action" @click="recapituler">
-              Rafraîchir
+            <AppButton
+              v-if="peutRecapituler && etat"
+              :variant="estRejete ? 'primary' : 'ghost'"
+              :loading="action"
+              @click="recapituler"
+            >
+              {{ estRejete ? 'Refaire le récapitulatif' : 'Rafraîchir' }}
             </AppButton>
             <AppButton v-if="peutRejeter" variant="danger" :loading="action" @click="showRejet = true">
               Rejeter
             </AppButton>
             <AppButton v-if="peutControler" :loading="action" @click="controler">Contrôler</AppButton>
             <AppButton v-if="peutViser" :loading="action" @click="viser">Apposer le visa DAF</AppButton>
-            <AppButton v-if="peutApprouver" :loading="action" @click="approuver">
+            <AppButton
+              v-if="peutApprouver"
+              :loading="action"
+              :disabled="numeroRequisAvantDg"
+              @click="approuver"
+            >
               Valider définitivement
             </AppButton>
           </div>
         </div>
 
+        <p v-if="numeroRequisAvantDg" class="mt-3 text-xs font-body text-gold-600">
+          Renseignez le numéro de l’état ci-dessous avant la validation finale.
+        </p>
         <p v-if="messageEtape" class="mt-3 text-xs font-body text-gray-500">{{ messageEtape }}</p>
         <p v-if="etat.commentaire_rejet" class="mt-3 text-sm text-red-600 font-body">
           Motif du rejet : {{ etat.commentaire_rejet }}
@@ -317,8 +336,8 @@ async function telecharger(brouillon: boolean) {
 
     <AppModal :show="showRejet" title="Rejeter l’état de paiement" @close="showRejet = false">
       <p class="text-sm text-gray-600 font-body mb-3">
-        Le rejet efface les signatures déjà apposées et remet les ordres de mission
-        au statut rejeté.
+        Le rejet efface les signatures déjà apposées et renvoie l’état en correction.
+        Les ordres de mission gardent leur statut : le récapitulatif pourra être refait.
       </p>
       <textarea
         v-model="motif"
