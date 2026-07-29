@@ -17,36 +17,42 @@ use Illuminate\Validation\ValidationException;
  *   récapitulatif ──▶ BROUILLON ──contrôle──▶ CONTROLE ──DAF──▶ VISA_DAF
  *                 ──DG (final)──▶ VALIDE
  *
- * Chaque étape est signée une seule fois, au niveau de l'état, et propagée à tous
- * les OM de la mission : c'est le geste réel du circuit papier (un état, deux
- * signatures) et cela évite de faire signer N ordres un par un.
+ * Le circuit ne porte QUE sur l'état : c'est lui, le brouillon que l'on contrôle
+ * puis fait signer. Les ordres de mission, eux, gardent le statut sous lequel ils
+ * ont été retranscrits depuis SEMO (IMPORTE) — ils ne sont pas revalidés un par
+ * un. Seule la validation finale du DG les fait passer à VALIDE, ce qui les rend
+ * payables : c'est le seul et unique moment où l'état touche au statut des OM.
  *
- * La propagation maintient le périmètre payable inchangé : les versements ne
- * deviennent éligibles que lorsque leurs OM passent à VALIDE, donc uniquement
- * après la validation finale du DG.
+ * Le périmètre payable est donc inchangé : un versement ne devient éligible
+ * qu'après la validation finale, exactement comme avant.
  */
 class EtatPaiementService
 {
-    /** Statut d'OM correspondant à chaque étape de l'état. */
+    /**
+     * Statut d'OM correspondant à une étape de l'état.
+     *
+     * Seule la validation finale propage : les OM deviennent VALIDE (payables).
+     * Les étapes intermédiaires (contrôle, visa DAF) et le rejet ne touchent PAS
+     * les OM — ils restent à leur statut de retranscription SEMO.
+     */
     private const PROPAGATION = [
-        'CONTROLE' => Workflow::STATUT_VERIFIE,
-        'VISA_DAF' => Workflow::STATUT_VISA_DAF,
         'VALIDE' => Workflow::STATUT_VALIDE,
-        'REJETE' => 'REJETE',
     ];
 
     /**
      * Récapitulatif de la mission : crée ou rafraîchit l'état en BROUILLON.
      *
      * Recalcule l'instantané financier depuis les OM courants. Refusé dès qu'une
-     * signature est apposée : on ne réécrit pas un document déjà signé.
+     * signature est apposée (CONTROLE, VISA_DAF, VALIDE) : on ne réécrit pas un
+     * document déjà signé. Un état REJETÉ, en revanche, se refait : le rejet
+     * renvoie le brouillon en correction, sans avoir figé les OM.
      */
     public function recapituler(Mission $mission, User $user): EtatPaiement
     {
         return DB::transaction(function () use ($mission, $user) {
             $etat = EtatPaiement::where('mission_id', $mission->id)->lockForUpdate()->first();
 
-            if ($etat && ! $etat->estModifiable()) {
+            if ($etat && ! $etat->estModifiable() && $etat->statut !== 'REJETE') {
                 throw ValidationException::withMessages([
                     'etat' => ["Cet état est au statut « {$etat->statut} » : le récapitulatif n'est plus modifiable."],
                 ]);
@@ -210,11 +216,12 @@ class EtatPaiementService
     }
 
     /**
-     * Aligne les OM de la mission sur l'étape franchie par l'état.
+     * Rend les OM de la mission payables lorsque — et seulement lorsque — l'état
+     * est validé par le DG. Une signature unique sur l'état vaut alors pour ses N
+     * bénéficiaires, sans les avoir fait transiter par des statuts intermédiaires.
      *
-     * C'est ce qui fait qu'une signature unique sur l'état vaut pour ses N
-     * bénéficiaires, sans jamais toucher au périmètre payable : un OM ne devient
-     * VALIDE que lorsque l'état l'est.
+     * Les étapes contrôle / visa DAF, et le rejet, ne figurent pas dans
+     * PROPAGATION : les OM y gardent leur statut de retranscription SEMO.
      */
     private function propager(EtatPaiement $etat, string $statutEtat, User $user): void
     {
@@ -224,12 +231,10 @@ class EtatPaiementService
             return;
         }
 
-        $champs = ['statut' => $statutOm];
-
         // Un OM soldé ou annulé n'est jamais ramené en arrière.
         OrdreMission::where('mission_id', $etat->mission_id)
             ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
-            ->update($champs);
+            ->update(['statut' => $statutOm]);
     }
 
     /**
