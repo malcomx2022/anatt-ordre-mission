@@ -196,7 +196,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(5):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.0.0  •  Juin 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.1.0  •  Juillet 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document interne — Usage restreint"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -231,27 +231,32 @@ para("Le système couvre les domaines suivants :")
 bullet("Retranscription des ordres de mission émis par SEMO, regroupés par mission (événement).")
 bullet("Référentiel des agents bénéficiaires (identité, catégorie, téléphone et opérateur Mobile Money).")
 bullet("Calcul automatique des indemnités (per diem) selon le barème officiel ANaTT.")
-bullet("Circuit de contrôle des OM à un niveau (validation ou rejet par un contrôleur).")
+bullet("Circuit de validation de l'état de paiement de la mission en trois niveaux (contrôleur, DAF, Directeur Général).")
 bullet("Génération des fichiers de virement Mobile Money (.txt MTN / .xlsx Moov) et confirmation manuelle.")
 bullet("Génération de documents officiels (OM en PDF) et d'états/rapports (Excel, PDF).")
 bullet("Audit et traçabilité complète des actions sensibles.")
 
 h2("1.3 Acteurs et profils utilisateurs")
-para("L'autorisation repose sur 6 profils (rôles), avec une attribution par CLÉ DE PERMISSION (et non "
-     "par appartenance hiérarchique). Il n'existe ni circuit N+1/DG, ni rôle « agent demandeur » : les "
-     "OM proviennent de SEMO.")
+para("L'autorisation repose sur 8 profils (rôles), avec une attribution par CLÉ DE PERMISSION (et non "
+     "par appartenance hiérarchique). Le circuit de validation porte sur l'état de paiement de la mission "
+     "et enchaîne trois signataires : contrôleur, DAF, puis Directeur Général. Les OM proviennent de SEMO.")
 tableau(
     ["Profil", "Responsabilités principales"],
     [
         ["SUPER_ADMIN", "Accès total (passe toute garde). Seul à gérer les super administrateurs et les paramètres système. Créé à l'installation."],
         ["ADMIN", "Utilisateurs (hors super admins), référentiels, barème, audit. Supervise sans exécuter les paiements."],
-        ["GESTIONNAIRE_OM", "Retranscrit et gère les missions, les OM et les agents."],
+        ["GESTIONNAIRE_OM", "Retranscrit et gère les missions, les OM et les agents ; établit le récapitulatif de l'état."],
         ["AGENT_FINANCIER", "Génère les fichiers MTN/Moov et confirme les paiements."],
-        ["CONTROLEUR", "Valide ou rejette les OM ; consulte paiements et audit."],
+        ["CONTROLEUR", "Étape 1 : contrôle de conformité de l'état de paiement ; consulte paiements et audit."],
+        ["DAF", "Étape 2 : appose le visa « Vu » sur l'état (Directeur de l'Administration et des Finances)."],
+        ["DG", "Étape 3 : valide définitivement l'état, ce qui ouvre le paiement (Directeur Général)."],
         ["LECTEUR", "Lecture seule (tableau de bord, OM, rapports)."],
     ],
     largeurs=[4.0, 12.8],
 )
+para("Séparation ordonnateur / payeur : le DAF et le DG autorisent, l'agent financier exécute. Ni le DAF "
+     "ni le DG ne détiennent paiements.generer/confirmer ; une même personne ne peut porter le visa DAF et "
+     "la validation finale d'un même état.", italic=True, color=GRIS)
 
 h2("1.4 Contraintes et exigences")
 bullet("Authentification obligatoire par tokens Laravel Sanctum (Bearer).")
@@ -337,6 +342,7 @@ tableau(
         ["Agent", "agents", "Bénéficiaire (matricule, catégorie, téléphone, opérateur MM)."],
         ["Mission", "missions", "Événement regroupant N ordres de mission."],
         ["OrdreMission", "ordres_mission", "1 enregistrement = 1 bénéficiaire (réf. SEMO unique)."],
+        ["EtatPaiement", "etats_paiement", "État récapitulatif d'une mission (1 par mission) : circuit + signatures."],
         ["Versement", "versements", "Une tranche (AVANCE / RELIQUAT) d'un OM."],
         ["LotPaiement", "lots_paiement", "1 mission × 1 tranche × 1 opérateur = 1 fichier."],
         ["Bareme", "baremes", "Taux journalier par catégorie × zone × type."],
@@ -355,34 +361,37 @@ tableau(
         ["zone_code", "enum", "INTERIEUR | EXT_ZONE_I | EXT_ZONE_II | EXT_ZONE_III."],
         ["type_prise_en_charge", "enum", "UN_REPAS | DEUX_REPAS | JOURNEE_COMPLETE | LOGE_NOURRI | LOGE_SEUL | NOURRI_SEUL."],
         ["nb_jours", "int", "Décompte inclusif (règle des 12 h)."],
-        ["montant_total", "int", "taux journalier × nb_jours (FCFA)."],
-        ["avance / reliquat", "int", "round(total / 3) ; reste (33,33 % / 66,67 %)."],
-        ["statut", "enum", "BROUILLON | IMPORTE | EN_ATTENTE | VALIDE | REJETE | SOLDE | ANNULE."],
+        ["montant_total", "int", "(per diem + transport) = taux journalier × nb_jours + transport (FCFA)."],
+        ["avance / reliquat", "int", "avance = round(total × 0,70) = 70 % ; reliquat = total − avance = 30 %."],
+        ["statut", "enum", "IMPORTE (retranscrit) → VALIDE (état de la mission validé par le DG) → SOLDE. REJETE / ANNULE possibles."],
     ],
     largeurs=[4.2, 2.4, 10.2],
 )
+para("Le statut de l'OM ne transite pas par le circuit : il reste IMPORTE tout au long de la validation "
+     "de l'état, et ne passe VALIDE (payable) qu'à la validation finale du DG.", italic=True, color=GRIS)
 
 # =========================================================================
 # 3. DESCRIPTION FONCTIONNELLE — MODULES
 # =========================================================================
 h1("3. Description fonctionnelle — modules")
-para("L'application est organisée en 10 modules fonctionnels couvrant 42 écrans. Chaque écran est "
+para("L'application est organisée en modules fonctionnels. Chaque écran est "
      "accessible selon les permissions du profil connecté ; le menu s'adapte automatiquement.")
 tableau(
-    ["Module", "Écrans", "Profils concernés", "Fonction principale"],
+    ["Module", "Profils concernés", "Fonction principale"],
     [
-        ["Authentification", "3", "Tous", "Connexion, mot de passe oublié, réinitialisation."],
-        ["Tableau de bord", "1", "Tous (vues filtrées)", "KPIs, graphiques, accès rapides."],
-        ["Personnel (agents)", "6", "GESTIONNAIRE_OM, ADMIN", "Référentiel agents, import, profil."],
-        ["Ordres de mission", "8", "Tous (selon droits)", "Retranscription, suivi, validation, PDF."],
-        ["Paiements", "6", "AGENT_FINANCIER", "Génération fichiers MTN/Moov, confirmation."],
-        ["Barème per diem", "2", "Tous (lecture) / ADMIN (édition)", "Taux par catégorie/zone/type."],
-        ["Rapports", "4", "Tous (rapports.consulter)", "États, exports Excel/PDF."],
-        ["Audit", "2", "ADMIN, CONTROLEUR", "Journal d'activité système."],
-        ["Administration", "6", "ADMIN / SUPER_ADMIN", "Utilisateurs, rôles, paramètres, e-mail, sauvegardes."],
-        ["Pages système", "4", "Système", "403, 404, 500, maintenance."],
+        ["Authentification", "Tous", "Connexion, mot de passe oublié, réinitialisation."],
+        ["Tableau de bord", "Tous (vues filtrées)", "KPIs, graphiques, accès rapides."],
+        ["Personnel (agents)", "GESTIONNAIRE_OM, ADMIN", "Référentiel agents, import, profil."],
+        ["Ordres de mission", "Tous (selon droits)", "Retranscription, suivi, PDF de l'OM."],
+        ["États de paiement", "GESTIONNAIRE_OM, CONTROLEUR, DAF, DG", "Récapitulatif, circuit de validation, PDF brouillon/final."],
+        ["Paiements", "AGENT_FINANCIER", "Génération fichiers MTN/Moov, confirmation."],
+        ["Barème per diem", "Tous (lecture) / ADMIN (édition)", "Taux par catégorie/zone/type."],
+        ["Rapports", "Tous (rapports.consulter)", "États, exports Excel/PDF."],
+        ["Audit", "ADMIN, CONTROLEUR, DAF, DG", "Journal d'activité système."],
+        ["Administration", "ADMIN / SUPER_ADMIN", "Utilisateurs, rôles, signatures, paramètres, e-mail, sauvegardes."],
+        ["Pages système", "Système", "403, 404, 500, maintenance."],
     ],
-    largeurs=[3.4, 1.6, 4.6, 7.2],
+    largeurs=[4.2, 5.4, 7.2],
 )
 
 h2("3.1 Module Authentification")
@@ -405,15 +414,24 @@ bullet("PERS-03 — Création : la catégorie ORDRE_1/2/3 est déduite de l'indi
 bullet("PERS-04 — Modification ; PERS-05 — Mon profil ; PERS-06 — Import Excel/CSV.")
 
 h2("3.4 Module Ordres de mission")
-para("Cœur du système. Les OM sont retranscrits depuis SEMO ; ils ne sont ni créés ni modifiés "
-     "individuellement à la main (pas de PUT/DELETE unitaire).")
-bullet("OM-01 — Liste : filtres statut/zone/opérateur/agent/dates, recherche par référence SEMO.")
-bullet("OM-02 — Retranscription : assistant mission + N bénéficiaires (participants + CAV), per diem en temps réel.")
-bullet("OM-03 — Détail : mission, bénéficiaire, montants, versements ; valider/rejeter.")
-bullet("OM-04 à OM-06 — Modification/validation redirigent vers la fiche (validation unifiée, plus de double validation N1/DG).")
-bullet("OM-07 — Aperçu PDF officiel ; OM-08 — Historique d'audit de l'OM.")
+para("Les OM sont retranscrits depuis SEMO ; ils ne sont ni créés ni modifiés individuellement à la main "
+     "(pas de PUT/DELETE unitaire). La validation ne se fait pas sur l'OM mais sur l'état de sa mission.")
+bullet("Liste des missions : point d'entrée du circuit (N OM + 1 état par mission).")
+bullet("Liste des OM : filtres statut/zone/opérateur/agent/dates, recherche par référence SEMO.")
+bullet("Retranscription : assistant mission + N bénéficiaires (participants + CAV), per diem en temps réel.")
+bullet("Détail d'un OM : mission, bénéficiaire, montants, versements ; renvoie vers l'état de la mission "
+       "(aucune action de circuit sur l'OM). Brouillon PDF de l'OM et historique d'audit.")
 
-h2("3.5 Module Paiements")
+h2("3.5 Module États de paiement")
+para("Objet central du circuit de validation. Un état par mission ; c'est lui qui est contrôlé, visé "
+     "par le DAF, puis validé par le Directeur Général.")
+bullet("File de travail : liste des états filtrable par statut, ouverte d'emblée sur la file de l'acteur.")
+bullet("Détail de l'état : montants (avance/reliquat/total), montant en lettres, frise du circuit, "
+       "numérotation manuelle, actions (contrôler / viser / valider / rejeter / rafraîchir).")
+bullet("Brouillon PDF (filigrané, sans signature) puis état définitif PDF (signatures DAF + DG), paysage A4.")
+bullet("Signatures (SUPER_ADMIN) : identités et paraphes scannés des titulaires imprimés sur l'état.")
+
+h2("3.6 Module Paiements")
 para("Génère les fichiers de virement Mobile Money et assure le suivi des versements. Aucun appel aux API "
      "opérateurs, aucun réimport de fichier retour.")
 bullet("PAY-01 — Liste des lots (GENERE/CONFIRME/ERREUR) + téléchargement.")
@@ -442,20 +460,30 @@ tableau(
     largeurs=[0.8, 2.6, 9.0, 4.4],
 )
 
-h2("4.2 Contrôle (validation / rejet) d'un OM")
-para("Acteur : CONTROLEUR (permission om.valider). Contrôle à UN niveau — pas de validation N+1 ni DG.")
+h2("4.2 Circuit de validation de l'état de paiement")
+para("L'unité validée est l'état de paiement de la mission (un par mission), et non les OM pris "
+     "séparément. Un seul geste par étape vaut pour tous les bénéficiaires.")
 tableau(
     ["#", "Acteur", "Action", "Résultat / statut"],
     [
-        ["1", "Contrôleur", "Ouvre la fiche d'un OM au statut IMPORTE.", "Détails affichés"],
-        ["2", "Contrôleur", "CAS 1 — Clique « Valider ».", "POST .../valider : statut → VALIDE (payable)"],
-        ["3", "Contrôleur", "CAS 2 — Clique « Rejeter » + motif (≥ 10 caractères).", "POST .../rejeter : statut → REJETE"],
+        ["1", "Gestionnaire", "Établit le récapitulatif de la mission (POST .../etat/recapituler, om.retranscrire).", "État BROUILLON, brouillon PDF téléchargeable"],
+        ["2", "Contrôleur", "Contrôle de conformité (POST /api/etats/:id/controler, om.valider).", "État → CONTROLE, signature contrôleur"],
+        ["3", "DAF", "Appose le visa « Vu » (POST /api/etats/:id/viser, om.viser).", "État → VISA_DAF, signature DAF"],
+        ["4", "DAF ou DG", "Saisit le numéro de l'état (PUT /api/etats/:id/numero, om.numeroter).", "Numéro requis avant la validation finale"],
+        ["5", "Directeur Général", "Validation finale (POST /api/etats/:id/approuver, om.approuver).", "État → VALIDE ; tous les OM → VALIDE (payables)"],
     ],
-    largeurs=[0.8, 2.6, 8.6, 4.8],
+    largeurs=[0.8, 2.6, 8.4, 5.0],
 )
-encadre("Règle essentielle",
-        "Seul un OM au statut VALIDE peut être inclus dans un fichier de paiement. Un OM resté IMPORTE "
-        "n'apparaît pas parmi les bénéficiaires éligibles à la génération.")
+para("Rejet (POST /api/etats/:id/rejeter, om.rejeter) : possible aux étapes BROUILLON / CONTROLE / "
+     "VISA_DAF avec un motif ≥ 10 caractères. Il efface les signatures amont et remet l'état en "
+     "correction ; les OM gardent leur statut. Le récapitulatif peut ensuite être refait (REJETE → BROUILLON).")
+encadre("Deux barrières avant paiement",
+        "1) Le statut de l'OM ne passe VALIDE qu'à la validation finale du DG (propagation depuis l'état). "
+        "2) La génération d'un fichier vérifie en outre que l'état de la mission est VALIDE. Un OM resté "
+        "IMPORTE n'apparaît pas parmi les bénéficiaires éligibles.")
+para("Circuit OM par OM (reprise de données) : les routes /api/ordres/:id/valider|viser|approuver|rejeter "
+     "subsistent pour corriger une mission dépourvue d'état ; elles sont refusées dès qu'un état existe.",
+     italic=True, color=GRIS)
 
 h2("4.3 Génération et confirmation des paiements")
 para("Acteur : AGENT_FINANCIER (permissions paiements.generer / paiements.confirmer).")
@@ -505,7 +533,7 @@ h1("5. Règles métier")
 h2("5.1 Calcul du per diem")
 para("Montant total = taux journalier (catégorie × zone × type de prise en charge) × nombre de jours.", bold=True)
 bullet("Nombre de jours : décompte inclusif des dates ; règle des 12 h (période ≥ 12 h = jour entier ; retour 0-12 h = rien).")
-bullet("Avance = round(montant total ÷ 3) = 33,33 % ; Reliquat = montant total − avance = 66,67 %.")
+bullet("Avance = round(montant total × 0,70) = 70 % ; Reliquat = montant total − avance = 30 %.")
 bullet("Exonération (prise en charge par un tiers) : tous les montants à 0, aucun versement créé.")
 bullet("4 zones : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II, EXT_ZONE_III (II et III ont des taux identiques).")
 bullet("Contrainte type ↔ zone : repas (un/deux) ⇒ INTERIEUR uniquement ; hébergement (logé/nourri) ⇒ EXTÉRIEUR uniquement.")
@@ -527,10 +555,11 @@ tableau(
     [
         ["Référence SEMO unique", "Chaque OM a une référence SEMO unique (anti-doublon).", "API / BDD"],
         ["Origine SEMO", "Les OM sont retranscrits (statut initial IMPORTE), jamais créés à la main.", "API"],
-        ["Validation unique", "IMPORTE → VALIDE (ou REJETE avec motif ≥ 10 caractères).", "API"],
+        ["Circuit sur l'état", "L'état de la mission passe BROUILLON → CONTROLE → VISA_DAF → VALIDE ; rejet motivé (≥ 10 car.).", "API"],
+        ["Numéro requis", "La validation finale du DG exige un numéro d'état (registre de l'agence).", "API"],
         ["Type ↔ zone", "Repas ⇒ INTERIEUR ; hébergement ⇒ EXTÉRIEUR.", "Formulaire + API"],
         ["Téléphone/opérateur", "Issus du référentiel agent ; cohérence numéro ↔ opérateur.", "API"],
-        ["Payable si VALIDE", "Seul un OM VALIDE entre dans un fichier de paiement.", "Paiement"],
+        ["Payable si état VALIDE", "Les OM ne sont payables qu'après validation finale de l'état par le DG.", "Paiement"],
         ["Idempotence paiement", "Un versement CONFIRME n'est jamais réinclus.", "Paiement"],
     ],
     largeurs=[3.6, 9.6, 3.6],
@@ -548,29 +577,34 @@ para("L'autorisation s'appuie sur des clés de permission, et non sur la hiérar
 
 h2("6.2 Matrice des permissions")
 para("Légende : ✔ = autorisé. Le SUPER_ADMIN dispose implicitement de toutes les permissions.")
-P = ["ADMIN", "GEST.", "FINANC.", "CONTR.", "LECT."]
-def row(nom, a, g, f, c, l):
+P = ["ADMIN", "GEST.", "FIN.", "CONTR.", "DAF", "DG", "LECT."]
+def row(nom, a, g, f, c, daf, dg, l):
     conv = lambda x: "✔" if x else ""
-    return [nom, conv(a), conv(g), conv(f), conv(c), conv(l)]
+    return [nom, conv(a), conv(g), conv(f), conv(c), conv(daf), conv(dg), conv(l)]
 tableau(
     ["Permission"] + P,
     [
-        row("dashboard.consulter", 1, 1, 1, 1, 1),
-        row("personnel.consulter", 1, 1, 1, 1, 0),
-        row("personnel.gerer", 1, 1, 0, 0, 0),
-        row("om.consulter", 1, 1, 1, 1, 1),
-        row("om.retranscrire", 0, 1, 0, 0, 0),
-        row("om.valider", 0, 0, 0, 1, 0),
-        row("paiements.consulter", 1, 1, 1, 1, 0),
-        row("paiements.generer", 0, 0, 1, 0, 0),
-        row("paiements.confirmer", 0, 0, 1, 0, 0),
-        row("baremes.consulter", 1, 1, 1, 1, 0),
-        row("baremes.modifier", 1, 0, 0, 0, 0),
-        row("rapports.consulter", 1, 1, 1, 1, 1),
-        row("audit.consulter", 1, 0, 0, 1, 0),
-        row("utilisateurs.gerer", 1, 0, 0, 0, 0),
+        #                        ADMIN GEST FIN CONTR DAF DG LECT
+        row("dashboard.consulter",   1, 1, 1, 1, 1, 1, 1),
+        row("personnel.consulter",   1, 1, 1, 1, 1, 1, 0),
+        row("personnel.gerer",       1, 1, 0, 0, 0, 0, 0),
+        row("om.consulter",          1, 1, 1, 1, 1, 1, 1),
+        row("om.retranscrire",       0, 1, 0, 0, 0, 0, 0),
+        row("om.valider",            0, 0, 0, 1, 0, 0, 0),
+        row("om.viser",              0, 0, 0, 0, 1, 0, 0),
+        row("om.approuver",          0, 0, 0, 0, 0, 1, 0),
+        row("om.numeroter",          0, 0, 0, 1, 1, 1, 0),
+        row("om.rejeter",            0, 0, 0, 1, 1, 1, 0),
+        row("paiements.consulter",   1, 1, 1, 1, 1, 1, 0),
+        row("paiements.generer",     0, 0, 1, 0, 0, 0, 0),
+        row("paiements.confirmer",   0, 0, 1, 0, 0, 0, 0),
+        row("baremes.consulter",     1, 1, 1, 1, 1, 1, 0),
+        row("baremes.modifier",      1, 0, 0, 0, 0, 0, 0),
+        row("rapports.consulter",    1, 1, 1, 1, 1, 1, 1),
+        row("audit.consulter",       1, 0, 0, 1, 1, 1, 0),
+        row("utilisateurs.gerer",    1, 0, 0, 0, 0, 0, 0),
     ],
-    largeurs=[6.4] + [2.08] * 5,
+    largeurs=[4.8] + [1.55] * 7,
 )
 para("Permissions réservées au SUPER_ADMIN : superadmins.gerer, parametres.gerer.", italic=True, color=GRIS)
 
@@ -632,14 +666,32 @@ tableau(
         ["GET", "/api/agents", "Liste filtrée (search, catégorie, opérateur, actif)"],
         ["POST", "/api/agents | /import", "Création / import (personnel.gerer)"],
         ["POST", "/api/missions", "Retranscription : mission + N OM (om.retranscrire)"],
+        ["GET", "/api/missions", "Liste des missions avec l'avancement de leur état (om.consulter)"],
         ["GET", "/api/ordres | /ordres/:id", "Liste filtrée / détail d'un OM"],
-        ["POST", "/api/ordres/:id/valider", "IMPORTE → VALIDE (om.valider)"],
-        ["POST", "/api/ordres/:id/rejeter", "IMPORTE → REJETE, motif ≥ 10 car. (om.valider)"],
-        ["GET", "/api/ordres/:id/pdf | /pdf/download", "Génère / télécharge le PDF officiel"],
+        ["GET", "/api/ordres/:id/pdf | /pdf/download | /pdf/brouillon", "PDF officiel / brouillon de l'OM"],
         ["GET", "/api/ordres/:id/historique", "Journal d'audit de l'OM"],
     ],
     largeurs=[2.0, 7.6, 7.2],
 )
+
+h3("7.3.1 État de paiement (circuit de validation)")
+tableau(
+    ["Méthode", "URL", "Description"],
+    [
+        ["GET", "/api/etats", "File de travail : états filtrables par statut (om.consulter)"],
+        ["GET", "/api/missions/:id/etat", "État de la mission (null si pas de récapitulatif)"],
+        ["POST", "/api/missions/:id/etat/recapituler", "Crée / rafraîchit l'état en BROUILLON (om.retranscrire)"],
+        ["GET", "/api/missions/:id/etat/brouillon | /telecharger", "PDF brouillon (filigrané) / définitif"],
+        ["PUT", "/api/etats/:id/numero", "Numérotation manuelle (om.numeroter)"],
+        ["POST", "/api/etats/:id/controler", "BROUILLON → CONTROLE (om.valider)"],
+        ["POST", "/api/etats/:id/viser", "CONTROLE → VISA_DAF (om.viser)"],
+        ["POST", "/api/etats/:id/approuver", "VISA_DAF → VALIDE ; OM payables (om.approuver)"],
+        ["POST", "/api/etats/:id/rejeter", "→ REJETE, motif ≥ 10 car. (om.rejeter)"],
+    ],
+    largeurs=[2.0, 7.8, 7.0],
+)
+para("Signatures des titulaires (SUPER_ADMIN, parametres.gerer) : GET/POST/DELETE /api/admin/signatures/:poste "
+     "(controleur | daf | dg) et identités dans /api/admin/settings.", italic=True, color=GRIS)
 
 h2("7.4 Paiements (génération)")
 tableau(
@@ -798,7 +850,10 @@ tableau(["Terme", "Définition"],
          ["Mission", "Événement regroupant N ordres de mission."],
          ["CAV", "Conducteur de véhicule administratif, payé selon sa propre catégorie."],
          ["Per diem", "Indemnité journalière de mission (taux × nb jours)."],
-         ["Avance / Reliquat", "Tranches du per diem : 33,33 % puis 66,67 %."],
+         ["Avance / Reliquat", "Tranches du per diem : 70 % puis 30 %."],
+         ["État de paiement", "Document récapitulatif d'une mission (1 par mission) portant le circuit et les signatures."],
+         ["DAF", "Directeur de l'Administration et des Finances : 2e signature (visa « Vu »)."],
+         ["DG", "Directeur Général : 3e et dernière signature ; sa validation ouvre le paiement."],
          ["Versement", "Une tranche (AVANCE/RELIQUAT) d'un OM pour un opérateur."],
          ["Lot de paiement", "1 mission × 1 tranche × 1 opérateur = 1 fichier généré."],
          ["MSISDN", "Numéro au format international (229 + numéro national)."],
