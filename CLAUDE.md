@@ -431,7 +431,7 @@ extend: {
 
 ---
 
-## 5. REGISTRE DES 47 ÉCRANS
+## 5. REGISTRE DES 45 ÉCRANS
 
 ### Module AUTH (4 écrans)
 
@@ -459,7 +459,7 @@ extend: {
 | PERS-05 | `views/agents/AgentProfileView.vue` | `/mon-profil` | Profil de l'agent connecté |
 | PERS-06 | `views/agents/AgentImportView.vue` | `/agents/import` | Upload CSV, prévisualisation, import |
 
-### Module ORDRES DE MISSION (8 écrans) — CŒUR DU PROJET
+### Module ORDRES DE MISSION (6 écrans) — CŒUR DU PROJET
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
@@ -467,10 +467,12 @@ extend: {
 | OM-02 | `views/missions/MissionCreateView.vue` | `/ordres/nouveau` | Wizard retranscription : mission + N bénéficiaires (participants + CAV), per diem temps réel |
 | OM-03 | `views/missions/MissionDetailView.vue` | `/ordres/:id` | Détail complet + versements ; renvoie vers l'état de la mission (pas de validation sur l'OM) |
 | OM-04 | `views/missions/MissionEditView.vue` | `/ordres/:id/modifier` | Redirige vers la fiche (OM non éditables individuellement) |
-| OM-05 | `views/missions/MissionValidation1View.vue` | `/ordres/:id/valider-n1` | Redirection (validation unifiée sur la fiche) |
-| OM-06 | `views/missions/MissionValidation2View.vue` | `/ordres/:id/valider-dg` | Redirection (plus de double validation N1/DG) |
-| OM-07 | `views/missions/MissionPdfView.vue` | `/ordres/:id/pdf` | Aperçu imprimable + téléchargement du PDF serveur |
-| OM-08 | `views/missions/MissionHistoryView.vue` | `/ordres/:id/historique` | Journal d'audit de l'OM |
+| OM-05 | `views/missions/MissionPdfView.vue` | `/ordres/:id/pdf` | Aperçu imprimable + téléchargement du PDF serveur |
+| OM-06 | `views/missions/MissionHistoryView.vue` | `/ordres/:id/historique` | Journal d'audit de l'OM |
+
+> La validation ne se fait plus OM par OM : elle vit sur l'**état de paiement** de la mission (ÉTAT-03,
+> `EtatDetailView`). Les anciennes routes de redirection `/ordres/:id/valider-n1` et `/valider-dg` — vestiges
+> de la double validation N1/DG abandonnée — ont été supprimées.
 
 ### Module ÉTATS DE PAIEMENT (3 écrans) — CIRCUIT DE VALIDATION
 
