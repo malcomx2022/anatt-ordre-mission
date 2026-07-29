@@ -1,94 +1,40 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
-import AppModal from '@/components/shared/AppModal.vue'
 import MissionStatusBadge from '@/components/missions/MissionStatusBadge.vue'
+import EtatStatusBadge from '@/components/etats/EtatStatusBadge.vue'
 import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
 import { ordresService } from '@/services/ordres'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
-import { useAuth } from '@/composables/useAuth'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
-const router = useRouter()
 const toast = useToast()
-const { canValiderOM, canViserOM, canApprouverOM, canRejeterOM } = useAuth()
 const id = Number(route.params.id)
 
 const ordre = ref<OrdreMission | null>(null)
 const loading = ref(true)
 const action = ref(false)
-const showRejet = ref(false)
-const motif = ref('')
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
-// Circuit de validation en trois étapes : le contrôleur vérifie, le DAF vise,
-// le Directeur Général valide en dernier (verrouillage). Chaque bouton n'apparaît
-// qu'à l'acteur concerné et au statut correspondant.
-const peutValider = computed(() => canValiderOM() && ordre.value?.statut === 'IMPORTE')
-const peutViser = computed(() => canViserOM() && ordre.value?.statut === 'VERIFIE')
-const peutApprouver = computed(() => canApprouverOM() && ordre.value?.statut === 'VISA_DAF')
-const peutRejeter = computed(
-  () => canRejeterOM() && !!ordre.value && ['IMPORTE', 'VERIFIE', 'VISA_DAF'].includes(ordre.value.statut),
-)
+/*
+ * La validation ne se joue PAS sur l'OM individuel : elle se joue sur l'état de
+ * paiement de la mission (un état par mission), contrôlé, puis visé par le DAF,
+ * puis validé par le DG — ce qui valide d'un coup tous les OM de la mission.
+ * Cette fiche est donc en lecture seule pour le circuit et renvoie vers l'état.
+ */
+const etat = computed(() => ordre.value?.mission?.etat_paiement ?? null)
 
-// Le brouillon reste proposé tant que le circuit n'est pas achevé : c'est
-// précisément l'épreuve que l'on relit AVANT de valider.
+// Le brouillon de l'OM (son document individuel) reste téléchargeable tant que
+// la mission n'est pas définitivement validée.
 const peutTelechargerBrouillon = computed(
-  () => !!ordre.value && ['BROUILLON', 'IMPORTE', 'VERIFIE', 'VISA_DAF'].includes(ordre.value.statut),
+  () => !!ordre.value && ordre.value.statut !== 'VALIDE' && ordre.value.statut !== 'SOLDE',
 )
-
-// En circuit complet le contrôleur « vérifie » ; en circuit simple il valide
-// directement. Le mode vient du serveur pour ne pas dupliquer la règle ici.
-const libelleActionControle = computed(() =>
-  ordre.value?.circuit_complet ? 'Vérifier' : 'Valider',
-)
-
-/** Où en est l'OM dans le circuit, exprimé pour l'utilisateur. */
-const etapeCircuit = computed(() => {
-  if (!ordre.value?.circuit_complet) return null
-  switch (ordre.value?.statut) {
-    case 'IMPORTE':
-      return 'Étape 1 sur 3 — en attente de vérification par le contrôleur'
-    case 'VERIFIE':
-      return 'Étape 2 sur 3 — vérifié, en attente du visa du DAF'
-    case 'VISA_DAF':
-      return 'Étape 3 sur 3 — visé par le DAF, en attente de la validation du Directeur Général'
-    case 'VALIDE':
-      return 'Circuit achevé — validé et verrouillé par le Directeur Général'
-    default:
-      return null
-  }
-})
-
-async function viser() {
-  action.value = true
-  try {
-    ordre.value = await ordresService.viser(id)
-    toast.success('Visa du DAF apposé. Transmis au Directeur Général.')
-  } catch (e) {
-    toast.error(getErrorMessage(e))
-  } finally {
-    action.value = false
-  }
-}
-
-async function approuver() {
-  action.value = true
-  try {
-    ordre.value = await ordresService.approuver(id)
-    toast.success('Ordre de mission validé et verrouillé.')
-  } catch (e) {
-    toast.error(getErrorMessage(e))
-  } finally {
-    action.value = false
-  }
-}
 
 async function telechargerBrouillon() {
   action.value = true
@@ -110,40 +56,6 @@ async function load() {
   }
 }
 onMounted(load)
-
-async function valider() {
-  action.value = true
-  try {
-    ordre.value = await ordresService.valider(id)
-    toast.success(
-      ordre.value.statut === 'VERIFIE'
-        ? 'Ordre de mission vérifié. Transmis au DAF pour visa.'
-        : 'Ordre de mission validé.',
-    )
-  } catch (e) {
-    toast.error(getErrorMessage(e))
-  } finally {
-    action.value = false
-  }
-}
-
-async function rejeter() {
-  if (motif.value.trim().length < 10) {
-    toast.warning('Le motif doit comporter au moins 10 caractères.')
-    return
-  }
-  action.value = true
-  try {
-    ordre.value = await ordresService.rejeter(id, motif.value.trim())
-    toast.success('Ordre de mission rejeté.')
-    showRejet.value = false
-    motif.value = ''
-  } catch (e) {
-    toast.error(getErrorMessage(e))
-  } finally {
-    action.value = false
-  }
-}
 </script>
 
 <template>
@@ -151,13 +63,12 @@ async function rejeter() {
     <template #header-actions>
       <router-link to="/ordres" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">← Ordres</router-link>
       <router-link v-if="ordre" :to="`/ordres/${id}/historique`" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">Historique</router-link>
-      <router-link v-if="ordre" :to="`/missions/${ordre.mission_id}/etat`" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">État de paiement</router-link>
     </template>
 
     <p v-if="loading" class="text-center text-gray-400 font-body py-10">Chargement…</p>
 
     <div v-else-if="ordre" class="space-y-6">
-      <!-- En-tête + actions -->
+      <!-- En-tête -->
       <AppCard>
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -165,35 +76,55 @@ async function rejeter() {
             <MissionStatusBadge :statut="ordre.statut" />
             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">{{ ordre.role }}</span>
           </div>
-          <div class="flex flex-wrap gap-3">
-            <AppButton
-              v-if="peutTelechargerBrouillon"
-              variant="outline"
-              :loading="action"
-              @click="telechargerBrouillon"
-            >
-              <span class="inline-flex items-center gap-2">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Télécharger le brouillon
-              </span>
-            </AppButton>
-            <AppButton v-if="peutRejeter" variant="danger" :loading="action" @click="showRejet = true">
-              Rejeter
-            </AppButton>
-            <AppButton v-if="peutValider" :loading="action" @click="valider">{{ libelleActionControle }}</AppButton>
-            <AppButton v-if="peutViser" :loading="action" @click="viser">Apposer le visa DAF</AppButton>
-            <AppButton v-if="peutApprouver" :loading="action" @click="approuver">
-              Valider définitivement
-            </AppButton>
-          </div>
+          <AppButton
+            v-if="peutTelechargerBrouillon"
+            variant="outline"
+            :loading="action"
+            @click="telechargerBrouillon"
+          >
+            <span class="inline-flex items-center gap-2">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Télécharger le brouillon
+            </span>
+          </AppButton>
         </div>
-        <p v-if="etapeCircuit" class="mt-3 text-xs font-body text-gray-500">{{ etapeCircuit }}</p>
-        <p v-if="ordre.statut === 'REJETE' && ordre.commentaire_rejet" class="mt-3 text-sm text-red-600 font-body">Motif du rejet : {{ ordre.commentaire_rejet }}</p>
+        <p v-if="ordre.statut === 'REJETE' && ordre.commentaire_rejet" class="mt-3 text-sm text-red-600 font-body">
+          Motif du rejet : {{ ordre.commentaire_rejet }}
+        </p>
+      </AppCard>
+
+      <!-- Renvoi vers l'état de paiement : c'est là que se joue la validation -->
+      <AppCard class="border-l-4 border-anatt-500">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="font-display font-bold text-gray-800 flex items-center gap-2">
+              État de paiement de la mission
+              <EtatStatusBadge v-if="etat" :statut="etat.statut" />
+              <span v-else class="px-3 py-1 rounded-full text-[11px] font-bold bg-gold-50 text-gold-600">
+                À établir
+              </span>
+            </h3>
+            <p class="text-sm text-gray-500 font-body mt-1">
+              La validation d’un ordre de mission ne se fait pas ordre par ordre : le
+              <strong>contrôle</strong>, le <strong>visa du DAF</strong> puis la
+              <strong>validation du Directeur Général</strong> portent sur l’état de la
+              mission, ce qui valide d’un coup tous ses ordres de mission.
+              <span v-if="etat?.numero"> — N°{{ etat.numero }}</span>
+            </p>
+          </div>
+          <router-link
+            :to="`/missions/${ordre.mission_id}/etat`"
+            class="px-5 py-2.5 rounded-xl bg-anatt-500 text-white font-display font-bold text-sm
+                   hover:bg-anatt-600 transition-all duration-200 whitespace-nowrap"
+          >
+            {{ etat ? 'Ouvrir l’état' : 'Établir l’état' }}
+          </router-link>
+        </div>
       </AppCard>
 
       <div class="grid lg:grid-cols-2 gap-6">
@@ -259,15 +190,5 @@ async function rejeter() {
         </table>
       </AppCard>
     </div>
-
-    <!-- Modal rejet -->
-    <AppModal :show="showRejet" title="Rejeter l'ordre de mission" @close="showRejet = false">
-      <label class="text-[11px] text-gray-500 font-body block mb-1">Motif (≥ 10 caractères)</label>
-      <textarea v-model="motif" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-body focus:outline-none focus:border-anatt-500"></textarea>
-      <template #footer>
-        <AppButton variant="ghost" @click="showRejet = false">Annuler</AppButton>
-        <AppButton variant="danger" :loading="action" @click="rejeter">Confirmer le rejet</AppButton>
-      </template>
-    </AppModal>
   </AppLayout>
 </template>

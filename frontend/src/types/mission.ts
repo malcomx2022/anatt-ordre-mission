@@ -71,8 +71,18 @@ export interface Mission {
   prise_en_charge_tiers: boolean
   observations?: string | null
   ordres_mission?: OrdreMission[]
+  /** État de paiement de la mission : porte le circuit de validation. */
+  etat_paiement?: EtatResumeMission | null
   created_at?: string
   updated_at?: string
+}
+
+/** Résumé de l'état de paiement joint à une mission. */
+export interface EtatResumeMission {
+  id: number
+  statut: import('./etat').StatutEtat
+  numero?: string | null
+  valide: boolean
 }
 
 export interface OrdreMission {
