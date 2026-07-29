@@ -115,18 +115,21 @@ it('déroule contrôle, visa DAF puis validation finale du DG', function () {
         ->and($etat->signature_dg_hash)->toHaveLength(64);
 });
 
-it('propage chaque étape à tous les OM de la mission', function () {
+it('laisse les OM à leur statut SEMO jusqu’à la validation finale', function () {
     $this->actingAs($this->gestionnaire)->postJson("/api/missions/{$this->mission->id}/etat/recapituler")->assertOk();
     $etat = EtatPaiement::where('mission_id', $this->mission->id)->firstOrFail();
 
     $statuts = fn () => OrdreMission::where('mission_id', $this->mission->id)->pluck('statut')->unique()->values()->all();
 
+    // Le circuit se joue sur l'état : les OM restent IMPORTE (leur statut de
+    // retranscription SEMO) pendant le contrôle et le visa du DAF.
     $this->actingAs($this->controleur)->postJson("/api/etats/{$etat->id}/controler")->assertOk();
-    expect($statuts())->toBe(['VERIFIE']);
+    expect($statuts())->toBe(['IMPORTE']);
 
     $this->actingAs($this->daf)->postJson("/api/etats/{$etat->id}/viser")->assertOk();
-    expect($statuts())->toBe(['VISA_DAF']);
+    expect($statuts())->toBe(['IMPORTE']);
 
+    // Seule la validation finale du DG les fait passer à VALIDE (payables).
     $this->actingAs($this->daf)->putJson("/api/etats/{$etat->id}/numero", ['numero' => 'X-1'])->assertOk();
     $this->actingAs($this->dg)->postJson("/api/etats/{$etat->id}/approuver")->assertOk();
     expect($statuts())->toBe(['VALIDE']);
@@ -249,7 +252,23 @@ it('autorise le rejet motivé à chaque étape et efface les signatures amont', 
     expect($etat->controle_nom)->toBeNull()
         ->and($etat->visa_daf_nom)->toBeNull()
         ->and($etat->signature_daf_hash)->toBeNull()
-        ->and(OrdreMission::where('mission_id', $this->mission->id)->pluck('statut')->unique()->all())->toBe(['REJETE']);
+        // Le rejet vise l'état, pas les OM : ceux-ci gardent leur statut SEMO.
+        ->and(OrdreMission::where('mission_id', $this->mission->id)->pluck('statut')->unique()->all())->toBe(['IMPORTE']);
+});
+
+it('permet de refaire le récapitulatif après un rejet', function () {
+    $etat = conduire($this, 'VISA_DAF');
+
+    $this->actingAs($this->dg)->postJson("/api/etats/{$etat->id}/rejeter", [
+        'motif' => 'Montants à corriger avant nouvelle présentation.',
+    ])->assertOk();
+
+    // Un état rejeté n'est pas un cul-de-sac : on refait le brouillon.
+    $this->actingAs($this->gestionnaire)->postJson("/api/missions/{$this->mission->id}/etat/recapituler")
+        ->assertOk()
+        ->assertJsonPath('data.statut', 'BROUILLON');
+
+    expect($etat->fresh()->commentaire_rejet)->toBeNull();
 });
 
 // ── Cohabitation avec le circuit OM par OM ──
