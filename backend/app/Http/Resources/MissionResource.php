@@ -20,6 +20,15 @@ class MissionResource extends JsonResource
             'prise_en_charge_tiers' => $this->prise_en_charge_tiers,
             'observations' => $this->observations,
             'ordres_mission' => OrdreMissionResource::collection($this->whenLoaded('ordresMission')),
+            // État de paiement de la mission (le circuit de validation s'y joue).
+            'etat_paiement' => $this->whenLoaded('etatPaiement', fn () => $this->etatPaiement
+                ? [
+                    'id' => $this->etatPaiement->id,
+                    'statut' => $this->etatPaiement->statut,
+                    'numero' => $this->etatPaiement->numero,
+                    'valide' => $this->etatPaiement->estValide(),
+                ]
+                : null),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
