@@ -25,7 +25,9 @@ const showRejet = ref(false)
 const motif = ref('')
 const numero = ref('')
 
-const fmt = (v: number) => v.toLocaleString('fr-FR')
+// Tolère une valeur manquante : un montant absent ne doit jamais faire planter
+// le rendu de tout l'écran.
+const fmt = (v: number) => (v ?? 0).toLocaleString('fr-FR')
 
 // Chaque bouton n'apparaît qu'à l'acteur concerné et au statut correspondant.
 // Un état REJETÉ se refait : le récapitulatif le ramène en BROUILLON (le backend

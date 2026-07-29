@@ -174,7 +174,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(6):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.0.0  •  Juin 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.1.0  •  Juillet 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document destiné aux utilisateurs de l'application"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -200,17 +200,25 @@ encadre("Périmètre important",
 
 h2("1.1 Cycle de vie en bref")
 para("Le parcours complet d'un dossier suit toujours la même séquence :")
-etape("SEMO émet l'ordre de mission (hors application).")
-etape("Un gestionnaire retranscrit l'OM dans l'application (regroupé par mission).")
+etape("SEMO émet les ordres de mission (hors application).")
+etape("Un gestionnaire retranscrit les OM dans l'application, regroupés par mission.")
 etape("Le système calcule le per diem (catégorie × zone × type de prise en charge × nombre de jours).")
-etape("Un contrôleur valide (ou rejette) l'ordre de mission.")
-etape("Un agent financier génère le fichier de paiement (.txt MTN ou .xlsx Moov).")
-etape("Le fichier est déposé manuellement sur la plateforme de l'opérateur.")
-etape("L'agent financier confirme le paiement dans l'application une fois le dépôt réussi.")
+etape("Le gestionnaire établit le récapitulatif : un état de paiement (brouillon) est produit pour la mission.")
+etape("Le contrôleur contrôle l'état ; le DAF y appose son visa ; le Directeur Général le valide en dernier.")
+etape("La validation du DG arrête l'état et rend payables tous les ordres de mission de la mission.")
+etape("Un agent financier génère les fichiers de paiement : d'abord l'AVANCE, puis le RELIQUAT (.txt MTN ou .xlsx Moov).")
+etape("Chaque fichier est déposé manuellement sur la plateforme de l'opérateur, puis confirmé dans l'application.")
+encadre("Ce qui est validé, c'est l'état de la mission",
+        "La validation ne se fait pas ordre par ordre. Chaque mission possède UN état de paiement "
+        "récapitulatif ; c'est lui qui passe le circuit contrôle → visa DAF → validation DG. Valider "
+        "l'état valide d'un coup tous les OM de la mission. Les OM, eux, conservent le statut sous lequel "
+        "ils ont été retranscrits depuis SEMO jusqu'à cette validation finale.")
 
 h2("1.2 Notions clés")
 bullet("Mission : un événement (atelier, supervision…) qui regroupe plusieurs ordres de mission.")
 bullet("Ordre de mission (OM) : 1 enregistrement = 1 bénéficiaire. Sa référence SEMO est unique.")
+bullet("État de paiement : le document récapitulatif d'une mission (un seul par mission), numéroté à la "
+       "main, qui porte le circuit de validation et les signatures du DAF et du Directeur Général.")
 bullet("CAV (conducteur de véhicule administratif) : bénéficiaire à part entière, payé selon SA catégorie.")
 bullet("Per diem : indemnité journalière, répartie en AVANCE (70 %) et RELIQUAT (30 %).")
 bullet("Versement : une tranche (AVANCE ou RELIQUAT) d'un OM, pour un opérateur donné.")
@@ -227,39 +235,50 @@ tableau(
     [
         ["SUPER_ADMIN", "Accès total. Seul à gérer les super administrateurs et les paramètres système."],
         ["ADMIN", "Utilisateurs (hors super admins), référentiels, barème, audit. Supervise sans exécuter les paiements."],
-        ["GESTIONNAIRE_OM", "Retranscrit et gère les missions, les OM et les agents."],
+        ["GESTIONNAIRE_OM", "Retranscrit et gère les missions, les OM et les agents ; établit le récapitulatif de l'état."],
         ["AGENT_FINANCIER", "Génère les fichiers MTN/Moov et confirme les paiements."],
-        ["CONTROLEUR", "Valide ou rejette les ordres de mission ; consulte paiements et audit."],
+        ["CONTROLEUR", "Étape 1 du circuit : contrôle de conformité de l'état de paiement ; consulte paiements et audit."],
+        ["DAF", "Étape 2 : appose le visa « Vu » sur l'état de paiement (Directeur de l'Administration et des Finances)."],
+        ["DG", "Étape 3 et dernière : valide définitivement l'état, ce qui ouvre le paiement (Directeur Général)."],
         ["LECTEUR", "Lecture seule (tableau de bord, OM, rapports)."],
     ],
     largeurs=[4.2, 12.6],
 )
+encadre("Séparation des tâches",
+        "Le DAF et le DG autorisent, l'agent financier exécute : ni le DAF ni le DG ne génèrent ni ne "
+        "confirment les paiements. Une même personne ne peut pas apposer à la fois le visa DAF et la "
+        "validation finale du même état.")
 
 h2("2.1 Matrice détaillée des permissions")
 para("Légende : ✔ = autorisé. Le SUPER_ADMIN dispose implicitement de toutes les permissions.")
-P = ["ADMIN", "GEST.", "FINANC.", "CONTR.", "LECT."]
-def row(nom, a, g, f, c, l):
+P = ["ADMIN", "GEST.", "FINANC.", "CONTR.", "DAF", "DG", "LECT."]
+def row(nom, a, g, f, c, daf, dg, l):
     conv = lambda x: "✔" if x else ""
-    return [nom, conv(a), conv(g), conv(f), conv(c), conv(l)]
+    return [nom, conv(a), conv(g), conv(f), conv(c), conv(daf), conv(dg), conv(l)]
 tableau(
     ["Permission"] + P,
     [
-        row("Tableau de bord", 1, 1, 1, 1, 1),
-        row("Personnel — consulter", 1, 1, 1, 1, 0),
-        row("Personnel — gérer", 1, 1, 0, 0, 0),
-        row("OM — consulter", 1, 1, 1, 1, 1),
-        row("OM — retranscrire", 0, 1, 0, 0, 0),
-        row("OM — valider / rejeter", 0, 0, 0, 1, 0),
-        row("Paiements — consulter", 1, 1, 1, 1, 0),
-        row("Paiements — générer", 0, 0, 1, 0, 0),
-        row("Paiements — confirmer", 0, 0, 1, 0, 0),
-        row("Barème — consulter", 1, 1, 1, 1, 0),
-        row("Barème — modifier", 1, 0, 0, 0, 0),
-        row("Rapports — consulter", 1, 1, 1, 1, 1),
-        row("Audit — consulter", 1, 0, 0, 1, 0),
-        row("Utilisateurs — gérer", 1, 0, 0, 0, 0),
+        #      ADMIN GEST FIN CONTR DAF DG LECT
+        row("Tableau de bord",        1, 1, 1, 1, 1, 1, 1),
+        row("Personnel — consulter",  1, 1, 1, 1, 1, 1, 0),
+        row("Personnel — gérer",      1, 1, 0, 0, 0, 0, 0),
+        row("OM — consulter",         1, 1, 1, 1, 1, 1, 1),
+        row("OM — retranscrire",      0, 1, 0, 0, 0, 0, 0),
+        row("État — contrôler",       0, 0, 0, 1, 0, 0, 0),
+        row("État — viser (DAF)",     0, 0, 0, 0, 1, 0, 0),
+        row("État — valider (DG)",    0, 0, 0, 0, 0, 1, 0),
+        row("État — numéroter",       0, 0, 0, 1, 1, 1, 0),
+        row("État — rejeter",         0, 0, 0, 1, 1, 1, 0),
+        row("Paiements — consulter",  1, 1, 1, 1, 1, 1, 0),
+        row("Paiements — générer",    0, 0, 1, 0, 0, 0, 0),
+        row("Paiements — confirmer",  0, 0, 1, 0, 0, 0, 0),
+        row("Barème — consulter",     1, 1, 1, 1, 1, 1, 0),
+        row("Barème — modifier",      1, 0, 0, 0, 0, 0, 0),
+        row("Rapports — consulter",   1, 1, 1, 1, 1, 1, 1),
+        row("Audit — consulter",      1, 0, 0, 1, 1, 1, 0),
+        row("Utilisateurs — gérer",   1, 0, 0, 0, 0, 0, 0),
     ],
-    largeurs=[6.4] + [2.08] * 5,
+    largeurs=[4.6] + [1.6] * 7,
 )
 
 # =========================================================================
@@ -350,26 +369,75 @@ bullet("Les doublons de référence SEMO sont détectés immédiatement.")
 h3("Étape 3 — Récapitulatif")
 bullet("Vérifiez les totaux (avance / reliquat) puis enregistrez.")
 para("À l'enregistrement, chaque OM est créé au statut IMPORTE, accompagné de ses versements AVANCE et "
-     "RELIQUAT (sauf exonération).")
+     "RELIQUAT (sauf exonération). Les OM conservent ce statut jusqu'à la validation finale de l'état "
+     "de paiement de la mission.")
 
 h2("6.2 Consulter un ordre de mission")
 bullet("Liste filtrable par statut, zone, opérateur, agent, dates ; recherche par référence SEMO.")
 bullet("La fiche détaillée affiche la mission, le bénéficiaire, les montants et les versements.")
-bullet("Téléchargement du PDF officiel de l'OM et consultation de son journal d'audit.")
+bullet("La fiche renvoie vers l'état de paiement de la mission : c'est là que se fait la validation, "
+       "pas sur l'OM lui-même.")
+bullet("Téléchargement du brouillon de l'OM et consultation de son journal d'audit.")
 
-h2("6.3 Valider ou rejeter un ordre de mission")
-para("Réservé au CONTROLEUR (permission « OM — valider »). La validation est un PRÉALABLE OBLIGATOIRE au paiement.")
-etape("Ouvrez la fiche de l'OM (statut IMPORTE).")
-etape("Cliquez sur « Valider » : l'OM passe au statut VALIDE.")
-etape("Ou cliquez sur « Rejeter » et saisissez un motif d'au moins 10 caractères : l'OM passe au statut REJETE.")
-encadre("Règle essentielle",
-        "Un ordre de mission non validé (resté IMPORTE) ne peut pas être payé : il n'apparaît pas parmi "
-        "les bénéficiaires éligibles lors de la génération d'un fichier de paiement.")
+para("La validation des ordres de mission ne se fait pas un par un : elle se joue sur l'état de paiement "
+     "de la mission (chapitre 7). Le présent chapitre s'arrête donc à la retranscription et à la "
+     "consultation.")
 
 # =========================================================================
-# 7. CALCUL DU PER DIEM
+# 7. ÉTAT DE PAIEMENT (CIRCUIT DE VALIDATION)
 # =========================================================================
-h1("7. Calcul du per diem")
+h1("7. État de paiement et circuit de validation")
+para("Chaque mission possède un seul état de paiement : le document récapitulatif qui liste tous ses "
+     "bénéficiaires, leurs montants (avance et reliquat) et le total général arrêté en toutes lettres. "
+     "C'est cet état — et non les OM pris séparément — qui suit le circuit de validation.")
+
+h2("7.1 Établir le récapitulatif (brouillon)")
+para("Acteur : GESTIONNAIRE_OM. Depuis la mission, cliquez sur « Établir le récapitulatif ».")
+bullet("L'application agrège les OM de la mission et produit l'état au statut BROUILLON.")
+bullet("Le brouillon est téléchargeable en PDF : il porte le filigrane « BROUILLON — NON VALIDE » et "
+       "ne comporte aucune signature. C'est l'épreuve que l'on relit avant d'engager le circuit.")
+bullet("Tant qu'aucune signature n'est apposée, « Rafraîchir » recalcule l'état si les OM ont changé.")
+
+h2("7.2 Le circuit en trois étapes")
+para("L'état passe successivement entre trois mains. Chacun retrouve les états qui l'attendent dans "
+     "l'écran « États de paiement », ouvert d'emblée sur sa propre file.")
+tableau(
+    ["Étape", "Acteur", "Action", "Nouveau statut"],
+    [
+        ["1", "Contrôleur", "Contrôle de conformité de l'état.", "CONTRÔLÉ"],
+        ["2", "DAF", "Appose le visa « Vu ».", "VISÉ DAF"],
+        ["3", "Directeur Général", "Valide définitivement (numéro requis).", "VALIDÉ"],
+    ],
+    largeurs=[1.6, 3.2, 8.0, 4.0],
+)
+bullet("Le numéro de l'état est saisi manuellement, suivant le registre de l'agence. Il est requis "
+       "avant la validation finale du DG, puis figé.")
+bullet("À chaque étape, la signature du titulaire (nom, prénoms, fonction et paraphe scanné) est apposée "
+       "sur le document, avec un code de vérification.")
+bullet("La validation finale du DG arrête l'état et fait passer tous les OM de la mission au statut "
+       "VALIDE : ils deviennent alors payables.")
+encadre("Rejet possible à chaque étape",
+        "Le contrôleur, le DAF ou le DG peuvent rejeter l'état avec un motif (≥ 10 caractères). Le rejet "
+        "efface les signatures déjà apposées et renvoie l'état en correction ; les ordres de mission "
+        "gardent leur statut. Le gestionnaire peut alors refaire le récapitulatif.")
+
+h2("7.3 L'état de paiement définitif")
+para("Une fois l'état VALIDÉ, son PDF définitif est téléchargeable : sans filigrane, avec les deux "
+     "signatures (DAF puis Directeur Général) et le total général arrêté en toutes lettres. C'est le "
+     "document officiel de la mission. Il est édité au format paysage.")
+
+h2("7.4 Signatures des titulaires (paramétrage)")
+para("Réservé au SUPER_ADMIN, écran « Signatures ». Pour le contrôleur, le DAF et le DG, on y enregistre "
+     "les nom et prénoms, la fonction imprimée et l'image de la signature manuscrite scannée.")
+encadre("Titulaire en poste ≠ compte connecté",
+        "Les identités imprimées sur l'état sont celles des titulaires en poste, indépendamment du compte "
+        "qui effectue la validation (utile en cas d'intérim). Le compte réellement utilisé reste, lui, "
+        "tracé au journal d'audit. Sans signature enregistrée, l'état sort sans paraphe.")
+
+# =========================================================================
+# 8. CALCUL DU PER DIEM
+# =========================================================================
+h1("8. Calcul du per diem")
 para("Le montant est calculé automatiquement par l'application :")
 para("Per diem = somme, pour chaque type de prise en charge, de (taux journalier × nombre de jours). "
      "Montant total = per diem + transport éventuel.", bold=True)
@@ -385,13 +453,14 @@ para("Les 4 zones sont : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II et EXT_ZONE_III (les
      "types d'hébergement (logé/nourri…) ne s'appliquent qu'à l'extérieur.")
 
 # =========================================================================
-# 8. PAIEMENTS
+# 9. PAIEMENTS
 # =========================================================================
-h1("8. Paiements")
+h1("9. Paiements")
 para("L'application GÉNÈRE des fichiers de paiement ; elle ne décaisse pas. Réservé à l'AGENT_FINANCIER.")
 encadre("Préalable",
-        "Seuls les ordres de mission au statut VALIDE sont payables. Un versement déjà CONFIRMÉ n'est "
-        "jamais réinclus dans un nouveau fichier (protection anti-double-paiement).")
+        "Les fichiers ne peuvent être générés qu'une fois l'état de paiement de la mission VALIDÉ par le "
+        "Directeur Général (ses OM passent alors au statut VALIDE). Un versement déjà CONFIRMÉ n'est jamais "
+        "réinclus dans un nouveau fichier (protection anti-double-paiement).")
 
 h2("8.1 Générer un fichier de paiement (MTN ou Moov)")
 etape("Ouvrez « Paiements MTN » ou « Paiements Moov ».")
@@ -417,36 +486,36 @@ bullet("« Historique » : versements confirmés, filtrables par période.")
 bullet("« Réconciliation » : rappel du modèle manuel (aucun réimport de fichier opérateur).")
 
 # =========================================================================
-# 9. BARÈME
+# 10. BARÈME
 # =========================================================================
-h1("9. Barème per diem")
+h1("10. Barème per diem")
 bullet("Consultation : accessible à tous les profils internes (« Barème — consulter »).")
 bullet("Modification des taux : réservée à l'ADMIN (« Barème — modifier »).")
 para("Le détail complet des taux figure en Annexe B.")
 
 # =========================================================================
-# 10. RAPPORTS
+# 11. RAPPORTS
 # =========================================================================
-h1("10. Rapports et états")
+h1("11. Rapports et états")
 para("Les états sont alimentés par les versements confirmés.")
 bullet("Rapport mensuel : synthèse par opérateur, par tranche et par statut.")
 bullet("Par agent, par opérateur, par zone, par imputation budgétaire.")
 bullet("Export Excel ou PDF (immédiat ou en arrière-plan pour les gros volumes).")
 
 # =========================================================================
-# 11. AUDIT
+# 12. AUDIT
 # =========================================================================
-h1("11. Journal d'audit")
+h1("12. Journal d'audit")
 para("Le journal trace les actions sensibles : qui a fait quoi, quand, et depuis quelle adresse IP "
      "(retranscription, validation/rejet, génération et confirmation de paiement, gestion des comptes…). "
      "Accessible à l'ADMIN et au CONTROLEUR. Chaque entrée peut être consultée en détail.")
 
 # =========================================================================
-# 12. ADMINISTRATION
+# 13. ADMINISTRATION
 # =========================================================================
-h1("12. Administration")
+h1("13. Administration")
 para("Module réservé aux administrateurs.")
-h2("12.1 Gestion des utilisateurs")
+h2("13.1 Gestion des utilisateurs")
 bullet("Créer, modifier, activer/désactiver, supprimer des comptes ; réinitialiser un mot de passe.")
 bullet("Toute action sur un super administrateur est réservée à un super administrateur.")
 bullet("Le dernier super administrateur actif ne peut être ni rétrogradé, ni désactivé, ni supprimé.")
@@ -454,8 +523,10 @@ bullet("On ne peut pas désactiver ou supprimer son propre compte.")
 encadre("Sécurité des sessions",
         "Lorsqu'un compte est désactivé, supprimé, change de rôle ou voit son mot de passe réinitialisé, "
         "ses sessions actives sont immédiatement révoquées.")
-h2("12.2 Autres écrans d'administration")
+h2("13.2 Autres écrans d'administration")
 bullet("Rôles : matrice des permissions par profil (consultation).")
+bullet("Signatures : identités et paraphes scannés du contrôleur, du DAF et du Directeur Général, "
+       "imprimés sur l'état de paiement (voir chapitre 7.4).")
 bullet("Paramètres : configuration générale de l'application.")
 bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair.")
 bullet("Sauvegardes : création et gestion des sauvegardes de la base de données.")
@@ -465,12 +536,20 @@ bullet("Sauvegardes : création et gestion des sauvegardes de la base de donnée
 # =========================================================================
 doc.add_page_break()
 h1("Annexe A — Statuts")
+h2("État de paiement (un par mission)")
+tableau(["Statut", "Signification"],
+        [["BROUILLON", "Récapitulatif établi, épreuve téléchargeable ; en attente du contrôle."],
+         ["CONTROLE", "Contrôlé par le contrôleur ; en attente du visa du DAF."],
+         ["VISA_DAF", "Visé par le DAF ; en attente de la validation du Directeur Général."],
+         ["VALIDE", "Validé par le DG — verrouillé ; les OM deviennent payables."],
+         ["REJETE", "Rejeté (avec motif) ; le récapitulatif peut être refait."]],
+        largeurs=[4.0, 12.8])
 h2("Ordre de mission")
 tableau(["Statut", "Signification"],
-        [["IMPORTE", "Retranscrit, en attente de validation."],
-         ["VALIDE", "Validé par le contrôleur — payable."],
-         ["REJETE", "Rejeté (avec motif)."],
-         ["SOLDE", "Tous les versements ont été confirmés."]],
+        [["IMPORTE", "Retranscrit depuis SEMO ; statut conservé pendant tout le circuit de l'état."],
+         ["VALIDE", "L'état de paiement de sa mission a été validé par le DG — payable."],
+         ["REJETE", "Rejeté individuellement (reprise de données ; motif requis)."],
+         ["SOLDE", "Tous les versements de l'OM ont été confirmés."]],
         largeurs=[4.0, 12.8])
 h2("Versement")
 tableau(["Statut", "Signification"],

@@ -21,9 +21,20 @@ export function toPage<T>(payload: any): Page<T> {
   return { items, meta }
 }
 
-/** Déballe l'enveloppe { data: ... } des réponses « success ». */
+/**
+ * Déballe l'enveloppe { data: ... } des réponses « success ».
+ *
+ * On teste la PRÉSENCE de la clé `data`, pas sa valeur : une réponse
+ * légitime { data: null } (ex. une mission sans état de paiement) doit
+ * renvoyer null, et non l'enveloppe entière. Un `?? payload` renverrait ici
+ * l'objet { data: null, message } — un objet truthy — et ferait planter les
+ * écrans qui attendent null.
+ */
 export function unwrap<T>(payload: any): T {
-  return (payload?.data ?? payload) as T
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return payload.data as T
+  }
+  return payload as T
 }
 
 /** Extrait le nom de fichier d'un en-tête Content-Disposition. */
