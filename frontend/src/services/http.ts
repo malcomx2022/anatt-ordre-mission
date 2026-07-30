@@ -44,6 +44,24 @@ export function filenameFromDisposition(disposition?: string, fallback = 'fichie
   return match?.[1] ? decodeURIComponent(match[1].replace(/"/g, '')) : fallback
 }
 
+/**
+ * Vérifie si une réponse attendue en Blob est en réalité un JSON d'erreur ou de tâche asynchrone.
+ */
+export async function assertValidBlobResponse(res: any): Promise<void> {
+  const contentType = res.headers?.['content-type'] || res.data?.type || ''
+  if (contentType.includes('application/json')) {
+    const text = await (res.data as Blob).text()
+    let errMessage = 'Erreur lors de la génération du fichier.'
+    try {
+      const json = JSON.parse(text)
+      if (json.message) errMessage = json.message
+    } catch {
+      // JSON illisible
+    }
+    throw new Error(errMessage)
+  }
+}
+
 /** Déclenche le téléchargement d'un Blob côté navigateur. */
 export function saveBlob(blob: Blob, filename: string): void {
   const url = window.URL.createObjectURL(blob)

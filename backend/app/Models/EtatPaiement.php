@@ -27,13 +27,9 @@ class EtatPaiement extends Model
         'montant_total',
         'montant_avance',
         'montant_reliquat',
-        'lignes',               // instantané du tableau présenté au signataire
-        'controle_par', 'controle_le', 'controle_nom', 'controle_fonction',
-        'signature_controle_hash', 'signature_controle_image',
-        'visa_daf_par', 'visa_daf_le', 'visa_daf_nom', 'visa_daf_fonction',
-        'signature_daf_hash', 'signature_daf_image',
-        'valide_dg_par', 'valide_dg_le', 'valide_dg_nom', 'valide_dg_fonction',
-        'signature_dg_hash', 'signature_dg_image',
+        'controle_par', 'controle_le', 'controle_nom', 'controle_fonction', 'signature_controle_hash',
+        'visa_daf_par', 'visa_daf_le', 'visa_daf_nom', 'visa_daf_fonction', 'signature_daf_hash',
+        'valide_dg_par', 'valide_dg_le', 'valide_dg_nom', 'valide_dg_fonction', 'signature_dg_hash',
         'commentaire_rejet',
     ];
 
@@ -44,7 +40,6 @@ class EtatPaiement extends Model
             'montant_total' => 'integer',
             'montant_avance' => 'integer',
             'montant_reliquat' => 'integer',
-            'lignes' => 'array',
             'controle_le' => 'datetime',
             'visa_daf_le' => 'datetime',
             'valide_dg_le' => 'datetime',

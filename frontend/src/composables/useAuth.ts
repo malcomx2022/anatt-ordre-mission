@@ -61,13 +61,7 @@ export function useAuth() {
     return can('om.approuver')
   }
 
-  /**
-   * Rejet motivé : ouvert aux trois acteurs du circuit.
-   *
-   * Exactement la clé exigée par l'API (`permission:om.rejeter`), et elle seule :
-   * accepter `om.valider` en repli afficherait un bouton que le serveur refuse,
-   * et l'intercepteur 403 éjecterait l'utilisateur de son écran.
-   */
+  /** Rejet motivé : ouvert aux acteurs disposant de la permission om.rejeter. */
   function canRejeterOM(): boolean {
     return can('om.rejeter')
   }

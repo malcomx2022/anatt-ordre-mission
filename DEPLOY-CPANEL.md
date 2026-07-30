@@ -195,48 +195,13 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 
 ---
 
-## 10. Mettre à jour une version déjà en ligne
-
-> ⚠️ **Le piège n°1 en FTP : ne mettre à jour que le frontend.** Le SPA (`public_html/`)
-> et l'API (`anatt-api/`) sont **deux déploiements séparés**. Si vous ré-uploadez seulement
-> `frontend/dist/` sans ré-uploader `backend/`, le nouveau SPA appelle des routes que
-> l'ancienne API ne connaît pas → **404 « route introuvable »** (ex. sur
-> `/api/missions/{id}/etat/brouillon`), et les écrans affichent des données incohérentes
-> (montants à 0, etc.). **Déployez toujours les DEUX ensemble.**
-
-À chaque mise à jour :
-
-1. **Backend** — ré-uploadez le contenu de `backend/` dans `anatt-api/` (au minimum
-   `routes/`, `app/`, `resources/`, et `vendor/` si les dépendances ont changé). Ne pas
-   écraser `anatt-api/.env`.
-2. **Vider les caches compilés** — supprimez le contenu de **`anatt-api/bootstrap/cache/`**
-   (`config.php`, `routes-*.php`, `packages.php`, `services.php`). C'est **indispensable**
-   sans SSH : tant que ces fichiers restent, l'API sert l'**ancienne table de routes** et
-   les nouvelles routes renvoient 404. Ils sont régénérés automatiquement.
-3. **Migrations** — s'il y a de nouvelles migrations, importez-les via phpMyAdmin ou, si un
-   Terminal cPanel est disponible : `php artisan migrate --force`.
-4. **Frontend** — ré-uploadez le contenu de `frontend/dist/` dans `public_html/` (sans
-   écraser `runtime-config.js` si vous l'avez personnalisé).
-5. **Vérifier** — ouvrez `https://api-omsemo.anatt.bj/api/missions` (avec un jeton) ou, si
-   Terminal disponible, `php artisan route:list | grep etat` : les routes `etat/brouillon`,
-   `etat/telecharger`, `etat/recapituler` doivent apparaître.
-
-> Après coup, sur un état dont les montants s'affichent à 0 alors que ses OM ont un montant,
-> ouvrez l'état et cliquez **« Rafraîchir »** : l'instantané financier est recalculé depuis
-> les ordres de mission courants.
-
----
-
-## 11. Dépannage
+## 10. Dépannage
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
-| **404 « route introuvable »** sur une route API récente (ex. `/etat/brouillon`) | Backend pas ré-uploadé, ou cache de routes périmé | Ré-uploader `backend/` dans `anatt-api/` **et vider `anatt-api/bootstrap/cache/`** (§10) |
-| Montants d'un état **à 0** alors que les OM en ont | Backend périmé, ou instantané établi avant les montants | Mettre l'API à jour (§10), puis **« Rafraîchir »** l'état |
 | **500** sur l'API, page blanche | `storage/` non inscriptible ou `APP_KEY` vide | Permissions 755 sur `storage/` + `bootstrap/cache/` ; remplir `APP_KEY` |
 | Erreur **CORS** dans la console | origine du SPA non autorisée | `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj` dans le `.env` API |
 | Le SPA affiche **404** sur une route (ex. /agents) au rafraîchissement | `.htaccess` SPA absent | Vérifier `public_html/.htaccess` (fourni dans dist) |
-| Téléchargement du brouillon/état en **échec** | `storage/` non inscriptible (écriture du PDF) | Permissions 755 sur `anatt-api/storage/` (le message d'erreur exact s'affiche désormais dans un toast) |
 | Appels API en **http** bloqués (mixed content) | API pas en HTTPS | AutoSSL sur le sous-domaine + `apiUrl` en `https://` |
 | Connexion impossible / « Network error » | mauvaise `apiUrl` | Corriger `public_html/runtime-config.js` |
 | `Class ... not found` au chargement | `vendor/` incomplet | Re-uploader `vendor/` (composer install --no-dev en local) |

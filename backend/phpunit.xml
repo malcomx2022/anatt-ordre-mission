@@ -18,10 +18,6 @@
         </include>
     </source>
     <php>
-        <!-- La suite produit de vrais fichiers de paiement .xlsx : sous les 128 Mo
-             par défaut de bien des php.ini, l'écriture du ZIP épuise la mémoire en
-             fin de parcours et la suite s'arrête sur une erreur fatale. -->
-        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
@@ -33,12 +29,6 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
-        <!-- Le circuit part du socle simple, comme la valeur par défaut de
-             config/workflow.php. Sans cette ligne, un WORKFLOW_DOUBLE_VALIDATION
-             posé dans le .env du poste de développement traverse jusqu'aux tests
-             et en fait échouer deux, selon la machine qui les lance. Les tests du
-             circuit complet activent la clé eux-mêmes. -->
-        <env name="WORKFLOW_DOUBLE_VALIDATION" value="false"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

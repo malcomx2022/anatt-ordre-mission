@@ -45,29 +45,10 @@ const monStatut = computed<StatutEtat | null>(() => {
   return null
 })
 
-/**
- * Nombre TOTAL d'états attendant l'utilisateur courant.
- *
- * Compté par le serveur, et non sur les lignes affichées : filtrer la page
- * courante annonçait « 20 états » dès que la file en comptait davantage, et
- * n'en annonçait aucun dès qu'on tournait la page.
- */
-const aTraiter = ref(0)
-
-async function compterMaFile() {
-  if (!monStatut.value) {
-    aTraiter.value = 0
-    return
-  }
-  try {
-    // per_page: 1 — seul le total nous intéresse, pas les lignes.
-    const res = await etatsService.list({ statut: monStatut.value, per_page: 1 })
-    aTraiter.value = res.meta.total
-  } catch {
-    // Le compteur est une commodité : son échec ne doit pas masquer la liste.
-    aTraiter.value = 0
-  }
-}
+/** Nombre d'états attendant l'utilisateur courant, dans la page affichée. */
+const aTraiter = computed(() =>
+  monStatut.value ? etats.value.filter((e) => e.statut === monStatut.value).length : 0,
+)
 
 async function charger() {
   loading.value = true
@@ -92,7 +73,6 @@ onMounted(() => {
   // l'attend, pas la liste complète.
   if (monStatut.value) statut.value = monStatut.value
   charger()
-  compterMaFile()
 })
 
 watch([statut, search], () => {

@@ -52,39 +52,17 @@ class AgentService
 
     public function modifier(Agent $agent, array $data): Agent
     {
-        return DB::transaction(function () use ($agent, $data) {
-            $ancienTelephone = $agent->telephone;
-            $ancienOperateur = $agent->operateur;
+        $agent->update($data);
 
-            $agent->update($data);
-
-            if ($agent->telephone !== $ancienTelephone || $agent->operateur !== $ancienOperateur) {
-                $this->synchroniserVersementsEnAttente($agent);
-            }
-
-            return $agent->fresh();
-        });
-    }
-
-    /**
-     * Répercute les coordonnées (téléphone + opérateur) de l'agent sur ses
-     * versements ENCORE EN ATTENTE.
-     *
-     * Un versement fige ces coordonnées depuis le référentiel agent au moment de
-     * sa création. Si l'agent change de numéro ou d'opérateur, les versements pas
-     * encore inclus dans un fichier doivent suivre, pour que la prochaine
-     * génération vise le bon compte. Les versements déjà GENERE ou CONFIRME ne
-     * sont JAMAIS modifiés : un fichier émis (ou un paiement confirmé) ne se
-     * réécrit pas rétroactivement.
-     */
-    private function synchroniserVersementsEnAttente(Agent $agent): void
-    {
-        Versement::whereIn('ordre_mission_id', $agent->ordresMission()->select('id'))
+        // Propagation automatique des nouvelles coordonnées aux versements en attente
+        Versement::whereHas('ordreMission', fn ($q) => $q->where('agent_id', $agent->id))
             ->where('statut', 'EN_ATTENTE')
             ->update([
                 'telephone' => $agent->telephone,
                 'operateur' => $agent->operateur,
             ]);
+
+        return $agent->fresh();
     }
 
     public function desactiver(Agent $agent): void
