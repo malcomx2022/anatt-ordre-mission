@@ -36,6 +36,12 @@ const peutRecapituler = computed(
   () => canCreerMissions() && (!etat.value || ['BROUILLON', 'REJETE'].includes(etat.value.statut)),
 )
 const estRejete = computed(() => etat.value?.statut === 'REJETE')
+// Le document produit porte lui-même la mention de rejet : le bouton l'annonce,
+// pour qu'on ne croie pas télécharger un brouillon ordinaire.
+const libelleTelechargement = computed(() => {
+  if (etat.value?.statut === 'VALIDE') return 'Télécharger l’état'
+  return estRejete.value ? 'Télécharger l’état rejeté' : 'Télécharger le brouillon'
+})
 const peutControler = computed(() => canValiderOM() && etat.value?.statut === 'BROUILLON')
 const peutViser = computed(() => canViserOM() && etat.value?.statut === 'CONTROLE')
 const peutApprouver = computed(() => canApprouverOM() && etat.value?.statut === 'VISA_DAF')
@@ -189,7 +195,7 @@ async function telecharger(brouillon: boolean) {
 
           <div class="flex flex-wrap gap-3">
             <AppButton variant="outline" :loading="action" @click="telecharger(etat.statut !== 'VALIDE')">
-              {{ etat.statut === 'VALIDE' ? 'Télécharger l’état' : 'Télécharger le brouillon' }}
+              {{ libelleTelechargement }}
             </AppButton>
             <AppButton
               v-if="peutRecapituler && etat"

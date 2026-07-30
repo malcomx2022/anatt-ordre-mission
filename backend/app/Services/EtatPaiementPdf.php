@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\EtatPaiement;
-use App\Models\OrdreMission;
 use App\Support\MontantEnLettres;
+use App\Support\PdfAssets;
 use App\Support\Workflow;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
@@ -22,19 +22,11 @@ use Illuminate\Support\Str;
  */
 class EtatPaiementPdf
 {
-    private const TYPES = [
-        'UN_REPAS' => 'Mission à 1 repas',
-        'DEUX_REPAS' => 'Mission à 2 repas',
-        'JOURNEE_COMPLETE' => 'Mission complète',
-        'LOGE_NOURRI' => 'Logé + nourri',
-        'LOGE_SEUL' => 'Logé seul',
-        'NOURRI_SEUL' => 'Nourri seul',
-    ];
-
     /** Mention du filigrane apposé sur les épreuves. */
     private const MENTION_BROUILLON = 'BROUILLON - NON VALIDE';
 
-    public function generer(EtatPaiement $etat, bool $brouillon = false): string
+    /** Rend le document et renvoie ses octets, sans toucher au disque. */
+    public function rendre(EtatPaiement $etat, bool $brouillon = false): string
     {
         $pdf = Pdf::loadView('pdf.etat-paiement', $this->donnees($etat, $brouillon))
             ->setPaper('A4', 'landscape')
@@ -44,19 +36,32 @@ class EtatPaiementPdf
             $this->apposerFiligrane($pdf);
         }
 
+        return (string) $pdf->output();
+    }
+
+    public function generer(EtatPaiement $etat, bool $brouillon = false): string
+    {
         $chemin = $this->chemin($etat, $brouillon);
-        Storage::disk('local')->put($chemin, $pdf->output());
+        Storage::disk('local')->put($chemin, $this->rendre($etat, $brouillon));
 
         return $chemin;
     }
 
     public function telecharger(EtatPaiement $etat, bool $brouillon = false)
     {
-        // Toujours régénéré : l'état reflète les OM et les paramètres de
-        // signature au moment où on le demande.
-        $chemin = $this->generer($etat, $brouillon);
+        // Le document part en flux, sans passer par un fichier partagé : deux
+        // agents qui téléchargent le même état au même instant ne peuvent plus
+        // se marcher dessus, ni recevoir l'état d'une autre mission.
+        $contenu = $this->rendre($etat, $brouillon);
+        $nom = basename($this->chemin($etat, $brouillon));
 
-        return Storage::disk('local')->download($chemin, basename($chemin));
+        return response()->streamDownload(
+            function () use ($contenu) {
+                echo $contenu;
+            },
+            $nom,
+            ['Content-Type' => 'application/pdf'],
+        );
     }
 
     /**
@@ -71,52 +76,20 @@ class EtatPaiementPdf
         $etat->load('mission');
         $mission = $etat->mission;
 
-        $ordres = OrdreMission::with('agent')
-            ->where('mission_id', $etat->mission_id)
-            ->whereNotIn('statut', ['REJETE', 'ANNULE'])
-            ->orderBy('id')
-            ->get();
+        $fmt = fn (int $n) => LignesEtatPaiement::fmt($n);
 
-        $fmt = fn (int $n) => $n === 0 ? '-' : number_format($n, 0, ',', ' ');
-
-        $lignes = $ordres->map(function (OrdreMission $om) use ($fmt) {
-            $agent = $om->agent;
-
-            // Sous-lignes par type de prise en charge (colonnes MOTIF / TAUX/JOUR
-            // / NBRE DE JOURS / TOTAL PARTIEL de l'état officiel).
-            $detail = collect($om->lignes_per_diem ?? [])->map(fn (array $l) => [
-                'motif' => self::TYPES[$l['type']] ?? $l['type'],
-                'taux' => $fmt((int) $l['taux']),
-                'nb_jours' => (int) $l['nb_jours'],
-                'partiel' => $fmt((int) $l['montant']),
-            ])->all();
-
-            if ($detail === []) {
-                $detail = [[
-                    'motif' => self::TYPES[$om->type_prise_en_charge] ?? $om->type_prise_en_charge,
-                    'taux' => $fmt($om->nb_jours > 0 ? intdiv($om->montant_total, $om->nb_jours) : 0),
-                    'nb_jours' => $om->nb_jours,
-                    'partiel' => $fmt($om->montant_total),
-                ]];
-            }
-
-            return [
-                'numero' => $om->reference_semo,
-                'beneficiaire' => trim("{$agent->nom} {$agent->prenoms}"),
-                'structure' => 'ANaTT',
-                'grade_indice' => $this->grade($om->categorie, $agent->indice),
-                'detail' => $detail,
-                'total' => $fmt($om->montant_total),
-                'avance' => $fmt($om->avance),
-                'reliquat' => $fmt($om->reliquat),
-                'contact' => $this->telephone($agent->telephone),
-            ];
-        })->all();
+        // L'instantané figé au récapitulatif fait foi : c'est le tableau qui a
+        // été présenté au signataire. On ne recalcule que pour les états
+        // antérieurs à l'instantané, qui n'en portent pas.
+        $lignes = $etat->lignes ?: LignesEtatPaiement::pourMission($etat->mission_id);
 
         return [
             'brouillon' => $brouillon,
             'numero' => $etat->numero,
             'statut' => $etat->statut,
+            // Un état retoqué ne doit pas circuler sous les traits d'un simple
+            // brouillon : le document dit lui-même qu'il a été rejeté, et pourquoi.
+            'rejet' => $etat->statut === 'REJETE' ? ($etat->commentaire_rejet ?: 'Motif non précisé') : null,
             'objet' => $mission?->objet,
             'destination' => $mission?->destination,
             'imputation' => $mission?->imputation_budgetaire,
@@ -130,14 +103,23 @@ class EtatPaiementPdf
             'mention_arret' => MontantEnLettres::mention($etat->montant_total),
             'date_generation' => now()->format('d/m/Y'),
             // Signatures : jamais rendues sur un brouillon, même si l'état en porte.
-            'visa_daf' => $brouillon ? null : $this->signature($etat->visa_daf_nom, $etat->visa_daf_fonction, $etat->visa_daf_le, $etat->signature_daf_hash, 'daf'),
-            'validation_dg' => $brouillon ? null : $this->signature($etat->valide_dg_nom, $etat->valide_dg_fonction, $etat->valide_dg_le, $etat->signature_dg_hash, 'dg'),
-            'controle' => $brouillon ? null : $this->signature($etat->controle_nom, $etat->controle_fonction, $etat->controle_le, $etat->signature_controle_hash, 'controleur'),
+            'visa_daf' => $brouillon ? null : $this->signature($etat->visa_daf_nom, $etat->visa_daf_fonction, $etat->visa_daf_le, $etat->signature_daf_hash, $etat->signature_daf_image, 'daf'),
+            'validation_dg' => $brouillon ? null : $this->signature($etat->valide_dg_nom, $etat->valide_dg_fonction, $etat->valide_dg_le, $etat->signature_dg_hash, $etat->signature_dg_image, 'dg'),
+            'controle' => $brouillon ? null : $this->signature($etat->controle_nom, $etat->controle_fonction, $etat->controle_le, $etat->signature_controle_hash, $etat->signature_controle_image, 'controleur'),
         ];
     }
 
-    /** @return array{nom:string, fonction:?string, date:string, code:?string, image:?string}|null */
-    private function signature(?string $nom, ?string $fonction, mixed $date, ?string $hash, string $poste): ?array
+    /**
+     * Bloc de signature imprimé.
+     *
+     * Le paraphe vient de la copie ARCHIVÉE au moment de la signature, jamais du
+     * paraphe courant du poste : un état signé porte le paraphe de celui dont il
+     * porte le nom, même si le titulaire a changé depuis. Le repli sur les
+     * paramètres ne sert qu'aux états signés avant l'archivage.
+     *
+     * @return array{nom:string, fonction:?string, date:string, code:?string, image:?string}|null
+     */
+    private function signature(?string $nom, ?string $fonction, mixed $date, ?string $hash, ?string $archive, string $poste): ?array
     {
         if (empty($nom) || $date === null) {
             return null;
@@ -148,29 +130,8 @@ class EtatPaiementPdf
             'fonction' => $fonction,
             'date' => $date->format('d/m/Y'),
             'code' => Workflow::codeVerification($hash),
-            'image' => SignatureParametres::pour($poste)['image'],
+            'image' => PdfAssets::signatureDataUri($archive) ?? SignatureParametres::pour($poste)['image'],
         ];
-    }
-
-    /** Colonne GRADE/INDICE de l'état : « ≥ 800 » / « 400-799 » / « < 400 ». */
-    private function grade(string $categorie, ?int $indice): string
-    {
-        return match ($categorie) {
-            'ORDRE_1' => '≥ 800',
-            'ORDRE_2' => '400-799',
-            'ORDRE_3' => '< 400',
-            default => $indice !== null ? (string) $indice : '—',
-        };
-    }
-
-    /** Téléphone en groupes de 2, comme sur l'état officiel (01 96 30 24 90). */
-    private function telephone(?string $numero): string
-    {
-        if (empty($numero)) {
-            return '—';
-        }
-
-        return trim(implode(' ', str_split(preg_replace('/\D/', '', $numero), 2)));
     }
 
     private function periode(mixed $depart, mixed $retour): string
@@ -204,9 +165,19 @@ class EtatPaiementPdf
         }
     }
 
+    /**
+     * Chemin du document, TOUJOURS préfixé par l'identifiant de l'état.
+     *
+     * Le numéro seul ne suffit pas à distinguer deux états : il est saisi à la
+     * main, et un numéro purement symbolique (« ### », « — ») se réduit à une
+     * chaîne vide une fois slugifié. Deux états se retrouvaient alors à écrire
+     * dans le même fichier — au mieux un écrasement, au pire l'état d'une autre
+     * mission servi en téléchargement.
+     */
     private function chemin(EtatPaiement $etat, bool $brouillon): string
     {
-        $base = $etat->numero !== null ? Str::slug($etat->numero) : "mission-{$etat->mission_id}";
+        $slug = $etat->numero !== null ? Str::slug($etat->numero) : '';
+        $base = $slug !== '' ? "{$etat->id}-{$slug}" : "{$etat->id}-mission-{$etat->mission_id}";
         $suffixe = $brouillon ? 'BROUILLON' : $etat->statut;
 
         return "etats/ETAT-{$base}-{$suffixe}.pdf";
