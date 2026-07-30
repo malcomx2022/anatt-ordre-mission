@@ -61,9 +61,9 @@ export function useAuth() {
     return can('om.approuver')
   }
 
-  /** Rejet motivé : ouvert aux trois acteurs du circuit. */
+  /** Rejet motivé : ouvert aux acteurs disposant de la permission om.rejeter. */
   function canRejeterOM(): boolean {
-    return canAny('om.rejeter', 'om.valider')
+    return can('om.rejeter')
   }
 
   /** Numérotation manuelle de l'état, selon le registre papier de l'agence. */

@@ -1,4 +1,4 @@
-import { api, toPage, unwrap, saveBlob, filenameFromDisposition, type Page } from './http'
+import { api, toPage, unwrap, saveBlob, filenameFromDisposition, assertValidBlobResponse, type Page } from './http'
 import type { LotPaiement, LotPreview, TrancheVersement, Operateur, Versement } from '@/types'
 
 export interface LotSelection {
@@ -21,6 +21,7 @@ export const paiementsService = {
   /** Génère (ou régénère) le fichier et déclenche son téléchargement (.txt / .xlsx). */
   async generer(sel: LotSelection): Promise<void> {
     const res = await api.post('/api/paiements/lots/generer', sel, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
     const nom = filenameFromDisposition(
       res.headers['content-disposition'],
       `${sel.operateur}_${sel.tranche}.${sel.operateur === 'MTN' ? 'txt' : 'xlsx'}`,
@@ -40,6 +41,7 @@ export const paiementsService = {
 
   async telecharger(lot: LotPaiement): Promise<void> {
     const res = await api.get(`/api/paiements/lots/${lot.id}/download`, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
     const nom = filenameFromDisposition(res.headers['content-disposition'], lot.nom_fichier ?? 'lot')
     saveBlob(res.data as Blob, nom)
   },

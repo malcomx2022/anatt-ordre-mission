@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Imports\AgentsImport;
 use App\Models\Agent;
+use App\Models\Versement;
 use App\Support\Telephone;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -52,6 +53,14 @@ class AgentService
     public function modifier(Agent $agent, array $data): Agent
     {
         $agent->update($data);
+
+        // Propagation automatique des nouvelles coordonnées aux versements en attente
+        Versement::whereHas('ordreMission', fn ($q) => $q->where('agent_id', $agent->id))
+            ->where('statut', 'EN_ATTENTE')
+            ->update([
+                'telephone' => $agent->telephone,
+                'operateur' => $agent->operateur,
+            ]);
 
         return $agent->fresh();
     }

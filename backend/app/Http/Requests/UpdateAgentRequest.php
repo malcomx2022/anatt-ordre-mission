@@ -16,12 +16,12 @@ class UpdateAgentRequest extends FormRequest
     }
 
     /**
-     * Recalcule la catégorie si l'indice ou le salaire change et qu'aucune
-     * catégorie n'est explicitement transmise.
+     * Recalcule systématiquement la catégorie si l'indice ou le salaire est modifié,
+     * même si le formulaire envoie l'ancienne catégorie.
      */
     protected function prepareForValidation(): void
     {
-        if (! $this->has('categorie') && ($this->filled('indice') || $this->filled('salaire_brut'))) {
+        if ($this->has('indice') || $this->has('salaire_brut')) {
             $agent = $this->route('agent');
             $indice = $this->has('indice') ? ($this->integer('indice') ?: null) : $agent->indice;
             $salaire = $this->has('salaire_brut') ? ($this->integer('salaire_brut') ?: null) : $agent->salaire_brut;

@@ -1,4 +1,4 @@
-import { api, toPage, unwrap, saveBlob, filenameFromDisposition, type Page } from './http'
+import { api, toPage, unwrap, saveBlob, filenameFromDisposition, assertValidBlobResponse, type Page } from './http'
 import type {
   EtatPaiement,
   PosteSignataire,
@@ -64,6 +64,7 @@ export const etatsService = {
   /** Brouillon filigrané, sans valeur d'autorisation de paiement. */
   async telechargerBrouillon(missionId: number): Promise<void> {
     const res = await api.get(`/api/missions/${missionId}/etat/brouillon`, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
     const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}-BROUILLON.pdf`)
     saveBlob(res.data as Blob, nom)
   },
@@ -71,6 +72,7 @@ export const etatsService = {
   /** État définitif, signatures apposées. */
   async telecharger(missionId: number): Promise<void> {
     const res = await api.get(`/api/missions/${missionId}/etat/telecharger`, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
     const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}.pdf`)
     saveBlob(res.data as Blob, nom)
   },

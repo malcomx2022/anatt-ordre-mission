@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Bareme;
+use App\Models\OrdreMission;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class BaremeService
 {
@@ -45,6 +47,18 @@ class BaremeService
 
     public function supprimer(Bareme $bareme): void
     {
+        $utilise = OrdreMission::where('categorie', $bareme->categorie)
+            ->where('zone_code', $bareme->zone_code)
+            ->where('type_prise_en_charge', $bareme->type_prise_en_charge)
+            ->whereNotIn('statut', ['SOLDE', 'REJETE', 'ANNULE'])
+            ->exists();
+
+        if ($utilise) {
+            throw ValidationException::withMessages([
+                'bareme' => ['Ce barème est utilisé par des missions en cours : il ne peut pas être supprimé.'],
+            ]);
+        }
+
         $bareme->delete();
     }
 }

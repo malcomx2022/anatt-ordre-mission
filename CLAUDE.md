@@ -54,7 +54,7 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 
 ### Profils utilisateurs (RBAC Sanctum par PERMISSION — middleware `can:`)
 
-6 profils, autorisation par **clé de permission** (Gates définies dans `AuthServiceProvider`, source : `App\Support\Permissions`).
+8 profils, autorisation par **clé de permission** (Gates définies dans `AuthServiceProvider`, source : `App\Support\Permissions`).
 
 | Profil | Rôle |
 |--------|------|
@@ -62,7 +62,9 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 | `ADMIN` | Utilisateurs (sauf super admins), référentiels, barème, audit ; supervise sans exécuter les paiements |
 | `GESTIONNAIRE_OM` | Retranscrit/gère missions, OM et agents (`om.retranscrire`, `personnel.gerer`) |
 | `AGENT_FINANCIER` | Génère les fichiers MTN/Moov et confirme les paiements (`paiements.generer/confirmer`) |
-| `CONTROLEUR` | Valide/rejette les OM (`om.valider`) ; consulte paiements et audit |
+| `CONTROLEUR` | Étape 1 du circuit : contrôle de conformité de l'état (`om.valider`) ; consulte paiements et audit |
+| `DAF` | Étape 2 du circuit : appose le visa « Vu » sur l'état de paiement (`om.viser`) ; consulte paiements et audit |
+| `DG` | Étape 3 et dernière : validation finale de l'état, ouvre le paiement (`om.approuver`) ; consulte paiements et audit |
 | `LECTEUR` | Lecture seule (dashboard, OM, rapports) |
 
 Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `om.consulter|retranscrire|valider|numeroter|viser|approuver|rejeter` · `paiements.consulter|generer|confirmer` · `baremes.consulter|modifier` · `rapports.consulter` · `audit.consulter` · `utilisateurs.gerer` · `superadmins.gerer` · `parametres.gerer`.
@@ -74,7 +76,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
 > (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
-> **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `lecteur@anatt.bj`.
+> **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `daf@`, `dg@`, `lecteur@anatt.bj`.
 
 ---
 

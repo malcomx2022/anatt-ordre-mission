@@ -183,7 +183,7 @@ async function telecharger(brouillon: boolean) {
             </h2>
             <EtatStatusBadge :statut="etat.statut" />
             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">
-              {{ etat.nb_beneficiaires }} bénéficiaire(s)
+              {{ etat.nb_beneficiaires ?? 0 }} bénéficiaire(s)
             </span>
           </div>
 
@@ -243,7 +243,7 @@ async function telecharger(brouillon: boolean) {
             </div>
           </dl>
           <p class="mt-4 text-xs font-body text-gray-500 italic">
-            Arrêté à la somme de : {{ etat.montant_total_lettres }}.
+            Arrêté à la somme de : {{ etat.montant_total_lettres || 'Zéro (0) FRANCS CFA' }}.
           </p>
         </AppCard>
 

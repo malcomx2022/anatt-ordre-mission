@@ -46,7 +46,9 @@ Application : **http://localhost:5173**
 | `admin@anatt.bj` | ADMIN | utilisateurs, référentiels, barème, audit |
 | `gestion@anatt.bj` | GESTIONNAIRE_OM | agents, retranscription des missions/OM |
 | `finance@anatt.bj` | AGENT_FINANCIER | génération & confirmation des paiements |
-| `controle@anatt.bj` | CONTROLEUR | validation/rejet des OM, audit |
+| `controle@anatt.bj` | CONTROLEUR | étape 1 du circuit : contrôle de conformité de l'état |
+| `daf@anatt.bj` | DAF | étape 2 du circuit : visa « Vu » sur l'état de paiement |
+| `dg@anatt.bj` | DG | étape 3 du circuit : validation finale de l'état (ouvre le paiement) |
 | `lecteur@anatt.bj` | LECTEUR | lecture seule |
 
 ---

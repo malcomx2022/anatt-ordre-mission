@@ -84,12 +84,19 @@ class EtatPaiementPdf
 
             // Sous-lignes par type de prise en charge (colonnes MOTIF / TAUX/JOUR
             // / NBRE DE JOURS / TOTAL PARTIEL de l'état officiel).
-            $detail = collect($om->lignes_per_diem ?? [])->map(fn (array $l) => [
-                'motif' => self::TYPES[$l['type']] ?? $l['type'],
-                'taux' => $fmt((int) $l['taux']),
-                'nb_jours' => (int) $l['nb_jours'],
-                'partiel' => $fmt((int) $l['montant']),
-            ])->all();
+            $detail = collect($om->lignes_per_diem ?? [])->map(function (array $l) use ($fmt, $om) {
+                $type = $l['type'] ?? $om->type_prise_en_charge;
+                $nbJours = (int) ($l['nb_jours'] ?? 0);
+                $montant = (int) ($l['montant'] ?? 0);
+                $taux = (int) ($l['taux'] ?? ($nbJours > 0 ? intdiv($montant ?: $om->montant_total, $nbJours) : 0));
+
+                return [
+                    'motif' => self::TYPES[$type] ?? $type,
+                    'taux' => $fmt($taux),
+                    'nb_jours' => $nbJours,
+                    'partiel' => $fmt($montant),
+                ];
+            })->all();
 
             if ($detail === []) {
                 $detail = [[

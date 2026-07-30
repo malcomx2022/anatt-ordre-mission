@@ -68,12 +68,19 @@ class EtatPaiementService
                 ]);
             }
 
+            $montantTotal = (int) $ordres->sum('montant_total');
+            if ($montantTotal <= 0) {
+                throw ValidationException::withMessages([
+                    'etat' => ["Impossible d'établir un état de paiement à 0 FCFA. Vérifiez que les ordres de mission ont des jours et des barèmes valides."],
+                ]);
+            }
+
             $etat = EtatPaiement::updateOrCreate(
                 ['mission_id' => $mission->id],
                 [
                     'statut' => 'BROUILLON',
                     'nb_beneficiaires' => $ordres->count(),
-                    'montant_total' => (int) $ordres->sum('montant_total'),
+                    'montant_total' => $montantTotal,
                     'montant_avance' => (int) $ordres->sum('avance'),
                     'montant_reliquat' => (int) $ordres->sum('reliquat'),
                     'commentaire_rejet' => null,
@@ -90,12 +97,12 @@ class EtatPaiementService
         });
     }
 
-    /** Numéro de l'état, saisi manuellement. Figé dès la validation finale. */
+    /** Numéro de l'état, saisi manuellement. Figé dès la première signature. */
     public function definirNumero(EtatPaiement $etat, string $numero, User $user): EtatPaiement
     {
-        if ($etat->estValide()) {
+        if (in_array($etat->statut, ['CONTROLE', 'VISA_DAF', 'VALIDE'], true)) {
             throw ValidationException::withMessages([
-                'numero' => ['Cet état est définitivement validé : son numéro ne peut plus être modifié.'],
+                'numero' => ["Cet état est au statut « {$etat->statut} » : son numéro ne peut plus être modifié après signature."],
             ]);
         }
 
@@ -235,6 +242,18 @@ class EtatPaiementService
         OrdreMission::where('mission_id', $etat->mission_id)
             ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
             ->update(['statut' => $statutOm]);
+
+        // Clôture immédiate (SOLDE) des OM exonérés ou sans montant/versement
+        // qui n'entrent pas dans le cycle de paiement.
+        if ($statutOm === Workflow::STATUT_VALIDE) {
+            OrdreMission::where('mission_id', $etat->mission_id)
+                ->where(function ($q) {
+                    $q->where('montant_total', '<=', 0)
+                      ->orWhereDoesntHave('versements');
+                })
+                ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
+                ->update(['statut' => 'SOLDE']);
+        }
     }
 
     /**
