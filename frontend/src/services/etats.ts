@@ -23,7 +23,11 @@ export const etatsService = {
   /** État d'une mission (null si le récapitulatif n'a pas encore été produit). */
   async parMission(missionId: number): Promise<EtatPaiement | null> {
     const { data } = await api.get(`/api/missions/${missionId}/etat`)
-    return unwrap<EtatPaiement | null>(data)
+    const etat = unwrap<EtatPaiement | null>(data)
+    // Garde-fou : un objet sans `statut` n'est PAS un état (réponse vide, ou
+    // backend périmé qui fabriquerait un état fantôme). On le ramène à null pour
+    // afficher « Établir le récapitulatif » plutôt qu'un faux BROUILLON à 0 FCFA.
+    return etat && etat.statut ? etat : null
   },
 
   /** Récapitulatif : crée ou rafraîchit l'état en BROUILLON. */
