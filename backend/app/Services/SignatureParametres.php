@@ -33,6 +33,12 @@ class SignatureParametres
 
     private const DOSSIER = 'signatures';
 
+    /**
+     * Paraphes archivés au moment d'une signature, un par état et par poste.
+     * Sous `signatures/` : PdfAssets n'embarque que ce qui vit dans ce dossier.
+     */
+    private const DOSSIER_ARCHIVES = 'signatures/etats';
+
     private const CHEMIN_PARAMETRES = 'settings.json';
 
     /** Formats acceptés pour une image de signature. */
@@ -65,6 +71,54 @@ class SignatureParametres
             'fonction' => $fonction !== '' ? $fonction : (self::FONCTIONS_PAR_DEFAUT[$poste] ?? ''),
             'image' => PdfAssets::signatureDataUri(self::cheminImage($poste)),
         ];
+    }
+
+    /**
+     * Archive le paraphe d'un poste pour un état donné, et renvoie son chemin.
+     *
+     * Le paraphe configuré dans les Paramètres est celui du titulaire EN POSTE :
+     * il change quand la personne change. Un document signé, lui, ne change plus.
+     * On en prend donc une copie au moment de la signature, que le PDF relira
+     * ensuite — c'est ce qui garantit qu'un état validé porte toujours le
+     * paraphe de celui dont il porte le nom.
+     *
+     * Renvoie null si aucun paraphe n'est configuré (le PDF imprime alors la
+     * seule ligne de signature, comme auparavant).
+     */
+    public static function archiverPourEtat(string $poste, int $etatId): ?string
+    {
+        self::exigerPosteValide($poste);
+
+        $source = self::cheminImage($poste);
+
+        if ($source === null) {
+            return null;
+        }
+
+        $extension = pathinfo($source, PATHINFO_EXTENSION) ?: 'png';
+        $archive = self::DOSSIER_ARCHIVES."/{$etatId}-{$poste}.{$extension}";
+
+        // Une signature antérieure sur le même état (état rejeté puis resigné)
+        // n'a plus lieu d'être : on ne conserve que le paraphe en vigueur.
+        self::purgerArchiveEtat($poste, $etatId);
+
+        Storage::disk('local')->put($archive, (string) Storage::disk('local')->get($source));
+
+        return $archive;
+    }
+
+    /** Retire le paraphe archivé d'un poste pour un état (rejet, resignature). */
+    public static function purgerArchiveEtat(string $poste, int $etatId): void
+    {
+        self::exigerPosteValide($poste);
+
+        foreach (['png', 'jpg', 'jpeg'] as $extension) {
+            $chemin = self::DOSSIER_ARCHIVES."/{$etatId}-{$poste}.{$extension}";
+
+            if (Storage::disk('local')->exists($chemin)) {
+                Storage::disk('local')->delete($chemin);
+            }
+        }
     }
 
     /** Les trois postes, pour l'affichage dans l'écran Paramètres. */

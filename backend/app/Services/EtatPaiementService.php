@@ -28,6 +28,10 @@ use Illuminate\Validation\ValidationException;
  */
 class EtatPaiementService
 {
+    public function __construct(
+        private readonly NotificationService $notifications,
+    ) {}
+
     /**
      * Statut d'OM correspondant à une étape de l'état.
      *
@@ -49,7 +53,7 @@ class EtatPaiementService
      */
     public function recapituler(Mission $mission, User $user): EtatPaiement
     {
-        return DB::transaction(function () use ($mission, $user) {
+        $etat = DB::transaction(function () use ($mission, $user) {
             $etat = EtatPaiement::where('mission_id', $mission->id)->lockForUpdate()->first();
 
             if ($etat && ! $etat->estModifiable() && $etat->statut !== 'REJETE') {
@@ -76,6 +80,10 @@ class EtatPaiementService
                     'montant_total' => (int) $ordres->sum('montant_total'),
                     'montant_avance' => (int) $ordres->sum('avance'),
                     'montant_reliquat' => (int) $ordres->sum('reliquat'),
+                    // Le tableau imprimé est figé en même temps que ses totaux :
+                    // le document signé ne peut plus diverger de ce qui a été
+                    // présenté, quoi qu'il advienne des OM par la suite.
+                    'lignes' => LignesEtatPaiement::pourMission($mission->id),
                     'commentaire_rejet' => null,
                 ],
             );
@@ -88,6 +96,12 @@ class EtatPaiementService
 
             return $etat->fresh();
         });
+
+        // Hors transaction : un avis parti pour une transaction ensuite annulée
+        // serait pire qu'un avis tardif.
+        $this->notifications->etatAttendSignature($etat, User::ROLE_CONTROLEUR);
+
+        return $etat;
     }
 
     /** Numéro de l'état, saisi manuellement. Figé dès la validation finale. */
@@ -117,13 +131,23 @@ class EtatPaiementService
     /** Étape 1 — contrôle de conformité : BROUILLON → CONTROLE. */
     public function controler(EtatPaiement $etat, User $user): EtatPaiement
     {
-        return $this->transition($etat, ['BROUILLON'], 'CONTROLE', $user, Workflow::ETAPE_VERIFICATION, 'CONTROL_ETAT');
+        $etat = $this->transition($etat, ['BROUILLON'], 'CONTROLE', $user, Workflow::ETAPE_VERIFICATION, 'CONTROL_ETAT');
+
+        // Chaque étape franchie appelle la suivante : sans cet avis, l'acteur
+        // suivant ne découvre l'état qu'en consultant sa file de son propre chef.
+        $this->notifications->etatAttendSignature($etat, User::ROLE_DAF);
+
+        return $etat;
     }
 
     /** Étape 2 — « Vu » du DAF : CONTROLE → VISA_DAF. Pas encore payable. */
     public function viser(EtatPaiement $etat, User $user): EtatPaiement
     {
-        return $this->transition($etat, ['CONTROLE'], 'VISA_DAF', $user, Workflow::ETAPE_VISA_DAF, 'VISA_DAF_ETAT');
+        $etat = $this->transition($etat, ['CONTROLE'], 'VISA_DAF', $user, Workflow::ETAPE_VISA_DAF, 'VISA_DAF_ETAT');
+
+        $this->notifications->etatAttendSignature($etat, User::ROLE_DG);
+
+        return $etat;
     }
 
     /**
@@ -146,13 +170,18 @@ class EtatPaiementService
             ]);
         }
 
-        return $this->transition($etat, ['VISA_DAF'], 'VALIDE', $user, Workflow::ETAPE_VALIDATION_DG, 'APPROVE_DG_ETAT');
+        $etat = $this->transition($etat, ['VISA_DAF'], 'VALIDE', $user, Workflow::ETAPE_VALIDATION_DG, 'APPROVE_DG_ETAT');
+
+        // Le circuit s'achève : l'agent financier peut produire les fichiers.
+        $this->notifications->etatValide($etat);
+
+        return $etat;
     }
 
     /** Rejet motivé, possible à chaque étape. Efface les signatures amont. */
     public function rejeter(EtatPaiement $etat, string $motif, User $user): EtatPaiement
     {
-        return $this->transition(
+        $rejete = $this->transition(
             $etat,
             ['BROUILLON', 'CONTROLE', 'VISA_DAF'],
             'REJETE',
@@ -163,10 +192,23 @@ class EtatPaiementService
                 'commentaire_rejet' => $motif,
                 'controle_par' => null, 'controle_le' => null, 'controle_nom' => null,
                 'controle_fonction' => null, 'signature_controle_hash' => null,
+                'signature_controle_image' => null,
                 'visa_daf_par' => null, 'visa_daf_le' => null, 'visa_daf_nom' => null,
                 'visa_daf_fonction' => null, 'signature_daf_hash' => null,
+                'signature_daf_image' => null,
             ],
         );
+
+        // Les paraphes archivés des étapes effacées n'ont plus d'objet : une
+        // signature manuscrite est une donnée sensible, on ne la laisse pas
+        // traîner sur le disque après avoir retiré sa raison d'être.
+        foreach (['controleur', 'daf'] as $poste) {
+            SignatureParametres::purgerArchiveEtat($poste, $etat->id);
+        }
+
+        $this->notifications->etatRejete($rejete, $motif);
+
+        return $rejete;
     }
 
     /**
@@ -250,10 +292,10 @@ class EtatPaiementService
     {
         $maintenant = now();
 
-        [$champ, $champHash, $posteParametre] = match ($etape) {
-            Workflow::ETAPE_VERIFICATION => ['controle', 'signature_controle_hash', 'controleur'],
-            Workflow::ETAPE_VISA_DAF => ['visa_daf', 'signature_daf_hash', 'daf'],
-            Workflow::ETAPE_VALIDATION_DG => ['valide_dg', 'signature_dg_hash', 'dg'],
+        [$champ, $champHash, $champImage, $posteParametre] = match ($etape) {
+            Workflow::ETAPE_VERIFICATION => ['controle', 'signature_controle_hash', 'signature_controle_image', 'controleur'],
+            Workflow::ETAPE_VISA_DAF => ['visa_daf', 'signature_daf_hash', 'signature_daf_image', 'daf'],
+            Workflow::ETAPE_VALIDATION_DG => ['valide_dg', 'signature_dg_hash', 'signature_dg_image', 'dg'],
         };
 
         $signataire = SignatureParametres::pour($posteParametre);
@@ -266,6 +308,11 @@ class EtatPaiementService
             "{$champ}_nom" => $signataire['nom_complet'] ?: $user->name,
             "{$champ}_fonction" => $signataire['fonction'] ?: ($user->fonction ?: Permissions::LIBELLES[$user->role] ?? null),
             $champHash => $this->sceller($etat, $user, $etape, $maintenant->toISOString()),
+            // Le paraphe est ARCHIVÉ, pas référencé : le nom du signataire est figé
+            // ici même, son image doit l'être avec lui. Sans cette copie, remplacer
+            // le paraphe d'un poste (changement de titulaire) réimprimerait les
+            // états déjà signés avec la signature de quelqu'un d'autre.
+            $champImage => SignatureParametres::archiverPourEtat($posteParametre, $etat->id),
         ];
     }
 

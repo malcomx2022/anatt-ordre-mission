@@ -11,6 +11,11 @@
             padding: 5px 8px; text-align: center; font-size: 9px; font-weight: bold;
             letter-spacing: 1px; margin-bottom: 8px; }
 
+        .rejet { background: #FEE2E2; border: 1.5px solid #DC2626; color: #991B1B;
+            padding: 5px 8px; text-align: center; font-size: 10px; font-weight: bold;
+            letter-spacing: 1px; margin-bottom: 8px; }
+        .rejet-motif { font-size: 8px; font-weight: normal; letter-spacing: 0; font-style: italic; }
+
         .titre { font-size: 12px; font-weight: bold; text-align: center;
             text-transform: uppercase; letter-spacing: 2px; color: #0F5C2E; margin: 6px 0 2px; }
         .numero { text-align: center; font-size: 9px; font-weight: bold; margin-bottom: 8px; }
@@ -50,6 +55,15 @@
 
     @if($brouillon)
         <div class="provisoire">DOCUMENT PROVISOIRE — SANS VALEUR D'AUTORISATION DE PAIEMENT</div>
+    @endif
+
+    {{-- Un état retoqué ne circule pas sous les traits d'un brouillon ordinaire :
+         il porte son rejet et son motif. --}}
+    @if($rejet)
+        <div class="rejet">
+            ÉTAT REJETÉ — À CORRIGER ET À REPRÉSENTER<br>
+            <span class="rejet-motif">Motif : {{ $rejet }}</span>
+        </div>
     @endif
 
     <div class="titre">État de paiement</div>
@@ -170,7 +184,9 @@
 
     <div class="flag-bar"></div>
     <div class="pied">
-        @if($brouillon)
+        @if($rejet)
+            ÉTAT REJETÉ — édité le {{ $date_generation }}
+        @elseif($brouillon)
             DOCUMENT PROVISOIRE — édité le {{ $date_generation }}
         @else
             ANaTT — État de paiement{{ $numero ? ' N°'.$numero : '' }} — édité le {{ $date_generation }}
