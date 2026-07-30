@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Permissions;
 use Database\Seeders\DemoCircuitSeeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 /*
  * Le bac à sable du circuit CONTROLEUR -> DAF -> DG.
@@ -22,6 +23,17 @@ use Illuminate\Support\Facades\Hash;
  * résultat des autres tests (et le poste de travail du développeur).
  */
 beforeEach(function () {
+    /*
+     * Le socle de démonstration produit de VRAIS fichiers de paiement (.txt MTN
+     * et .xlsx Moov, par les générateurs eux-mêmes). Écrits sur le disque du
+     * poste, ils y restent après la suite et, sous Windows, immobilisent le
+     * processus au démontage du test — ce fichier ne rendait plus la main.
+     * Le disque simulé garde la génération réelle et jette les fichiers avec le
+     * test. settings.json, lui, vit hors du disque simulé : il reste sauvegardé
+     * et restauré à la main, ci-dessous.
+     */
+    Storage::fake('local');
+
     $this->fichierParametres = storage_path('app/settings.json');
     $this->parametresInitiaux = file_exists($this->fichierParametres)
         ? file_get_contents($this->fichierParametres)
