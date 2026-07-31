@@ -52,6 +52,10 @@
         <div class="provisoire">DOCUMENT PROVISOIRE — SANS VALEUR D'AUTORISATION DE PAIEMENT</div>
     @endif
 
+    @if(!empty($rejet))
+        <div class="provisoire">ÉTAT REJETÉ — {{ $rejet }}</div>
+    @endif
+
     <div class="titre">État de paiement</div>
     <div class="numero">
         @if($numero)

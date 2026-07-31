@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EtatPaiement;
 use App\Support\PdfAssets;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -134,6 +135,52 @@ class SignatureParametres
 
         foreach (['png', 'jpg', 'jpeg'] as $extension) {
             $chemin = self::DOSSIER."/{$poste}.{$extension}";
+
+            if (Storage::disk('local')->exists($chemin)) {
+                Storage::disk('local')->delete($chemin);
+            }
+        }
+    }
+
+    /**
+     * Archive une copie du paraphe en poste au moment où la personne signe.
+     *
+     * Le document validé doit toujours imprimer le paraphe tel qu'il était au
+     * moment de la signature, même si le titulaire du poste change ensuite :
+     * on ne relie jamais l'image « courante » pour un état déjà signé.
+     *
+     * Retourne le chemin de l'archive (disque privé), ou null si le poste n'a
+     * aucune image enregistrée — l'état tombera alors sur le bloc sans paraphe.
+     */
+    public static function archiverPour(EtatPaiement $etat, string $poste): ?string
+    {
+        self::exigerPosteValide($poste);
+
+        $source = self::cheminImage($poste);
+
+        if ($source === null) {
+            return null;
+        }
+
+        $extension = pathinfo($source, PATHINFO_EXTENSION);
+        $chemin = self::DOSSIER."/etats/{$etat->id}-{$poste}.{$extension}";
+
+        Storage::disk('local')->put($chemin, Storage::disk('local')->get($source));
+
+        return $chemin;
+    }
+
+    /**
+     * Supprime les archives de paraphe d'un état (rejet : les signatures sont
+     * annulées, une signature manuscrite ne se conserve pas sans raison d'être).
+     */
+    public static function supprimerArchives(EtatPaiement $etat, array $chemins): void
+    {
+        foreach (array_filter($chemins) as $chemin) {
+            // On ne supprime que les archives d'états, jamais le paraphe en poste.
+            if (! str_starts_with((string) $chemin, self::DOSSIER.'/etats/')) {
+                continue;
+            }
 
             if (Storage::disk('local')->exists($chemin)) {
                 Storage::disk('local')->delete($chemin);
