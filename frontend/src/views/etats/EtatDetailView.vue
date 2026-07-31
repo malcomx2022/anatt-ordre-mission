@@ -41,6 +41,11 @@ const avancesValidees = computed(() => etats.value?.avance?.statut === 'VALIDE')
 /** L'onglet reliquat est-il accessible (sinon on affiche le verrou) ? */
 const reliquatDeverrouille = computed(() => avancesValidees.value)
 
+/** L'état général consolidé n'existe qu'au bout du bout : les DEUX tranches validées. */
+const etatGeneralDisponible = computed(
+  () => etats.value?.avance?.statut === 'VALIDE' && etats.value?.reliquat?.statut === 'VALIDE',
+)
+
 const libelleTranche = computed(() => (trancheActive.value === 'AVANCE' ? 'des avances' : 'des reliquats'))
 
 // Chaque bouton n'apparaît qu'à l'acteur concerné et au statut correspondant.
@@ -84,7 +89,7 @@ const messageEtape = computed(() => {
     case 'VALIDE':
       return trancheActive.value === 'AVANCE'
         ? 'Circuit achevé — les fichiers des avances peuvent être générés ; l’état des reliquats est débloqué'
-        : 'Circuit achevé — les fichiers des reliquats peuvent être générés'
+        : 'Circuit achevé — les fichiers des reliquats peuvent être générés ; l’état général est disponible'
     case 'REJETE':
       return 'État rejeté — un nouveau récapitulatif est nécessaire'
     default:
@@ -181,6 +186,17 @@ async function telecharger(brouillon: boolean) {
     action.value = false
   }
 }
+
+async function telechargerFinal() {
+  action.value = true
+  try {
+    await etatsService.telechargerFinal(missionId)
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
 </script>
 
 <template>
@@ -222,6 +238,17 @@ async function telecharger(brouillon: boolean) {
           <span v-if="etats?.reliquat" class="ml-1 text-xs opacity-80">· {{ etats.reliquat.statut }}</span>
           <span v-else-if="!reliquatDeverrouille" class="ml-1 text-xs opacity-80">· verrouillé</span>
         </button>
+
+        <!-- Document de clôture : au bout du bout des deux circuits. -->
+        <AppButton
+          v-if="etatGeneralDisponible"
+          variant="outline"
+          class="ml-auto"
+          :loading="action"
+          @click="telechargerFinal"
+        >
+          Télécharger l’état général
+        </AppButton>
       </div>
 
       <!-- Verrou de séquencement : le reliquat suit la validation des avances. -->

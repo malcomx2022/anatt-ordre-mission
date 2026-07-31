@@ -95,6 +95,17 @@ export const etatsService = {
     const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}-${tranche}.pdf`)
     saveBlob(res.data as Blob, nom)
   },
+
+  /**
+   * État général consolidé (avances + reliquats) : le document de clôture,
+   * servi par le backend une fois les DEUX tranches validées (422 sinon).
+   */
+  async telechargerFinal(missionId: number): Promise<void> {
+    const res = await api.get(`/api/missions/${missionId}/etat/final`, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
+    const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-GENERAL-mission-${missionId}.pdf`)
+    saveBlob(res.data as Blob, nom)
+  },
 }
 
 /** Signatures électroniques configurées dans les Paramètres. */

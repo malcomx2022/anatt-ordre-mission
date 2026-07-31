@@ -79,6 +79,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
         Route::get('missions/{mission}/etat', [EtatPaiementController::class, 'show']);
         Route::get('missions/{mission}/etat/brouillon', [EtatPaiementController::class, 'brouillon']);
         Route::get('missions/{mission}/etat/telecharger', [EtatPaiementController::class, 'telecharger']);
+        // État général consolidé : servi seulement quand les deux tranches sont validées.
+        Route::get('missions/{mission}/etat/final', [EtatPaiementController::class, 'telechargerFinal']);
     });
     // Récapitulatif : produit ou rafraîchit le brouillon de l'état.
     Route::post('missions/{mission}/etat/recapituler', [EtatPaiementController::class, 'recapituler'])
