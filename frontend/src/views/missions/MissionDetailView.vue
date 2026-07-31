@@ -23,9 +23,10 @@ const action = ref(false)
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
 /*
- * La validation ne se joue PAS sur l'OM individuel : elle se joue sur l'état de
- * paiement de la mission (un état par mission), contrôlé, puis visé par le DAF,
- * puis validé par le DG — ce qui valide d'un coup tous les OM de la mission.
+ * La validation ne se joue PAS sur l'OM individuel : elle se joue sur les états
+ * de paiement de la mission (avances puis reliquats), chacun contrôlé, puis visé
+ * par le DAF, puis validé par le DG — la validation de l'état des avances valide
+ * d'un coup tous les OM de la mission.
  * Cette fiche est donc en lecture seule pour le circuit et renvoie vers l'état.
  */
 const etat = computed(() => ordre.value?.mission?.etat_paiement ?? null)
@@ -103,7 +104,7 @@ onMounted(load)
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 class="font-display font-bold text-gray-800 flex items-center gap-2">
-              État de paiement de la mission
+              État des avances de la mission
               <EtatStatusBadge v-if="etat" :statut="etat.statut" />
               <span v-else class="px-3 py-1 rounded-full text-[11px] font-bold bg-gold-50 text-gold-600">
                 À établir

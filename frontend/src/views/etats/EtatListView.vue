@@ -9,7 +9,7 @@ import { etatsService } from '@/services/etats'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
-import type { EtatPaiement, StatutEtat } from '@/types'
+import type { EtatPaiement, StatutEtat, TrancheEtat } from '@/types'
 
 const toast = useToast()
 const { canValiderOM, canViserOM, canApprouverOM } = useAuth()
@@ -20,6 +20,7 @@ const page = ref(1)
 const lastPage = ref(1)
 const total = ref(0)
 const statut = ref<StatutEtat | ''>('')
+const tranche = ref<TrancheEtat | ''>('')
 const search = ref('')
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
@@ -31,6 +32,12 @@ const filtres: { valeur: StatutEtat | ''; libelle: string }[] = [
   { valeur: 'VISA_DAF', libelle: 'Visés DAF' },
   { valeur: 'VALIDE', libelle: 'Validés' },
   { valeur: 'REJETE', libelle: 'Rejetés' },
+]
+
+const filtresTranche: { valeur: TrancheEtat | ''; libelle: string }[] = [
+  { valeur: '', libelle: 'Toutes tranches' },
+  { valeur: 'AVANCE', libelle: 'Avances' },
+  { valeur: 'RELIQUAT', libelle: 'Reliquats' },
 ]
 
 /**
@@ -55,6 +62,7 @@ async function charger() {
   try {
     const res = await etatsService.list({
       statut: statut.value || undefined,
+      tranche: tranche.value || undefined,
       search: search.value || undefined,
       page: page.value,
     })
@@ -75,7 +83,7 @@ onMounted(() => {
   charger()
 })
 
-watch([statut, search], () => {
+watch([statut, tranche, search], () => {
   page.value = 1
   charger()
 })
@@ -122,6 +130,18 @@ const periode = (e: EtatPaiement) => {
             >
               {{ f.libelle }}
             </button>
+            <span class="w-px bg-gray-200 mx-1"></span>
+            <button
+              v-for="f in filtresTranche"
+              :key="f.valeur"
+              class="px-3 py-1.5 rounded-full text-xs font-display font-semibold transition-colors"
+              :class="tranche === f.valeur
+                ? 'bg-gold-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              @click="tranche = f.valeur"
+            >
+              {{ f.libelle }}
+            </button>
           </div>
         </div>
       </AppCard>
@@ -129,6 +149,7 @@ const periode = (e: EtatPaiement) => {
       <AppTable :loading="loading">
         <template #header>
           <th class="px-6 py-3">Numéro</th>
+          <th class="px-6 py-3">Tranche</th>
           <th class="px-6 py-3">Mission</th>
           <th class="px-6 py-3">Période</th>
           <th class="px-6 py-3 text-center">Bénéf.</th>
@@ -137,7 +158,7 @@ const periode = (e: EtatPaiement) => {
         </template>
         <template #body>
           <tr v-if="!etats.length">
-            <td colspan="6" class="px-6 py-10 text-center text-gray-400 font-body">
+            <td colspan="7" class="px-6 py-10 text-center text-gray-400 font-body">
               Aucun état pour ce filtre.
             </td>
           </tr>
@@ -149,6 +170,14 @@ const periode = (e: EtatPaiement) => {
           >
             <td class="px-6 py-4 text-sm font-body text-gray-900">
               {{ e.numero ? 'N°' + e.numero : '—' }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase"
+                :class="e.tranche === 'AVANCE' ? 'bg-anatt-100 text-anatt-700' : 'bg-gold-100 text-gold-700'"
+              >
+                {{ e.tranche === 'AVANCE' ? 'Avances' : 'Reliquats' }}
+              </span>
             </td>
             <td class="px-6 py-4 text-sm font-body">
               <div class="text-gray-900">{{ e.mission?.objet ?? '—' }}</div>

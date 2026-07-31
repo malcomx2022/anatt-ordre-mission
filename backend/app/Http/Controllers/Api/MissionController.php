@@ -72,7 +72,7 @@ class MissionController extends Controller
     public function missions(Request $request): JsonResponse
     {
         $missions = Mission::query()
-            ->with('etatPaiement')
+            ->with(['etatPaiement', 'etatsPaiement' => fn ($q) => $q->where('tranche', 'RELIQUAT')])
             ->withCount(['ordresMission as nb_ordres' => fn ($q) => $q->whereNotIn('statut', ['REJETE', 'ANNULE'])])
             ->withSum(['ordresMission as montant_total' => fn ($q) => $q->whereNotIn('statut', ['REJETE', 'ANNULE'])], 'montant_total')
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -103,6 +103,9 @@ class MissionController extends Controller
                 // null tant que le récapitulatif n'a pas été établi.
                 'etat_statut' => $m->etatPaiement?->statut,
                 'etat_numero' => $m->etatPaiement?->numero,
+                // Avancement du second document du circuit (état des reliquats).
+                'etat_reliquat_statut' => $m->etatsPaiement->first()?->statut,
+                'etat_reliquat_numero' => $m->etatsPaiement->first()?->numero,
             ]),
             'meta' => [
                 'current_page' => $missions->currentPage(),

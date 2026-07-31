@@ -1,38 +1,47 @@
 import { api, toPage, unwrap, saveBlob, filenameFromDisposition, assertValidBlobResponse, type Page } from './http'
 import type {
   EtatPaiement,
+  EtatsMission,
   PosteSignataire,
   SignatairesParametres,
   StatutEtat,
+  TrancheEtat,
 } from '@/types'
 
 export interface EtatFilters {
   statut?: StatutEtat
+  tranche?: TrancheEtat
   search?: string
   per_page?: number
   page?: number
 }
 
 export const etatsService = {
-  /** File de travail : les états, filtrables par statut. */
+  /** File de travail : les états, filtrables par statut et par tranche. */
   async list(params: EtatFilters = {}): Promise<Page<EtatPaiement>> {
     const { data } = await api.get('/api/etats', { params })
     return toPage<EtatPaiement>(data)
   },
 
-  /** État d'une mission (null si le récapitulatif n'a pas encore été produit). */
-  async parMission(missionId: number): Promise<EtatPaiement | null> {
+  /**
+   * États d'une mission, par tranche (avances / reliquats).
+   * null tant qu'aucun récapitulatif n'a été produit.
+   */
+  async parMission(missionId: number): Promise<EtatsMission | null> {
     const { data } = await api.get(`/api/missions/${missionId}/etat`)
-    const etat = unwrap<EtatPaiement | null>(data)
-    // Garde-fou : un objet sans `statut` n'est PAS un état (réponse vide, ou
-    // backend périmé qui fabriquerait un état fantôme). On le ramène à null pour
-    // afficher « Établir le récapitulatif » plutôt qu'un faux BROUILLON à 0 FCFA.
-    return etat && etat.statut ? etat : null
+    const etats = unwrap<EtatsMission | null>(data)
+    // Garde-fou : une tranche sans `statut` n'est PAS un état (backend périmé,
+    // réponse vide) — on la ramène à null plutôt qu'un faux BROUILLON à 0 FCFA.
+    if (!etats) return null
+    return {
+      avance: etats.avance?.statut ? etats.avance : null,
+      reliquat: etats.reliquat?.statut ? etats.reliquat : null,
+    }
   },
 
-  /** Récapitulatif : crée ou rafraîchit l'état en BROUILLON. */
-  async recapituler(missionId: number): Promise<EtatPaiement> {
-    const { data } = await api.post(`/api/missions/${missionId}/etat/recapituler`)
+  /** Récapitulatif : crée ou rafraîchit l'état d'une tranche en BROUILLON. */
+  async recapituler(missionId: number, tranche: TrancheEtat = 'AVANCE'): Promise<EtatPaiement> {
+    const { data } = await api.post(`/api/missions/${missionId}/etat/recapituler`, { tranche })
     return unwrap<EtatPaiement>(data)
   },
 
@@ -65,19 +74,25 @@ export const etatsService = {
     return unwrap<EtatPaiement>(data)
   },
 
-  /** Brouillon filigrané, sans valeur d'autorisation de paiement. */
-  async telechargerBrouillon(missionId: number): Promise<void> {
-    const res = await api.get(`/api/missions/${missionId}/etat/brouillon`, { responseType: 'blob' })
+  /** Brouillon filigrané d'une tranche, sans valeur d'autorisation de paiement. */
+  async telechargerBrouillon(missionId: number, tranche: TrancheEtat = 'AVANCE'): Promise<void> {
+    const res = await api.get(`/api/missions/${missionId}/etat/brouillon`, {
+      params: { tranche },
+      responseType: 'blob',
+    })
     await assertValidBlobResponse(res)
-    const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}-BROUILLON.pdf`)
+    const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}-${tranche}-BROUILLON.pdf`)
     saveBlob(res.data as Blob, nom)
   },
 
-  /** État définitif, signatures apposées. */
-  async telecharger(missionId: number): Promise<void> {
-    const res = await api.get(`/api/missions/${missionId}/etat/telecharger`, { responseType: 'blob' })
+  /** État définitif d'une tranche, signatures apposées. */
+  async telecharger(missionId: number, tranche: TrancheEtat = 'AVANCE'): Promise<void> {
+    const res = await api.get(`/api/missions/${missionId}/etat/telecharger`, {
+      params: { tranche },
+      responseType: 'blob',
+    })
     await assertValidBlobResponse(res)
-    const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}.pdf`)
+    const nom = filenameFromDisposition(res.headers['content-disposition'], `ETAT-mission-${missionId}-${tranche}.pdf`)
     saveBlob(res.data as Blob, nom)
   },
 }
