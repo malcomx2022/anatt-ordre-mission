@@ -51,6 +51,17 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   - Statuts versement : `EN_ATTENTE` / `GENERE` / `CONFIRME` / `ANNULE`.
   - Confirmation **manuelle** après dépôt réussi. Régénération possible tant que **non confirmé**.
   - **Idempotence** : un versement `CONFIRME` n'est **jamais** réinclus dans un nouveau fichier (anti-double-paiement).
+- **États de paiement PAR TRANCHE** — une mission porte **DEUX états**, chacun avec son circuit complet
+  (récapitulatif → `BROUILLON` → `CONTROLE` → `VISA_DAF` → `VALIDE` ; rejet motivé possible à chaque étape) :
+  1. **État des AVANCES** (Σ avances des OM) : sa validation finale par le DG fait passer les OM à `VALIDE`
+     et ouvre les fichiers de paiement **avance**.
+  2. **État des RELIQUATS** (Σ reliquats) : établi **uniquement après** validation de l'état des avances
+     (422 sinon) ; même circuit ; ouvre les fichiers **reliquat**.
+  - Chaque état a **son propre numéro** de registre (saisi manuellement, exigé avant sa validation finale).
+  - Verrou d'éligibilité : un versement n'est payable que si l'état **de sa tranche** est `VALIDE`
+    (missions sans aucun état = reprise de données, périmètre par OM `VALIDE` comme avant).
+  - Intégrité : tableau `lignes` figé au récapitulatif, paraphe archivé à la signature (purgé au rejet),
+    scellé HMAC (inclut la tranche) sur les montants signés.
 
 ### Profils utilisateurs (RBAC Sanctum par PERMISSION — middleware `can:`)
 
@@ -603,6 +614,28 @@ interface LotPaiement {
 }
 ```
 
+### EtatPaiement (1 mission × 1 tranche — le document que le circuit valide)
+
+```typescript
+interface EtatPaiement {
+  id: number
+  mission_id: number
+  tranche: 'AVANCE' | 'RELIQUAT'  // unicité (mission_id, tranche)
+  numero?: string                 // registre papier, unique, exigé avant la validation finale
+  statut: 'BROUILLON' | 'CONTROLE' | 'VISA_DAF' | 'VALIDE' | 'REJETE'
+  nb_beneficiaires: number
+  montant_total: number           // total DE LA TRANCHE (Σ avances OU Σ reliquats)
+  montant_avance: number          // rempli si tranche = AVANCE, sinon 0
+  montant_reliquat: number        // rempli si tranche = RELIQUAT, sinon 0
+  lignes?: LigneEtat[]            // tableau des bénéficiaires, figé au récapitulatif
+  controle_* / visa_daf_* / valide_dg_*  // instantanés des signataires + scellés HMAC (incluent la tranche)
+  signature_controle_image?: string      // paraphe archivé à la signature (purgé au rejet)
+  signature_daf_image?: string
+  signature_dg_image?: string
+  commentaire_rejet?: string
+}
+```
+
 ---
 
 ## 7. API ENDPOINTS LARAVEL
@@ -660,6 +693,27 @@ GET    /api/ordres/:id/pdf/download → Télécharge le PDF
 GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
 ```
 > Les OM ne sont ni créés ni modifiés individuellement (retranscrits via /missions). Pas de PUT/DELETE.
+
+### États de paiement (circuit par tranche : avances puis reliquats)
+```
+GET    /api/missions                      → Missions + avancement des deux états (avances / reliquats)
+GET    /api/missions/:id/etat             → { data: { avance: EtatPaiement|null, reliquat: EtatPaiement|null } }
+                                            (data: null si aucun récapitulatif établi)
+POST   /api/missions/:id/etat/recapituler → Établit/rafraîchit l'état d'une tranche en BROUILLON
+                                            Body: { tranche?: 'AVANCE'|'RELIQUAT' } (défaut AVANCE)
+                                            RELIQUAT : 422 tant que l'état des avances n'est pas VALIDE
+GET    /api/missions/:id/etat/brouillon   → PDF filigrané de la tranche (?tranche=, défaut AVANCE)
+GET    /api/missions/:id/etat/telecharger → PDF de la tranche (?tranche=) — filigrané tant que non validé
+GET    /api/etats                         → File de travail (filtres: statut, tranche, search)
+PUT    /api/etats/:id/numero              → Numéro de registre (unique ; figé à la validation finale)
+POST   /api/etats/:id/controler           → BROUILLON → CONTROLE (om.valider)
+POST   /api/etats/:id/viser               → CONTROLE → VISA_DAF (om.viser)
+POST   /api/etats/:id/approuver           → VISA_DAF → VALIDE (om.approuver ; exige numero)
+POST   /api/etats/:id/rejeter             → → REJETE (motif ≥ 10 chars ; efface les signatures amont)
+```
+> La validation de l'état des AVANCES propage `VALIDE` aux OM et ouvre les fichiers avance ;
+> celle de l'état des RELIQUATS ouvre les fichiers reliquat. Un versement n'est éligible que
+> si l'état DE SA TRANCHE est validé (missions sans état : périmètre par OM, reprise de données).
 
 ### Paiements (mode GÉNÉRATION — rôle agent_financier)
 ```
