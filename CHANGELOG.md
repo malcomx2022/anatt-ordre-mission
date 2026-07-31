@@ -9,6 +9,28 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Ajouté
+
+- **Auto-synchronisation de l'état de paiement avec ses OM**
+  Dès qu'un OM est créé, modifié (montant, statut) ou supprimé, l'état de la
+  mission — s'il est en BROUILLON ou REJETE — est silencieusement recalé. Plus
+  besoin de cliquer sur *« Rafraîchir »* : le brouillon reflète toujours les
+  OM. Un état signé (CONTROLE / VISA_DAF / VALIDE) est **protégé** : le scellé
+  financier apposé lors de la signature n'est jamais altéré par une mutation
+  d'OM survenue après coup.
+  Fichiers : `backend/app/Observers/OrdreMissionObserver.php`,
+  `backend/app/Services/EtatPaiementService.php` (méthode `synchroniser`),
+  `backend/app/Models/OrdreMission.php` (attribut `#[ObservedBy]`).
+  Test : `backend/tests/Feature/EtatAutoSyncTest.php` (4 cas : rejet d'OM,
+  état signé intact, ajout d'OM sur état REJETE, non-création d'état
+  fantôme quand aucun état n'existe).
+
+- **CI GitHub Actions** — un workflow `.github/workflows/ci.yml` exécute Pest
+  (backend) et Vitest + `type-check` (frontend) sur chaque PR et push sur
+  `main`. Objectif : empêcher qu'un merge silencieux ne supprime à nouveau des
+  fonctions référencées par les tests (mécanisme qui a laissé passer l'incident
+  du 30/07).
+
 ### Corrigé
 
 - **API — clé `data` toujours exposée dans les réponses `success()`**
@@ -41,14 +63,6 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   Tests associés : `frontend/src/__tests__/useApi.spec.ts` (référençaient déjà
   `normaliserErreurBlob` mais échouaient silencieusement sans CI — voir plus
   bas).
-
-### Ajouté
-
-- **CI GitHub Actions** — un workflow `.github/workflows/ci.yml` exécute Pest
-  (backend) et Vitest + `type-check` (frontend) sur chaque PR et push sur
-  `main`. Objectif : empêcher qu'un merge silencieux ne supprime à nouveau des
-  fonctions référencées par les tests (mécanisme qui a laissé passer l'incident
-  du 30/07).
 
 ### Notes de maintenance
 

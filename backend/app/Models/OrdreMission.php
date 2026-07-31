@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\OrdreMissionObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +13,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Un ordre de mission = 1 enregistrement = 1 bénéficiaire (mono-bénéficiaire),
  * retranscrit depuis SEMO via sa reference_semo (clé naturelle unique).
+ *
+ * L'observer `OrdreMissionObserver` maintient l'état de paiement de la mission
+ * synchronisé avec ces OM : dès qu'un OM change de montant ou est rejeté, le
+ * brouillon de l'état est recalé, sans intervention manuelle.
  */
+#[ObservedBy(OrdreMissionObserver::class)]
 class OrdreMission extends Model
 {
     use HasFactory;

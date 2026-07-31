@@ -97,6 +97,47 @@ class EtatPaiementService
         });
     }
 
+    /**
+     * Resynchronisation silencieuse de l'état avec les OM courants de la mission.
+     *
+     * Déclenchée par l'observer d'OrdreMission : dès qu'un OM est créé, modifié
+     * ou supprimé, on recale les compteurs de l'état sans intervention manuelle
+     * — le brouillon reste fidèle aux OM sans que l'on ait à cliquer sur
+     * « Rafraîchir ». Contrairement à `recapituler()`, cette méthode :
+     *   - est silencieuse (pas d'audit log : les mutations d'OM sont déjà
+     *     tracées, on ne veut pas dédoubler l'historique),
+     *   - est tolérante : aucun état → no-op, aucun OM vivant → montants remis
+     *     à zéro (l'écran retombera sur l'empty-state),
+     *   - refuse de toucher un document signé (CONTROLE / VISA_DAF / VALIDE) :
+     *     les instantanés financiers sont scellés dès qu'une signature est
+     *     apposée. On n'altère JAMAIS un document déjà validé.
+     *
+     * L'appel est protégé par un verrou pessimiste pour éviter qu'un
+     * enchaînement rapide de saves d'OM ne fasse diverger deux processus
+     * concurrents.
+     */
+    public function synchroniser(int $missionId): void
+    {
+        DB::transaction(function () use ($missionId) {
+            $etat = EtatPaiement::where('mission_id', $missionId)->lockForUpdate()->first();
+
+            if ($etat === null || in_array($etat->statut, ['CONTROLE', 'VISA_DAF', 'VALIDE'], true)) {
+                return;
+            }
+
+            $ordres = OrdreMission::where('mission_id', $missionId)
+                ->whereNotIn('statut', ['REJETE', 'ANNULE'])
+                ->get();
+
+            $etat->update([
+                'nb_beneficiaires' => $ordres->count(),
+                'montant_total' => (int) $ordres->sum('montant_total'),
+                'montant_avance' => (int) $ordres->sum('avance'),
+                'montant_reliquat' => (int) $ordres->sum('reliquat'),
+            ]);
+        });
+    }
+
     /** Numéro de l'état, saisi manuellement. Figé dès la première signature. */
     public function definirNumero(EtatPaiement $etat, string $numero, User $user): EtatPaiement
     {
