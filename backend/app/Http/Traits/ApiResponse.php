@@ -16,9 +16,11 @@ trait ApiResponse
             return $data->additional(['message' => $message])->response()->setStatusCode($code);
         }
 
-        if ($data !== null) {
-            $response['data'] = $data instanceof JsonResource ? $data : $data;
-        }
+        // On expose TOUJOURS la clé `data`, même à null : un `success(null)` qui
+        // renverrait `{}` ferait passer, côté frontend, un objet vide truthy pour
+        // une ressource existante — c'est la source des « états fantômes » à 0
+        // FCFA sur les missions sans état de paiement. Explicite = pas d'ambigu.
+        $response['data'] = $data instanceof JsonResource ? $data : $data;
 
         if ($message) {
             $response['message'] = $message;
