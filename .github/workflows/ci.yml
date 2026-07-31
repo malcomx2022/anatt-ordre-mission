@@ -1,0 +1,84 @@
+name: CI
+
+# Bloque le merge d'une PR ou d'un push sur main dès qu'un test casse.
+# Deux suites : Pest (backend Laravel) et Vitest (frontend Vue).
+# Ces deux garde-fous sont issus de l'incident du 30/07 où un merge silencieux
+# avait écrasé `normaliserErreurBlob` et le garde-fou `etat.statut` : les tests
+# existaient déjà, il ne leur manquait qu'un CI pour être exécutés à chaque PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Annule un run précédent quand un nouveau commit est poussé sur la même branche.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · Pest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, sqlite3, pdo_sqlite, intl, bcmath, gd, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Run Pest
+        # phpunit.xml force sqlite ":memory:" en env `testing` : rien à provisionner.
+        run: vendor/bin/pest --colors=always
+
+  frontend:
+    name: Frontend · Vitest + type-check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        # Bloque les régressions TypeScript (ex. import d'une fonction supprimée
+        # au merge — le symptôme initial de l'incident du 30/07).
+        run: npm run type-check
+
+      - name: Run Vitest
+        run: npm run test:unit -- --run --reporter=default
