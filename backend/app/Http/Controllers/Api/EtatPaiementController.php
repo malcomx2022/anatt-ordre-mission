@@ -154,6 +154,15 @@ class EtatPaiementController extends Controller
         return $this->pdf->telecharger($etat, brouillon: ! $etat->estValide());
     }
 
+    /**
+     * État général consolidé (avances + reliquats) : le document de clôture
+     * de la mission. 422 tant que les deux tranches ne sont pas validées.
+     */
+    public function telechargerFinal(Mission $mission)
+    {
+        return $this->pdf->telechargerFinal($mission);
+    }
+
     /** État de la tranche demandée (AVANCE par défaut) — 404 si non établi. */
     private function etatPourTranche(Request $request, Mission $mission): EtatPaiement
     {

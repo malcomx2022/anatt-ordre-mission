@@ -44,6 +44,7 @@ High-signal notes for OpenCode sessions in this repo.
 - Async jobs only progress if worker is running; local default queue connection is `database` (`backend/config/queue.php`, `backend/.env`).
 - Payment file formats are strict (`.txt` MTN, `.xlsx` Moov); avoid "cleanup" edits to generators without running payment tests.
 - A mission has TWO payment states (`etats_paiement`, one per tranche AVANCE/RELIQUAT), each with its own full validation circuit; reliquat état is refused until the avance état is VALIDÉ. A versement is eligible only when the état OF ITS TRANCHE is valid (missions without any état = legacy OM-level fallback).
+- The closing "état général" (avances + reliquats) is NOT an entity: `EtatPaiementPdf::telechargerFinal()` synthesizes it from the two sealed snapshots once BOTH tranches are VALIDE (422 otherwise) — no third circuit, no migration.
 
 ## Seed/data expectations
 - `backend/database/seeders/DatabaseSeeder.php` seeds essentials always; demo data only in `local/testing`.

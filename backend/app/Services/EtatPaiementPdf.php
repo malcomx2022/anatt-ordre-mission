@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Models\EtatPaiement;
+use App\Models\Mission;
 use App\Support\MontantEnLettres;
 use App\Support\PdfAssets;
 use App\Support\Workflow;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * ÉTAT DE PAIEMENT d'une mission, au format du document officiel ANaTT
@@ -50,6 +52,130 @@ class EtatPaiementPdf
         $chemin = $this->generer($etat, false);
 
         return Storage::disk('local')->download($chemin, basename($chemin));
+    }
+
+    /**
+     * ÉTAT GÉNÉRAL de paiement : le document de clôture de la mission.
+     *
+     * Consolidation des DEUX tranches — avances ET reliquats — servie en flux
+     * uniquement lorsque les deux états ont bouclé leur circuit (VALIDE).
+     * Document synthétisé, sans entité propre ni troisième circuit : chaque
+     * colonne provient de l'instantané FIGÉ de l'état de sa tranche, donc
+     * l'état général reflète exactement ce que les signataires ont arrêté.
+     */
+    public function telechargerFinal(Mission $mission)
+    {
+        [$avance, $reliquat] = $this->etatsValides($mission);
+
+        $pdf = Pdf::loadView('pdf.etat-final', $this->donneesFinal($avance, $reliquat))
+            ->setPaper('A4', 'landscape')
+            ->setOption(['defaultFont' => 'sans-serif']);
+
+        return $pdf->download($this->nomFichierFinal($avance));
+    }
+
+    /**
+     * Les deux états validés de la mission — 422 tant que la consolidation
+     * n'est pas acquise (une tranche manquante ou encore en circuit).
+     *
+     * @return array{0:EtatPaiement,1:EtatPaiement}
+     */
+    private function etatsValides(Mission $mission): array
+    {
+        $etats = EtatPaiement::where('mission_id', $mission->id)->get()->keyBy('tranche');
+        $avance = $etats[EtatPaiement::TRANCHE_AVANCE] ?? null;
+        $reliquat = $etats[EtatPaiement::TRANCHE_RELIQUAT] ?? null;
+
+        if (! $avance?->estValide() || ! $reliquat?->estValide()) {
+            throw ValidationException::withMessages([
+                'etat' => ["L'état général n'est établi qu'une fois l'état des avances ET l'état des reliquats validés."],
+            ]);
+        }
+
+        return [$avance, $reliquat];
+    }
+
+    /**
+     * Charge de l'état général. Exposée — comme `donnees()` — pour que les
+     * garanties du document (totaux consolidés, montant en lettres) soient
+     * vérifiables sans désassembler un PDF compressé.
+     *
+     * @return array<string,mixed>
+     */
+    public function donneesFinal(EtatPaiement $avance, EtatPaiement $reliquat): array
+    {
+        $mission = $avance->mission;
+        $fmt = fn (int $n) => $n === 0 ? '-' : number_format($n, 0, ',', ' ');
+
+        // Union des bénéficiaires des deux instantanés : la colonne AVANCE vient
+        // de l'état des avances, la colonne RELIQUAT de l'état des reliquats —
+        // chacune scellée par son circuit, jamais recalculée ici. L'identité de
+        // la ligne vient du premier instantané qui la porte.
+        $parNumero = [];
+        foreach ([$avance, $reliquat] as $etat) {
+            foreach ($etat->lignes ?? LignesEtatPaiement::pourMission($etat->mission_id) as $l) {
+                $cle = (string) ($l['numero'] ?? $l['beneficiaire']);
+                if (! isset($parNumero[$cle])) {
+                    $parNumero[$cle] = $l;
+                    $parNumero[$cle]['avance_brut'] = 0;
+                    $parNumero[$cle]['reliquat_brut'] = 0;
+                }
+                if ($etat->estAvance()) {
+                    $parNumero[$cle]['avance_brut'] = (int) $l['avance_brut'];
+                } else {
+                    $parNumero[$cle]['reliquat_brut'] = (int) $l['reliquat_brut'];
+                }
+            }
+        }
+
+        $lignes = array_map(function (array $l) use ($fmt) {
+            // Le total de la ligne est la somme des DEUX tranches scellées, pas
+            // le montant_total_brut d'un instantané pris isolément.
+            $total = $l['avance_brut'] + $l['reliquat_brut'];
+            $l['montant_total_brut'] = $total;
+            $l['total'] = $fmt($total);
+            $l['avance'] = $fmt($l['avance_brut']);
+            $l['reliquat'] = $fmt($l['reliquat_brut']);
+
+            return $l;
+        }, array_values($parNumero));
+
+        $totalAvance = (int) $avance->montant_total;
+        $totalReliquat = (int) $reliquat->montant_total;
+        $total = $totalAvance + $totalReliquat;
+
+        return [
+            'objet' => $mission?->objet,
+            'destination' => $mission?->destination,
+            'imputation' => $mission?->imputation_budgetaire,
+            'periode' => $this->periode($mission?->date_depart, $mission?->date_retour),
+            'lignes' => $lignes,
+            'nb_beneficiaires' => count($lignes),
+            'total' => $fmt($total),
+            'total_avance' => $fmt($totalAvance),
+            'total_reliquat' => $fmt($totalReliquat),
+            // Mention d'arrêt sur le total GÉNÉRAL (avances + reliquats).
+            'mention_arret' => MontantEnLettres::mention($total),
+            // Les deux documents consolidés : registre, validation finale, signataire.
+            'references' => array_map(fn (EtatPaiement $e) => [
+                'libelle' => 'État '.($e->libelleTranche()),
+                'numero' => $e->numero,
+                'valide_le' => $e->valide_dg_le?->format('d/m/Y'),
+                'signataire' => $e->valide_dg_nom,
+                'fonction' => $e->valide_dg_fonction ?: 'Le Directeur Général',
+            ], [$avance, $reliquat]),
+            'date_generation' => now()->format('d/m/Y'),
+        ];
+    }
+
+    private function nomFichierFinal(EtatPaiement $avance): string
+    {
+        $slug = $avance->numero !== null ? Str::slug($avance->numero) : '';
+
+        // Même garde que `chemin()` : un numéro symbolique peut ne rien produire.
+        $base = $slug !== '' ? $slug : "mission-{$avance->mission_id}";
+
+        return "ETAT-GENERAL-{$base}.pdf";
     }
 
     /** Construit le document DomPDF (gabarit + filigrane éventuel). */
