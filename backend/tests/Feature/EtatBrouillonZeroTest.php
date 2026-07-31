@@ -56,11 +56,11 @@ it('expose le montant en lettres et les montants dans la réponse API', function
 
     $this->actingAs($this->gestion)->getJson("/api/missions/{$mission->id}/etat")
         ->assertOk()
-        ->assertJsonPath('data.nb_beneficiaires', 1)
-        ->assertJsonPath('data.montant_total', 0)
-        ->assertJsonPath('data.montant_avance', 0)
+        ->assertJsonPath('data.avance.nb_beneficiaires', 1)
+        ->assertJsonPath('data.avance.montant_total', 0)
+        ->assertJsonPath('data.avance.montant_avance', 0)
         // Le montant en lettres ne doit jamais être vide, même à 0.
-        ->assertJsonPath('data.montant_total_lettres', fn ($v) => is_string($v) && $v !== '');
+        ->assertJsonPath('data.avance.montant_total_lettres', fn ($v) => is_string($v) && $v !== '');
 });
 
 it('télécharge le brouillon d’un état à montants nuls', function () {

@@ -31,8 +31,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          # composer.lock épingle des paquets PHP >= 8.4 (symfony 8, spatie
+          # activitylog 5) : le CI doit suivre la même version que le poste
+          # de dev (WAMP PHP 8.4), sinon composer install échoue.
+          php-version: '8.4'
           extensions: mbstring, sqlite3, pdo_sqlite, intl, bcmath, gd, zip
+          ini-values: memory_limit=512M
           coverage: none
           tools: composer:v2
 

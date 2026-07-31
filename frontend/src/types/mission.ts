@@ -5,8 +5,9 @@ export type ZoneCode = 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_II
 export type RoleOM = 'PARTICIPANT' | 'CAV'
 
 /**
- * Ligne de la liste des missions : agrégats des OM et avancement de l'état.
- * `etat_statut` est null tant que le récapitulatif n'a pas été établi.
+ * Ligne de la liste des missions : agrégats des OM et avancement des deux états
+ * (avances, puis reliquats). `etat_statut` est null tant que le récapitulatif
+ * des avances n'a pas été établi.
  */
 export interface MissionResume {
   id: number
@@ -19,8 +20,12 @@ export interface MissionResume {
   prise_en_charge_tiers: boolean
   nb_ordres: number
   montant_total: number
+  /** État des avances (premier document du circuit). */
   etat_statut?: import('./etat').StatutEtat | null
   etat_numero?: string | null
+  /** État des reliquats (établi après validation des avances). */
+  etat_reliquat_statut?: import('./etat').StatutEtat | null
+  etat_reliquat_numero?: string | null
 }
 
 /** Étape franchie du circuit de validation (instantané du signataire). */
@@ -77,9 +82,10 @@ export interface Mission {
   updated_at?: string
 }
 
-/** Résumé de l'état de paiement joint à une mission. */
+/** Résumé de l'état des avances joint à une mission (premier document du circuit). */
 export interface EtatResumeMission {
   id: number
+  tranche?: import('./etat').TrancheEtat
   statut: import('./etat').StatutEtat
   numero?: string | null
   valide: boolean

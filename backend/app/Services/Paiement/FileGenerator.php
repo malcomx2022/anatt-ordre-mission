@@ -33,31 +33,36 @@ abstract class FileGenerator
     abstract protected function operateur(): string;
 
     /**
-     * Refuse de produire un fichier de paiement tant que l'état de la mission
-     * n'est pas définitivement validé par le Directeur Général.
+     * Refuse de produire un fichier de paiement tant que l'état DE LA TRANCHE
+     * visée n'est pas définitivement validé par le Directeur Général.
      *
      * Le périmètre payable est déjà borné en amont — scopeEligiblesLot n'accepte
-     * que des OM VALIDE, et seule la validation de l'état les y amène. Ce contrôle
-     * est une SECONDE barrière, posée juste avant l'écriture du fichier : c'est le
-     * point où une erreur devient un virement, et il ne doit pas dépendre d'une
-     * seule règle, fût-elle correcte.
+     * que des OM VALIDE avec l'état de leur tranche validé. Ce contrôle est une
+     * SECONDE barrière, posée juste avant l'écriture du fichier : c'est le point
+     * où une erreur devient un virement, et il ne doit pas dépendre d'une seule
+     * règle, fût-elle correcte.
      *
-     * Une mission sans état relève d'une reprise de données : on laisse alors le
-     * périmètre par OM faire foi, comme avant l'introduction des états.
+     * Une mission sans AUCUN état relève d'une reprise de données : on laisse
+     * alors le périmètre par OM faire foi, comme avant l'introduction des états.
      */
-    private function exigerEtatValide(Mission $mission): void
+    private function exigerEtatValide(Mission $mission, string $tranche): void
     {
-        $etat = EtatPaiement::where('mission_id', $mission->id)->first();
-
-        if ($etat === null) {
+        if (! EtatPaiement::where('mission_id', $mission->id)->exists()) {
             return;
         }
 
-        if (! $etat->estValide()) {
+        $etat = EtatPaiement::where('mission_id', $mission->id)
+            ->where('tranche', $tranche)
+            ->first();
+
+        if (! $etat?->estValide()) {
+            $libelle = $tranche === 'AVANCE' ? 'des avances' : 'des reliquats';
+            $statut = $etat?->statut ?? 'non établi';
+
             throw ValidationException::withMessages([
                 'etat' => [
-                    "L'état de paiement de cette mission est au statut « {$etat->statut} » : "
-                    .'la génération des fichiers exige la validation finale du Directeur Général.',
+                    "L'état de paiement {$libelle} de cette mission est « {$statut} » : "
+                    .'la génération des fichiers exige sa validation finale par le Directeur Général.',
                 ],
             ]);
         }
@@ -93,7 +98,7 @@ abstract class FileGenerator
                 ]);
             }
 
-            $this->exigerEtatValide($mission);
+            $this->exigerEtatValide($mission, $tranche);
 
             $versements = Versement::eligiblesLot($missionId, $tranche, $this->operateur())->get();
 

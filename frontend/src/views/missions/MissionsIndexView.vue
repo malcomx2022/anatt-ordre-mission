@@ -143,13 +143,26 @@ const periode = (m: MissionResume) => {
               {{ fmt(m.montant_total) }}
             </td>
             <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
-                <EtatStatusBadge v-if="m.etat_statut" :statut="m.etat_statut" />
-                <!-- Pas d'état : le récapitulatif reste à établir. -->
-                <AppBadge v-else variant="neutral">À établir</AppBadge>
-                <span v-if="m.etat_numero" class="text-xs text-gray-500 font-body">
-                  N°{{ m.etat_numero }}
-                </span>
+              <!-- Deux documents par mission : avances, puis reliquats. -->
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold text-gray-400 uppercase w-9">Av.</span>
+                  <EtatStatusBadge v-if="m.etat_statut" :statut="m.etat_statut" />
+                  <AppBadge v-else variant="neutral">À établir</AppBadge>
+                  <span v-if="m.etat_numero" class="text-xs text-gray-500 font-body">
+                    N°{{ m.etat_numero }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold text-gray-400 uppercase w-9">Rel.</span>
+                  <EtatStatusBadge v-if="m.etat_reliquat_statut" :statut="m.etat_reliquat_statut" />
+                  <span v-else class="text-xs text-gray-400 font-body italic">
+                    {{ m.etat_statut === 'VALIDE' ? 'À établir' : 'Verrouillé' }}
+                  </span>
+                  <span v-if="m.etat_reliquat_numero" class="text-xs text-gray-500 font-body">
+                    N°{{ m.etat_reliquat_numero }}
+                  </span>
+                </div>
               </div>
             </td>
           </tr>

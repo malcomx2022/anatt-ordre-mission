@@ -1,12 +1,16 @@
 /**
  * État de paiement d'une mission — l'objet que le circuit valide.
  *
- * Un état = 1 mission, N bénéficiaires, colonnes AVANCE et RELIQUAT.
- * Sa validation finale par le Directeur Général ouvre la génération des fichiers
- * de paiement, tranche par tranche.
+ * Un état = 1 mission × 1 TRANCHE (avances ou reliquats), N bénéficiaires.
+ * Chaque état suit le circuit complet (contrôle → DAF → DG) et sa validation
+ * finale ouvre la génération des fichiers de paiement DE SA TRANCHE. L'état
+ * des reliquats n'est établi qu'une fois l'état des avances validé.
  */
 
 export type StatutEtat = 'BROUILLON' | 'CONTROLE' | 'VISA_DAF' | 'VALIDE' | 'REJETE'
+
+/** Tranche portée par un état : avances (70 %) ou reliquats (30 %). */
+export type TrancheEtat = 'AVANCE' | 'RELIQUAT'
 
 /** Étape à franchir, telle que renvoyée par le serveur. */
 export type ProchaineEtape = 'CONTROLE' | 'VISA_DAF' | 'VALIDATION_DG' | null
@@ -31,23 +35,31 @@ export interface EtatMissionResume {
 export interface EtatPaiement {
   id: number
   mission_id: number
+  tranche: TrancheEtat
   mission?: EtatMissionResume | null
-  /** Numérotation manuelle, suivant le registre de l'agence. */
+  /** Numérotation manuelle, suivant le registre de l'agence (un numéro par état). */
   numero: string | null
   statut: StatutEtat
   nb_beneficiaires: number
+  /** Total DE LA TRANCHE (Σ avances pour l'état des avances, Σ reliquats sinon). */
   montant_total: number
   montant_avance: number
   montant_reliquat: number
-  /** Mention d'arrêt : total général (avance + reliquat) en lettres. */
+  /** Mention d'arrêt : total de la tranche en lettres. */
   montant_total_lettres: string
   controle?: EtapeSignature | null
   visa_daf?: EtapeSignature | null
   validation_dg?: EtapeSignature | null
   commentaire_rejet?: string | null
   prochaine_etape: ProchaineEtape
-  /** true dès que le DG a validé : les fichiers de paiement sont générables. */
+  /** true dès que le DG a validé : les fichiers de la tranche sont générables. */
   paiement_ouvert: boolean
+}
+
+/** Les deux documents d'une mission, tels que renvoyés par GET /missions/{id}/etat. */
+export interface EtatsMission {
+  avance: EtatPaiement | null
+  reliquat: EtatPaiement | null
 }
 
 /** Signataire configuré dans les Paramètres (titulaire en poste). */

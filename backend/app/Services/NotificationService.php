@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SendNotification;
+use App\Models\EtatPaiement;
 use App\Models\LotPaiement;
 use App\Models\OrdreMission;
 use App\Models\User;
@@ -46,6 +47,44 @@ class NotificationService
                 'montant' => number_format($lot->montant_total, 0, ',', ' '),
             ]);
         }
+    }
+
+    /**
+     * Un état de paiement attend la signature d'un rôle du circuit :
+     * le récapitulatif appelle le contrôleur, le contrôle appelle le DAF,
+     * le visa appelle le DG. Chacun est prévenu à son tour, jamais avant.
+     */
+    public function etatAttendSignature(EtatPaiement $etat, string $role): void
+    {
+        $this->notifierRole($role, 'etat_attend_signature', [
+            'mission' => $etat->mission?->objet ?? '—',
+            'destination' => $etat->mission?->destination ?? '—',
+            'numero' => $etat->numero ?? '—',
+            'tranche' => $etat->libelleTranche(),
+            'montant' => number_format((int) $etat->montant_total, 0, ',', ' '),
+        ]);
+    }
+
+    /** État validé par le DG : l'agent financier peut générer les fichiers de paiement. */
+    public function etatValide(EtatPaiement $etat): void
+    {
+        $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'etat_valide', [
+            'mission' => $etat->mission?->objet ?? '—',
+            'numero' => $etat->numero ?? '—',
+            'tranche' => $etat->libelleTranche(),
+            'montant' => number_format((int) $etat->montant_total, 0, ',', ' '),
+        ]);
+    }
+
+    /** État rejeté : le gestionnaire OM est informé, avec le motif, pour correction. */
+    public function etatRejete(EtatPaiement $etat, string $motif): void
+    {
+        $this->notifierRole(User::ROLE_GESTIONNAIRE_OM, 'etat_rejete', [
+            'mission' => $etat->mission?->objet ?? '—',
+            'numero' => $etat->numero ?? '—',
+            'tranche' => $etat->libelleTranche(),
+            'motif' => $motif,
+        ]);
     }
 
     /**

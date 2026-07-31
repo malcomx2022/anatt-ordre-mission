@@ -31,6 +31,8 @@ desktop.ini
 .vscode/
 .idea/
 .env.*
+# Le gabarit de variables (sans secrets) reste versionné : CI et start-dev.ps1 le copient.
+!.env.example
 *.env
 credentials.json
 *.pem
