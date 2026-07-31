@@ -135,11 +135,12 @@ it('fige les lignes du tableau au récapitulatif', function () {
     $etat = etatSigne($this, 'LIG-1');
 
     expect($etat->lignes)->toHaveCount(2)
-        ->and($etat->lignes[0])->toHaveKeys(['numero', 'beneficiaire', 'detail', 'total', 'avance', 'reliquat']);
+        ->and($etat->lignes[0])->toHaveKeys(['numero', 'beneficiaire', 'detail', 'total', 'avance', 'reliquat'])
+        ->and($etat->tranche)->toBe('AVANCE');
 
-    // Somme des lignes figées = totaux scellés : l'état ne peut pas s'imprimer
-    // avec un tableau qui ne totalise pas son propre total.
-    $somme = array_sum(array_column($etat->lignes, 'montant_total_brut'));
+    // Somme des avances figées = total scellé de l'état des avances : l'état ne
+    // peut pas s'imprimer avec un tableau qui ne totalise pas son propre total.
+    $somme = array_sum(array_column($etat->lignes, 'avance_brut'));
     expect($somme)->toBe($etat->montant_total);
 });
 

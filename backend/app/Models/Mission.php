@@ -43,10 +43,26 @@ class Mission extends Model
         return $this->hasMany(OrdreMission::class);
     }
 
-    /** État de paiement de la mission : le document que le circuit valide. */
+    /** États de paiement de la mission (un par tranche : avances, reliquats). */
+    public function etatsPaiement(): HasMany
+    {
+        return $this->hasMany(EtatPaiement::class);
+    }
+
+    /**
+     * État des AVANCES : le premier document du circuit, celui dont la
+     * validation rend les OM payables. Conservé en hasOne pour les écrans
+     * qui n'affichent que l'avancement principal.
+     */
     public function etatPaiement(): HasOne
     {
-        return $this->hasOne(EtatPaiement::class);
+        return $this->hasOne(EtatPaiement::class)->where('tranche', EtatPaiement::TRANCHE_AVANCE);
+    }
+
+    /** État d'une tranche donnée (null tant que le récapitulatif n'est pas établi). */
+    public function etatPourTranche(string $tranche): ?EtatPaiement
+    {
+        return $this->etatsPaiement()->where('tranche', $tranche)->first();
     }
 
     public function zone(): BelongsTo

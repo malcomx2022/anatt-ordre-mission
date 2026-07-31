@@ -9,18 +9,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * État de paiement d'une mission : le document que le circuit valide.
  *
- * Un état = 1 mission, N bénéficiaires, colonnes AVANCE et RELIQUAT.
- * Son statut VALIDE (validation finale du DG) est ce qui ouvre la génération
- * des fichiers de paiement, tranche par tranche.
+ * Un état = 1 mission × 1 TRANCHE (AVANCE ou RELIQUAT), N bénéficiaires.
+ * Chaque état suit le circuit complet (contrôle → DAF → DG) et sa validation
+ * finale ouvre la génération des fichiers de paiement DE SA TRANCHE. L'état
+ * des reliquats ne peut être établi qu'une fois l'état des avances validé.
  */
 class EtatPaiement extends Model
 {
     use HasFactory;
 
+    public const TRANCHE_AVANCE = 'AVANCE';
+
+    public const TRANCHE_RELIQUAT = 'RELIQUAT';
+
+    public const TRANCHES = [self::TRANCHE_AVANCE, self::TRANCHE_RELIQUAT];
+
     protected $table = 'etats_paiement';
 
     protected $fillable = [
         'mission_id',
+        'tranche',              // AVANCE | RELIQUAT
         'numero',               // saisi manuellement (registre papier de l'agence)
         'statut',               // BROUILLON | CONTROLE | VISA_DAF | VALIDE | REJETE
         'nb_beneficiaires',
@@ -75,6 +83,18 @@ class EtatPaiement extends Model
     public function estValide(): bool
     {
         return $this->statut === 'VALIDE';
+    }
+
+    /** L'état porte-t-il sur la tranche des avances (70 %) ? */
+    public function estAvance(): bool
+    {
+        return $this->tranche === self::TRANCHE_AVANCE;
+    }
+
+    /** Libellé imprimable de la tranche (« des avances » / « des reliquats »). */
+    public function libelleTranche(): string
+    {
+        return $this->estAvance() ? 'des avances' : 'des reliquats';
     }
 
     /** Le récapitulatif est-il encore modifiable (aucune signature apposée) ? */

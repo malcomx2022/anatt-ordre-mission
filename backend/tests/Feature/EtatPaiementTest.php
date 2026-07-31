@@ -67,22 +67,62 @@ function conduire(object $t, string $jusqua): EtatPaiement
 
 // ── Récapitulatif ──
 
-it('établit le récapitulatif en agrégeant les OM de la mission', function () {
+it('établit l’état des avances en agrégeant les avances des OM de la mission', function () {
     $this->actingAs($this->gestionnaire)
         ->postJson("/api/missions/{$this->mission->id}/etat/recapituler")
         ->assertOk()
+        ->assertJsonPath('data.tranche', 'AVANCE')
         ->assertJsonPath('data.statut', 'BROUILLON')
         ->assertJsonPath('data.nb_beneficiaires', 2)
-        ->assertJsonPath('data.montant_total', 345000)      // 210 000 + 135 000
-        ->assertJsonPath('data.montant_avance', 241500)     // 147 000 + 94 500
-        ->assertJsonPath('data.montant_reliquat', 103500);  // 63 000 + 40 500
+        ->assertJsonPath('data.montant_total', 241500)      // 147 000 + 94 500
+        ->assertJsonPath('data.montant_avance', 241500)
+        ->assertJsonPath('data.montant_reliquat', 0);       // hors périmètre de cet état
 });
 
-it('exprime le total général en lettres, avance et reliquat confondus', function () {
+it('exprime le total de la tranche en lettres', function () {
     $this->actingAs($this->gestionnaire)
         ->postJson("/api/missions/{$this->mission->id}/etat/recapituler")
         ->assertOk()
-        ->assertJsonPath('data.montant_total_lettres', 'Trois cent quarante-cinq mille (345 000) FRANCS CFA');
+        ->assertJsonPath('data.montant_total_lettres', 'Deux cent quarante et un mille cinq cents (241 500) FRANCS CFA');
+});
+
+it('expose les deux états de la mission, par tranche', function () {
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/missions/{$this->mission->id}/etat/recapituler")
+        ->assertOk();
+
+    $this->actingAs($this->gestionnaire)->getJson("/api/missions/{$this->mission->id}/etat")
+        ->assertOk()
+        ->assertJsonPath('data.avance.tranche', 'AVANCE')
+        ->assertJsonPath('data.avance.montant_total', 241500)
+        ->assertJsonPath('data.reliquat', null);   // pas encore établi
+});
+
+// ── Séquencement : l'état des reliquats suit celui des avances ──
+
+it('refuse d’établir l’état des reliquats avant la validation des avances', function () {
+    conduire($this, 'CONTROLE');   // avances en circuit, pas encore validées
+
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/missions/{$this->mission->id}/etat/recapituler", ['tranche' => 'RELIQUAT'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('etat');
+
+    expect(EtatPaiement::where('mission_id', $this->mission->id)->where('tranche', 'RELIQUAT')->exists())
+        ->toBeFalse();
+});
+
+it('établit l’état des reliquats une fois l’état des avances validé', function () {
+    conduire($this, 'VALIDE');   // circuit complet sur les avances
+
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/missions/{$this->mission->id}/etat/recapituler", ['tranche' => 'RELIQUAT'])
+        ->assertOk()
+        ->assertJsonPath('data.tranche', 'RELIQUAT')
+        ->assertJsonPath('data.statut', 'BROUILLON')
+        ->assertJsonPath('data.montant_total', 103500)      // 63 000 + 40 500
+        ->assertJsonPath('data.montant_avance', 0)
+        ->assertJsonPath('data.montant_reliquat', 103500);
 });
 
 it('refuse un récapitulatif sur une mission sans OM', function () {
@@ -224,7 +264,7 @@ it('n’ouvre les fichiers de paiement qu’après la validation finale du DG', 
     expect($payable())->toBe(1);   // la validation finale ouvre le paiement
 });
 
-it('permet de générer l’avance puis le reliquat après validation', function () {
+it('ouvre les paiements tranche par tranche, au fil des validations du circuit', function () {
     foreach (['AVANCE', 'RELIQUAT'] as $tranche) {
         Versement::factory()->create([
             'ordre_mission_id' => $this->om1->id, 'type' => $tranche,
@@ -232,10 +272,27 @@ it('permet de générer l’avance puis le reliquat après validation', function
         ]);
     }
 
+    // État des avances validé : seule la tranche AVANCE s'ouvre — les
+    // reliquats attendent leur propre circuit.
     conduire($this, 'VALIDE');
 
     expect(Versement::eligiblesLot($this->mission->id, 'AVANCE', 'MTN')->count())->toBe(1)
-        ->and(Versement::eligiblesLot($this->mission->id, 'RELIQUAT', 'MTN')->count())->toBe(1);
+        ->and(Versement::eligiblesLot($this->mission->id, 'RELIQUAT', 'MTN')->count())->toBe(0);
+
+    // État des reliquats : même circuit complet, puis ouverture du reliquat.
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/missions/{$this->mission->id}/etat/recapituler", ['tranche' => 'RELIQUAT'])
+        ->assertOk();
+    $reliquat = EtatPaiement::where('mission_id', $this->mission->id)->where('tranche', 'RELIQUAT')->firstOrFail();
+
+    expect(Versement::eligiblesLot($this->mission->id, 'RELIQUAT', 'MTN')->count())->toBe(0); // brouillon ne paie pas
+
+    $this->actingAs($this->controleur)->postJson("/api/etats/{$reliquat->id}/controler")->assertOk();
+    $this->actingAs($this->daf)->postJson("/api/etats/{$reliquat->id}/viser")->assertOk();
+    $this->actingAs($this->daf)->putJson("/api/etats/{$reliquat->id}/numero", ['numero' => '0075/ANaTT/DAF/C-SFC'])->assertOk();
+    $this->actingAs($this->dg)->postJson("/api/etats/{$reliquat->id}/approuver")->assertOk();
+
+    expect(Versement::eligiblesLot($this->mission->id, 'RELIQUAT', 'MTN')->count())->toBe(1);
 });
 
 // ── Rejet ──

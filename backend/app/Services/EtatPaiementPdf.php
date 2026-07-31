@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\EtatPaiement;
-use App\Models\OrdreMission;
 use App\Support\MontantEnLettres;
 use App\Support\PdfAssets;
 use App\Support\Workflow;
@@ -15,23 +14,15 @@ use Illuminate\Support\Str;
  * ÉTAT DE PAIEMENT d'une mission, au format du document officiel ANaTT
  * (référence : N°0069/ANaTT/DAF/C-SFC).
  *
- * Un état = 1 mission, N bénéficiaires, 13 colonnes, sous-lignes par type de
- * prise en charge, colonnes AVANCE et RELIQUAT, mention d'arrêt en lettres sur
- * le TOTAL général, puis les deux blocs de signature DAF puis DG.
+ * Un état = 1 mission × 1 TRANCHE, N bénéficiaires, 13 colonnes, sous-lignes
+ * par type de prise en charge : seule la colonne DE LA TRANCHE est remplie
+ * (l'autre porte « - »), mention d'arrêt en lettres sur le total de la tranche,
+ * puis les deux blocs de signature DAF puis DG.
  *
  * Orientation paysage : 13 colonnes ne tiennent pas en portrait.
  */
 class EtatPaiementPdf
 {
-    private const TYPES = [
-        'UN_REPAS' => 'Mission à 1 repas',
-        'DEUX_REPAS' => 'Mission à 2 repas',
-        'JOURNEE_COMPLETE' => 'Mission complète',
-        'LOGE_NOURRI' => 'Logé + nourri',
-        'LOGE_SEUL' => 'Logé seul',
-        'NOURRI_SEUL' => 'Nourri seul',
-    ];
-
     /** Mention du filigrane apposé sur les épreuves. */
     private const MENTION_BROUILLON = 'BROUILLON - NON VALIDE';
 
@@ -92,11 +83,23 @@ class EtatPaiementPdf
         // Le tableau figé au récapitulatif fait foi : le document signé ne peut
         // pas s'imprimer différemment de ce qui a été présenté au signataire.
         // Repli sur le calcul pour les états antérieurs à l'instantané.
-        $lignes = $etat->lignes ?? $this->lignesDepuisOrdres($etat);
+        $lignes = $etat->lignes ?? LignesEtatPaiement::pourMission($etat->mission_id);
+
+        // L'état n'autorise que SA tranche : sa colonne est remplie, l'autre
+        // porte « - ». La mention d'arrêt porte sur le total de la tranche.
+        $estAvance = $etat->estAvance();
+        $lignes = array_map(function (array $l) use ($estAvance) {
+            $l['avance'] = $estAvance ? $l['avance'] : '-';
+            $l['reliquat'] = $estAvance ? '-' : $l['reliquat'];
+
+            return $l;
+        }, $lignes);
 
         return [
             'brouillon' => $brouillon,
             'numero' => $etat->numero,
+            'tranche' => $etat->tranche,
+            'libelle_tranche' => $etat->libelleTranche(),
             'statut' => $etat->statut,
             // Le document dit lui-même qu'il a été rejeté, avec le motif.
             'rejet' => $etat->statut === 'REJETE' ? $etat->commentaire_rejet : null,
@@ -106,10 +109,10 @@ class EtatPaiementPdf
             'periode' => $this->periode($mission?->date_depart, $mission?->date_retour),
             'lignes' => $lignes,
             'nb_beneficiaires' => count($lignes),
-            'total' => $fmt($etat->montant_total),
-            'total_avance' => $fmt($etat->montant_avance),
-            'total_reliquat' => $fmt($etat->montant_reliquat),
-            // Mention d'arrêt sur le TOTAL GÉNÉRAL (avance + reliquat).
+            'total' => $fmt((int) array_sum(array_column($lignes, 'montant_total_brut'))),
+            'total_avance' => $estAvance ? $fmt($etat->montant_total) : '-',
+            'total_reliquat' => $estAvance ? '-' : $fmt($etat->montant_total),
+            // Mention d'arrêt sur le total de la tranche (avances OU reliquats).
             'mention_arret' => MontantEnLettres::mention($etat->montant_total),
             'date_generation' => now()->format('d/m/Y'),
             // Signatures : jamais rendues sur un brouillon, même si l'état en porte.
@@ -117,64 +120,6 @@ class EtatPaiementPdf
             'validation_dg' => $brouillon ? null : $this->signature($etat->valide_dg_nom, $etat->valide_dg_fonction, $etat->valide_dg_le, $etat->signature_dg_hash, $etat->signature_dg_image, 'dg'),
             'controle' => $brouillon ? null : $this->signature($etat->controle_nom, $etat->controle_fonction, $etat->controle_le, $etat->signature_controle_hash, $etat->signature_controle_image, 'controleur'),
         ];
-    }
-
-    /**
-     * Tableau recalculé depuis les OM courants : repli pour les états antérieurs
-     * à la mise en place de l'instantané `lignes`.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function lignesDepuisOrdres(EtatPaiement $etat): array
-    {
-        $ordres = OrdreMission::with('agent')
-            ->where('mission_id', $etat->mission_id)
-            ->whereNotIn('statut', ['REJETE', 'ANNULE'])
-            ->orderBy('id')
-            ->get();
-
-        $fmt = fn (int $n) => $n === 0 ? '-' : number_format($n, 0, ',', ' ');
-
-        return $ordres->map(function (OrdreMission $om) use ($fmt) {
-            $agent = $om->agent;
-
-            // Sous-lignes par type de prise en charge (colonnes MOTIF / TAUX/JOUR
-            // / NBRE DE JOURS / TOTAL PARTIEL de l'état officiel).
-            $detail = collect($om->lignes_per_diem ?? [])->map(function (array $l) use ($fmt, $om) {
-                $type = $l['type'] ?? $om->type_prise_en_charge;
-                $nbJours = (int) ($l['nb_jours'] ?? 0);
-                $montant = (int) ($l['montant'] ?? 0);
-                $taux = (int) ($l['taux'] ?? ($nbJours > 0 ? intdiv($montant ?: $om->montant_total, $nbJours) : 0));
-
-                return [
-                    'motif' => self::TYPES[$type] ?? $type,
-                    'taux' => $fmt($taux),
-                    'nb_jours' => $nbJours,
-                    'partiel' => $fmt($montant),
-                ];
-            })->all();
-
-            if ($detail === []) {
-                $detail = [[
-                    'motif' => self::TYPES[$om->type_prise_en_charge] ?? $om->type_prise_en_charge,
-                    'taux' => $fmt($om->nb_jours > 0 ? intdiv($om->montant_total, $om->nb_jours) : 0),
-                    'nb_jours' => $om->nb_jours,
-                    'partiel' => $fmt($om->montant_total),
-                ]];
-            }
-
-            return [
-                'numero' => $om->reference_semo,
-                'beneficiaire' => trim("{$agent->nom} {$agent->prenoms}"),
-                'structure' => 'ANaTT',
-                'grade_indice' => $this->grade($om->categorie, $agent->indice),
-                'detail' => $detail,
-                'total' => $fmt($om->montant_total),
-                'avance' => $fmt($om->avance),
-                'reliquat' => $fmt($om->reliquat),
-                'contact' => $this->telephone($agent->telephone),
-            ];
-        })->all();
     }
 
     /** @return array{nom:string, fonction:?string, date:string, code:?string, image:?string}|null */
@@ -193,27 +138,6 @@ class EtatPaiementPdf
             // le paraphe en poste pour les états antérieurs à l'archivage.
             'image' => PdfAssets::signatureDataUri($imageArchivee) ?? SignatureParametres::pour($poste)['image'],
         ];
-    }
-
-    /** Colonne GRADE/INDICE de l'état : « ≥ 800 » / « 400-799 » / « < 400 ». */
-    private function grade(string $categorie, ?int $indice): string
-    {
-        return match ($categorie) {
-            'ORDRE_1' => '≥ 800',
-            'ORDRE_2' => '400-799',
-            'ORDRE_3' => '< 400',
-            default => $indice !== null ? (string) $indice : '—',
-        };
-    }
-
-    /** Téléphone en groupes de 2, comme sur l'état officiel (01 96 30 24 90). */
-    private function telephone(?string $numero): string
-    {
-        if (empty($numero)) {
-            return '—';
-        }
-
-        return trim(implode(' ', str_split(preg_replace('/\D/', '', $numero), 2)));
     }
 
     private function periode(mixed $depart, mixed $retour): string
@@ -256,6 +180,6 @@ class EtatPaiementPdf
         $base = $slug !== '' ? $slug : "etat-{$etat->id}";
         $suffixe = $brouillon ? 'BROUILLON' : $etat->statut;
 
-        return "etats/ETAT-{$base}-{$suffixe}.pdf";
+        return "etats/ETAT-{$base}-{$etat->tranche}-{$suffixe}.pdf";
     }
 }

@@ -66,9 +66,9 @@ class SendNotification implements ShouldQueue
             'om_valide' => "L'ordre de mission {$this->data['reference_semo']} ({$this->data['beneficiaire']}, {$this->data['montant']} FCFA) a été validé. Le fichier de paiement peut être généré.",
             'om_rejete' => "L'ordre de mission {$this->data['reference_semo']} a été rejeté. Motif : {$this->data['motif']}",
             'lot_confirme' => "Le lot {$this->data['tranche']} / {$this->data['operateur']} (mission {$this->data['mission']}, {$this->data['montant']} FCFA) a été confirmé : versements soldés et horodatés.",
-            'etat_attend_signature' => "L'état de paiement {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) attend votre intervention dans le circuit de validation.",
-            'etat_valide' => "L'état de paiement {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) a été validé par le Directeur Général : les fichiers de paiement peuvent être générés.",
-            'etat_rejete' => "L'état de paiement {$this->data['numero']} de la mission « {$this->data['mission']} » a été rejeté. Motif : {$this->data['motif']}",
+            'etat_attend_signature' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) attend votre intervention dans le circuit de validation.",
+            'etat_valide' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) a été validé par le Directeur Général : les fichiers de paiement de cette tranche peuvent être générés.",
+            'etat_rejete' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » a été rejeté. Motif : {$this->data['motif']}",
             default => 'Notification du système ANaTT Missions.',
         };
     }

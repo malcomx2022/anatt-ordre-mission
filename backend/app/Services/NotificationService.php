@@ -60,6 +60,7 @@ class NotificationService
             'mission' => $etat->mission?->objet ?? '—',
             'destination' => $etat->mission?->destination ?? '—',
             'numero' => $etat->numero ?? '—',
+            'tranche' => $etat->libelleTranche(),
             'montant' => number_format((int) $etat->montant_total, 0, ',', ' '),
         ]);
     }
@@ -70,6 +71,7 @@ class NotificationService
         $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'etat_valide', [
             'mission' => $etat->mission?->objet ?? '—',
             'numero' => $etat->numero ?? '—',
+            'tranche' => $etat->libelleTranche(),
             'montant' => number_format((int) $etat->montant_total, 0, ',', ' '),
         ]);
     }
@@ -80,6 +82,7 @@ class NotificationService
         $this->notifierRole(User::ROLE_GESTIONNAIRE_OM, 'etat_rejete', [
             'mission' => $etat->mission?->objet ?? '—',
             'numero' => $etat->numero ?? '—',
+            'tranche' => $etat->libelleTranche(),
             'motif' => $motif,
         ]);
     }

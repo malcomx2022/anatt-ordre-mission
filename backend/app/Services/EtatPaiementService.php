@@ -8,6 +8,7 @@ use App\Models\OrdreMission;
 use App\Models\User;
 use App\Support\Permissions;
 use App\Support\Workflow;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -44,26 +45,45 @@ class EtatPaiementService
     ];
 
     /**
-     * Récapitulatif de la mission : crée ou rafraîchit l'état en BROUILLON.
+     * Récapitulatif de la mission : crée ou rafraîchit l'état d'UNE TRANCHE
+     * en BROUILLON (l'état des avances par défaut).
      *
-     * Recalcule l'instantané financier depuis les OM courants et FIGE le tableau
-     * des bénéficiaires (colonne `lignes`) : le document signé ne peut plus
-     * diverger de ce qui a été présenté au signataire. Refusé dès qu'une
-     * signature est apposée (CONTROLE, VISA_DAF, VALIDE) : on ne réécrit pas un
-     * document déjà signé. Un état REJETÉ, en revanche, se refait : le rejet
-     * renvoie le brouillon en correction, sans avoir figé les OM.
+     * Recalcule l'instantané financier de la tranche depuis les OM courants et
+     * FIGE le tableau des bénéficiaires (colonne `lignes`) : le document signé
+     * ne peut plus diverger de ce qui a été présenté au signataire. Refusé dès
+     * qu'une signature est apposée (CONTROLE, VISA_DAF, VALIDE) : on ne réécrit
+     * pas un document déjà signé. Un état REJETÉ, en revanche, se refait.
+     *
+     * SÉQUENCEMENT : l'état des reliquats ne peut être établi qu'une fois
+     * l'état des avances VALIDÉ — le circuit des reliquats ne s'ouvre qu'après
+     * la décision finale sur les avances.
      *
      * Un état à montants nuls est LICITE (mission exonérée — prise en charge
      * par un tiers) : le brouillon reste éditable et téléchargeable.
      */
-    public function recapituler(Mission $mission, User $user): EtatPaiement
+    public function recapituler(Mission $mission, User $user, string $tranche = EtatPaiement::TRANCHE_AVANCE): EtatPaiement
     {
-        $etat = DB::transaction(function () use ($mission, $user) {
-            $etat = EtatPaiement::where('mission_id', $mission->id)->lockForUpdate()->first();
+        $etat = DB::transaction(function () use ($mission, $user, $tranche) {
+            if ($tranche === EtatPaiement::TRANCHE_RELIQUAT) {
+                $avance = EtatPaiement::where('mission_id', $mission->id)
+                    ->where('tranche', EtatPaiement::TRANCHE_AVANCE)
+                    ->first();
+
+                if (! $avance?->estValide()) {
+                    throw ValidationException::withMessages([
+                        'etat' => ["L'état des avances doit être validé par le circuit (contrôle, visa DAF, Directeur Général) avant d'établir l'état des reliquats."],
+                    ]);
+                }
+            }
+
+            $etat = EtatPaiement::where('mission_id', $mission->id)
+                ->where('tranche', $tranche)
+                ->lockForUpdate()
+                ->first();
 
             if ($etat && ! $etat->estModifiable() && $etat->statut !== 'REJETE') {
                 throw ValidationException::withMessages([
-                    'etat' => ["Cet état est au statut « {$etat->statut} » : le récapitulatif n'est plus modifiable."],
+                    'etat' => ["Cet état {$this->libelle($tranche)} est au statut « {$etat->statut} » : le récapitulatif n'est plus modifiable."],
                 ]);
             }
 
@@ -78,21 +98,19 @@ class EtatPaiementService
             }
 
             $etat = EtatPaiement::updateOrCreate(
-                ['mission_id' => $mission->id],
-                [
+                ['mission_id' => $mission->id, 'tranche' => $tranche],
+                array_merge([
                     'statut' => 'BROUILLON',
                     'nb_beneficiaires' => $ordres->count(),
-                    'montant_total' => (int) $ordres->sum('montant_total'),
-                    'montant_avance' => (int) $ordres->sum('avance'),
-                    'montant_reliquat' => (int) $ordres->sum('reliquat'),
                     // Le tableau tel qu'il sera imprimé : figé avec les totaux.
                     'lignes' => LignesEtatPaiement::pourMission($mission->id),
                     'commentaire_rejet' => null,
-                ],
+                ], $this->montantsTranche($ordres, $tranche)),
             );
 
             AuditService::log($user, 'RECAP_ETAT', 'etat_paiement', $etat->id, [
                 'mission' => $mission->objet,
+                'tranche' => $tranche,
                 'nb_beneficiaires' => $etat->nb_beneficiaires,
                 'montant_total' => $etat->montant_total,
             ]);
@@ -104,6 +122,29 @@ class EtatPaiementService
         $this->notifications->etatAttendSignature($etat->loadMissing('mission'), User::ROLE_CONTROLEUR);
 
         return $etat;
+    }
+
+    /**
+     * Instantané financier d'une tranche : `montant_total` porte la somme de la
+     * tranche (avances OU reliquats), la colonne de l'autre tranche est à zéro.
+     *
+     * @param  Collection<int,OrdreMission>  $ordres
+     * @return array{montant_total:int, montant_avance:int, montant_reliquat:int}
+     */
+    private function montantsTranche($ordres, string $tranche): array
+    {
+        $avance = (int) $ordres->sum('avance');
+        $reliquat = (int) $ordres->sum('reliquat');
+
+        return $tranche === EtatPaiement::TRANCHE_AVANCE
+            ? ['montant_total' => $avance, 'montant_avance' => $avance, 'montant_reliquat' => 0]
+            : ['montant_total' => $reliquat, 'montant_avance' => 0, 'montant_reliquat' => $reliquat];
+    }
+
+    /** « des avances » / « des reliquats », pour les messages. */
+    private function libelle(string $tranche): string
+    {
+        return $tranche === EtatPaiement::TRANCHE_AVANCE ? 'des avances' : 'des reliquats';
     }
 
     /**
@@ -128,9 +169,15 @@ class EtatPaiementService
     public function synchroniser(int $missionId): void
     {
         DB::transaction(function () use ($missionId) {
-            $etat = EtatPaiement::where('mission_id', $missionId)->lockForUpdate()->first();
+            $etats = EtatPaiement::where('mission_id', $missionId)->lockForUpdate()->get();
 
-            if ($etat === null || in_array($etat->statut, ['CONTROLE', 'VISA_DAF', 'VALIDE'], true)) {
+            // Seuls les états non signés se recalent : un document signé
+            // (CONTROLE / VISA_DAF / VALIDE) n'est JAMAIS altéré par un OM.
+            $modifiables = $etats->reject(
+                fn (EtatPaiement $e) => in_array($e->statut, ['CONTROLE', 'VISA_DAF', 'VALIDE'], true),
+            );
+
+            if ($modifiables->isEmpty()) {
                 return;
             }
 
@@ -138,14 +185,16 @@ class EtatPaiementService
                 ->whereNotIn('statut', ['REJETE', 'ANNULE'])
                 ->get();
 
-            $etat->update([
-                'nb_beneficiaires' => $ordres->count(),
-                'montant_total' => (int) $ordres->sum('montant_total'),
-                'montant_avance' => (int) $ordres->sum('avance'),
-                'montant_reliquat' => (int) $ordres->sum('reliquat'),
-                // Le tableau figé suit les totaux tant que l'état n'est pas signé.
-                'lignes' => LignesEtatPaiement::pourMission($missionId),
-            ]);
+            $lignes = LignesEtatPaiement::pourMission($missionId);
+
+            // Chaque état se recale sur les montants de SA tranche ; le tableau
+            // figé suit tant que l'état n'est pas signé.
+            foreach ($modifiables as $etat) {
+                $etat->update(array_merge([
+                    'nb_beneficiaires' => $ordres->count(),
+                    'lignes' => $lignes,
+                ], $this->montantsTranche($ordres, $etat->tranche)));
+            }
         });
     }
 
@@ -307,6 +356,7 @@ class EtatPaiementService
 
             AuditService::log($user, $action, 'etat_paiement', $etat->id, [
                 'numero' => $etat->numero,
+                'tranche' => $etat->tranche,
                 'statut' => $nouveauStatut,
                 'nb_beneficiaires' => $etat->nb_beneficiaires,
                 'montant_total' => $etat->montant_total,
@@ -326,6 +376,14 @@ class EtatPaiementService
      */
     private function propager(EtatPaiement $etat, string $statutEtat, User $user): void
     {
+        // Seule la validation de l'état des AVANCES fait passer les OM à VALIDE :
+        // c'est le premier circuit bouclé sur la mission, celui qui rend les OM
+        // payables. L'état des reliquats arrive après coup — les OM sont déjà
+        // VALIDE, il n'y a rien à propager une seconde fois.
+        if (! $etat->estAvance()) {
+            return;
+        }
+
         $statutOm = self::PROPAGATION[$statutEtat] ?? null;
 
         if ($statutOm === null) {
@@ -393,6 +451,7 @@ class EtatPaiementService
         $charge = implode('|', [
             $etape,
             (int) $etat->mission_id,
+            (string) $etat->tranche,
             (string) $etat->numero,
             (int) $etat->nb_beneficiaires,
             (int) $etat->montant_total,

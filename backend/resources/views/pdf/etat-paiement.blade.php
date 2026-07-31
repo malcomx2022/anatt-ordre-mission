@@ -56,7 +56,7 @@
         <div class="provisoire">ÉTAT REJETÉ — {{ $rejet }}</div>
     @endif
 
-    <div class="titre">État de paiement</div>
+    <div class="titre">État de paiement {{ $libelle_tranche ?? '' }}</div>
     <div class="numero">
         @if($numero)
             N°{{ $numero }}
@@ -66,7 +66,7 @@
     </div>
 
     <table class="entete-etat">
-        <tr><td class="cle">ÉTAT DE PAIEMENT</td><td>: Frais de mission</td></tr>
+        <tr><td class="cle">ÉTAT DE PAIEMENT {{ strtoupper($libelle_tranche ?? '') }}</td><td>: Frais de mission</td></tr>
         <tr><td class="cle">BÉNÉFICIAIRES</td><td>: {{ $nb_beneficiaires }} bénéficiaire(s)</td></tr>
         <tr><td class="cle">MOTIF</td><td>: {{ $objet ?: '—' }}</td></tr>
         <tr><td class="cle">PÉRIODE</td><td>: {{ $periode }}</td></tr>
@@ -132,9 +132,9 @@
         </tbody>
     </table>
 
-    {{-- Mention d'arrêt sur le TOTAL GÉNÉRAL : avance + reliquat. --}}
+    {{-- Mention d'arrêt sur le total de la tranche (avances OU reliquats). --}}
     <div class="arret">
-        Arrêté le présent état de paiement à la somme de : <strong>{{ $mention_arret }}</strong>.
+        Arrêté le présent état de paiement {{ $libelle_tranche ?? '' }} à la somme de : <strong>{{ $mention_arret }}</strong>.
     </div>
 
     {{-- Les deux signatures de l'état officiel : « Vu » du DAF, puis le
@@ -177,7 +177,7 @@
         @if($brouillon)
             DOCUMENT PROVISOIRE — édité le {{ $date_generation }}
         @else
-            ANaTT — État de paiement{{ $numero ? ' N°'.$numero : '' }} — édité le {{ $date_generation }}
+            ANaTT — État de paiement {{ $libelle_tranche ?? '' }}{{ $numero ? ' N°'.$numero : '' }} — édité le {{ $date_generation }}
             @if($controle) · Contrôlé par {{ $controle['nom'] }} le {{ $controle['date'] }} @endif
         @endif
     </div>

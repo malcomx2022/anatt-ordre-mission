@@ -126,7 +126,8 @@ it('recale un état REJETE quand un nouvel OM est créé pour la mission', funct
 
     $etat->refresh();
     expect($etat->nb_beneficiaires)->toBe(3)
-        ->and($etat->montant_total)->toBe($totalAvant + 30000)
+        // L'état des avances se recale sur les AVANCES : +21 000, pas +30 000.
+        ->and($etat->montant_total)->toBe($totalAvant + 21000)
         ->and($etat->statut)->toBe('REJETE'); // le statut reste, seuls les montants bougent
 });
 

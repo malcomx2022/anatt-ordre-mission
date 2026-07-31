@@ -33,6 +33,7 @@ class EtatPaiementController extends Controller
     {
         $etats = EtatPaiement::with('mission')
             ->when($request->filled('statut'), fn ($q) => $q->where('statut', $request->string('statut')))
+            ->when($request->filled('tranche'), fn ($q) => $q->where('tranche', $request->string('tranche')))
             ->when($request->filled('search'), fn ($q) => $q->where(function ($inner) use ($request) {
                 $like = '%'.$request->string('search').'%';
                 $inner->where('numero', 'like', $like)
@@ -53,20 +54,41 @@ class EtatPaiementController extends Controller
         ]);
     }
 
-    /** État de la mission (null si le récapitulatif n'a pas encore été produit). */
+    /**
+     * États de la mission, par tranche : l'écran suit les deux documents.
+     * `data: null` tant qu'aucun récapitulatif n'a été produit.
+     */
     public function show(Mission $mission): JsonResponse
     {
-        $etat = EtatPaiement::where('mission_id', $mission->id)->first();
+        $etats = EtatPaiement::where('mission_id', $mission->id)->get()->keyBy('tranche');
 
-        return $this->success($etat ? $this->presenter($etat) : null);
+        if ($etats->isEmpty()) {
+            return $this->success(null);
+        }
+
+        return $this->success([
+            'avance' => isset($etats[EtatPaiement::TRANCHE_AVANCE])
+                ? $this->presenter($etats[EtatPaiement::TRANCHE_AVANCE])
+                : null,
+            'reliquat' => isset($etats[EtatPaiement::TRANCHE_RELIQUAT])
+                ? $this->presenter($etats[EtatPaiement::TRANCHE_RELIQUAT])
+                : null,
+        ]);
     }
 
-    /** Récapitulatif : crée ou rafraîchit l'état en BROUILLON. */
+    /** Récapitulatif : crée ou rafraîchit l'état d'une tranche en BROUILLON. */
     public function recapituler(Request $request, Mission $mission): JsonResponse
     {
-        $etat = $this->service->recapituler($mission, $request->user());
+        $tranche = $request->validate([
+            'tranche' => ['nullable', 'string', 'in:'.implode(',', EtatPaiement::TRANCHES)],
+        ])['tranche'] ?? EtatPaiement::TRANCHE_AVANCE;
 
-        return $this->success($this->presenter($etat), 'Récapitulatif établi. Le brouillon est téléchargeable.');
+        $etat = $this->service->recapituler($mission, $request->user(), $tranche);
+
+        return $this->success(
+            $this->presenter($etat),
+            "Récapitulatif {$etat->libelleTranche()} établi. Le brouillon est téléchargeable.",
+        );
     }
 
     /** Numérotation manuelle, selon le registre de l'agence. */
@@ -117,19 +139,31 @@ class EtatPaiementController extends Controller
     }
 
     /** Brouillon filigrané : l'épreuve que l'on relit avant d'engager le circuit. */
-    public function brouillon(Mission $mission)
+    public function brouillon(Request $request, Mission $mission)
     {
-        $etat = EtatPaiement::where('mission_id', $mission->id)->firstOrFail();
+        $etat = $this->etatPourTranche($request, $mission);
 
         return $this->pdf->telecharger($etat, brouillon: true);
     }
 
     /** État définitif, avec les signatures apposées. */
-    public function telecharger(Mission $mission)
+    public function telecharger(Request $request, Mission $mission)
     {
-        $etat = EtatPaiement::where('mission_id', $mission->id)->firstOrFail();
+        $etat = $this->etatPourTranche($request, $mission);
 
         return $this->pdf->telecharger($etat, brouillon: ! $etat->estValide());
+    }
+
+    /** État de la tranche demandée (AVANCE par défaut) — 404 si non établi. */
+    private function etatPourTranche(Request $request, Mission $mission): EtatPaiement
+    {
+        $tranche = $request->validate([
+            'tranche' => ['nullable', 'string', 'in:'.implode(',', EtatPaiement::TRANCHES)],
+        ])['tranche'] ?? EtatPaiement::TRANCHE_AVANCE;
+
+        return EtatPaiement::where('mission_id', $mission->id)
+            ->where('tranche', $tranche)
+            ->firstOrFail();
     }
 
     /**
@@ -143,6 +177,7 @@ class EtatPaiementController extends Controller
         return [
             'id' => $etat->id,
             'mission_id' => $etat->mission_id,
+            'tranche' => $etat->tranche,
             'mission' => $etat->relationLoaded('mission') && $etat->mission
                 ? [
                     'id' => $etat->mission->id,
