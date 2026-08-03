@@ -140,18 +140,21 @@ class PdfGenerator
                 $ordre->verifie_le,
                 $ordre->signature_verif_hash,
                 $ordre->verifiePar,
+                $ordre->verifie_fonction,
             ),
             'visa_daf' => $brouillon ? null : $this->signature(
                 $ordre->visa_daf_nom,
                 $ordre->visa_daf_le,
                 $ordre->signature_daf_hash,
                 $ordre->visaDaf,
+                $ordre->visa_daf_fonction,
             ),
             'valide_dg' => $brouillon ? null : $this->signature(
                 $ordre->valide_dg_nom,
                 $ordre->valide_dg_le,
                 $ordre->signature_dg_hash,
                 $ordre->valideDg,
+                $ordre->valide_dg_fonction,
             ),
         ];
     }
@@ -232,9 +235,9 @@ class PdfGenerator
      * renommage, une mutation ou la suppression du compte signataire ne doit pas
      * réécrire un document déjà signé. Le compte n'est consulté que pour l'image.
      *
-     * @return array{nom:string, date:string, code:?string, image:?string}|null
+     * @return array{nom:string, fonction:?string, date:string, code:?string, image:?string}|null
      */
-    private function signature(?string $nom, ?Carbon $date, ?string $hash, ?User $signataire): ?array
+    private function signature(?string $nom, ?Carbon $date, ?string $hash, ?User $signataire, ?string $fonction = null): ?array
     {
         if (empty($nom) || $date === null) {
             return null;
@@ -242,6 +245,10 @@ class PdfGenerator
 
         return [
             'nom' => $nom,
+            // Fonction figée à la signature : le document imprime le titre réel du
+            // signataire, pas un libellé générique. Le gabarit retombe sur la
+            // constante de rôle quand elle est absente (ou avant signature).
+            'fonction' => $fonction ?: null,
             'date' => $date->format('d/m/Y à H:i'),
             'code' => Workflow::codeVerification($hash),
             'image' => PdfAssets::signatureDataUri($signataire?->signature_path),

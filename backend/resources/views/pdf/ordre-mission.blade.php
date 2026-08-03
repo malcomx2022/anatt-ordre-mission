@@ -168,11 +168,14 @@
          (verrouillage). Deux rangées de deux blocs : plus lisible que quatre
          colonnes sur A4 portrait. --}}
     @php
+        // Titre imprimé : la fonction réelle du signataire (figée à la signature)
+        // prime ; à défaut — ou avant signature — on retombe sur le libellé de
+        // rôle générique.
         $blocs = [
             ['role' => 'Le bénéficiaire', 'signature' => null, 'nom_fixe' => $beneficiaire, 'attente' => null],
-            ['role' => $libelle_controle, 'signature' => $verification, 'nom_fixe' => null, 'attente' => 'En attente de vérification'],
-            ['role' => 'Vu<br>'.$libelle_daf, 'signature' => $visa_daf, 'nom_fixe' => null, 'attente' => 'En attente de visa'],
-            ['role' => $libelle_dg.'<br>(validation finale)', 'signature' => $valide_dg, 'nom_fixe' => null, 'attente' => 'En attente de validation'],
+            ['role' => ($verification['fonction'] ?? null) ?: $libelle_controle, 'signature' => $verification, 'nom_fixe' => null, 'attente' => 'En attente de vérification'],
+            ['role' => 'Vu<br>'.(($visa_daf['fonction'] ?? null) ?: $libelle_daf), 'signature' => $visa_daf, 'nom_fixe' => null, 'attente' => 'En attente de visa'],
+            ['role' => (($valide_dg['fonction'] ?? null) ?: $libelle_dg).'<br>(validation finale)', 'signature' => $valide_dg, 'nom_fixe' => null, 'attente' => 'En attente de validation'],
         ];
     @endphp
 
