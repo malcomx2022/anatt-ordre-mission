@@ -66,13 +66,16 @@ class MissionController extends Controller
      * Liste des missions — point d'entrée naturel du circuit.
      *
      * Une mission est l'unité de travail réelle : elle porte N ordres de mission
-     * et UN état de paiement. Chaque ligne indique donc où en est son état, ce qui
-     * évite d'avoir à passer par un OM pour retrouver le document à signer.
+     * et DEUX états de paiement (avances puis reliquats). Chaque ligne indique où
+     * en sont ces deux documents, ce qui évite d'avoir à passer par un OM pour
+     * retrouver l'état à signer.
      */
     public function missions(Request $request): JsonResponse
     {
+        // etatPaiement (relation scopée AVANCE) sert aux filtres et à l'avance ;
+        // etatsPaiement charge les DEUX tranches, dont on extrait le reliquat.
         $missions = Mission::query()
-            ->with(['etatPaiement', 'etatsPaiement' => fn ($q) => $q->where('tranche', 'RELIQUAT')])
+            ->with(['etatPaiement', 'etatsPaiement'])
             ->withCount(['ordresMission as nb_ordres' => fn ($q) => $q->whereNotIn('statut', ['REJETE', 'ANNULE'])])
             ->withSum(['ordresMission as montant_total' => fn ($q) => $q->whereNotIn('statut', ['REJETE', 'ANNULE'])], 'montant_total')
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -103,9 +106,10 @@ class MissionController extends Controller
                 // null tant que le récapitulatif n'a pas été établi.
                 'etat_statut' => $m->etatPaiement?->statut,
                 'etat_numero' => $m->etatPaiement?->numero,
-                // Avancement du second document du circuit (état des reliquats).
-                'etat_reliquat_statut' => $m->etatsPaiement->first()?->statut,
-                'etat_reliquat_numero' => $m->etatsPaiement->first()?->numero,
+                // Avancement du second document du circuit (état des reliquats),
+                // extrait explicitement par tranche (indépendant de l'ordre de chargement).
+                'etat_reliquat_statut' => $m->etatsPaiement->firstWhere('tranche', 'RELIQUAT')?->statut,
+                'etat_reliquat_numero' => $m->etatsPaiement->firstWhere('tranche', 'RELIQUAT')?->numero,
             ]),
             'meta' => [
                 'current_page' => $missions->currentPage(),
