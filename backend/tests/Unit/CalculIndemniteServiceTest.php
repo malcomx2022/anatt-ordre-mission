@@ -2,11 +2,27 @@
 
 use App\Models\Bareme;
 use App\Services\CalculIndemniteService;
+use App\Support\Parametres;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+/** Fixe temporairement la part d'avance dans settings.json et purge le cache. */
+function definirPartAvance(?int $valeur): void
+{
+    $chemin = storage_path('app/settings.json');
+
+    if ($valeur === null) {
+        @unlink($chemin);
+    } else {
+        @mkdir(dirname($chemin), 0775, true);
+        file_put_contents($chemin, json_encode(['partAvance' => $valeur]));
+    }
+
+    Parametres::invalidateCache();
+}
 
 beforeEach(function () {
     $this->service = new CalculIndemniteService();
@@ -56,6 +72,24 @@ it('ignore les lignes à zéro jour dans le calcul détaillé', function () {
     expect($r['lignes'])->toHaveCount(1)
         ->and($r['montant_total'])->toBe(135000)
         ->and($r['avance'])->toBe(94500);
+});
+
+it('respecte la part d’avance paramétrable (≠ 70 %)', function () {
+    definirPartAvance(60);
+
+    try {
+        $simple = $this->service->calculer('ORDRE_1', 'INTERIEUR', 'JOURNEE_COMPLETE', 3);
+        $detaille = $this->service->calculerDetaille('ORDRE_1', 'INTERIEUR', [
+            ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 3],
+        ]);
+
+        expect($simple['avance'])->toBe(81000)        // round(135000 x 0,60)
+            ->and($simple['reliquat'])->toBe(54000)   // 135000 - 81000
+            ->and($detaille['avance'])->toBe(81000)
+            ->and($detaille['reliquat'])->toBe(54000);
+    } finally {
+        definirPartAvance(null);
+    }
 });
 
 it('exonère totalement en cas de prise en charge tiers', function () {
