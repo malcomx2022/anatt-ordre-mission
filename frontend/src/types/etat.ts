@@ -9,7 +9,7 @@
 
 export type StatutEtat = 'BROUILLON' | 'CONTROLE' | 'VISA_DAF' | 'VALIDE' | 'REJETE'
 
-/** Tranche portée par un état : avances (70 %) ou reliquats (30 %). */
+/** Tranche portée par un état : avances (partAvance %) ou reliquats (100 - partAvance %). */
 export type TrancheEtat = 'AVANCE' | 'RELIQUAT'
 
 /** Étape à franchir, telle que renvoyée par le serveur. */

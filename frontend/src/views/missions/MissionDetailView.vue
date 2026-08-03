@@ -10,11 +10,14 @@ import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
 import { ordresService } from '@/services/ordres'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
+import { partAvance } from '@/composables/usePartAvance'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
 const toast = useToast()
 const id = Number(route.params.id)
+const avancePct = partAvance()
+const reliquatPct = 100 - avancePct
 
 const ordre = ref<OrdreMission | null>(null)
 const loading = ref(true)
@@ -162,8 +165,8 @@ onMounted(load)
               <dt class="text-gray-400">Transport</dt><dd>{{ fmt(ordre.montant_transport) }} FCFA</dd>
             </template>
             <dt class="text-gray-400">Total</dt><dd class="font-display font-bold text-anatt-700">{{ fmt(ordre.montant_total) }} FCFA</dd>
-            <dt class="text-gray-400">Avance (70 %)</dt><dd>{{ fmt(ordre.avance) }}</dd>
-            <dt class="text-gray-400">Reliquat (30 %)</dt><dd>{{ fmt(ordre.reliquat) }}</dd>
+            <dt class="text-gray-400">Avance ({{ avancePct }} %)</dt><dd>{{ fmt(ordre.avance) }}</dd>
+            <dt class="text-gray-400">Reliquat ({{ reliquatPct }} %)</dt><dd>{{ fmt(ordre.reliquat) }}</dd>
           </dl>
         </AppCard>
       </div>

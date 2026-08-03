@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { baremesService } from '@/services/baremes'
 import { missionsService } from '@/services/missions'
+import { partAvance } from '@/composables/usePartAvance'
 import type {
   Mission, MissionContexte, BeneficiaireForm, MissionFormData,
   Bareme, ZoneCode, Categorie, TypePriseEnCharge,
@@ -118,7 +119,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     }
 
     const total = perDiem + transport
-    const avance = Math.round(total * 0.7)   // 70 %
+    const avance = Math.round(total * partAvance() / 100)   // paramétrable
     return { ok: true, taux: tauxAffiche, nb_jours: nbJours, per_diem: perDiem, transport, total, avance, reliquat: total - avance }
   }
 

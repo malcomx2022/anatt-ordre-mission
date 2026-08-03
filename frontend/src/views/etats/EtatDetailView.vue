@@ -10,6 +10,7 @@ import { etatsService } from '@/services/etats'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
+import { partAvance } from '@/composables/usePartAvance'
 import type { EtatPaiement, EtatsMission, TrancheEtat } from '@/types'
 
 const route = useRoute()
@@ -47,6 +48,9 @@ const etatGeneralDisponible = computed(
 )
 
 const libelleTranche = computed(() => (trancheActive.value === 'AVANCE' ? 'des avances' : 'des reliquats'))
+
+const avancePourcentage = partAvance()
+const reliquatPourcentage = 100 - avancePourcentage
 
 // Chaque bouton n'apparaît qu'à l'acteur concerné et au statut correspondant.
 // Un état REJETÉ se refait : le récapitulatif le ramène en BROUILLON (le backend
@@ -223,7 +227,7 @@ async function telechargerFinal() {
           :class="trancheActive === 'AVANCE' ? 'bg-anatt-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
           @click="trancheActive = 'AVANCE'"
         >
-          Avances (70 %)
+          Avances ({{ avancePourcentage }} %)
           <span v-if="etats?.avance" class="ml-1 text-xs opacity-80">· {{ etats.avance.statut }}</span>
         </button>
         <button
@@ -234,7 +238,7 @@ async function telechargerFinal() {
           ]"
           @click="trancheActive = 'RELIQUAT'"
         >
-          Reliquats (30 %)
+          Reliquats ({{ reliquatPourcentage }} %)
           <span v-if="etats?.reliquat" class="ml-1 text-xs opacity-80">· {{ etats.reliquat.statut }}</span>
           <span v-else-if="!reliquatDeverrouille" class="ml-1 text-xs opacity-80">· verrouillé</span>
         </button>
@@ -336,7 +340,7 @@ async function telechargerFinal() {
             </h3>
             <dl class="space-y-2 text-sm font-body">
               <div class="flex justify-between">
-                <dt class="text-gray-500">{{ trancheActive === 'AVANCE' ? 'Avance (70 %)' : 'Reliquat (30 %)' }}</dt>
+                <dt class="text-gray-500">{{ trancheActive === 'AVANCE' ? `Avance (${avancePourcentage} %)` : `Reliquat (${reliquatPourcentage} %)` }}</dt>
                 <dd class="font-semibold text-gray-900">{{ fmt(etat.montant_total) }} FCFA</dd>
               </div>
               <div class="flex justify-between border-t border-gray-100 pt-2">

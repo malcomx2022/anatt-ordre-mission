@@ -201,9 +201,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
                     // Paramètres généraux (SettingsView)
                     'appName', 'appVersion', 'fiscalYear', 'batchSize', 'reconciliationDays',
                     'sessionDuration', 'maxLoginAttempts', 'mtnEnabled', 'moovEnabled',
-                    'doubleValidation', 'forceHttps', 'logConnections', 'maintenanceMode',
-                    'notifications',
-                    // Configuration email (EmailConfigView)
+                     'doubleValidation', 'forceHttps', 'logConnections', 'maintenanceMode',
+                     'notifications',
+                     // Pourcentage de l'avance (le reliquat absorbe l'arrondi).
+                     'partAvance',
+                     // Configuration email (EmailConfigView)
                     'smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'smtpEncryption',
                     'fromAddress', 'fromName',
                     // Identités des signataires du circuit, imprimées sur l'état
@@ -213,9 +215,19 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
                     'dgNom', 'dgPrenoms', 'dgFonction',
                 ];
 
-                $entrant = array_intersect_key($request->all(), array_flip($clesAutorisees));
+                 $entrant = array_intersect_key($request->all(), array_flip($clesAutorisees));
 
-                // Fusion avec l'existant : une sauvegarde partielle (ex. paramètres généraux)
+                 // Validation du pourcentage d'avance : entier entre 0 et 100.
+                 if (array_key_exists('partAvance', $entrant)) {
+                     $v = $entrant['partAvance'];
+                     if (! is_int($v) || $v < 0 || $v > 100) {
+                         throw \Illuminate\Validation\ValidationException::withMessages([
+                             'partAvance' => 'Le pourcentage d\'avance doit être un entier entre 0 et 100.',
+                         ]);
+                     }
+                 }
+
+                 // Fusion avec l'existant : une sauvegarde partielle (ex. paramètres généraux)
                 // ne doit pas effacer les autres clés (ex. configuration email).
                 $path = storage_path('app/settings.json');
                 $existant = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
@@ -231,11 +243,16 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
                     }
                 }
 
-                $settings = array_merge($existant, $entrant);
+                 $settings = array_merge($existant, $entrant);
 
-                file_put_contents($path, json_encode($settings, JSON_PRETTY_PRINT));
+                 file_put_contents($path, json_encode($settings, JSON_PRETTY_PRINT));
 
-                // Réponse masquée : ne jamais renvoyer le secret au client.
+                 // Invalidation du cache de lecture du pourcentage d'avance.
+                 if (array_key_exists('partAvance', $entrant)) {
+                     \App\Support\Parametres::invalidateCache();
+                 }
+
+                 // Réponse masquée : ne jamais renvoyer le secret au client.
                 $reponse = $settings;
                 if (! empty($reponse['smtpPassword'])) {
                     $reponse['smtpPassword'] = '********';
@@ -284,8 +301,13 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
                     unlink($path);
                 }
 
-                return response()->json(['message' => 'Sauvegarde supprimee.']);
-            });
-        });
-    });
-});
+                 return response()->json(['message' => 'Sauvegarde supprimee.']);
+             });
+         });
+
+         // Pourcentage d'avance paramétrable (lecture publique, écriture SUPER_ADMIN).
+         Route::get('parametres/part-avance', function () {
+             return response()->json(['data' => \App\Support\Parametres::partAvance()]);
+         });
+     });
+ });

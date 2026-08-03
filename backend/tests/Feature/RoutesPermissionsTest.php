@@ -25,6 +25,7 @@ const ROUTES_LIBRES = [
     'api/auth/me',                    // son propre profil
     'api/auth/me/permissions',        // ses propres droits
     'api/auth/mot-de-passe/changer',  // son propre mot de passe
+    'api/admin/parametres/part-avance', // information publique (taux d'avance)
 ];
 
 /** URI => clés de permission exigées, pour toutes les routes de l'API. */
