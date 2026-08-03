@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Agent;
 use App\Models\Mission;
 use App\Models\OrdreMission;
+use App\Support\Parametres;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<OrdreMission> */
@@ -15,7 +16,7 @@ class OrdreMissionFactory extends Factory
     public function definition(): array
     {
         $total = 135000;
-        $avance = (int) round($total * 0.70);   // 70 %
+        $avance = (int) round($total * Parametres::partAvance() / 100);   // part paramétrable (70 % par défaut)
 
         return [
             'reference_semo' => fake()->unique()->numerify('##########'),

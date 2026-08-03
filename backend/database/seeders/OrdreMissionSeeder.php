@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\Parametres;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -55,8 +56,8 @@ class OrdreMissionSeeder extends Seeder
                 ->value('taux_journalier');
 
             $total = $taux * $nbJours;
-            $avance = (int) round($total * 0.70);     // AVANCE 70 %
-            $reliquat = $total - $avance;             // RELIQUAT 30 %
+            $avance = (int) round($total * Parametres::partAvance() / 100);   // part paramétrable (70 % par défaut)
+            $reliquat = $total - $avance;
 
             DB::table('ordre_missions')->updateOrInsert(
                 ['reference_semo' => $om['reference_semo']],

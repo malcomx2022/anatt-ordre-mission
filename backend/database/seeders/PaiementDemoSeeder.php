@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Services\Paiement\MoovFileGenerator;
 use App\Services\Paiement\MtnFileGenerator;
+use App\Support\Parametres;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -119,8 +120,8 @@ class PaiementDemoSeeder extends Seeder
                 ->value('taux_journalier');
 
             $total = $taux * $m['nb_jours'];
-            $avance = (int) round($total * 0.70);   // 70 %
-            $reliquat = $total - $avance;           // 30 %
+            $avance = (int) round($total * Parametres::partAvance() / 100);   // part paramétrable (70 % par défaut)
+            $reliquat = $total - $avance;
 
             DB::table('ordre_missions')->updateOrInsert(
                 ['reference_semo' => $om['ref']],

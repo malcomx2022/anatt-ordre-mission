@@ -70,8 +70,8 @@ class CalculIndemniteService
      *
      *   per_diem       = Σ (taux(type) × nb_jours)   sur chaque ligne
      *   montant_total  = per_diem + montant_transport
-     *   avance         = round(montant_total × 0,70)  (70 %)
-     *   reliquat       = montant_total - avance       (30 %)
+     *   avance         = round(montant_total × partAvance/100)  (paramétrable, 70 % par défaut)
+     *   reliquat       = montant_total - avance
      *
      * @param  array<int,array{type:string,nb_jours:int}>  $lignes
      * @return array{lignes:array<int,array{type:string,taux:int,nb_jours:int,montant:int}>, type_principal:?string, nb_jours:int, per_diem:int, montant_transport:int, montant_total:int, avance:int, reliquat:int, exonere:bool}
