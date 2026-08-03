@@ -1,28 +1,42 @@
 import { shallowRef } from 'vue'
 import { api } from '@/services/http'
 
+/** Pourcentage d'avance par défaut si le serveur est injoignable ou muet. */
+const DEFAUT = 70
+
 let cache: number | null = null
 let promesse: Promise<number> | null = null
 
-/** Valeur courante en mémoire (70 par défaut, mis à jour après chargement). */
+/**
+ * Réactif : source de vérité unique, mise à jour par `chargerPartAvance()`.
+ * Les templates qui l'affichent se rafraîchissent dès que la valeur serveur
+ * arrive (ou change après un nouveau réglage + `reinitialiser()`).
+ */
+const partAvanceRef = shallowRef<number>(DEFAUT)
+
+/** Valeur courante en mémoire (70 par défaut, mise à jour après chargement). */
 export function partAvance(): number
 {
-  return cache ?? 70
+  return cache ?? DEFAUT
 }
 
-/** Charge le pourcentage depuis les paramètres serveur (idempotent, en cache). */
+/**
+ * Charge le pourcentage depuis les paramètres serveur (idempotent, en cache).
+ *
+ * Interroge la route de LECTURE publique `parametres/part-avance`, accessible à
+ * tout utilisateur authentifié — et non `settings`, réservée au SUPER_ADMIN
+ * (`parametres.gerer`), qui renverrait 403 aux autres profils.
+ */
 export async function chargerPartAvance(): Promise<number>
 {
   if (cache !== null) return cache
   if (promesse) return promesse
 
-  promesse = api.get('/api/admin/settings').then(({ data }) => {
-    const v = data.data?.partAvance
-    cache = typeof v === 'number' ? v : 70
-    return cache
+  promesse = api.get('/api/admin/parametres/part-avance').then(({ data }) => {
+    const v = data.data
+    return appliquer(typeof v === 'number' ? v : DEFAUT)
   }).catch(() => {
-    cache = 70
-    return 70
+    return appliquer(DEFAUT)
   }).finally(() => {
     promesse = null
   })
@@ -30,8 +44,27 @@ export async function chargerPartAvance(): Promise<number>
   return promesse
 }
 
-/** Réactif : mis à jour automatiquement après `chargerPartAvance()`. */
-const partAvanceRef = shallowRef<number>(partAvance())
+/** Fixe la valeur (cache + ref réactif) et la renvoie. */
+function appliquer(valeur: number): number
+{
+  cache = valeur
+  partAvanceRef.value = valeur
+
+  return valeur
+}
+
+/**
+ * Purge la valeur mémorisée pour forcer un rechargement au prochain appel.
+ * Utilisée à la déconnexion (ne pas conserver le réglage d'une session à
+ * l'autre) et après un changement de réglage (SUPER_ADMIN) pour refléter la
+ * nouvelle part sans recharger la page.
+ */
+export function reinitialiser(): void
+{
+  cache = null
+  promesse = null
+  partAvanceRef.value = DEFAUT
+}
 
 /**
  * Pourcentage d'avance paramétrable (SUPER_ADMIN, clé `partAvance`).
@@ -42,5 +75,5 @@ const partAvanceRef = shallowRef<number>(partAvance())
  */
 export function usePartAvance()
 {
-  return { partAvance: partAvanceRef, charger: chargerPartAvance }
+  return { partAvance: partAvanceRef, charger: chargerPartAvance, reinitialiser }
 }
