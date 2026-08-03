@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\OrdreMission;
 use App\Models\User;
+use App\Support\Parametres;
 use App\Support\PdfAssets;
 use App\Support\Workflow;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -123,6 +124,9 @@ class PdfGenerator
             'montant_total' => $fmt($ordre->montant_total),
             'avance' => $fmt($ordre->avance),
             'reliquat' => $fmt($ordre->reliquat),
+            // Pourcentages paramétrables (le reliquat absorbe l'arrondi) — libellés dynamiques.
+            'avance_pct' => Parametres::partAvance(),
+            'reliquat_pct' => 100 - Parametres::partAvance(),
             'date_generation' => now()->format('d/m/Y H:i'),
             // ── Circuit de validation ──
             // Sur un brouillon, les signatures ne sont JAMAIS rendues, même si

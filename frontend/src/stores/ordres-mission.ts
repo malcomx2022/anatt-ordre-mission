@@ -85,7 +85,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
   }
 
   /**
-   * Per diem temps réel d'un bénéficiaire (avance 70 % / reliquat 30 %).
+   * Per diem temps réel d'un bénéficiaire (répartition avance/reliquat paramétrable).
    * Prend en compte la répartition détaillée par type (état ANaTT) si présente,
    * sinon type unique × nb_jours, plus l'éventuel montant de transport.
    */

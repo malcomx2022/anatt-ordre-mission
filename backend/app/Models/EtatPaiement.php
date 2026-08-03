@@ -85,7 +85,7 @@ class EtatPaiement extends Model
         return $this->statut === 'VALIDE';
     }
 
-    /** L'état porte-t-il sur la tranche des avances (70 %) ? */
+    /** L'état porte-t-il sur la tranche des avances (part paramétrable) ? */
     public function estAvance(): bool
     {
         return $this->tranche === self::TRANCHE_AVANCE;
