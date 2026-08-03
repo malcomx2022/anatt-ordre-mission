@@ -68,7 +68,7 @@
                 <th>Taux/jour</th>
                 <th>Nbre de<br>jours</th>
                 <th>Total<br>partiel</th>
-                <th>Total</th>
+                <th>Total<br>général</th>
                 <th>Avance</th>
                 <th>Reliquat</th>
                 <th>Contact</th>
