@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { chargerPartAvance } from '@/composables/usePartAvance'
 import { permissionsForRole } from '@/utils/permissions'
 import type { Permission } from '@/utils/permissions'
 
@@ -335,7 +336,10 @@ router.beforeEach(async (to) => {
     if (auth.token) {
       try {
         await auth.fetchUser()
-        if (auth.isAuthenticated) return checkPermission()
+        if (auth.isAuthenticated) {
+          await chargerPartAvance()
+          return checkPermission()
+        }
       } catch {
         // token invalid
       }
@@ -352,6 +356,12 @@ router.beforeEach(async (to) => {
   // tant que must_change_password n'est pas levé (cohérent avec le verrou backend 423).
   if (auth.isAuthenticated && auth.mustChangePassword && to.name !== 'force-password-change') {
     return { name: 'force-password-change' }
+  }
+
+  // Pourcentage d'avance chargé avant tout écran authentifié : garantit que les
+  // instantanés synchrones partAvance() des vues lisent la bonne valeur. Idempotent.
+  if (auth.isAuthenticated) {
+    await chargerPartAvance()
   }
 
   return checkPermission()

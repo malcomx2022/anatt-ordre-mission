@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { authService } from '@/services/auth'
+import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
 import type { User } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -27,6 +28,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = utilisateur
       permissions.value = perms ?? []
       localStorage.setItem('auth_token', jeton)
+      // Pré-charge le pourcentage d'avance paramétrable dès la session ouverte
+      // (idempotent) : les écrans le liront sans latence ni retour à 70 %.
+      void chargerPartAvance()
     } finally {
       loading.value = false
     }
@@ -41,6 +45,8 @@ export const useAuthStore = defineStore('auth', () => {
       ])
       user.value = utilisateur
       permissions.value = perms ?? []
+      // Session restaurée (rechargement) : recharge aussi le pourcentage d'avance.
+      void chargerPartAvance()
     } catch {
       await logout()
     }
@@ -57,6 +63,8 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     permissions.value = []
+    // Ne pas conserver le réglage d'une session à l'autre : purge du cache.
+    reinitialiserPartAvance()
     localStorage.removeItem('auth_token')
     sessionStorage.clear()
   }
