@@ -149,8 +149,8 @@
                             <td style="text-align:right">{{ $montant_transport }} FCFA</td>
                         </tr>
                     @endif
-                    <tr><td colspan="3">Avance (70 %)</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
-                    <tr><td colspan="3">Reliquat (30 %)</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
+                    <tr><td colspan="3">Avance ({{ $avance_pct }} %)</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
+                    <tr><td colspan="3">Reliquat ({{ $reliquat_pct }} %)</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
                     <tr class="total-row"><td colspan="3">Total</td><td style="text-align:right">{{ $montant_total }} FCFA</td></tr>
                 </tbody>
             </table>
