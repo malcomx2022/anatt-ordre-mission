@@ -666,6 +666,18 @@ POST   /api/admin/users/:id/reset-password    → Réinitialise → { password }
 > Matrice éditable : `config/profils.php`. SUPER_ADMIN initial paramétrable via `.env`
 > (`SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`).
 
+### Paramètres système
+```
+GET    /api/admin/settings                    → Réglages (SUPER_ADMIN : parametres.gerer ; secret SMTP masqué)
+PUT    /api/admin/settings                    → Écrit une liste blanche de clés (dont partAvance, entier 0-100)
+GET    /api/admin/parametres/part-avance      → { data: <int> } Part de l'avance (LECTURE PUBLIQUE, tout authentifié)
+```
+> `partAvance` (défaut 70) définit la répartition avance/reliquat : `avance = round(montant × partAvance/100)`,
+> le reliquat absorbe l'arrondi. Écriture réservée au SUPER_ADMIN via `/settings` ; **lecture par la route
+> publique dédiée** `parametres/part-avance` (l'UI la lit pour tous les profils — ne pas utiliser `/settings`,
+> qui exige `parametres.gerer`). Appliqué au calcul à la retranscription des OM (`CalculIndemniteService`).
+> Détail : `docs/parametrage-part-avance.md`.
+
 ### Agents
 ```
 GET    /api/agents                  → { data: Agent[], meta } (filtres: search, categorie, operateur, actif)
