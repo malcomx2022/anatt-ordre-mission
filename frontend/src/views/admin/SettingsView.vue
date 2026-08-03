@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
+import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
 
 const api = useApi()
 const { success: toastSuccess } = useToast()
@@ -95,6 +96,10 @@ async function saveAll() {
       maintenanceMode: maintenanceMode.value,
       notifications: notifications.value.map(n => ({ key: n.key, enabled: n.enabled })),
     })
+    // Purge puis recharge le pourcentage d'avance en mémoire : la nouvelle part
+    // s'applique aussitôt aux écrans, sans recharger la page.
+    reinitialiserPartAvance()
+    void chargerPartAvance()
     toastSuccess('Parametres enregistres avec succes.')
   } catch {
     // Geree par useApi
