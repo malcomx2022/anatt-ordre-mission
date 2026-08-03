@@ -8,6 +8,7 @@ use App\Support\MontantEnLettres;
 use App\Support\PdfAssets;
 use App\Support\Workflow;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -208,7 +209,18 @@ class EtatPaiementPdf
 
         // Le tableau figé au récapitulatif fait foi : le document signé ne peut
         // pas s'imprimer différemment de ce qui a été présenté au signataire.
-        // Repli sur le calcul pour les états antérieurs à l'instantané.
+        // Repli sur le calcul pour les états antérieurs à l'instantané (legacy) :
+        // on le journalise, car un tel document est recalculé à la volée et n'a
+        // pas la garantie d'intégrité de l'instantané figé.
+        if ($etat->lignes === null) {
+            Log::warning("État de paiement sans instantané « lignes » : tableau recalculé à la volée (legacy).", [
+                'etat_id' => $etat->id,
+                'mission_id' => $etat->mission_id,
+                'tranche' => $etat->tranche,
+                'statut' => $etat->statut,
+            ]);
+        }
+
         $lignes = $etat->lignes ?? LignesEtatPaiement::pourMission($etat->mission_id);
 
         // L'état n'autorise que SA tranche : sa colonne est remplie, l'autre
