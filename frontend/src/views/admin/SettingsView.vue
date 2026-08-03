@@ -56,7 +56,9 @@ onMounted(async () => {
     if (s.reconciliationDays) reconciliationDays.value = s.reconciliationDays
     if (s.sessionDuration) sessionDuration.value = s.sessionDuration
     if (s.maxLoginAttempts) maxLoginAttempts.value = s.maxLoginAttempts
-    if (s.partAvance) partAvance.value = s.partAvance
+    // !== undefined et non un test de vérité : une part enregistrée à 0 (avance
+    // nulle, tout en reliquat) est une valeur licite qui doit être chargée.
+    if (s.partAvance !== undefined) partAvance.value = s.partAvance
     if (s.mtnEnabled !== undefined) mtnEnabled.value = s.mtnEnabled
     if (s.moovEnabled !== undefined) moovEnabled.value = s.moovEnabled
     if (s.doubleValidation !== undefined) doubleValidation.value = s.doubleValidation
