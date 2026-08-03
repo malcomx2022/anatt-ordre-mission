@@ -9,10 +9,13 @@ import { ordresService } from '@/services/ordres'
 import { paiementsService } from '@/services/paiements'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
+import { partAvance } from '@/composables/usePartAvance'
 import type { LotPaiement, LotPreview, Operateur, TrancheVersement } from '@/types'
 
 const props = defineProps<{ operateurInitial?: Operateur }>()
 const toast = useToast()
+const avancePct = partAvance()
+const reliquatPct = 100 - avancePct
 
 interface MissionItem { id: number; label: string }
 
@@ -122,8 +125,8 @@ async function marquerErreur() {
         <div>
           <label class="text-[11px] text-gray-500 font-body block mb-1">Tranche</label>
           <select v-model="tranche" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-body focus:outline-none focus:border-anatt-500">
-            <option value="AVANCE">Avance (70 %)</option>
-            <option value="RELIQUAT">Reliquat (30 %)</option>
+<option value="AVANCE">Avance ({{ avancePct }} %)</option>
+             <option value="RELIQUAT">Reliquat ({{ reliquatPct }} %)</option>
           </select>
         </div>
         <div>

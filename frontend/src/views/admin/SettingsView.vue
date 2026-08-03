@@ -18,6 +18,7 @@ const batchSize = ref(100)
 const reconciliationDays = ref(7)
 const sessionDuration = ref(30)
 const maxLoginAttempts = ref(5)
+const partAvance = ref(70)
 
 const mtnEnabled = ref(true)
 const moovEnabled = ref(true)
@@ -54,6 +55,7 @@ onMounted(async () => {
     if (s.reconciliationDays) reconciliationDays.value = s.reconciliationDays
     if (s.sessionDuration) sessionDuration.value = s.sessionDuration
     if (s.maxLoginAttempts) maxLoginAttempts.value = s.maxLoginAttempts
+    if (s.partAvance) partAvance.value = s.partAvance
     if (s.mtnEnabled !== undefined) mtnEnabled.value = s.mtnEnabled
     if (s.moovEnabled !== undefined) moovEnabled.value = s.moovEnabled
     if (s.doubleValidation !== undefined) doubleValidation.value = s.doubleValidation
@@ -84,6 +86,7 @@ async function saveAll() {
       reconciliationDays: reconciliationDays.value,
       sessionDuration: sessionDuration.value,
       maxLoginAttempts: maxLoginAttempts.value,
+      partAvance: partAvance.value,
       mtnEnabled: mtnEnabled.value,
       moovEnabled: moovEnabled.value,
       doubleValidation: doubleValidation.value,
@@ -142,6 +145,10 @@ async function saveAll() {
               <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Devise</label><input :value="currency" type="text" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body bg-gray-50 text-gray-500"></div>
             </div>
             <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Fuseau horaire</label><select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none"><option>{{ timezone }}</option></select></div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Part de l'avance (%)</label><input v-model.number="partAvance" type="number" min="0" max="100" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Part du reliquat (%)</label><input :value="100 - partAvance" type="text" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body bg-gray-50 text-gray-500"></div>
+            </div>
           </div>
         </div>
 

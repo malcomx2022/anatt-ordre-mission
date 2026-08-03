@@ -6,11 +6,14 @@ import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { ordresService } from '@/services/ordres'
 import { useToast } from '@/composables/useToast'
+import { partAvance } from '@/composables/usePartAvance'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
 const toast = useToast()
 const id = Number(route.params.id)
+const avancePct = partAvance()
+const reliquatPct = 100 - avancePct
 const ordre = ref<OrdreMission | null>(null)
 const loading = ref(true)
 const downloading = ref(false)
@@ -82,8 +85,8 @@ async function telechargerPdf() {
             <td class="py-2 text-gray-400">Transport</td><td class="text-right">{{ fmt(ordre.montant_transport) }} FCFA</td>
           </tr>
           <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Montant total</td><td class="text-right font-display font-bold text-anatt-700">{{ fmt(ordre.montant_total) }} FCFA</td></tr>
-          <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Avance (70 %)</td><td class="text-right">{{ fmt(ordre.avance) }} FCFA</td></tr>
-          <tr><td class="py-2 text-gray-400">Reliquat (30 %)</td><td class="text-right">{{ fmt(ordre.reliquat) }} FCFA</td></tr>
+          <tr class="border-b border-gray-50"><td class="py-2 text-gray-400">Avance ({{ avancePct }} %)</td><td class="text-right">{{ fmt(ordre.avance) }} FCFA</td></tr>
+          <tr><td class="py-2 text-gray-400">Reliquat ({{ reliquatPct }} %)</td><td class="text-right">{{ fmt(ordre.reliquat) }} FCFA</td></tr>
         </tbody>
       </table>
 

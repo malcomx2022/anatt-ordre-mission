@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Bareme;
+use App\Support\Parametres;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -10,8 +11,10 @@ use Illuminate\Validation\ValidationException;
  * Calcul de l'indemnité de mission (per diem) selon le barème officiel ANaTT.
  *
  *   per_diem = taux_journalier(catégorie × zone × type) × nb_jours
- *   avance   = round(per_diem × 0,70)     (70 %)
- *   reliquat = per_diem - avance          (30 %)
+ *   avance   = round(per_diem × partAvance/100)   (paramétrable, 70 % par défaut)
+ *   reliquat = per_diem - avance
+ *
+ * Le pourcentage d'avance se configure dans les Paramètres (SUPER_ADMIN).
  *
  * Exonération : si la prise en charge est assurée par un organisme tiers,
  * aucun frais n'est alloué (montants à 0, aucun versement généré).
@@ -146,14 +149,15 @@ class CalculIndemniteService
     }
 
     /**
-     * Répartition AVANCE 70 % / RELIQUAT 30 % (le reliquat absorbe l'arrondi).
+     * Répartition AVANCE / RELIQUAT selon le pourcentage paramétrable.
      *
      * @return array{0:int,1:int} [avance, reliquat]
      */
     private function repartir(int $montantTotal): array
     {
-        $avance = (int) round($montantTotal * 0.70);   // 70 %
-        $reliquat = $montantTotal - $avance;           // 30 %
+        $taux = Parametres::partAvance();
+        $avance = (int) round($montantTotal * $taux / 100);
+        $reliquat = $montantTotal - $avance;
 
         return [$avance, $reliquat];
     }
