@@ -11,6 +11,7 @@ import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
 import { partAvance } from '@/composables/usePartAvance'
+import { normaliserNumeroEtat, numeroEtat } from '@/utils/etats'
 import type { EtatPaiement, EtatsMission, TrancheEtat } from '@/types'
 
 const route = useRoute()
@@ -160,11 +161,14 @@ const approuver = () =>
   )
 
 function enregistrerNumero() {
-  const valeur = numero.value.trim()
+  // Le « N° » est posé à l'affichage : on ne stocke que le numéro lui-même,
+  // même si l'agent l'a recopié du registre avec son préfixe.
+  const valeur = normaliserNumeroEtat(numero.value)
   if (!valeur) {
     toast.warning('Saisissez le numéro de l’état.')
     return
   }
+  numero.value = valeur
   executer(() => etatsService.definirNumero(etat.value!.id, valeur), 'Numéro enregistré.')
 }
 
@@ -284,7 +288,7 @@ async function telechargerFinal() {
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-3">
               <h2 class="text-xl font-display font-bold text-gray-800">
-                {{ etat.numero ? 'N°' + etat.numero : 'Numéro non attribué' }}
+                {{ numeroEtat(etat.numero, 'Numéro non attribué') }}
               </h2>
               <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-anatt-100 text-anatt-700 uppercase">
                 {{ trancheActive === 'AVANCE' ? 'Avances' : 'Reliquats' }}
@@ -374,7 +378,7 @@ async function telechargerFinal() {
               </AppButton>
             </div>
             <p v-else class="text-sm font-body text-gray-700">
-              {{ etat.numero ? 'N°' + etat.numero : 'Non attribué' }}
+              {{ numeroEtat(etat.numero, 'Non attribué') }}
             </p>
           </AppCard>
         </div>

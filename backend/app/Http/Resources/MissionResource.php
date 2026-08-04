@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\EtatPaiement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,7 +27,8 @@ class MissionResource extends JsonResource
                     'id' => $this->etatPaiement->id,
                     'tranche' => $this->etatPaiement->tranche,
                     'statut' => $this->etatPaiement->statut,
-                    'numero' => $this->etatPaiement->numero,
+                    // Sans préfixe : les écrans posent eux-mêmes le « N° ».
+                    'numero' => EtatPaiement::normaliserNumero($this->etatPaiement->numero),
                     'valide' => $this->etatPaiement->estValide(),
                 ]
                 : null),

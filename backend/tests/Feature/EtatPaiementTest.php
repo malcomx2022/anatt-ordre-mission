@@ -222,6 +222,38 @@ it('n’attribue jamais deux fois le même numéro', function () {
         ->assertJsonValidationErrors('numero');
 });
 
+it('retire le préfixe « N° » recopié du registre, pour ne pas le doubler à l’impression', function () {
+    $etat = conduire($this, 'BROUILLON');
+
+    foreach (['N°0069/ANaTT/DAF/C-SFC', 'n° 0069/ANaTT/DAF/C-SFC', 'N°N°0069/ANaTT/DAF/C-SFC'] as $saisie) {
+        $this->actingAs($this->daf)->putJson("/api/etats/{$etat->id}/numero", ['numero' => $saisie])
+            ->assertOk()
+            ->assertJsonPath('data.numero', '0069/ANaTT/DAF/C-SFC');
+
+        expect($etat->fresh()->numero)->toBe('0069/ANaTT/DAF/C-SFC');
+    }
+});
+
+it('ne touche pas à un numéro qui ne porte pas de préfixe', function () {
+    $etat = conduire($this, 'BROUILLON');
+
+    foreach (['0070/ANaTT/DAF/C-SFC', '###', 'NOTE-12'] as $saisie) {
+        $this->actingAs($this->daf)->putJson("/api/etats/{$etat->id}/numero", ['numero' => $saisie])
+            ->assertOk()
+            ->assertJsonPath('data.numero', $saisie);
+    }
+});
+
+it('refuse un numéro réduit à son seul préfixe', function () {
+    $etat = conduire($this, 'BROUILLON');
+
+    $this->actingAs($this->daf)->putJson("/api/etats/{$etat->id}/numero", ['numero' => 'N°'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('numero');
+
+    expect($etat->fresh()->numero)->toBeNull();
+});
+
 it('fige le numéro après la validation finale', function () {
     $etat = conduire($this, 'VALIDE');
 

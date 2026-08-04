@@ -204,12 +204,23 @@ class EtatPaiementService
      * Modifiable pendant tout le circuit (une erreur de saisie de registre doit
      * pouvoir être corrigée avant l'arrêté) ; figé par la validation finale,
      * qui est aussi celle qui l'exige.
+     *
+     * Le préfixe « N° » est retiré à l'entrée : il est posé par les écrans et
+     * les PDF, le stocker le ferait apparaître deux fois.
      */
     public function definirNumero(EtatPaiement $etat, string $numero, User $user): EtatPaiement
     {
         if ($etat->estValide()) {
             throw ValidationException::withMessages([
                 'numero' => ['Cet état est validé : son numéro est figé avec le document.'],
+            ]);
+        }
+
+        $numero = EtatPaiement::normaliserNumero($numero);
+
+        if ($numero === null) {
+            throw ValidationException::withMessages([
+                'numero' => ['Saisissez le numéro de l’état tel qu’il figure au registre.'],
             ]);
         }
 
