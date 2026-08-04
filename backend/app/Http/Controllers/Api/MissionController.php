@@ -7,6 +7,7 @@ use App\Http\Requests\StoreMissionRequest;
 use App\Http\Resources\MissionResource;
 use App\Http\Resources\OrdreMissionResource;
 use App\Models\AuditLog;
+use App\Models\EtatPaiement;
 use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Services\MissionService;
@@ -105,11 +106,14 @@ class MissionController extends Controller
                 'montant_total' => (int) $m->montant_total,
                 // null tant que le récapitulatif n'a pas été établi.
                 'etat_statut' => $m->etatPaiement?->statut,
-                'etat_numero' => $m->etatPaiement?->numero,
+                // Sans préfixe : les écrans posent eux-mêmes le « N° ».
+                'etat_numero' => EtatPaiement::normaliserNumero($m->etatPaiement?->numero),
                 // Avancement du second document du circuit (état des reliquats),
                 // extrait explicitement par tranche (indépendant de l'ordre de chargement).
                 'etat_reliquat_statut' => $m->etatsPaiement->firstWhere('tranche', 'RELIQUAT')?->statut,
-                'etat_reliquat_numero' => $m->etatsPaiement->firstWhere('tranche', 'RELIQUAT')?->numero,
+                'etat_reliquat_numero' => EtatPaiement::normaliserNumero(
+                    $m->etatsPaiement->firstWhere('tranche', 'RELIQUAT')?->numero,
+                ),
             ]),
             'meta' => [
                 'current_page' => $missions->currentPage(),

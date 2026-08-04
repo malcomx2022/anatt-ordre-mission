@@ -196,7 +196,8 @@ class EtatPaiementController extends Controller
                     'date_retour' => $etat->mission->date_retour?->toDateString(),
                 ]
                 : null,
-            'numero' => $etat->numero,
+            // Sans préfixe : les écrans posent eux-mêmes le « N° ».
+            'numero' => EtatPaiement::normaliserNumero($etat->numero),
             'statut' => $etat->statut,
             'nb_beneficiaires' => $etat->nb_beneficiaires,
             'montant_total' => $etat->montant_total,

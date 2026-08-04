@@ -11,6 +11,7 @@ import { ordresService } from '@/services/ordres'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { partAvance } from '@/composables/usePartAvance'
+import { numeroEtat } from '@/utils/etats'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
@@ -118,7 +119,7 @@ onMounted(load)
               <strong>contrôle</strong>, le <strong>visa du DAF</strong> puis la
               <strong>validation du Directeur Général</strong> portent sur l’état de la
               mission, ce qui valide d’un coup tous ses ordres de mission.
-              <span v-if="etat?.numero"> — N°{{ etat.numero }}</span>
+              <span v-if="etat?.numero"> — {{ numeroEtat(etat.numero) }}</span>
             </p>
           </div>
           <router-link

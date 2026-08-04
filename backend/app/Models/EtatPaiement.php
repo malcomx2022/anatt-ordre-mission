@@ -79,6 +79,37 @@ class EtatPaiement extends Model
         return $this->belongsTo(User::class, 'valide_dg_par');
     }
 
+    /**
+     * Numéro de registre tel qu'il doit être stocké : sans le préfixe « N° ».
+     *
+     * Le préfixe appartient à l'affichage (écrans et PDF le posent eux-mêmes) ;
+     * le laisser entrer en base produirait un « N°N°0069/… » à l'impression.
+     * Tolère les graphies du registre papier (N°, N˚, Nº, No) et le retire
+     * autant de fois qu'il a été saisi — « No » n'est retiré que devant un
+     * chiffre, pour ne pas amputer un numéro qui commencerait par « NOTE… ».
+     * « # » n'est pas traité comme un préfixe : un numéro symbolique « ### »
+     * doit rester tel quel.
+     */
+    public static function normaliserNumero(?string $numero): ?string
+    {
+        if ($numero === null) {
+            return null;
+        }
+
+        $motif = '/^\s*(?:(?:n\s*[°˚º]|n\s*o(?=\s*\d))\s*)+/iu';
+        $valeur = trim(preg_replace($motif, '', trim($numero)) ?? '');
+
+        return $valeur === '' ? null : $valeur;
+    }
+
+    /** Numéro préfixé pour l'affichage, sans jamais doubler le « N° ». */
+    public function numeroAffiche(): ?string
+    {
+        $valeur = self::normaliserNumero($this->numero);
+
+        return $valeur === null ? null : 'N°'.$valeur;
+    }
+
     /** L'état est-il définitivement validé (et donc payable) ? */
     public function estValide(): bool
     {

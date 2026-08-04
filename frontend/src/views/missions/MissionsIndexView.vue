@@ -10,6 +10,7 @@ import { missionsService } from '@/services/missions'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
+import { numeroEtat } from '@/utils/etats'
 import type { MissionResume, StatutEtat } from '@/types'
 
 const toast = useToast()
@@ -150,7 +151,7 @@ const periode = (m: MissionResume) => {
                   <EtatStatusBadge v-if="m.etat_statut" :statut="m.etat_statut" />
                   <AppBadge v-else variant="neutral">À établir</AppBadge>
                   <span v-if="m.etat_numero" class="text-xs text-gray-500 font-body">
-                    N°{{ m.etat_numero }}
+                    {{ numeroEtat(m.etat_numero) }}
                   </span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -160,7 +161,7 @@ const periode = (m: MissionResume) => {
                     {{ m.etat_statut === 'VALIDE' ? 'À établir' : 'Verrouillé' }}
                   </span>
                   <span v-if="m.etat_reliquat_numero" class="text-xs text-gray-500 font-body">
-                    N°{{ m.etat_reliquat_numero }}
+                    {{ numeroEtat(m.etat_reliquat_numero) }}
                   </span>
                 </div>
               </div>

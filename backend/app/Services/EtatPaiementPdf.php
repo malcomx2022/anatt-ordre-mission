@@ -160,7 +160,8 @@ class EtatPaiementPdf
             // Les deux documents consolidés : registre, validation finale, signataire.
             'references' => array_map(fn (EtatPaiement $e) => [
                 'libelle' => 'État '.($e->libelleTranche()),
-                'numero' => $e->numero,
+                // Sans préfixe : le document pose lui-même le « N° ».
+                'numero' => EtatPaiement::normaliserNumero($e->numero),
                 'valide_le' => $e->valide_dg_le?->format('d/m/Y'),
                 'signataire' => $e->valide_dg_nom,
                 'fonction' => $e->valide_dg_fonction ?: 'Le Directeur Général',
@@ -235,7 +236,8 @@ class EtatPaiementPdf
 
         return [
             'brouillon' => $brouillon,
-            'numero' => $etat->numero,
+            // Sans préfixe : le document pose lui-même le « N° ».
+            'numero' => EtatPaiement::normaliserNumero($etat->numero),
             'tranche' => $etat->tranche,
             'libelle_tranche' => $etat->libelleTranche(),
             'statut' => $etat->statut,

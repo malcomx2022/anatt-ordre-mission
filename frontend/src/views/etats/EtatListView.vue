@@ -9,6 +9,7 @@ import { etatsService } from '@/services/etats'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
+import { numeroEtat } from '@/utils/etats'
 import type { EtatPaiement, StatutEtat, TrancheEtat } from '@/types'
 
 const toast = useToast()
@@ -169,7 +170,7 @@ const periode = (e: EtatPaiement) => {
             @click="$router.push(`/missions/${e.mission_id}/etat`)"
           >
             <td class="px-6 py-4 text-sm font-body text-gray-900">
-              {{ e.numero ? 'N°' + e.numero : '—' }}
+              {{ numeroEtat(e.numero) }}
             </td>
             <td class="px-6 py-4">
               <span
