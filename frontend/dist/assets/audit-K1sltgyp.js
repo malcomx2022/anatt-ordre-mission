@@ -1,1 +1,0 @@
-import{l as e,m as t,p as n}from"./index-D60bMzSD.js";var r={async list(t={}){let{data:r}=await e.get(`/api/audit`,{params:t});return n(r)},async get(n){let{data:r}=await e.get(`/api/audit/${n}`);return t(r)}};export{r as t};
