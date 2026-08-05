@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,6 +47,12 @@ class AuthController extends Controller
 
         // Trace la dernière connexion réussie (sans toucher updated_at).
         $user->forceFill(['derniere_connexion' => now()])->saveQuietly();
+
+        // Audit de la connexion réussie (entité « session », avec l'IP via le journal).
+        AuditService::log($user, 'LOGIN', 'session', null, [
+            'email' => $user->email,
+            'role' => $user->role,
+        ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
