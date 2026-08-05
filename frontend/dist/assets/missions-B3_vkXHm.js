@@ -1,0 +1,1 @@
+import{l as e,m as t,p as n}from"./index-TlXeE3kq.js";var r={async list(t={}){let{data:r}=await e.get(`/api/missions`,{params:t});return n(r)},async create(n){let{data:r}=await e.post(`/api/missions`,n);return t(r)}};export{r as t};

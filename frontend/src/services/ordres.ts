@@ -9,6 +9,7 @@ export interface OrdreFilters {
   date_debut?: string
   date_fin?: string
   search?: string
+  actifs?: boolean
   per_page?: number
   page?: number
 }
