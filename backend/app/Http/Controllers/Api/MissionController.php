@@ -58,6 +58,12 @@ class MissionController extends Controller
             $query->search($search);
         }
 
+        // OM « actifs » : exclut les statuts terminaux non retenus (rejetés/annulés),
+        // pour un compteur de volume utile (ex. KPI du tableau de bord).
+        if ($request->boolean('actifs')) {
+            $query->whereNotIn('statut', ['REJETE', 'ANNULE']);
+        }
+
         $ordres = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
 
         return OrdreMissionResource::collection($ordres)->response();

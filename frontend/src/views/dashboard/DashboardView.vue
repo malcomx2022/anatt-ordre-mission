@@ -26,7 +26,8 @@ onMounted(async () => {
     const mois = new Date().toISOString().slice(0, 7)
     const [r, o] = await Promise.all([
       rapportsService.mensuel(mois),
-      ordresService.list({ per_page: 5 }),
+      // actifs : exclut les OM rejetés/annulés — KPI de volume + activité récente.
+      ordresService.list({ per_page: 5, actifs: true }),
     ])
     rapport.value = r
     ordres.value = o.items
@@ -37,7 +38,7 @@ onMounted(async () => {
 })
 
 const stats = computed(() => [
-  { label: 'Ordres de mission', value: String(totalOrdres.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { label: 'Ordres de mission actifs', value: String(totalOrdres.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
   { label: 'Versements confirmés (mois)', value: String(rapport.value?.synthese.nb_versements ?? 0), iconBg: 'bg-anatt-100', iconColor: 'text-anatt-600' },
   { label: 'Montant payé (mois)', value: fmt(rapport.value?.synthese.montant_total ?? 0), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
   { label: 'Opérateurs actifs', value: String(rapport.value?.par_operateur.length ?? 0), iconBg: 'bg-gold-100', iconColor: 'text-gold-600' },
