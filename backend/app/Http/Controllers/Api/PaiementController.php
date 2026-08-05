@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LotPaiementResource;
+use App\Http\Resources\VersementResource;
 use App\Jobs\GenererLotPaiementJob;
 use App\Models\LotPaiement;
 use App\Models\Versement;
@@ -143,11 +144,15 @@ class PaiementController extends Controller
             $query->where('date_paiement', '>=', $dateDebut);
         }
         if ($dateFin = $request->get('date_fin')) {
-            $query->where('date_paiement', '<=', $dateFin);
+            // date_paiement est un TIMESTAMP : une date seule (« 2026-08-05 ») vaut
+            // minuit et exclurait les paiements de la journée. On borne à la fin du jour.
+            $query->where('date_paiement', '<=', Carbon::parse($dateFin)->endOfDay());
         }
 
         $versements = $query->orderByDesc('date_paiement')->paginate($this->getPerPage($request));
 
-        return response()->json($versements);
+        // Resource (et non le modèle brut) : forme cohérente avec les autres listes,
+        // sans exposer les colonnes internes ; porte le bénéficiaire et la mission.
+        return VersementResource::collection($versements)->response();
     }
 }

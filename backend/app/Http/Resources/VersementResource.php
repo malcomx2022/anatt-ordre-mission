@@ -19,6 +19,14 @@ class VersementResource extends JsonResource
             'telephone' => $this->telephone,
             'statut' => $this->statut,
             'date_paiement' => $this->date_paiement?->toISOString(),
+            // Contexte bénéficiaire/mission : seulement quand l'OM est chargé
+            // (ex. historique). Omis ailleurs pour ne pas déclencher de lazy-load.
+            'reference_semo' => $this->whenLoaded('ordreMission', fn () => $this->ordreMission->reference_semo),
+            'beneficiaire' => $this->whenLoaded('ordreMission', fn () => $this->ordreMission->agent?->nom_complet),
+            'mission' => $this->whenLoaded('ordreMission', fn () => [
+                'objet' => $this->ordreMission->mission?->objet,
+                'destination' => $this->ordreMission->mission?->destination,
+            ]),
         ];
     }
 }
