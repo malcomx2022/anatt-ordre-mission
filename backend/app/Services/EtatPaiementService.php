@@ -253,6 +253,13 @@ class EtatPaiementService
     /** Étape 2 — « Vu » du DAF : CONTROLE → VISA_DAF. Pas encore payable. */
     public function viser(EtatPaiement $etat, User $user): EtatPaiement
     {
+        // Séparation des tâches : le DAF est distinct du contrôleur.
+        if (Workflow::separationDesTaches() && (int) $etat->controle_par === (int) $user->id) {
+            throw ValidationException::withMessages([
+                'signataire' => ['Vous avez contrôlé cet état : le visa DAF revient à une autre personne.'],
+            ]);
+        }
+
         $etat = $this->transition($etat, ['CONTROLE'], 'VISA_DAF', $user, Workflow::ETAPE_VISA_DAF, 'VISA_DAF_ETAT');
 
         // Visé : la validation finale revient au Directeur Général.
@@ -269,9 +276,12 @@ class EtatPaiementService
      */
     public function approuver(EtatPaiement $etat, User $user): EtatPaiement
     {
-        if (Workflow::separationDesTaches() && (int) $etat->visa_daf_par === (int) $user->id) {
+        // Séparation des tâches : la validation finale revient à une personne
+        // distincte des DEUX signataires amont (contrôleur ET DAF).
+        if (Workflow::separationDesTaches()
+            && in_array((int) $user->id, [(int) $etat->controle_par, (int) $etat->visa_daf_par], true)) {
             throw ValidationException::withMessages([
-                'signataire' => ['Vous avez apposé le visa DAF sur cet état : la validation finale revient à une autre personne.'],
+                'signataire' => ['Vous êtes déjà intervenu sur cet état (contrôle ou visa DAF) : la validation finale revient à une autre personne.'],
             ]);
         }
 
