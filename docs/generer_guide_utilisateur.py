@@ -174,7 +174,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(6):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.1.0  •  Juillet 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.2.0  •  Août 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document destiné aux utilisateurs de l'application"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -199,28 +199,34 @@ encadre("Périmètre important",
         "les fichiers de paiement. La confirmation d'un paiement est manuelle, après dépôt réussi.")
 
 h2("1.1 Cycle de vie en bref")
-para("Le parcours complet d'un dossier suit toujours la même séquence :")
+para("Le parcours complet d'un dossier suit toujours la même séquence. Le paiement se fait en DEUX "
+     "temps — d'abord les avances, puis les reliquats — et chaque tranche a son propre état de paiement "
+     "et son propre circuit de validation :")
 etape("SEMO émet les ordres de mission (hors application).")
 etape("Un gestionnaire retranscrit les OM dans l'application, regroupés par mission.")
 etape("Le système calcule le per diem (catégorie × zone × type de prise en charge × nombre de jours).")
-etape("Le gestionnaire établit le récapitulatif : un état de paiement (brouillon) est produit pour la mission.")
-etape("Le contrôleur contrôle l'état ; le DAF y appose son visa ; le Directeur Général le valide en dernier.")
-etape("La validation du DG arrête l'état et rend payables tous les ordres de mission de la mission.")
-etape("Un agent financier génère les fichiers de paiement : d'abord l'AVANCE, puis le RELIQUAT (.txt MTN ou .xlsx Moov).")
-etape("Chaque fichier est déposé manuellement sur la plateforme de l'opérateur, puis confirmé dans l'application.")
-encadre("Ce qui est validé, c'est l'état de la mission",
-        "La validation ne se fait pas ordre par ordre. Chaque mission possède UN état de paiement "
-        "récapitulatif ; c'est lui qui passe le circuit contrôle → visa DAF → validation DG. Valider "
-        "l'état valide d'un coup tous les OM de la mission. Les OM, eux, conservent le statut sous lequel "
-        "ils ont été retranscrits depuis SEMO jusqu'à cette validation finale.")
+etape("Le gestionnaire établit le récapitulatif de l'ÉTAT DES AVANCES (brouillon).")
+etape("Contrôleur → visa DAF → validation DG sur l'état des avances.")
+etape("La validation du DG arrête l'état des avances, rend les OM VALIDE et ouvre les fichiers d'AVANCE.")
+etape("L'agent financier génère et dépose les fichiers d'avance (.txt MTN / .xlsx Moov), puis les confirme.")
+etape("Une fois l'état des avances validé, le gestionnaire établit l'ÉTAT DES RELIQUATS, qui suit le même circuit.")
+etape("La validation de l'état des reliquats ouvre les fichiers de RELIQUAT, générés, déposés puis confirmés.")
+encadre("Ce qui est validé, c'est l'état — et il y en a deux",
+        "La validation ne se fait pas ordre par ordre. Chaque mission possède DEUX états de paiement : "
+        "l'état des AVANCES puis l'état des RELIQUATS. Chacun passe le circuit contrôle → visa DAF → "
+        "validation DG et ouvre les fichiers de SA tranche. L'état des reliquats ne peut être établi "
+        "qu'une fois l'état des avances validé. Les OM, eux, conservent le statut sous lequel ils ont été "
+        "retranscrits depuis SEMO jusqu'à la validation de l'état des avances, qui les rend payables.")
 
 h2("1.2 Notions clés")
 bullet("Mission : un événement (atelier, supervision…) qui regroupe plusieurs ordres de mission.")
 bullet("Ordre de mission (OM) : 1 enregistrement = 1 bénéficiaire. Sa référence SEMO est unique.")
-bullet("État de paiement : le document récapitulatif d'une mission (un seul par mission), numéroté à la "
-       "main, qui porte le circuit de validation et les signatures du DAF et du Directeur Général.")
+bullet("État de paiement : le document récapitulatif d'une TRANCHE d'une mission (deux par mission : "
+       "l'état des avances puis l'état des reliquats), numéroté à la main, qui porte le circuit de "
+       "validation et les signatures du DAF et du Directeur Général.")
 bullet("CAV (conducteur de véhicule administratif) : bénéficiaire à part entière, payé selon SA catégorie.")
-bullet("Per diem : indemnité journalière, répartie en AVANCE (70 %) et RELIQUAT (30 %).")
+bullet("Per diem : indemnité journalière, répartie en AVANCE (70 % par défaut) et RELIQUAT (le reste). "
+       "La part de l'avance est paramétrable par le SUPER_ADMIN.")
 bullet("Versement : une tranche (AVANCE ou RELIQUAT) d'un OM, pour un opérateur donné.")
 bullet("Lot de paiement : 1 mission × 1 tranche × 1 opérateur = 1 fichier généré.")
 
@@ -246,8 +252,10 @@ tableau(
 )
 encadre("Séparation des tâches",
         "Le DAF et le DG autorisent, l'agent financier exécute : ni le DAF ni le DG ne génèrent ni ne "
-        "confirment les paiements. Une même personne ne peut pas apposer à la fois le visa DAF et la "
-        "validation finale du même état.")
+        "confirment les paiements. Les trois signataires d'un même état doivent être TROIS personnes "
+        "distinctes : celui qui a contrôlé ne peut pas viser ni valider, et celui qui a visé (DAF) ne "
+        "peut pas valider (DG). Un compte cumulant plusieurs droits (ex. super administrateur) est donc "
+        "refusé s'il tente d'enchaîner deux étapes du même dossier.")
 
 h2("2.1 Matrice détaillée des permissions")
 para("Légende : ✔ = autorisé. Le SUPER_ADMIN dispose implicitement de toutes les permissions.")
@@ -311,9 +319,10 @@ etape("Confirmez. Vous accédez ensuite normalement à l'application.")
 # 4. TABLEAU DE BORD
 # =========================================================================
 h1("4. Tableau de bord")
-para("À la connexion, le tableau de bord présente une vue d'ensemble : indicateurs clés (OM en cours, "
-     "OM validés, paiements du mois), graphiques et accès rapides aux principales actions. Les indicateurs "
-     "affichés dépendent de vos droits.")
+para("À la connexion, le tableau de bord présente une vue d'ensemble : indicateurs clés (ordres de "
+     "mission actifs — hors rejetés/annulés, versements confirmés et montant payé du mois, opérateurs "
+     "actifs), graphiques et accès rapides aux principales actions. Les indicateurs affichés dépendent "
+     "de vos droits.")
 
 # =========================================================================
 # 5. PERSONNEL / AGENTS
@@ -386,21 +395,30 @@ para("La validation des ordres de mission ne se fait pas un par un : elle se jou
 # =========================================================================
 # 7. ÉTAT DE PAIEMENT (CIRCUIT DE VALIDATION)
 # =========================================================================
-h1("7. État de paiement et circuit de validation")
-para("Chaque mission possède un seul état de paiement : le document récapitulatif qui liste tous ses "
-     "bénéficiaires, leurs montants (avance et reliquat) et le total général arrêté en toutes lettres. "
-     "C'est cet état — et non les OM pris séparément — qui suit le circuit de validation.")
+h1("7. États de paiement et circuit de validation")
+para("Le paiement d'une mission se fait en DEUX temps : d'abord les AVANCES, puis les RELIQUATS. À chaque "
+     "tranche correspond un état de paiement : le document récapitulatif qui liste tous les bénéficiaires, "
+     "les montants de la tranche et le total arrêté en toutes lettres. Ce sont ces états — et non les OM "
+     "pris séparément — qui suivent le circuit de validation. L'écran « États de paiement » présente, pour "
+     "chaque mission, ses deux onglets : Avances et Reliquats.")
+encadre("Les reliquats viennent après les avances",
+        "L'état des RELIQUATS ne peut être établi qu'une fois l'état des AVANCES entièrement validé par le "
+        "Directeur Général. Tant que ce n'est pas le cas, l'onglet Reliquats reste verrouillé.")
 
 h2("7.1 Établir le récapitulatif (brouillon)")
-para("Acteur : GESTIONNAIRE_OM. Depuis la mission, cliquez sur « Établir le récapitulatif ».")
-bullet("L'application agrège les OM de la mission et produit l'état au statut BROUILLON.")
+para("Acteur : GESTIONNAIRE_OM. Depuis la mission, choisissez la tranche (Avances par défaut) puis cliquez "
+     "sur « Établir le récapitulatif ».")
+bullet("L'application agrège les OM de la mission et produit l'état de la tranche au statut BROUILLON.")
 bullet("Le brouillon est téléchargeable en PDF : il porte le filigrane « BROUILLON — NON VALIDE » et "
        "ne comporte aucune signature. C'est l'épreuve que l'on relit avant d'engager le circuit.")
 bullet("Tant qu'aucune signature n'est apposée, « Rafraîchir » recalcule l'état si les OM ont changé.")
+bullet("La tranche Reliquats n'est proposée qu'après validation de l'état des avances.")
 
 h2("7.2 Le circuit en trois étapes")
-para("L'état passe successivement entre trois mains. Chacun retrouve les états qui l'attendent dans "
-     "l'écran « États de paiement », ouvert d'emblée sur sa propre file.")
+para("Chaque état (avances, puis reliquats) passe successivement entre trois mains. Le circuit est donc "
+     "parcouru DEUX fois : une fois pour l'état des avances, une fois pour l'état des reliquats. Chacun "
+     "retrouve les états qui l'attendent dans l'écran « États de paiement », ouvert d'emblée sur sa "
+     "propre file.")
 tableau(
     ["Étape", "Acteur", "Action", "Nouveau statut"],
     [
@@ -414,17 +432,22 @@ bullet("Le numéro de l'état est saisi manuellement, suivant le registre de l'a
        "avant la validation finale du DG, puis figé.")
 bullet("À chaque étape, la signature du titulaire (nom, prénoms, fonction et paraphe scanné) est apposée "
        "sur le document, avec un code de vérification.")
-bullet("La validation finale du DG arrête l'état et fait passer tous les OM de la mission au statut "
-       "VALIDE : ils deviennent alors payables.")
+bullet("Validation de l'état des AVANCES : elle arrête l'état, fait passer tous les OM de la mission au "
+       "statut VALIDE et ouvre les fichiers d'avance.")
+bullet("Validation de l'état des RELIQUATS : elle ouvre les fichiers de reliquat (les OM sont déjà VALIDE).")
 encadre("Rejet possible à chaque étape",
         "Le contrôleur, le DAF ou le DG peuvent rejeter l'état avec un motif (≥ 10 caractères). Le rejet "
         "efface les signatures déjà apposées et renvoie l'état en correction ; les ordres de mission "
         "gardent leur statut. Le gestionnaire peut alors refaire le récapitulatif.")
 
-h2("7.3 L'état de paiement définitif")
-para("Une fois l'état VALIDÉ, son PDF définitif est téléchargeable : sans filigrane, avec les deux "
-     "signatures (DAF puis Directeur Général) et le total général arrêté en toutes lettres. C'est le "
-     "document officiel de la mission. Il est édité au format paysage.")
+h2("7.3 Les états définitifs et l'état général")
+para("Une fois un état VALIDÉ, son PDF définitif est téléchargeable : sans filigrane, avec les deux "
+     "signatures (DAF puis Directeur Général) et le total de la tranche arrêté en toutes lettres. Il est "
+     "édité au format paysage.")
+bullet("Il existe donc deux documents définitifs : l'état des avances et l'état des reliquats.")
+bullet("Une fois les DEUX états validés, un « état général » consolidé est disponible : il réunit, par "
+       "bénéficiaire, l'avance et le reliquat, avec le total général de la mission arrêté en toutes lettres. "
+       "C'est le document de clôture de la mission.")
 
 h2("7.4 Signatures des titulaires (paramétrage)")
 para("Réservé au SUPER_ADMIN, écran « Signatures ». Pour le contrôleur, le DAF et le DG, on y enregistre "
@@ -445,8 +468,9 @@ bullet("Nombre de jours : décompte inclusif des dates (règle des 12 h : une p�
 bullet("Répartition détaillée : un même bénéficiaire peut cumuler plusieurs types (ex. 1 jour « un repas » "
        "à 15 000 + 6 jours « journée complète » à 45 000 = 285 000), comme sur l'état de paiement officiel.")
 bullet("Transport : montant facultatif ajouté au total avant la répartition avance / reliquat.")
-bullet("Avance = arrondi de (montant total × 70 %).")
-bullet("Reliquat = montant total − avance, soit 30 %.")
+bullet("Avance = arrondi de (montant total × part de l'avance). La part est de 70 % par défaut et se "
+       "règle dans les Paramètres (SUPER_ADMIN) ; elle s'applique aux OM retranscrits ensuite.")
+bullet("Reliquat = montant total − avance (30 % par défaut ; le reliquat absorbe l'arrondi).")
 bullet("Exonération (prise en charge par un tiers) : tous les montants sont à 0, aucun versement n'est créé.")
 para("Les 4 zones sont : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II et EXT_ZONE_III (les zones II et III ont des "
      "taux identiques). Les types « repas » (un repas, deux repas) ne s'appliquent qu'à l'intérieur ; les "
@@ -457,12 +481,13 @@ para("Les 4 zones sont : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II et EXT_ZONE_III (les
 # =========================================================================
 h1("9. Paiements")
 para("L'application GÉNÈRE des fichiers de paiement ; elle ne décaisse pas. Réservé à l'AGENT_FINANCIER.")
-encadre("Préalable",
-        "Les fichiers ne peuvent être générés qu'une fois l'état de paiement de la mission VALIDÉ par le "
-        "Directeur Général (ses OM passent alors au statut VALIDE). Un versement déjà CONFIRMÉ n'est jamais "
-        "réinclus dans un nouveau fichier (protection anti-double-paiement).")
+encadre("Préalable — éligibilité par tranche",
+        "Un versement n'est payable que si l'état de SA tranche est VALIDÉ par le Directeur Général : la "
+        "validation de l'état des avances ouvre les fichiers d'avance, celle de l'état des reliquats ouvre "
+        "les fichiers de reliquat. Un versement déjà CONFIRMÉ n'est jamais réinclus dans un nouveau fichier "
+        "(protection anti-double-paiement).")
 
-h2("8.1 Générer un fichier de paiement (MTN ou Moov)")
+h2("9.1 Générer un fichier de paiement (MTN ou Moov)")
 etape("Ouvrez « Paiements MTN » ou « Paiements Moov ».")
 etape("Sélectionnez la mission, la tranche (AVANCE ou RELIQUAT) et l'opérateur.")
 etape("Cliquez sur « Prévisualiser » : la liste des bénéficiaires éligibles s'affiche.")
@@ -470,19 +495,20 @@ etape("Cliquez sur « Générer » : le fichier (.txt pour MTN, .xlsx pour Moov)
 para("Pour un volume important, la génération se fait en arrière-plan ; un suivi vous informe lorsque le "
      "fichier est prêt.")
 
-h2("8.2 Déposer puis confirmer")
+h2("9.2 Déposer puis confirmer")
 etape("Déposez le fichier généré sur la plateforme de l'opérateur (hors application).")
 etape("Une fois le dépôt réussi, revenez dans l'application et cliquez sur « Confirmer » pour le lot.")
 etape("Le lot et ses versements passent au statut CONFIRMÉ et sont horodatés. L'OM dont tous les versements sont confirmés passe au statut SOLDÉ.")
 
-h2("8.3 Régénérer ou signaler une erreur")
+h2("9.3 Régénérer ou signaler une erreur")
 bullet("Tant qu'un lot n'est pas confirmé, vous pouvez le régénérer.")
 bullet("En cas de problème de dépôt, marquez le lot « en erreur » : cela réautorise une nouvelle génération.")
-bullet("Un lot confirmé est définitif : il ne peut plus être régénéré.")
+bullet("Seul un lot au statut GÉNÉRÉ peut être confirmé : un lot en erreur doit d'abord être régénéré "
+       "(on ne confirme jamais un fichier invalidé), et un lot confirmé est définitif.")
 
-h2("8.4 Suivi des paiements")
+h2("9.4 Suivi des paiements")
 bullet("« Statuts » : synthèse des versements par opérateur et par statut.")
-bullet("« Historique » : versements confirmés, filtrables par période.")
+bullet("« Historique » : versements confirmés (avec le bénéficiaire), filtrables par période.")
 bullet("« Réconciliation » : rappel du modèle manuel (aucun réimport de fichier opérateur).")
 
 # =========================================================================
@@ -506,9 +532,12 @@ bullet("Export Excel ou PDF (immédiat ou en arrière-plan pour les gros volumes
 # 12. AUDIT
 # =========================================================================
 h1("12. Journal d'audit")
-para("Le journal trace les actions sensibles : qui a fait quoi, quand, et depuis quelle adresse IP "
-     "(retranscription, validation/rejet, génération et confirmation de paiement, gestion des comptes…). "
+para("Le journal trace les actions sensibles : qui a fait quoi, quand, et depuis quelle adresse IP — "
+     "connexions, retranscription des OM, contrôle/visa/validation et rejet des états, génération et "
+     "confirmation des paiements, création/modification/suppression des barèmes, gestion des comptes. "
      "Accessible à l'ADMIN et au CONTROLEUR. Chaque entrée peut être consultée en détail.")
+bullet("Filtres : par action, par entité (ordre de mission, état, lot, barème, utilisateur, session), "
+       "et par plage de dates (Du / Au).")
 
 # =========================================================================
 # 13. ADMINISTRATION
@@ -527,7 +556,8 @@ h2("13.2 Autres écrans d'administration")
 bullet("Rôles : matrice des permissions par profil (consultation).")
 bullet("Signatures : identités et paraphes scannés du contrôleur, du DAF et du Directeur Général, "
        "imprimés sur l'état de paiement (voir chapitre 7.4).")
-bullet("Paramètres : configuration générale de l'application.")
+bullet("Paramètres : configuration générale de l'application, dont la part de l'avance (%) appliquée "
+       "à la répartition avance / reliquat (70 % par défaut).")
 bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair.")
 bullet("Sauvegardes : création et gestion des sauvegardes de la base de données.")
 
@@ -536,20 +566,21 @@ bullet("Sauvegardes : création et gestion des sauvegardes de la base de donnée
 # =========================================================================
 doc.add_page_break()
 h1("Annexe A — Statuts")
-h2("État de paiement (un par mission)")
+h2("État de paiement (un par tranche : avances puis reliquats)")
 tableau(["Statut", "Signification"],
         [["BROUILLON", "Récapitulatif établi, épreuve téléchargeable ; en attente du contrôle."],
          ["CONTROLE", "Contrôlé par le contrôleur ; en attente du visa du DAF."],
          ["VISA_DAF", "Visé par le DAF ; en attente de la validation du Directeur Général."],
-         ["VALIDE", "Validé par le DG — verrouillé ; les OM deviennent payables."],
+         ["VALIDE", "Validé par le DG — verrouillé ; ouvre les fichiers de sa tranche."],
          ["REJETE", "Rejeté (avec motif) ; le récapitulatif peut être refait."]],
         largeurs=[4.0, 12.8])
 h2("Ordre de mission")
 tableau(["Statut", "Signification"],
-        [["IMPORTE", "Retranscrit depuis SEMO ; statut conservé pendant tout le circuit de l'état."],
-         ["VALIDE", "L'état de paiement de sa mission a été validé par le DG — payable."],
+        [["IMPORTE", "Retranscrit depuis SEMO ; statut conservé jusqu'à la validation de l'état des avances."],
+         ["VERIFIE / VISA_DAF", "Étapes intermédiaires du circuit par OM (validation directe, activée en option)."],
+         ["VALIDE", "L'état des avances de sa mission a été validé par le DG — payable."],
          ["REJETE", "Rejeté individuellement (reprise de données ; motif requis)."],
-         ["SOLDE", "Tous les versements de l'OM ont été confirmés."]],
+         ["SOLDE", "Tous les versements de l'OM ont été confirmés (ou OM exonéré)."]],
         largeurs=[4.0, 12.8])
 h2("Versement")
 tableau(["Statut", "Signification"],
@@ -585,7 +616,9 @@ tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nour
          ["ORDRE_3", "65 000", "25 000", "35 000", "45 000"]],
         largeurs=[3.3, 3.5, 3.3, 3.3, 3.3])
 para("Note : ces montants sont ceux du barème par défaut et peuvent être ajustés par l'ADMIN dans le "
-     "module Barème. Référez-vous à l'écran Barème pour les valeurs en vigueur.", italic=True, color=GRIS)
+     "module Barème. Les zones EXT_ZONE_II et EXT_ZONE_III étant identiques, modifier un taux de l'une "
+     "met automatiquement l'autre à jour. Référez-vous à l'écran Barème pour les valeurs en vigueur.",
+     italic=True, color=GRIS)
 
 doc.add_page_break()
 h1("Annexe C — Glossaire")
@@ -594,7 +627,7 @@ tableau(["Terme", "Définition"],
          ["OM", "Ordre de mission : 1 enregistrement = 1 bénéficiaire."],
          ["CAV", "Conducteur de véhicule administratif, payé selon sa propre catégorie."],
          ["Per diem", "Indemnité journalière de mission."],
-         ["Avance / Reliquat", "Tranches du per diem : 70 % puis 30 %."],
+         ["Avance / Reliquat", "Tranches du per diem : 70 % puis le reste par défaut (part paramétrable)."],
          ["Lot", "1 mission × 1 tranche × 1 opérateur = 1 fichier de paiement."],
          ["MSISDN", "Numéro de téléphone au format international (229 + numéro)."],
          ["Exonération", "Prise en charge par un tiers : aucun frais alloué."]],
