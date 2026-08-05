@@ -39,7 +39,7 @@ function changePage(p: number) { currentPage.value = p; load() }
 
 function couleurAction(action: string): string {
   if (action.includes('IMPORT') || action.includes('CREATE')) return 'bg-blue-100 text-blue-700'
-  if (action.includes('VALIDATE')) return 'bg-green-100 text-green-700'
+  if (action.includes('VALIDATE') || action.includes('APPROVE')) return 'bg-green-100 text-green-700'
   if (action.includes('REJECT') || action.includes('ERROR') || action.includes('DELETE')) return 'bg-red-100 text-red-700'
   if (action.includes('GENERATE') || action.includes('CONFIRM')) return 'bg-indigo-100 text-indigo-700'
   if (action === 'LOGIN') return 'bg-cyan-100 text-cyan-700'
@@ -62,19 +62,53 @@ function resumeDonnees(d: AuditLog['donnees']): string {
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <select v-model="actionFilter" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
           <option value="">Toutes les actions</option>
-          <option value="IMPORT_OM">Import OM</option>
-          <option value="VALIDATE_OM">Validation OM</option>
-          <option value="REJECT_OM">Rejet OM</option>
-          <option value="GENERATE_LOT">Génération lot</option>
-          <option value="CONFIRM_LOT">Confirmation lot</option>
-          <option value="ERROR_LOT">Lot en erreur</option>
-          <option value="LOGIN">Connexion</option>
+          <optgroup label="Ordres de mission">
+            <option value="IMPORT_OM">Import OM</option>
+            <option value="VERIFY_OM">Vérification OM</option>
+            <option value="VALIDATE_OM">Validation OM</option>
+            <option value="VISA_DAF_OM">Visa DAF OM</option>
+            <option value="APPROVE_DG_OM">Validation DG OM</option>
+            <option value="REJECT_OM">Rejet OM</option>
+          </optgroup>
+          <optgroup label="États de paiement">
+            <option value="RECAP_ETAT">Récapitulatif d'état</option>
+            <option value="NUMERO_ETAT">Numéro d'état</option>
+            <option value="CONTROL_ETAT">Contrôle d'état</option>
+            <option value="VISA_DAF_ETAT">Visa DAF d'état</option>
+            <option value="APPROVE_DG_ETAT">Validation DG d'état</option>
+            <option value="REJECT_ETAT">Rejet d'état</option>
+          </optgroup>
+          <optgroup label="Lots de paiement">
+            <option value="GENERATE_LOT">Génération lot</option>
+            <option value="CONFIRM_LOT">Confirmation lot</option>
+            <option value="ERROR_LOT">Lot en erreur</option>
+          </optgroup>
+          <optgroup label="Barème">
+            <option value="CREATE_BAREME">Création barème</option>
+            <option value="UPDATE_BAREME">Modification barème</option>
+            <option value="DELETE_BAREME">Suppression barème</option>
+          </optgroup>
+          <optgroup label="Utilisateurs">
+            <option value="CREATE_USER">Création utilisateur</option>
+            <option value="UPDATE_USER">Modification utilisateur</option>
+            <option value="CHANGE_ROLE_USER">Changement de rôle</option>
+            <option value="ACTIVATE_USER">Activation utilisateur</option>
+            <option value="DEACTIVATE_USER">Désactivation utilisateur</option>
+            <option value="RESET_PASSWORD_USER">Réinit. mot de passe</option>
+            <option value="RESET_PASSWORD_SUPERADMIN">Réinit. MDP super admin</option>
+            <option value="DELETE_USER">Suppression utilisateur</option>
+          </optgroup>
+          <optgroup label="Session">
+            <option value="LOGIN">Connexion</option>
+          </optgroup>
         </select>
         <select v-model="entiteFilter" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
           <option value="">Toutes les entités</option>
           <option value="ordre_mission">Ordre de mission</option>
+          <option value="etat_paiement">État de paiement</option>
           <option value="lot_paiement">Lot de paiement</option>
           <option value="bareme">Barème</option>
+          <option value="user">Utilisateur</option>
           <option value="session">Session</option>
         </select>
         <input v-model="dateFilter" type="date" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
