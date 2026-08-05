@@ -150,6 +150,14 @@ class MissionService
         $this->exigerAbsenceDEtat($ordre, 'viser');
         $this->exigerCircuitComplet('viser');
 
+        // Séparation des tâches : le visa DAF revient à une autre personne que
+        // celle qui a vérifié (contrôleur), sinon deux signatures pour une seule main.
+        if (Workflow::separationDesTaches() && (int) $ordre->verifie_par === (int) $user->id) {
+            throw ValidationException::withMessages([
+                'signataire' => ['Vous avez vérifié cet OM : le visa DAF revient à une autre personne.'],
+            ]);
+        }
+
         return $this->transition(
             $ordre,
             [Workflow::statutAvantVisaDaf()],
@@ -171,11 +179,12 @@ class MissionService
         $this->exigerAbsenceDEtat($ordre, 'approuver');
         $this->exigerCircuitComplet('approuver');
 
-        // Séparation des tâches : une même personne ne peut pas porter deux
-        // signatures du même OM, sinon le contrôle perd toute substance.
-        if (Workflow::separationDesTaches() && (int) $ordre->visa_daf_par === (int) $user->id) {
+        // Séparation des tâches : la validation finale revient à une personne
+        // distincte des DEUX signataires amont (contrôleur ET DAF).
+        if (Workflow::separationDesTaches()
+            && in_array((int) $user->id, [(int) $ordre->verifie_par, (int) $ordre->visa_daf_par], true)) {
             throw ValidationException::withMessages([
-                'signataire' => ['Vous avez déjà apposé le visa DAF sur cet OM : la validation finale revient à une autre personne.'],
+                'signataire' => ['Vous êtes déjà intervenu sur cet OM (vérification ou visa DAF) : la validation finale revient à une autre personne.'],
             ]);
         }
 

@@ -76,9 +76,12 @@ class LotPaiementService
         $lot = DB::transaction(function () use ($lot, $user) {
             $lot = LotPaiement::lockForUpdate()->findOrFail($lot->id);
 
-            if ($lot->statut === 'CONFIRME') {
+            // Seul un lot GÉNÉRÉ se confirme : un lot déjà confirmé (anti-double-
+            // paiement) comme un lot en erreur (dépôt échoué → régénérer d'abord)
+            // sont refusés. La confirmation atteste d'un dépôt réussi du fichier courant.
+            if ($lot->statut !== 'GENERE') {
                 throw ValidationException::withMessages([
-                    'lot' => ['Ce lot est déjà confirmé.'],
+                    'lot' => ["Ce lot est au statut « {$lot->statut} » : seul un lot généré peut être confirmé (régénérez-le si nécessaire)."],
                 ]);
             }
 
