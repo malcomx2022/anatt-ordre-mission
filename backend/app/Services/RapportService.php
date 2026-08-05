@@ -143,7 +143,11 @@ class RapportService
             $query->where('versements.date_paiement', '>=', $debut);
         }
         if ($fin = ($filtres['date_fin'] ?? null)) {
-            $query->where('versements.date_paiement', '<=', $fin);
+            // date_paiement est un TIMESTAMP : une date seule (« 2026-01-31 ») vaut
+            // minuit et exclurait tous les paiements de cette journée. On borne à la
+            // fin du jour pour couvrir la journée entière (endOfDay est idempotent
+            // sur un Carbon déjà en fin de mois, cas de l'état mensuel).
+            $query->where('versements.date_paiement', '<=', Carbon::parse($fin)->endOfDay());
         }
 
         return $query;
