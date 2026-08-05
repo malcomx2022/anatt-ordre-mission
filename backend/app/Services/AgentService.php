@@ -153,7 +153,10 @@ class AgentService
             $query->where('operateur', $operateur);
         }
 
-        if (isset($filters['actif'])) {
+        // On ne filtre que si une valeur NON VIDE est fournie : un « actif= »
+        // (chaîne vide, cas « Tous ») ne doit pas être interprété comme false —
+        // sinon la liste ne remonterait que les inactifs.
+        if (($filters['actif'] ?? '') !== '') {
             $query->where('actif', filter_var($filters['actif'], FILTER_VALIDATE_BOOLEAN));
         }
 
