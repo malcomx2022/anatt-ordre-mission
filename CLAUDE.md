@@ -536,7 +536,7 @@ interface OrdreMission {
   montant_total: number         // taux_journalier × nb_jours (FCFA)
   avance: number                // round(montant_total × 0,70)  (70 %)
   reliquat: number              // montant_total - avance       (30 %)
-  statut: 'BROUILLON' | 'IMPORTE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE'
+  statut: 'IMPORTE' | 'VERIFIE' | 'VISA_DAF' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE' // VERIFIE/VISA_DAF : circuit par OM (double validation). EN_ATTENTE = statut de versement, pas d'OM.
   conducteur_a_bord?: string    // mention logistique uniquement (≠ bénéficiaire)
   reference_autorisation?: string
   moyen_transport?: string

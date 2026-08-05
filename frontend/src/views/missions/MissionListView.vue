@@ -59,6 +59,8 @@ function changePage(p: number) { currentPage.value = p; load() }
         <select v-model="filterStatut" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
           <option value="">Tous statuts</option>
           <option value="IMPORTE">Importé</option>
+          <option value="VERIFIE">Vérifié</option>
+          <option value="VISA_DAF">Visé DAF</option>
           <option value="VALIDE">Validé</option>
           <option value="REJETE">Rejeté</option>
           <option value="SOLDE">Soldé</option>
