@@ -7,7 +7,8 @@ import type { AuditLog } from '@/types'
 
 const actionFilter = ref('')
 const entiteFilter = ref('')
-const dateFilter = ref('')
+const dateDebut = ref('')
+const dateFin = ref('')
 const loading = ref(true)
 const currentPage = ref(1)
 const totalPages = ref(1)
@@ -21,7 +22,8 @@ async function load() {
       page: currentPage.value,
       action: actionFilter.value || undefined,
       entite: entiteFilter.value || undefined,
-      date_debut: dateFilter.value || undefined,
+      date_debut: dateDebut.value || undefined,
+      date_fin: dateFin.value || undefined,
     })
     entries.value = items
     currentPage.value = meta.current_page
@@ -32,7 +34,7 @@ async function load() {
   }
 }
 
-watch([actionFilter, entiteFilter, dateFilter], () => { currentPage.value = 1; load() })
+watch([actionFilter, entiteFilter, dateDebut, dateFin], () => { currentPage.value = 1; load() })
 onMounted(load)
 
 function changePage(p: number) { currentPage.value = p; load() }
@@ -59,7 +61,7 @@ function resumeDonnees(d: AuditLog['donnees']): string {
 <template>
   <AppLayout title="Journal d'audit" :subtitle="`${totalItems} action(s) tracée(s)`">
     <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
         <select v-model="actionFilter" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
           <option value="">Toutes les actions</option>
           <optgroup label="Ordres de mission">
@@ -111,7 +113,14 @@ function resumeDonnees(d: AuditLog['donnees']): string {
           <option value="user">Utilisateur</option>
           <option value="session">Session</option>
         </select>
-        <input v-model="dateFilter" type="date" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Du</label>
+          <input v-model="dateDebut" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Au</label>
+          <input v-model="dateFin" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
       </div>
     </div>
 
