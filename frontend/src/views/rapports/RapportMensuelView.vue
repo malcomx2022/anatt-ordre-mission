@@ -87,9 +87,11 @@ onMounted(load)
           </table>
         </AppCard>
 
-        <!-- Pipeline par statut (global) -->
+        <!-- Pipeline par statut : instantané GLOBAL, non filtré par le mois
+             (les versements EN_ATTENTE / GENERE n'ont pas de date_paiement). -->
         <AppCard>
-          <h3 class="font-display font-bold text-gray-800 mb-3">Pipeline (tous statuts)</h3>
+          <h3 class="font-display font-bold text-gray-800">Pipeline (tous statuts)</h3>
+          <p class="text-xs font-body text-gray-400 mb-3">Instantané global — indépendant du mois sélectionné</p>
           <table class="w-full text-sm font-body">
             <tbody>
               <tr v-for="(s, i) in rapport.par_statut" :key="i" class="border-b border-gray-50">
