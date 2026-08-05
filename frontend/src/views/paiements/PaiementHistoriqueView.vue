@@ -49,6 +49,7 @@ function changePage(p: number) { currentPage.value = p; load() }
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-50 text-left text-xs font-display text-gray-500 uppercase tracking-wider">
+              <th class="px-5 py-3">Bénéficiaire</th>
               <th class="px-5 py-3">Tranche</th>
               <th class="px-5 py-3">Opérateur</th>
               <th class="px-5 py-3">Téléphone</th>
@@ -57,9 +58,10 @@ function changePage(p: number) { currentPage.value = p; load() }
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-if="loading"><td colspan="5" class="px-5 py-10 text-center text-gray-400 font-body">Chargement…</td></tr>
-            <tr v-else-if="!versements.length"><td colspan="5" class="px-5 py-10 text-center text-gray-400 font-body">Aucun versement confirmé sur la période.</td></tr>
+            <tr v-if="loading"><td colspan="6" class="px-5 py-10 text-center text-gray-400 font-body">Chargement…</td></tr>
+            <tr v-else-if="!versements.length"><td colspan="6" class="px-5 py-10 text-center text-gray-400 font-body">Aucun versement confirmé sur la période.</td></tr>
             <tr v-for="v in versements" :key="v.id" class="hover:bg-anatt-50/30 transition-colors">
+              <td class="px-5 py-3 font-body">{{ v.beneficiaire ?? '—' }}<span v-if="v.mission?.objet" class="block text-gray-400 text-xs">{{ v.mission.objet }}</span></td>
               <td class="px-5 py-3 font-display">{{ v.type }}</td>
               <td class="px-5 py-3"><OperateurBadge :operateur="(v.operateur as Operateur)" /></td>
               <td class="px-5 py-3 font-mono text-xs">{{ v.telephone }}</td>

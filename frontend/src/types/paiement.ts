@@ -16,6 +16,10 @@ export interface Versement {
   telephone: string
   statut: StatutVersement
   date_paiement?: string | null
+  // Contexte présent quand l'API charge l'OM (ex. historique des versements).
+  reference_semo?: string
+  beneficiaire?: string | null
+  mission?: { objet?: string | null; destination?: string | null }
 }
 
 export interface LotPaiement {
