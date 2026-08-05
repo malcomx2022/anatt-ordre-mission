@@ -30,9 +30,26 @@ class UserController extends Controller
             $query->where('actif', $request->boolean('actif'));
         }
 
+        // Répartition par rôle sur l'ENSEMBLE filtré (avant pagination) : les
+        // cartes de synthèse ne doivent pas ne compter que la page courante.
+        $parRole = (clone $query)->select('role')
+            ->selectRaw('count(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role');
+
         $users = $query->orderBy('name')->paginate($this->getPerPage($request));
 
-        return UserResource::collection($users)->response();
+        $superAdmins = (int) ($parRole['SUPER_ADMIN'] ?? 0);
+        $admins = (int) ($parRole['ADMIN'] ?? 0);
+
+        return UserResource::collection($users)
+            ->additional(['stats' => [
+                'total' => $users->total(),
+                'super_admins' => $superAdmins,
+                'admins' => $admins,
+                'autres' => max(0, $users->total() - $superAdmins - $admins),
+            ]])
+            ->response();
     }
 
     public function store(StoreUserRequest $request): JsonResponse

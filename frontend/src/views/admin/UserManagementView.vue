@@ -22,12 +22,14 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalItems = ref(0)
 const resetResult = ref<{ name: string; password: string } | null>(null)
+// Répartition par rôle GLOBALE (renvoyée par l'API), pas seulement la page courante.
+const roleStats = ref({ total: 0, super_admins: 0, admins: 0, autres: 0 })
 
 const stats = computed(() => [
-  { label: 'Utilisateurs total', value: String(totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { label: 'Super admins', value: String(users.value.filter(u => u.role === 'SUPER_ADMIN').length), iconBg: 'bg-red-100', iconColor: 'text-red-600' },
-  { label: 'Admins', value: String(users.value.filter(u => u.role === 'ADMIN').length), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
-  { label: 'Autres profils', value: String(users.value.filter(u => !['SUPER_ADMIN', 'ADMIN'].includes(u.role)).length), iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { label: 'Utilisateurs total', value: String(roleStats.value.total || totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { label: 'Super admins', value: String(roleStats.value.super_admins), iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  { label: 'Admins', value: String(roleStats.value.admins), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
+  { label: 'Autres profils', value: String(roleStats.value.autres), iconBg: 'bg-green-100', iconColor: 'text-green-600' },
 ])
 
 async function loadUsers() {
@@ -40,6 +42,7 @@ async function loadUsers() {
 
     const { data } = await api.get('/api/admin/users', { params })
     users.value = data.data || []
+    if (data.stats) roleStats.value = data.stats
     if (data.meta) {
       currentPage.value = data.meta.current_page
       totalPages.value = data.meta.last_page
