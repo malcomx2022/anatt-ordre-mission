@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AuditService
@@ -47,7 +48,10 @@ class AuditService
         }
 
         if ($dateFin = ($filters['date_fin'] ?? null)) {
-            $query->where('created_at', '<=', $dateFin);
+            // created_at est un TIMESTAMP : une date seule (« 2026-08-05 ») vaut
+            // minuit et exclurait les événements de la journée. On borne à la fin
+            // du jour pour couvrir la journée entière.
+            $query->where('created_at', '<=', Carbon::parse($dateFin)->endOfDay());
         }
 
         return $query->orderByDesc('created_at')->paginate($perPage);
