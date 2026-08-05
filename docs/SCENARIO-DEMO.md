@@ -15,9 +15,14 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
 
 | Rôle | Compte | Sert à |
 |---|---|---|
-| Gestionnaire OM | `gestion@anatt.bj` | Créer les agents + retranscrire l'OM SEMO |
-| Contrôleur | `controle@anatt.bj` | Valider les OM |
+| Gestionnaire OM | `gestion@anatt.bj` | Créer les agents + retranscrire l'OM SEMO + établir le récapitulatif de l'état |
+| Contrôleur | `controle@anatt.bj` | Étape 1 : contrôler l'état de paiement |
+| DAF | `daf@anatt.bj` | Étape 2 : apposer le visa « Vu » sur l'état |
+| Directeur Général | `dg@anatt.bj` | Étape 3 : valider définitivement l'état (numéro requis) |
 | Agent financier | `finance@anatt.bj` | Générer les fichiers MTN / Moov + confirmer |
+
+> 🔐 **Séparation des tâches** : les trois signataires du circuit (contrôleur, DAF,
+> DG) doivent être **trois personnes distinctes** — d'où les trois comptes dédiés.
 
 ---
 
@@ -57,7 +62,8 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
    repas »** → 1 j *un repas* + 6 j *journée complète*. Pour **ATCHA**, saisir
    **Transport = 10 000**.
 3. **Récapitulatif** : le per diem s'affiche en temps réel (avance **70 %** /
-   reliquat **30 %**), puis **Enregistrer**.
+   reliquat **30 %** — part de l'avance **paramétrable** par le SUPER_ADMIN,
+   70 % par défaut), puis **Enregistrer**.
 
 **Résultat — données réelles générées par l'application :**
 
@@ -72,11 +78,26 @@ Réf SEMO     Bénéficiaire            Op.   Total     Avance    Reliquat  Tran
 À l'enregistrement, chaque OM est créé au statut **IMPORTE** avec ses versements
 **AVANCE** et **RELIQUAT** (statut EN_ATTENTE).
 
-### ÉTAPE C — Valider les OM  ·  compte `controle@`
-`Ordres` → ouvrir chaque OM (statut IMPORTE) → **Valider** → statut **VALIDE**.
+### ÉTAPE C — Valider l'état des AVANCES (circuit contrôle → DAF → DG)
 
-> ⚠️ **Préalable obligatoire** : un OM non validé (resté IMPORTE) n'apparaît **pas**
-> parmi les bénéficiaires éligibles lors de la génération d'un fichier de paiement.
+La validation ne se fait **pas** OM par OM : c'est **l'état de paiement de la
+mission** — et d'abord celui des **avances** — qui passe le circuit. Une mission
+porte deux états (avances puis reliquats) ; chacun a son propre circuit.
+
+1. **Établir le récapitulatif**  ·  `gestion@` — depuis la mission, tranche
+   **Avances**, cliquer **« Établir le récapitulatif »** → l'état passe en
+   **BROUILLON** (PDF filigrané « BROUILLON — NON VALIDE » téléchargeable).
+2. **Contrôler**  ·  `controle@` — `États de paiement` → ouvrir l'état → **Contrôler**
+   → **CONTRÔLÉ**.
+3. **Viser (Vu)**  ·  `daf@` — **Viser** → **VISÉ DAF** (interdit au contrôleur :
+   séparation des tâches).
+4. **Numéroter puis valider**  ·  `dg@` — saisir le **numéro** de l'état (registre)
+   puis **Valider** → **VALIDÉ**. Cette validation **arrête l'état**, fait passer
+   tous les OM de la mission à **VALIDE** et **ouvre les fichiers d'avance**.
+
+> ⚠️ **Préalable obligatoire** : un versement n'est éligible à un fichier que si
+> l'état **de sa tranche** est **VALIDÉ** par le DG. Tant que l'état des avances
+> n'est pas validé, aucun bénéficiaire n'apparaît à la génération des avances.
 
 ### ÉTAPE D — CAS 1 : fichier MTN  ·  compte `finance@`
 `Paiements → MTN` (`/paiements/mtn`) → mission = *Dossiers de passation de marchés*
@@ -115,14 +136,25 @@ HDR,SARALY,2,406000
 ### ÉTAPE F — Confirmer  ·  compte `finance@`
 Après dépôt réussi sur les plateformes MTN / Moov → **Confirmer le lot**.
 Les versements passent à **CONFIRME** et ne seront **jamais réinclus** dans un
-nouveau fichier (protection anti-double-paiement). Régénération possible tant
-que le lot n'est pas confirmé.
+nouveau fichier (protection anti-double-paiement). Seul un lot au statut **GÉNÉRÉ**
+se confirme : un lot marqué « en erreur » doit d'abord être **régénéré**.
+Régénération possible tant que le lot n'est pas confirmé.
 
 ### Bonus — le reliquat (30 %)
-Rejouer les étapes D et E avec la tranche **RELIQUAT** :
+Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** :
+
+1. `gestion@` — établir le récapitulatif de la tranche **Reliquats** (l'onglet
+   n'est débloqué qu'à ce moment) → **BROUILLON**.
+2. Rejouer le circuit **contrôle → visa DAF → validation DG** (`controle@` → `daf@`
+   → `dg@`) sur l'état des reliquats → **VALIDÉ** : les fichiers de reliquat s'ouvrent.
+3. `finance@` — rejouer les étapes D et E avec la tranche **RELIQUAT** :
 
 - MTN reliquat : 85 500 + 88 500 = **174 000**
 - Moov reliquat : 85 500 + 85 500 = **171 000**
+
+> Une fois les **deux** états (avances + reliquats) validés, un **état général**
+> consolidé (avances + reliquats par bénéficiaire) est téléchargeable : c'est le
+> document de clôture de la mission.
 
 ---
 
