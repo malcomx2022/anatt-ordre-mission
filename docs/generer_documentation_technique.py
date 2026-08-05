@@ -196,7 +196,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(5):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.1.0  •  Juillet 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.2.0  •  Août 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document interne — Usage restreint"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -362,8 +362,8 @@ tableau(
         ["type_prise_en_charge", "enum", "UN_REPAS | DEUX_REPAS | JOURNEE_COMPLETE | LOGE_NOURRI | LOGE_SEUL | NOURRI_SEUL."],
         ["nb_jours", "int", "Décompte inclusif (règle des 12 h)."],
         ["montant_total", "int", "(per diem + transport) = taux journalier × nb_jours + transport (FCFA)."],
-        ["avance / reliquat", "int", "avance = round(total × 0,70) = 70 % ; reliquat = total − avance = 30 %."],
-        ["statut", "enum", "IMPORTE (retranscrit) → VALIDE (état de la mission validé par le DG) → SOLDE. REJETE / ANNULE possibles."],
+        ["avance / reliquat", "int", "avance = round(total × partAvance/100), 70 % par défaut (part paramétrable) ; reliquat = total − avance."],
+        ["statut", "enum", "IMPORTE (retranscrit) → VALIDE (état des avances validé par le DG) → SOLDE. VERIFIE / VISA_DAF (circuit par OM en option), REJETE / ANNULE possibles."],
     ],
     largeurs=[4.2, 2.4, 10.2],
 )
@@ -423,12 +423,14 @@ bullet("Détail d'un OM : mission, bénéficiaire, montants, versements ; renvoi
        "(aucune action de circuit sur l'OM). Brouillon PDF de l'OM et historique d'audit.")
 
 h2("3.5 Module États de paiement")
-para("Objet central du circuit de validation. Un état par mission ; c'est lui qui est contrôlé, visé "
-     "par le DAF, puis validé par le Directeur Général.")
-bullet("File de travail : liste des états filtrable par statut, ouverte d'emblée sur la file de l'acteur.")
-bullet("Détail de l'état : montants (avance/reliquat/total), montant en lettres, frise du circuit, "
-       "numérotation manuelle, actions (contrôler / viser / valider / rejeter / rafraîchir).")
-bullet("Brouillon PDF (filigrané, sans signature) puis état définitif PDF (signatures DAF + DG), paysage A4.")
+para("Objet central du circuit de validation. DEUX états par mission — l'état des AVANCES puis l'état des "
+     "RELIQUATS (unicité mission × tranche) ; chacun est contrôlé, visé par le DAF, puis validé par le "
+     "Directeur Général. L'état des reliquats ne peut être établi qu'une fois celui des avances validé.")
+bullet("File de travail : liste des états filtrable par statut et par tranche, ouverte sur la file de l'acteur.")
+bullet("Détail de l'état : onglets Avances / Reliquats, montants de la tranche, montant en lettres, frise du "
+       "circuit, numérotation manuelle, actions (contrôler / viser / valider / rejeter / rafraîchir).")
+bullet("Brouillon PDF (filigrané, sans signature) puis état définitif PDF (signatures DAF + DG), paysage A4. "
+       "Un « état général » consolidé (avances + reliquats) est disponible une fois les deux états validés.")
 bullet("Signatures (SUPER_ADMIN) : identités et paraphes scannés des titulaires imprimés sur l'état.")
 
 h2("3.6 Module Paiements")
@@ -438,7 +440,7 @@ bullet("PAY-01 — Liste des lots (GENERE/CONFIRME/ERREUR) + téléchargement.")
 bullet("PAY-02 / PAY-03 — Génération Moov (.xlsx) / MTN (.txt) : mission + tranche → aperçu → fichier → confirmer.")
 bullet("PAY-04 — Synthèse des versements par opérateur/statut.")
 bullet("PAY-05 — Réconciliation : écran d'information (modèle manuel, aucun réimport).")
-bullet("PAY-06 — Historique des versements confirmés par période.")
+bullet("PAY-06 — Historique des versements confirmés (avec bénéficiaire) par période.")
 
 # =========================================================================
 # 4. WORKFLOWS DÉTAILLÉS
@@ -461,8 +463,9 @@ tableau(
 )
 
 h2("4.2 Circuit de validation de l'état de paiement")
-para("L'unité validée est l'état de paiement de la mission (un par mission), et non les OM pris "
-     "séparément. Un seul geste par étape vaut pour tous les bénéficiaires.")
+para("L'unité validée est l'état de paiement d'une TRANCHE de la mission, et non les OM pris séparément. "
+     "Le circuit ci-dessous est parcouru deux fois : d'abord pour l'état des AVANCES, puis — une fois "
+     "celui-ci validé — pour l'état des RELIQUATS. Un seul geste par étape vaut pour tous les bénéficiaires.")
 tableau(
     ["#", "Acteur", "Action", "Résultat / statut"],
     [
@@ -470,17 +473,23 @@ tableau(
         ["2", "Contrôleur", "Contrôle de conformité (POST /api/etats/:id/controler, om.valider).", "État → CONTROLE, signature contrôleur"],
         ["3", "DAF", "Appose le visa « Vu » (POST /api/etats/:id/viser, om.viser).", "État → VISA_DAF, signature DAF"],
         ["4", "DAF ou DG", "Saisit le numéro de l'état (PUT /api/etats/:id/numero, om.numeroter).", "Numéro requis avant la validation finale"],
-        ["5", "Directeur Général", "Validation finale (POST /api/etats/:id/approuver, om.approuver).", "État → VALIDE ; tous les OM → VALIDE (payables)"],
+        ["5", "Directeur Général", "Validation finale (POST /api/etats/:id/approuver, om.approuver).", "État → VALIDE. Avances : OM → VALIDE (payables) ; reliquats : fichiers de reliquat ouverts"],
     ],
     largeurs=[0.8, 2.6, 8.4, 5.0],
 )
+encadre("Séparation des tâches",
+        "Quand elle est active (par défaut), les trois signataires d'un état doivent être distincts : "
+        "viser est refusé au contrôleur, et valider est refusé au contrôleur comme au DAF. Un compte "
+        "cumulant plusieurs droits (ex. super administrateur) ne peut pas enchaîner deux étapes du même "
+        "dossier. Même règle sur le circuit par OM.", fond="FBF3E0", couleur_titre=OR)
 para("Rejet (POST /api/etats/:id/rejeter, om.rejeter) : possible aux étapes BROUILLON / CONTROLE / "
      "VISA_DAF avec un motif ≥ 10 caractères. Il efface les signatures amont et remet l'état en "
      "correction ; les OM gardent leur statut. Le récapitulatif peut ensuite être refait (REJETE → BROUILLON).")
 encadre("Deux barrières avant paiement",
-        "1) Le statut de l'OM ne passe VALIDE qu'à la validation finale du DG (propagation depuis l'état). "
-        "2) La génération d'un fichier vérifie en outre que l'état de la mission est VALIDE. Un OM resté "
-        "IMPORTE n'apparaît pas parmi les bénéficiaires éligibles.")
+        "1) Le statut de l'OM ne passe VALIDE qu'à la validation de l'état des AVANCES (propagation). "
+        "2) La génération d'un fichier vérifie en outre que l'état DE SA TRANCHE est VALIDE : la validation "
+        "des avances ouvre les fichiers d'avance, celle des reliquats ouvre les fichiers de reliquat. Un "
+        "versement dont l'état de tranche n'est pas validé n'apparaît pas parmi les bénéficiaires éligibles.")
 para("Circuit OM par OM (reprise de données) : les routes /api/ordres/:id/valider|viser|approuver|rejeter "
      "subsistent pour corriger une mission dépourvue d'état ; elles sont refusées dès qu'un état existe.",
      italic=True, color=GRIS)
@@ -494,14 +503,15 @@ tableau(
         ["2", "Agent financier", "Clique « Générer le fichier ».", ".txt (MTN) ou .xlsx (Moov) produit ; lot → GENERE ; versements → GENERE"],
         ["3", "Système", "Petit lot : téléchargement direct. Gros lot : traitement en file (202 + tracking_id).", "Fichier disponible / suivi de job"],
         ["4", "Agent financier", "Dépose le fichier sur la plateforme de l'opérateur (hors application).", "Virements exécutés côté opérateur"],
-        ["5", "Agent financier", "Revient dans l'application et clique « Confirmer » le lot.", "Lot + versements → CONFIRME (horodatés) ; OM soldé → SOLDE"],
-        ["6", "Agent financier", "En cas de problème : marque le lot « en erreur ».", "Lot → ERREUR : régénération réautorisée"],
+        ["5", "Agent financier", "Revient dans l'application et confirme le lot (statut GENERE requis).", "Lot + versements → CONFIRME (horodatés) ; OM soldé → SOLDE"],
+        ["6", "Agent financier", "En cas de problème : marque le lot « en erreur », puis régénère.", "Lot → ERREUR → (régénération) → GENERE avant toute confirmation"],
     ],
     largeurs=[0.8, 2.6, 7.6, 5.8],
 )
-encadre("Idempotence",
+encadre("Idempotence & confirmation",
         "Un versement CONFIRME n'est jamais réinclus dans un nouveau fichier (protection anti-double-paiement). "
-        "La régénération n'est possible que tant que le lot n'est pas confirmé.")
+        "La régénération n'est possible que tant que le lot n'est pas confirmé. Seul un lot au statut GENERE "
+        "peut être confirmé : un lot en ERREUR doit d'abord être régénéré (on ne confirme pas un fichier invalidé).")
 
 h2("4.4 Génération de l'ordre de mission en PDF")
 tableau(
@@ -533,7 +543,8 @@ h1("5. Règles métier")
 h2("5.1 Calcul du per diem")
 para("Montant total = taux journalier (catégorie × zone × type de prise en charge) × nombre de jours.", bold=True)
 bullet("Nombre de jours : décompte inclusif des dates ; règle des 12 h (période ≥ 12 h = jour entier ; retour 0-12 h = rien).")
-bullet("Avance = round(montant total × 0,70) = 70 % ; Reliquat = montant total − avance = 30 %.")
+bullet("Avance = round(montant total × partAvance/100), 70 % par défaut ; Reliquat = montant total − avance. "
+       "La part de l'avance est paramétrable (SUPER_ADMIN) et s'applique aux OM retranscrits ensuite.")
 bullet("Exonération (prise en charge par un tiers) : tous les montants à 0, aucun versement créé.")
 bullet("4 zones : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II, EXT_ZONE_III (II et III ont des taux identiques).")
 bullet("Contrainte type ↔ zone : repas (un/deux) ⇒ INTERIEUR uniquement ; hébergement (logé/nourri) ⇒ EXTÉRIEUR uniquement.")
@@ -555,11 +566,14 @@ tableau(
     [
         ["Référence SEMO unique", "Chaque OM a une référence SEMO unique (anti-doublon).", "API / BDD"],
         ["Origine SEMO", "Les OM sont retranscrits (statut initial IMPORTE), jamais créés à la main.", "API"],
-        ["Circuit sur l'état", "L'état de la mission passe BROUILLON → CONTROLE → VISA_DAF → VALIDE ; rejet motivé (≥ 10 car.).", "API"],
+        ["Circuit par tranche", "Chaque état (avances puis reliquats) passe BROUILLON → CONTROLE → VISA_DAF → VALIDE ; rejet motivé (≥ 10 car.).", "API"],
+        ["Reliquats après avances", "L'état des reliquats n'est établi qu'une fois l'état des avances validé (422 sinon).", "API"],
+        ["Séparation des tâches", "Trois signataires distincts : contrôleur ≠ DAF ≠ DG (option activée par défaut).", "API"],
         ["Numéro requis", "La validation finale du DG exige un numéro d'état (registre de l'agence).", "API"],
         ["Type ↔ zone", "Repas ⇒ INTERIEUR ; hébergement ⇒ EXTÉRIEUR.", "Formulaire + API"],
         ["Téléphone/opérateur", "Issus du référentiel agent ; cohérence numéro ↔ opérateur.", "API"],
-        ["Payable si état VALIDE", "Les OM ne sont payables qu'après validation finale de l'état par le DG.", "Paiement"],
+        ["Payable si tranche VALIDE", "Un versement n'est payable que si l'état de SA tranche est validé par le DG.", "Paiement"],
+        ["Confirmation d'un lot GENERE", "Seul un lot généré se confirme ; un lot en erreur est régénéré d'abord.", "Paiement"],
         ["Idempotence paiement", "Un versement CONFIRME n'est jamais réinclus.", "Paiement"],
     ],
     largeurs=[3.6, 9.6, 3.6],
@@ -624,15 +638,19 @@ para("Les actions sensibles sont enregistrées dans audit_logs :")
 tableau(
     ["Champ", "Description"],
     [
-        ["user_id", "Auteur de l'action."],
-        ["action", "Type d'action (CREATE, UPDATE, VALIDATE, REJECT, GENERATE, CONFIRM...)."],
-        ["model_type / model_id", "Entité concernée et son identifiant."],
-        ["old_values / new_values", "Valeurs avant / après (JSON)."],
-        ["ip_address / user_agent", "Origine de la requête."],
-        ["created_at", "Horodatage précis."],
+        ["user_id", "Auteur de l'action (null pour un événement système)."],
+        ["action", "Type d'action : LOGIN ; IMPORT_OM / VERIFY_OM / VALIDATE_OM / VISA_DAF_OM / APPROVE_DG_OM / REJECT_OM ; "
+                   "RECAP_ETAT / NUMERO_ETAT / CONTROL_ETAT / VISA_DAF_ETAT / APPROVE_DG_ETAT / REJECT_ETAT ; "
+                   "GENERATE_LOT / CONFIRM_LOT / ERROR_LOT ; CREATE/UPDATE/DELETE_BAREME ; *_USER."],
+        ["entite / entite_id", "Entité concernée (session, ordre_mission, etat_paiement, lot_paiement, bareme, user) et son id."],
+        ["donnees", "Contexte de l'action (JSON) : montants, tranche, ancien/nouveau taux, etc."],
+        ["ip_address", "Adresse IP d'origine de la requête."],
+        ["created_at", "Horodatage précis (table sans updated_at)."],
     ],
     largeurs=[4.6, 12.2],
 )
+para("Consultation (ADMIN / CONTROLEUR) : filtres par action, par entité et par plage de dates (Du / Au).",
+     italic=True, color=GRIS)
 
 # =========================================================================
 # 7. RÉFÉRENCE API
@@ -678,14 +696,15 @@ h3("7.3.1 État de paiement (circuit de validation)")
 tableau(
     ["Méthode", "URL", "Description"],
     [
-        ["GET", "/api/etats", "File de travail : états filtrables par statut (om.consulter)"],
-        ["GET", "/api/missions/:id/etat", "État de la mission (null si pas de récapitulatif)"],
-        ["POST", "/api/missions/:id/etat/recapituler", "Crée / rafraîchit l'état en BROUILLON (om.retranscrire)"],
-        ["GET", "/api/missions/:id/etat/brouillon | /telecharger", "PDF brouillon (filigrané) / définitif"],
+        ["GET", "/api/etats", "File de travail : états filtrables par statut et tranche (om.consulter)"],
+        ["GET", "/api/missions/:id/etat", "États de la mission par tranche : { avance, reliquat } (null si aucun)"],
+        ["POST", "/api/missions/:id/etat/recapituler", "Crée / rafraîchit l'état d'une tranche en BROUILLON — body { tranche? } ; reliquat : 422 si avances non validées (om.retranscrire)"],
+        ["GET", "/api/missions/:id/etat/brouillon | /telecharger", "PDF de la tranche (?tranche=) — filigrané tant que non validé"],
+        ["GET", "/api/missions/:id/etat/final", "État général consolidé (avances + reliquats), une fois les deux validés"],
         ["PUT", "/api/etats/:id/numero", "Numérotation manuelle (om.numeroter)"],
         ["POST", "/api/etats/:id/controler", "BROUILLON → CONTROLE (om.valider)"],
-        ["POST", "/api/etats/:id/viser", "CONTROLE → VISA_DAF (om.viser)"],
-        ["POST", "/api/etats/:id/approuver", "VISA_DAF → VALIDE ; OM payables (om.approuver)"],
+        ["POST", "/api/etats/:id/viser", "CONTROLE → VISA_DAF ; DAF ≠ contrôleur (om.viser)"],
+        ["POST", "/api/etats/:id/approuver", "VISA_DAF → VALIDE ; DG ≠ contrôleur/DAF ; ouvre la tranche (om.approuver)"],
         ["POST", "/api/etats/:id/rejeter", "→ REJETE, motif ≥ 10 car. (om.rejeter)"],
     ],
     largeurs=[2.0, 7.8, 7.0],
@@ -698,10 +717,10 @@ tableau(
     ["Méthode", "URL", "Description"],
     [
         ["GET", "/api/paiements/lots", "Liste des lots (mission/tranche/opérateur/statut)"],
-        ["GET", "/api/paiements/lots/previsualiser", "Bénéficiaires éligibles (OM VALIDE)"],
+        ["GET", "/api/paiements/lots/previsualiser", "Bénéficiaires éligibles (état de la tranche VALIDE)"],
         ["POST", "/api/paiements/lots/generer", ".txt MTN / .xlsx Moov ; petit lot direct, gros lot 202 + tracking_id"],
         ["GET", "/api/paiements/lots/:lot/download", "Re-téléchargement du fichier"],
-        ["POST", "/api/paiements/lots/:lot/confirmer", "Lot + versements → CONFIRME"],
+        ["POST", "/api/paiements/lots/:lot/confirmer", "Lot GENERE + versements → CONFIRME"],
         ["POST", "/api/paiements/lots/:lot/erreur", "Lot → ERREUR (régénération autorisée)"],
         ["GET", "/api/paiements/statuts | /historique", "Synthèse / historique confirmés"],
     ],
@@ -712,7 +731,8 @@ h2("7.5 Barème, rapports, audit & administration")
 tableau(
     ["Méthode", "URL", "Description"],
     [
-        ["GET / PUT", "/api/baremes[/:id]", "Lecture (tous) / modification (baremes.modifier)"],
+        ["GET / PUT", "/api/baremes[/:id]", "Lecture (tous) / modification (baremes.modifier) ; édition II ↔ III synchronisée"],
+        ["GET", "/api/admin/parametres/part-avance", "Part de l'avance (lecture publique, tout authentifié)"],
         ["GET", "/api/rapports/{mensuel|agents|operateurs|zones|imputations}", "États (rapports.consulter)"],
         ["GET / POST", "/api/rapports/export | export-async", "Export xlsx/pdf (immédiat ou en file)"],
         ["GET", "/api/audit[/:id]", "Journal d'activité (audit.consulter)"],
@@ -830,7 +850,7 @@ tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nour
          ["ORDRE_2", "140 000", "50 000", "70 000", "95 000"],
          ["ORDRE_3", "105 000", "35 000", "55 000", "70 000"]],
         largeurs=[3.3, 3.5, 3.3, 3.3, 3.3])
-h2("Zones EXT_ZONE_II et EXT_ZONE_III (taux identiques)")
+h2("Zones EXT_ZONE_II et EXT_ZONE_III (taux identiques, synchronisés à l'édition)")
 tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nourri seul"],
         [["ORDRE_1", "105 000", "35 000", "55 000", "70 000"],
          ["ORDRE_2", "85 000", "30 000", "45 000", "60 000"],
