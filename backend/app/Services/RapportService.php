@@ -77,8 +77,12 @@ class RapportService
 
     public function parImputation(array $filtres): Collection
     {
+        // Imputation absente normalisée à la SOURCE : l'endpoint JSON renvoie
+        // « (non renseignée) » au lieu de null, cohérent avec l'export et l'UI
+        // (plus besoin que chaque consommateur recolle l'étiquette).
         return $this->baseConfirmes($filtres)
-            ->selectRaw('missions.imputation_budgetaire, COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total')
+            ->selectRaw("COALESCE(missions.imputation_budgetaire, '(non renseignée)') as imputation_budgetaire,
+                         COUNT(*) as nb_versements, COALESCE(SUM(versements.montant),0) as montant_total")
             ->groupBy('missions.imputation_budgetaire')
             ->orderByDesc('montant_total')
             ->get();
@@ -169,7 +173,7 @@ class RapportService
             ],
             'imputation' => [
                 ['Imputation budgétaire', 'Nb versements', 'Montant total (FCFA)'],
-                $this->parImputation($filtres)->map(fn ($r) => [$r->imputation_budgetaire ?? '(non renseignée)', $r->nb_versements, $r->montant_total])->all(),
+                $this->parImputation($filtres)->map(fn ($r) => [$r->imputation_budgetaire, $r->nb_versements, $r->montant_total])->all(),
                 'État par imputation budgétaire',
             ],
             default => [
