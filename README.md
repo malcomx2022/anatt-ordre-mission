@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 11 · PHP 8.3+ · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (137 tests) · Vitest |
+| Tests | Pest / PHPUnit (298 tests, 46 fichiers) · Vitest |
 
 ---
 
@@ -78,11 +78,24 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - **Catégorie** d'agent = `ORDRE_1 / ORDRE_2 / ORDRE_3`, déduite de l'indice (ou du salaire brut), reprise de SEMO.
 - **Per diem** = `taux_journalier(catégorie × zone × type) × nb_jours` selon le **barème officiel ANaTT**
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
-  Répartition : **avance ≈ 1/3**, **reliquat ≈ 2/3**. Exonération si prise en charge par un tiers.
+  Répartition : **avance 70 %** / **reliquat 30 %** (part de l'avance **paramétrable** par le SUPER_ADMIN, 70 % par défaut ; le reliquat absorbe l'arrondi). Exonération si prise en charge par un tiers.
 - **Une mission** regroupe **N ordres de mission** (1 OM = 1 bénéficiaire). Le **CAV** (conducteur) est payé selon **sa** catégorie.
 - **Paiement** = génération d'un fichier (**1 mission × 1 tranche × 1 opérateur**) : MTN → `.txt`, Moov → `.xlsx`.
   Cycle : `EN_ATTENTE → GENERE → CONFIRME` (confirmation **manuelle** après dépôt). Régénération tant que non confirmé ;
   **idempotence** : un versement confirmé n'est jamais réinclus. Un OM dont tous les versements sont confirmés passe à **SOLDE**.
+
+---
+
+## Sécurité & données sensibles
+
+- Les **fichiers de paiement** générés (`.txt` MTN / `.xlsx` Moov) contiennent des données à
+  caractère personnel (nom, téléphone, montant). Ils sont écrits sur le disque **`local`**
+  (`storage/app/private/paiements`), **hors racine web**, et ne sont servis que via les endpoints
+  de téléchargement **authentifiés** (`permission:paiements.*`). Ils ne sont **pas chiffrés** au repos :
+  prévoyez un contrôle d'accès disque et une politique de purge/rétention côté exploitation.
+- Accès par **permission** (Sanctum + middleware `permission:{clé}`), `Gate::before` pour le SUPER_ADMIN.
+- **Anti-double-paiement** : un versement `CONFIRME` n'est jamais réinclus (idempotence),
+  et l'intégrité des états signés est scellée par **HMAC** (montants + tranche).
 
 ---
 
@@ -108,7 +121,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 137 tests, 300 assertions
+.\vendor\bin\pest                 # 298 tests (46 fichiers)
 
 cd ..\frontend
 npm run type-check                # vérification TypeScript
