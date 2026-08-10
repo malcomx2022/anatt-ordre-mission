@@ -72,14 +72,22 @@ Export SQL (adaptez le chemin de mysqldump si besoin) :
 
 L'URL de l'API est **modifiable après déploiement** via `runtime-config.js` (pas besoin de recompiler à chaque changement de domaine). On peut donc builder dès maintenant.
 
+> `dist/` n'est **pas** versionné dans le dépôt (il est reconstruit à la demande,
+> comme `vendor/` côté backend). Deux façons de l'obtenir :
+
+**Option 1 — build local** (nécessite Node 18+) :
 ```powershell
 cd frontend
 npm ci
 npm run build      # produit frontend/dist/
 ```
 
-`dist/` contient déjà : `index.html`, `assets/`, les favicons, `site.webmanifest`,
-`.htaccess` (routing SPA) et `runtime-config.js`.
+**Option 2 — artefact CI (aucun build local)** : sur GitHub, ouvrez le dernier run
+CI de la branche `main` (onglet **Actions**) et téléchargez l'artefact **`frontend-dist`**.
+Dézippez-le : son contenu est identique à `frontend/dist/`.
+
+Dans les deux cas, `dist/` contient : `index.html`, `assets/`, les favicons,
+`site.webmanifest`, `.htaccess` (routing SPA) et `runtime-config.js`.
 
 ---
 
@@ -216,5 +224,5 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 |---|---|
 | `backend/` (avec `vendor/`) | `anatt-api/` |
 | `backend/.env.production.example` → rempli | `anatt-api/.env` |
-| `frontend/dist/` (contenu) | `public_html/` |
+| `frontend/dist/` (build local **ou** artefact CI `frontend-dist`) | `public_html/` |
 | `anatt_prod.sql` | importé via phpMyAdmin |

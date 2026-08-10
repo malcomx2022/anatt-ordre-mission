@@ -1,1 +1,0 @@
-import{I as e,q as t}from"./runtime-core.esm-bundler-atLxuYGk.js";function n(n=300){let r=t(``),i=t(``),a=null;e(r,e=>{a&&clearTimeout(a),a=setTimeout(()=>{i.value=e},n)});function o(){r.value=``,i.value=``,a&&clearTimeout(a)}return{query:r,debouncedQuery:i,clear:o}}export{n as t};
