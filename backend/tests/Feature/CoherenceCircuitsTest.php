@@ -66,21 +66,10 @@ it('refuse de rejeter un OM dès qu’un état existe', function () {
     ])->assertStatus(422)->assertJsonValidationErrors('etat');
 });
 
-it('refuse le visa DAF et l’approbation DG par OM dès qu’un état existe', function () {
-    config(['workflow.double_validation' => true]); // étapes DAF/DG par OM sinon indisponibles
-    $mission = missionAvecEtat($this);
-    $om = $mission->ordresMission()->first();
-
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertStatus(422)->assertJsonValidationErrors('etat');
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/approuver")
-        ->assertStatus(422)->assertJsonValidationErrors('etat');
-});
-
 // ── Sans état, le circuit par OM reste ouvert (repli / reprise de données) ──
 
 it('autorise la validation par OM tant qu’aucun état n’existe', function () {
-    // double_validation OFF par défaut : le contrôleur valide en une étape.
+    // Circuit OM en une étape : le contrôleur valide directement (IMPORTE → VALIDE).
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
     $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")

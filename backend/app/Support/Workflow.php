@@ -6,30 +6,20 @@ use App\Models\OrdreMission;
 use App\Models\User;
 
 /**
- * Règles du circuit de validation des ordres de mission.
+ * Règles communes aux deux circuits de validation.
  *
- * Circuit complet (flag workflow.double_validation actif) — trois étapes :
+ * — Circuit par OM (repli des missions SANS état) : une seule étape
+ *   IMPORTE ──valider (CONTROLEUR, om.valider)──▶ VALIDE (verrouillé, payable).
+ * — Circuit par ÉTAT (canonique, trois signatures contrôle → DAF → DG) :
+ *   piloté par EtatPaiementService, hors de ce support.
  *
- *   IMPORTE ──vérifier (CONTROLEUR, om.valider)──▶ VERIFIE
- *           ──viser    (DAF,        om.viser)   ──▶ VISA_DAF
- *           ──approuver(DG,         om.approuver)▶ VALIDE   ← verrouillage final
- *
- * Circuit historique (flag inactif) — une seule étape :
- *
- *   IMPORTE ──valider (CONTROLEUR, om.valider)──▶ VALIDE
- *
- * Dans les deux cas VALIDE a le même sens : l'OM est verrouillé et payable.
- * Versement::scopeEligiblesLot() n'est donc jamais à modifier.
+ * Ce support porte le vocabulaire partagé (statut VALIDE, identifiants d'étape
+ * pour le scellé/audit), la séparation des tâches et le scellé HMAC.
+ * Cf. docs/circuits-validation.md.
  */
 class Workflow
 {
-    /** Étape 1 : conformité vérifiée par le CONTROLEUR. */
-    public const STATUT_VERIFIE = 'VERIFIE';
-
-    /** Étape 2 : visa du DAF obtenu, validation finale du DG en attente. */
-    public const STATUT_VISA_DAF = 'VISA_DAF';
-
-    /** Étape 3 : validation finale du DG — l'OM est verrouillé. */
+    /** Statut final : l'OM est verrouillé et payable. */
     public const STATUT_VALIDE = 'VALIDE';
 
     /** Identifiants d'étape (utilisés pour le scellé et l'audit). */
@@ -39,12 +29,6 @@ class Workflow
 
     public const ETAPE_VALIDATION_DG = 'DG';
 
-    /** Le circuit complet (CONTROLEUR → DAF → DG) est-il actif ? */
-    public static function doubleValidationActive(): bool
-    {
-        return (bool) config('workflow.double_validation', false);
-    }
-
     /** La séparation des tâches entre signataires est-elle exigée ? */
     public static function separationDesTaches(): bool
     {
@@ -52,39 +36,13 @@ class Workflow
     }
 
     /**
-     * Statut atteint par l'action du CONTROLEUR.
-     *
-     * Circuit complet : première vérification, l'OM attend ensuite le DAF.
-     * Circuit historique : le contrôleur valide directement (comportement d'origine).
-     */
-    public static function statutApresControle(): string
-    {
-        return self::doubleValidationActive() ? self::STATUT_VERIFIE : self::STATUT_VALIDE;
-    }
-
-    /** Statut requis pour que le DAF puisse apposer son visa. */
-    public static function statutAvantVisaDaf(): string
-    {
-        return self::STATUT_VERIFIE;
-    }
-
-    /** Statut requis pour que le DG puisse valider définitivement. */
-    public static function statutAvantValidationDg(): string
-    {
-        return self::STATUT_VISA_DAF;
-    }
-
-    /**
-     * Statuts depuis lesquels un rejet reste possible.
-     * Chacun des trois acteurs doit pouvoir rejeter à son tour.
+     * Statuts depuis lesquels un rejet d'OM reste possible : avant validation.
      *
      * @return array<int,string>
      */
     public static function statutsRejetables(): array
     {
-        return self::doubleValidationActive()
-            ? ['IMPORTE', self::STATUT_VERIFIE, self::STATUT_VISA_DAF]
-            : ['IMPORTE'];
+        return ['IMPORTE'];
     }
 
     /**

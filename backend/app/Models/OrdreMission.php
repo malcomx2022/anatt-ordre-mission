@@ -39,7 +39,7 @@ class OrdreMission extends Model
         'montant_total',
         'avance',
         'reliquat',
-        'statut',               // BROUILLON|IMPORTE|VERIFIE|VISA_DAF|EN_ATTENTE|VALIDE|REJETE|SOLDE|ANNULE
+        'statut',               // IMPORTE|VALIDE|REJETE|SOLDE|ANNULE (VERIFIE/VISA_DAF : valeurs héritées, plus produites — circuit OM en une étape)
         'conducteur_a_bord',    // mention logistique uniquement
         'reference_autorisation',
         'moyen_transport',

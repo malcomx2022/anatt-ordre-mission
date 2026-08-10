@@ -33,11 +33,7 @@ class OrdreMissionResource extends JsonResource
             'moyen_transport' => $this->moyen_transport,
             'commentaire_rejet' => $this->commentaire_rejet,
             'versements' => VersementResource::collection($this->whenLoaded('versements')),
-            // ── Circuit de validation ──
-            // Le mode est porté par la réponse pour que l'UI libelle correctement
-            // l'action du contrôleur (« Vérifier » en circuit complet, « Valider »
-            // en circuit simple) sans dupliquer la règle côté frontend.
-            'circuit_complet' => Workflow::doubleValidationActive(),
+            // ── Signature de validation (OM par OM, une étape) ──
             'verification' => $this->etape($this->verifie_nom, $this->verifie_le, $this->verifie_fonction, $this->signature_verif_hash),
             'visa_daf' => $this->etape($this->visa_daf_nom, $this->visa_daf_le, $this->visa_daf_fonction, $this->signature_daf_hash),
             'validation_dg' => $this->etape($this->valide_dg_nom, $this->valide_dg_le, $this->valide_dg_fonction, $this->signature_dg_hash),

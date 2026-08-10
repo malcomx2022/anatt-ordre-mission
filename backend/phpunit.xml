@@ -29,9 +29,6 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
-        <!-- Figer le circuit en mode historique : le .env local peut activer la
-             double validation, les tests doivent rester déterministes. -->
-        <env name="WORKFLOW_DOUBLE_VALIDATION" value="false"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

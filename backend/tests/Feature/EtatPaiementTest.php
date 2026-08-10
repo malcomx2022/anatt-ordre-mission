@@ -17,7 +17,6 @@ use App\Models\Versement;
  */
 
 beforeEach(function () {
-    config(['workflow.double_validation' => true]);
 
     $this->gestionnaire = User::factory()->gestionnaireOm()->create();
     $this->controleur = User::factory()->controleur()->create(['name' => 'Paul AGBO']);
