@@ -62,6 +62,9 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     (missions sans aucun état = reprise de données, périmètre par OM `VALIDE` comme avant).
   - Intégrité : tableau `lignes` figé au récapitulatif, paraphe archivé à la signature (purgé au rejet),
     scellé HMAC (inclut la tranche) sur les montants signés.
+  - **Deux circuits de validation** (par état = canonique ; par OM = repli des missions sans état) :
+    ils sont **exclusifs par mission** (verrou `MissionService::exigerAbsenceDEtat`) et unifiés à la porte
+    de paiement (`Versement::scopeEligiblesLot`). Référence unique : `docs/circuits-validation.md`.
 
 ### Profils utilisateurs (RBAC Sanctum par PERMISSION — middleware `can:`)
 

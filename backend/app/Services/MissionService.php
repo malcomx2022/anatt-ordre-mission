@@ -235,6 +235,10 @@ class MissionService
      * existe un : agir OM par OM ferait diverger le statut de l'OM de celui de
      * l'état signé. Les transitions unitaires restent donc réservées aux missions
      * sans état (reprise de données, correction ponctuelle).
+     *
+     * C'est le verrou d'exclusivité entre les deux circuits de validation.
+     *
+     * @see docs/circuits-validation.md
      */
     private function exigerAbsenceDEtat(OrdreMission $ordre, string $action): void
     {
