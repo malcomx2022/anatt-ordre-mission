@@ -38,3 +38,7 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# Outillage plateforme / dev — résidus non liés à l'application
+.emergent/
+.gitconfig
