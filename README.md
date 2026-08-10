@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 11 · PHP 8.3+ · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (315 tests, 49 fichiers) · Vitest |
+| Tests | Pest / PHPUnit (315 tests, 49 fichiers) · Vitest · Playwright (parcours critique e2e) |
 
 ---
 
@@ -125,7 +125,9 @@ cd backend
 
 cd ..\frontend
 npm run type-check                # vérification TypeScript
+npm run test:unit -- --run        # Vitest
 npm run build                     # build de production
+npm run test:e2e                  # Playwright — parcours critique (API mockée, aucun backend requis)
 ```
 
 ---
