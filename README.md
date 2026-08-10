@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 11 · PHP 8.3+ · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (298 tests, 46 fichiers) · Vitest |
+| Tests | Pest / PHPUnit (310 tests, 48 fichiers) · Vitest |
 
 ---
 
@@ -121,7 +121,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 298 tests (46 fichiers)
+.\vendor\bin\pest                 # 310 tests (48 fichiers)
 
 cd ..\frontend
 npm run type-check                # vérification TypeScript
