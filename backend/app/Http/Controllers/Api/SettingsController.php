@@ -58,7 +58,7 @@ class SettingsController extends Controller
             // Paramètres généraux (SettingsView)
             'appName', 'appVersion', 'fiscalYear', 'batchSize', 'reconciliationDays',
             'sessionDuration', 'maxLoginAttempts', 'mtnEnabled', 'moovEnabled',
-            'doubleValidation', 'forceHttps', 'logConnections', 'maintenanceMode',
+            'forceHttps', 'logConnections', 'maintenanceMode',
             'notifications',
             // Pourcentage de l'avance (le reliquat absorbe l'arrondi).
             'partAvance',

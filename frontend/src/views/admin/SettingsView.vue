@@ -23,7 +23,6 @@ const partAvance = ref(70)
 
 const mtnEnabled = ref(true)
 const moovEnabled = ref(true)
-const doubleValidation = ref(true)
 const forceHttps = ref(true)
 const logConnections = ref(true)
 const maintenanceMode = ref(false)
@@ -61,7 +60,6 @@ onMounted(async () => {
     if (s.partAvance !== undefined) partAvance.value = s.partAvance
     if (s.mtnEnabled !== undefined) mtnEnabled.value = s.mtnEnabled
     if (s.moovEnabled !== undefined) moovEnabled.value = s.moovEnabled
-    if (s.doubleValidation !== undefined) doubleValidation.value = s.doubleValidation
     if (s.forceHttps !== undefined) forceHttps.value = s.forceHttps
     if (s.logConnections !== undefined) logConnections.value = s.logConnections
     if (s.maintenanceMode !== undefined) maintenanceMode.value = s.maintenanceMode
@@ -92,7 +90,6 @@ async function saveAll() {
       partAvance: partAvance.value,
       mtnEnabled: mtnEnabled.value,
       moovEnabled: moovEnabled.value,
-      doubleValidation: doubleValidation.value,
       forceHttps: forceHttps.value,
       logConnections: logConnections.value,
       maintenanceMode: maintenanceMode.value,
@@ -184,12 +181,6 @@ async function saveAll() {
             <div class="grid grid-cols-2 gap-4">
               <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Taille max. d'un lot</label><input v-model.number="batchSize" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
               <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Delai de reconciliation (jours)</label><input v-model.number="reconciliationDays" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
-            </div>
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div><p class="text-sm font-display font-semibold text-gray-800">Double validation requise</p><p class="text-[11px] text-gray-500 font-body">Exiger deux validations pour les lots > 5 000 000 FCFA</p></div>
-              <button @click="doubleValidation = !doubleValidation" :class="doubleValidation ? 'bg-anatt-500' : 'bg-gray-300'" class="w-11 h-6 rounded-full relative transition-colors duration-300">
-                <span :class="doubleValidation ? 'translate-x-5' : 'translate-x-0.5'" class="block w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
-              </button>
             </div>
           </div>
         </div>
