@@ -3,11 +3,13 @@
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BackupController;
 use App\Http\Controllers\Api\BaremeController;
 use App\Http\Controllers\Api\EtatPaiementController;
 use App\Http\Controllers\Api\MissionController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportController;
+use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SignatureController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ValidationController;
@@ -183,131 +185,17 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
             Route::post('signatures/{poste}', [SignatureController::class, 'store']);
             Route::delete('signatures/{poste}', [SignatureController::class, 'destroy']);
 
-            Route::get('settings', function () {
-                $path = storage_path('app/settings.json');
-                $settings = file_exists($path) ? json_decode(file_get_contents($path), true) : [];
+            // Paramètres système (liste blanche de clés, secret SMTP chiffré/masqué).
+            Route::get('settings', [SettingsController::class, 'show']);
+            Route::put('settings', [SettingsController::class, 'update']);
 
-                // Ne JAMAIS renvoyer le secret SMTP : on expose un masque si une valeur existe.
-                if (! empty($settings['smtpPassword'])) {
-                    $settings['smtpPassword'] = '********';
-                }
+            // Sauvegardes de la base de données.
+            Route::get('backups', [BackupController::class, 'index']);
+            Route::post('backups', [BackupController::class, 'store']);
+            Route::delete('backups/{name}', [BackupController::class, 'destroy']);
+        });
 
-                return response()->json(['data' => $settings]);
-            });
-            Route::put('settings', function (\Illuminate\Http\Request $request) {
-                // Liste blanche stricte : on n'écrit QUE des clés connues (anti-pollution
-                // d'écriture arbitraire). Les clés inconnues sont ignorées silencieusement.
-                $clesAutorisees = [
-                    // Paramètres généraux (SettingsView)
-                    'appName', 'appVersion', 'fiscalYear', 'batchSize', 'reconciliationDays',
-                    'sessionDuration', 'maxLoginAttempts', 'mtnEnabled', 'moovEnabled',
-                     'doubleValidation', 'forceHttps', 'logConnections', 'maintenanceMode',
-                     'notifications',
-                     // Pourcentage de l'avance (le reliquat absorbe l'arrondi).
-                     'partAvance',
-                     // Configuration email (EmailConfigView)
-                    'smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'smtpEncryption',
-                    'fromAddress', 'fromName',
-                    // Identités des signataires du circuit, imprimées sur l'état
-                    // de paiement (l'image de signature passe par sa propre route).
-                    'controleurNom', 'controleurPrenoms', 'controleurFonction',
-                    'dafNom', 'dafPrenoms', 'dafFonction',
-                    'dgNom', 'dgPrenoms', 'dgFonction',
-                ];
-
-                 $entrant = array_intersect_key($request->all(), array_flip($clesAutorisees));
-
-                 // Validation du pourcentage d'avance : entier entre 0 et 100.
-                 if (array_key_exists('partAvance', $entrant)) {
-                     $v = $entrant['partAvance'];
-                     if (! is_int($v) || $v < 0 || $v > 100) {
-                         throw \Illuminate\Validation\ValidationException::withMessages([
-                             'partAvance' => 'Le pourcentage d\'avance doit être un entier entre 0 et 100.',
-                         ]);
-                     }
-                 }
-
-                 // Fusion avec l'existant : une sauvegarde partielle (ex. paramètres généraux)
-                // ne doit pas effacer les autres clés (ex. configuration email).
-                $path = storage_path('app/settings.json');
-                $existant = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
-
-                // Secret SMTP : jamais stocké en clair. Si le client renvoie le masque
-                // (champ inchangé), on conserve la valeur chiffrée existante ; sinon on
-                // chiffre la nouvelle valeur avant écriture sur disque.
-                if (array_key_exists('smtpPassword', $entrant)) {
-                    if (in_array($entrant['smtpPassword'], ['', '********'], true)) {
-                        unset($entrant['smtpPassword']); // inchangé → ne pas écraser
-                    } else {
-                        $entrant['smtpPassword'] = \Illuminate\Support\Facades\Crypt::encryptString($entrant['smtpPassword']);
-                    }
-                }
-
-                 $settings = array_merge($existant, $entrant);
-
-                 file_put_contents($path, json_encode($settings, JSON_PRETTY_PRINT));
-
-                 // Invalidation du cache de lecture du pourcentage d'avance.
-                 if (array_key_exists('partAvance', $entrant)) {
-                     \App\Support\Parametres::invalidateCache();
-                 }
-
-                 // Réponse masquée : ne jamais renvoyer le secret au client.
-                $reponse = $settings;
-                if (! empty($reponse['smtpPassword'])) {
-                    $reponse['smtpPassword'] = '********';
-                }
-
-                return response()->json(['data' => $reponse, 'message' => 'Parametres enregistres.']);
-            });
-
-            Route::get('backups', function () {
-                $dir = storage_path('app/backups');
-                if (! is_dir($dir)) {
-                    return response()->json(['data' => []]);
-                }
-                $files = collect(scandir($dir))->filter(fn ($f) => str_ends_with($f, '.sql') || str_ends_with($f, '.sql.gz'))
-                    ->values()->map(function ($f) use ($dir) {
-                        $path = "{$dir}/{$f}";
-                        $size = filesize($path);
-
-                        return [
-                            'name' => $f,
-                            'date' => date('d/m/Y H:i', filemtime($path)),
-                            'size' => $size < 1048576 ? round($size / 1024, 1).' KB' : round($size / 1048576, 1).' MB',
-                            'type' => str_contains($f, '_020000') ? 'Automatique' : 'Manuel',
-                            'status' => 'Complet',
-                        ];
-                    })->sortByDesc('date')->values();
-
-                return response()->json(['data' => $files]);
-            });
-            Route::post('backups', function () {
-                $code = \Illuminate\Support\Facades\Artisan::call('db:backup', ['--compress' => true]);
-                $sortie = trim(\Illuminate\Support\Facades\Artisan::output());
-
-                if ($code !== 0) {
-                    return response()->json([
-                        'message' => 'Échec de la sauvegarde.',
-                        'details' => $sortie,
-                    ], 500);
-                }
-
-                return response()->json(['message' => 'Sauvegarde creee.', 'details' => $sortie]);
-            });
-            Route::delete('backups/{name}', function (string $name) {
-                $path = storage_path('app/backups/'.basename($name));
-                if (file_exists($path)) {
-                    unlink($path);
-                }
-
-                 return response()->json(['message' => 'Sauvegarde supprimee.']);
-             });
-         });
-
-         // Pourcentage d'avance paramétrable (lecture publique, écriture SUPER_ADMIN).
-         Route::get('parametres/part-avance', function () {
-             return response()->json(['data' => \App\Support\Parametres::partAvance()]);
-         });
-     });
- });
+        // Pourcentage d'avance paramétrable (lecture publique, écriture SUPER_ADMIN).
+        Route::get('parametres/part-avance', [SettingsController::class, 'partAvance']);
+    });
+});
