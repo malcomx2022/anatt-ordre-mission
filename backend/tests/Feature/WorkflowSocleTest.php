@@ -7,10 +7,10 @@ use App\Support\Permissions;
 use App\Support\Workflow;
 
 /*
- * Socle du circuit de double validation DAF -> DG.
- *
- * Ces tests verrouillent les garanties de non-régression : tant que le circuit
- * double n'est pas activé, l'application se comporte exactement comme avant.
+ * Socle du circuit de validation : RBAC des signataires (contrôleur/DAF/DG),
+ * séparation ordonnateur/payeur, et scellé d'intégrité. Le circuit à trois
+ * signatures se joue sur l'état de paiement ; la validation OM par OM tient en
+ * une étape (IMPORTE → VALIDE).
  */
 
 // ── Profils signataires ──
@@ -67,27 +67,12 @@ it('n’attribue que des permissions existantes', function () {
     }
 });
 
-// ── Mode par défaut : aucun changement de comportement ──
+// ── Circuit OM : une seule étape ──
 
-it('démarre avec le circuit complet désactivé', function () {
-    // Circuit historique : le contrôleur valide directement, en une seule étape.
-    expect(Workflow::doubleValidationActive())->toBeFalse()
-        ->and(Workflow::statutApresControle())->toBe('VALIDE')
-        ->and(Workflow::statutsRejetables())->toBe(['IMPORTE']);
-});
-
-it('enchaîne CONTROLEUR puis DAF puis DG une fois le flag activé', function () {
-    config(['workflow.double_validation' => true]);
-
-    expect(Workflow::doubleValidationActive())->toBeTrue()
-        // Étape 1 : le contrôle ne valide plus, il vérifie.
-        ->and(Workflow::statutApresControle())->toBe('VERIFIE')
-        // Étape 2 : le DAF ne vise qu'un OM déjà vérifié.
-        ->and(Workflow::statutAvantVisaDaf())->toBe('VERIFIE')
-        // Étape 3 : le DG ne valide qu'un OM déjà visé.
-        ->and(Workflow::statutAvantValidationDg())->toBe('VISA_DAF')
-        // Chacun des trois acteurs peut rejeter à son tour.
-        ->and(Workflow::statutsRejetables())->toBe(['IMPORTE', 'VERIFIE', 'VISA_DAF']);
+it('valide un OM en une étape (le contrôleur valide directement)', function () {
+    // Le circuit OM par OM ne connaît qu'un rejet depuis IMPORTE puis la validation
+    // finale ; le circuit à trois signatures vit sur l'état de paiement.
+    expect(Workflow::statutsRejetables())->toBe(['IMPORTE']);
 });
 
 // ── Scellé d'intégrité ──

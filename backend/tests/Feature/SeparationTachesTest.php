@@ -53,28 +53,6 @@ it('interdit au signataire du contrôle de valider définitivement le même éta
     $this->actingAs($this->cumul)->postJson("/api/etats/{$etat->id}/approuver")->assertStatus(422);
 });
 
-// ── Circuit par OM (double validation) ──
-
-it('interdit au vérificateur de l’OM de le viser ensuite', function () {
-    config(['workflow.double_validation' => true]);
-    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
-
-    $this->actingAs($this->cumul)->postJson("/api/ordres/{$om->id}/valider")
-        ->assertOk()->assertJsonPath('data.statut', 'VERIFIE');
-    $this->actingAs($this->cumul)->postJson("/api/ordres/{$om->id}/viser")->assertStatus(422);
-});
-
-it('interdit au vérificateur de l’OM de le valider définitivement', function () {
-    config(['workflow.double_validation' => true]);
-    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
-
-    $this->actingAs($this->cumul)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")->assertOk();
-
-    // Le DG serait aussi le vérificateur : refusé.
-    $this->actingAs($this->cumul)->postJson("/api/ordres/{$om->id}/approuver")->assertStatus(422);
-});
-
 // ── Confirmation de lot ──
 
 it('refuse de confirmer un lot en erreur (à régénérer d’abord)', function () {

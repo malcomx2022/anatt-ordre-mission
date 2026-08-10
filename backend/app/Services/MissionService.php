@@ -114,87 +114,28 @@ class MissionService
         });
     }
 
-    /** Validation d'un OM : IMPORTE → VALIDE. */
+    /**
+     * Validation d'un OM : IMPORTE → VALIDE, en une seule étape (le contrôleur
+     * valide directement). L'OM devient verrouillé et payable.
+     *
+     * Voie de REPLI réservée aux missions SANS état de paiement (reprise de
+     * données, correction ponctuelle) — cf. exigerAbsenceDEtat. Le circuit
+     * canonique à trois signatures (contrôle → DAF → DG) se joue sur l'ÉTAT de la
+     * mission (EtatPaiementService), pas OM par OM. Cf. docs/circuits-validation.md.
+     */
     public function valider(OrdreMission $ordre, User $user, ?string $commentaire = null): OrdreMission
     {
         $this->exigerAbsenceDEtat($ordre, 'valider');
 
-        $cible = Workflow::statutApresControle();
-
         $ordre = $this->transition(
             $ordre,
             ['IMPORTE'],
-            $cible,
+            Workflow::STATUT_VALIDE,
             $user,
-            $cible === Workflow::STATUT_VALIDE ? 'VALIDATE_OM' : 'VERIFY_OM',
+            'VALIDATE_OM',
             $this->empreinteSignature($ordre, $user, Workflow::ETAPE_VERIFICATION, [
                 'verifie_commentaire' => $commentaire,
             ]),
-        );
-
-        // Le circuit complet n'est pas terminé : c'est la validation finale du DG
-        // qui notifie le bénéficiaire. Ici on prévient le DAF que la main lui passe.
-        if ($cible === Workflow::STATUT_VALIDE) {
-            $this->notifications->omValide($ordre);
-        }
-
-        return $ordre;
-    }
-
-    /**
-     * Visa du DAF (étape 2 sur 3) : VERIFIE → VISA_DAF.
-     * L'OM n'est pas encore payable — seul le DG verrouille.
-     */
-    public function viser(OrdreMission $ordre, User $user, ?string $commentaire = null): OrdreMission
-    {
-        $this->exigerAbsenceDEtat($ordre, 'viser');
-        $this->exigerCircuitComplet('viser');
-
-        // Séparation des tâches : le visa DAF revient à une autre personne que
-        // celle qui a vérifié (contrôleur), sinon deux signatures pour une seule main.
-        if (Workflow::separationDesTaches() && (int) $ordre->verifie_par === (int) $user->id) {
-            throw ValidationException::withMessages([
-                'signataire' => ['Vous avez vérifié cet OM : le visa DAF revient à une autre personne.'],
-            ]);
-        }
-
-        return $this->transition(
-            $ordre,
-            [Workflow::statutAvantVisaDaf()],
-            Workflow::STATUT_VISA_DAF,
-            $user,
-            'VISA_DAF_OM',
-            $this->empreinteSignature($ordre, $user, Workflow::ETAPE_VISA_DAF, [
-                'visa_daf_commentaire' => $commentaire,
-            ]),
-        );
-    }
-
-    /**
-     * Validation finale du DG (étape 3 sur 3) : VISA_DAF → VALIDE.
-     * C'est cette étape qui VERROUILLE l'OM et le rend payable.
-     */
-    public function approuver(OrdreMission $ordre, User $user): OrdreMission
-    {
-        $this->exigerAbsenceDEtat($ordre, 'approuver');
-        $this->exigerCircuitComplet('approuver');
-
-        // Séparation des tâches : la validation finale revient à une personne
-        // distincte des DEUX signataires amont (contrôleur ET DAF).
-        if (Workflow::separationDesTaches()
-            && in_array((int) $user->id, [(int) $ordre->verifie_par, (int) $ordre->visa_daf_par], true)) {
-            throw ValidationException::withMessages([
-                'signataire' => ['Vous êtes déjà intervenu sur cet OM (vérification ou visa DAF) : la validation finale revient à une autre personne.'],
-            ]);
-        }
-
-        $ordre = $this->transition(
-            $ordre,
-            [Workflow::statutAvantValidationDg()],
-            Workflow::STATUT_VALIDE,
-            $user,
-            'APPROVE_DG_OM',
-            $this->empreinteSignature($ordre, $user, Workflow::ETAPE_VALIDATION_DG),
         );
 
         $this->notifications->omValide($ordre);
@@ -203,8 +144,9 @@ class MissionService
     }
 
     /**
-     * Rejet d'un OM avec motif obligatoire. Possible à chacune des étapes du
-     * circuit ; le rejet efface les signatures amont, qui n'ont plus d'objet.
+     * Rejet d'un OM avec motif obligatoire, depuis IMPORTE (avant validation).
+     * Le circuit de validation multi-signatures et ses rejets motivés vivent sur
+     * l'état de paiement (EtatPaiementService).
      */
     public function rejeter(OrdreMission $ordre, string $motif, User $user): OrdreMission
     {
@@ -216,14 +158,7 @@ class MissionService
             'REJETE',
             $user,
             'REJECT_OM',
-            [
-                'commentaire_rejet' => $motif,
-                // Les visas obtenus portaient sur un OM désormais rejeté.
-                'verifie_par' => null, 'verifie_le' => null, 'verifie_nom' => null,
-                'verifie_fonction' => null, 'signature_verif_hash' => null,
-                'visa_daf_par' => null, 'visa_daf_le' => null, 'visa_daf_nom' => null,
-                'visa_daf_fonction' => null, 'signature_daf_hash' => null,
-            ],
+            ['commentaire_rejet' => $motif],
         );
         $this->notifications->omRejete($ordre);
 
@@ -250,16 +185,6 @@ class MissionService
                     "Cette mission possède un état de paiement (statut « {$etat->statut} ») : "
                     ."l'action « {$action} » doit être effectuée sur l'état, pas sur l'OM.",
                 ],
-            ]);
-        }
-    }
-
-    /** Les étapes DAF et DG n'existent que si le circuit complet est actif. */
-    private function exigerCircuitComplet(string $action): void
-    {
-        if (! Workflow::doubleValidationActive()) {
-            throw ValidationException::withMessages([
-                'workflow' => ["Le circuit de double validation est désactivé : l'action « {$action} » n'est pas disponible."],
             ]);
         }
     }

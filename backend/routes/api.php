@@ -103,19 +103,13 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
     Route::post('etats/{etat}/rejeter', [EtatPaiementController::class, 'rejeter'])
         ->middleware('permission:om.rejeter');
 
-    // Circuit de validation OM par OM (missions sans état : reprise de données,
-    // correction unitaire). Refusé dès qu'un état existe, pour garder une seule
-    // source de vérité sur le statut.
-    // Étape 1 — contrôle de conformité (IMPORTE -> VERIFIE ; -> VALIDE si circuit simple).
+    // Validation OM par OM (missions SANS état : reprise de données, correction
+    // unitaire). Une seule étape IMPORTE -> VALIDE ; refusée dès qu'un état existe,
+    // pour garder une seule source de vérité sur le statut. Le circuit à trois
+    // signatures se joue sur l'état (cf. /etats/*). Cf. docs/circuits-validation.md.
     Route::post('ordres/{ordre}/valider', [ValidationController::class, 'valider'])
         ->middleware('permission:om.valider');
-    // Étape 2 — visa du DAF (VERIFIE -> VISA_DAF).
-    Route::post('ordres/{ordre}/viser', [ValidationController::class, 'viser'])
-        ->middleware('permission:om.viser');
-    // Étape 3 — validation finale du DG (VISA_DAF -> VALIDE : verrouillage, OM payable).
-    Route::post('ordres/{ordre}/approuver', [ValidationController::class, 'approuver'])
-        ->middleware('permission:om.approuver');
-    // Rejet motivé, ouvert aux trois acteurs du circuit.
+    // Rejet motivé, depuis IMPORTE.
     Route::post('ordres/{ordre}/rejeter', [ValidationController::class, 'rejeter'])
         ->middleware('permission:om.rejeter');
 

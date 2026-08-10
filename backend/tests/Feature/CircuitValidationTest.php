@@ -6,156 +6,95 @@ use App\Models\User;
 use App\Models\Versement;
 
 /*
- * Circuit de validation complet en trois étapes :
- *
- *   IMPORTE ──CONTROLEUR──▶ VERIFIE ──DAF──▶ VISA_DAF ──DG──▶ VALIDE (verrouillé)
- *
- * La validation du DG est la validation FINALE : c'est elle qui verrouille l'OM
- * et le rend payable.
+ * Circuit de validation OM par OM — voie de REPLI (missions sans état de paiement).
+ * Une seule étape : IMPORTE ──valider (CONTROLEUR, om.valider)──▶ VALIDE (verrouillé,
+ * payable). Le circuit à trois signatures (contrôle → DAF → DG) se joue sur l'ÉTAT
+ * de la mission (cf. EtatPaiementTest / CoherenceCircuitsTest).
  */
 
 beforeEach(function () {
-    // Ces tests portent sur le circuit complet : on active le flag.
-    config(['workflow.double_validation' => true]);
-
     $this->controleur = User::factory()->controleur()->create(['name' => 'Paul AGBO']);
-    $this->daf = User::factory()->daf()->create(['name' => 'Euloge D. ATOHOUN']);
-    $this->dg = User::factory()->dg()->create(['name' => 'Richard DADA']);
+    $this->daf = User::factory()->daf()->create();
+    $this->dg = User::factory()->dg()->create();
 });
 
-// ── Le chemin nominal ──
+// ── Chemin nominal : une seule étape ──
 
-it('déroule les trois étapes jusqu’au verrouillage par le DG', function () {
+it('valide un OM en une étape et le trace (signature de contrôle)', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    // Étape 1 — le contrôleur vérifie : l'OM ne devient PAS validé.
     $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")
-        ->assertOk()->assertJsonPath('data.statut', 'VERIFIE');
-
-    // Étape 2 — le DAF vise.
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertOk()->assertJsonPath('data.statut', 'VISA_DAF');
-
-    // Étape 3 — le DG valide définitivement.
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/approuver")
         ->assertOk()->assertJsonPath('data.statut', 'VALIDE');
 
     $om->refresh();
 
-    // Les trois intervenants sont tracés, avec instantané du nom et scellé.
     expect($om->verifie_nom)->toBe('Paul AGBO')
-        ->and($om->visa_daf_nom)->toBe('Euloge D. ATOHOUN')
-        ->and($om->valide_dg_nom)->toBe('Richard DADA')
         ->and($om->signature_verif_hash)->toHaveLength(64)
-        ->and($om->signature_daf_hash)->toHaveLength(64)
-        ->and($om->signature_dg_hash)->toHaveLength(64)
-        ->and($om->verifie_le)->not->toBeNull()
-        ->and($om->visa_daf_le)->not->toBeNull()
-        ->and($om->valide_dg_le)->not->toBeNull();
+        ->and($om->verifie_le)->not->toBeNull();
 });
 
-// ── L'ordre des étapes est contraint ──
-
-it('refuse le visa DAF sur un OM non encore vérifié', function () {
+it('journalise la validation en une étape', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertStatus(422);
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
 
-    expect($om->fresh()->statut)->toBe('IMPORTE');
+    $actions = AuditLog::where('entite', 'ordre_mission')->where('entite_id', $om->id)->pluck('action');
+
+    expect($actions)->toContain('VALIDATE_OM')
+        ->and($actions)->not->toContain('VISA_DAF_OM')
+        ->and($actions)->not->toContain('APPROVE_DG_OM');
 });
 
-it('refuse la validation finale sur un OM non visé par le DAF', function () {
-    $om = OrdreMission::factory()->create(['statut' => 'VERIFIE']);
+// ── Les étapes DAF/DG n'existent plus OM par OM ──
 
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/approuver")
+it('n’expose plus les endpoints OM de visa DAF et d’approbation DG', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")->assertNotFound();
+    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/approuver")->assertNotFound();
+});
+
+// ── Transitions contraintes ──
+
+it('refuse de valider un OM qui n’est pas IMPORTE', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'VALIDE']);
+
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")
         ->assertStatus(422);
-
-    expect($om->fresh()->statut)->toBe('VERIFIE');
 });
 
 // ── Cloisonnement des rôles ──
 
-it('interdit au DAF de prononcer la validation finale', function () {
-    $om = OrdreMission::factory()->create(['statut' => 'VISA_DAF']);
-
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/approuver")
-        ->assertForbidden();
-});
-
-it('interdit au DG d’apposer le visa DAF', function () {
-    $om = OrdreMission::factory()->create(['statut' => 'VERIFIE']);
-
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertForbidden();
-});
-
-it('interdit au contrôleur de viser ou de valider définitivement', function () {
-    $om = OrdreMission::factory()->create(['statut' => 'VERIFIE']);
-
-    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertForbidden();
-    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/approuver")
-        ->assertForbidden();
-});
-
-// ── Séparation des tâches ──
-
-it('empêche une même personne de viser puis de valider le même OM', function () {
-    // Cas d'un compte cumulant les deux permissions (super admin, ou cumul de fonctions).
-    $cumul = User::factory()->superAdmin()->create();
-    $om = OrdreMission::factory()->create(['statut' => 'VERIFIE']);
-
-    $this->actingAs($cumul)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertOk()->assertJsonPath('data.statut', 'VISA_DAF');
-
-    // La validation finale lui est refusée : il a déjà signé cet OM.
-    $this->actingAs($cumul)->postJson("/api/ordres/{$om->id}/approuver")
-        ->assertStatus(422);
-
-    expect($om->fresh()->statut)->toBe('VISA_DAF');
-});
-
-// ── Rejet à chaque étape ──
-
-it('autorise le rejet motivé à chacune des trois étapes', function () {
-    foreach ([
-        ['IMPORTE', $this->controleur],
-        ['VERIFIE', $this->daf],
-        ['VISA_DAF', $this->dg],
-    ] as [$statut, $acteur]) {
-        $om = OrdreMission::factory()->create(['statut' => $statut]);
-
-        $this->actingAs($acteur)->postJson("/api/ordres/{$om->id}/rejeter", [
-            'motif' => 'Pièces justificatives incomplètes au dossier.',
-        ])->assertOk()->assertJsonPath('data.statut', 'REJETE');
-    }
-});
-
-it('efface les signatures amont lorsqu’un OM est rejeté', function () {
+it('interdit à un profil sans om.valider de valider', function () {
+    // Le DAF/DG portent le circuit de l'état, pas la validation OM par OM.
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")->assertOk();
+    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/valider")->assertForbidden();
+    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/valider")->assertForbidden();
+});
 
-    // Le DG rejette : les visas portaient sur un OM désormais rejeté.
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/rejeter", [
-        'motif' => 'Montants non conformes au barème en vigueur.',
-    ])->assertOk();
+// ── Rejet motivé depuis IMPORTE ──
 
-    $om->refresh();
+it('autorise le rejet motivé depuis IMPORTE', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 
-    expect($om->statut)->toBe('REJETE')
-        ->and($om->verifie_nom)->toBeNull()
-        ->and($om->visa_daf_nom)->toBeNull()
-        ->and($om->signature_verif_hash)->toBeNull()
-        ->and($om->signature_daf_hash)->toBeNull()
-        ->and($om->commentaire_rejet)->toContain('barème');
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/rejeter", [
+        'motif' => 'Pièces justificatives incomplètes au dossier.',
+    ])->assertOk()->assertJsonPath('data.statut', 'REJETE');
+
+    expect($om->fresh()->commentaire_rejet)->toContain('justificatives');
+});
+
+it('exige un motif d’au moins 10 caractères pour rejeter', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/rejeter", ['motif' => 'court'])
+        ->assertStatus(422)->assertJsonValidationErrors('motif');
 });
 
 // ── Le verrouillage est bien la porte du paiement ──
 
-it('ne rend l’OM payable qu’après la validation finale du DG', function () {
+it('ne rend l’OM payable qu’après sa validation', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
     Versement::factory()->create([
         'ordre_mission_id' => $om->id,
@@ -169,51 +108,6 @@ it('ne rend l’OM payable qu’après la validation finale du DG', function () 
     expect($payable())->toBe(0);
 
     $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
-    expect($payable())->toBe(0);   // vérifié ne suffit pas
 
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")->assertOk();
-    expect($payable())->toBe(0);   // visé DAF ne suffit pas non plus
-
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/approuver")->assertOk();
-    expect($payable())->toBe(1);   // seule la validation finale du DG ouvre le paiement
-});
-
-// ── Les étapes DAF/DG n'existent pas hors du circuit complet ──
-
-it('renvoie une erreur claire si le circuit complet est désactivé', function () {
-    config(['workflow.double_validation' => false]);
-
-    $om = OrdreMission::factory()->create(['statut' => 'VERIFIE']);
-
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")
-        ->assertStatus(422)
-        ->assertJsonValidationErrors('workflow');
-});
-
-it('conserve la validation en une étape quand le circuit complet est désactivé', function () {
-    config(['workflow.double_validation' => false]);
-
-    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
-
-    // Comportement historique strictement préservé.
-    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")
-        ->assertOk()->assertJsonPath('data.statut', 'VALIDE');
-});
-
-// ── Journal d'audit ──
-
-it('journalise chacune des trois étapes du circuit', function () {
-    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
-
-    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
-    $this->actingAs($this->daf)->postJson("/api/ordres/{$om->id}/viser")->assertOk();
-    $this->actingAs($this->dg)->postJson("/api/ordres/{$om->id}/approuver")->assertOk();
-
-    $actions = AuditLog::where('entite', 'ordre_mission')
-        ->where('entite_id', $om->id)
-        ->pluck('action');
-
-    expect($actions)->toContain('VERIFY_OM')
-        ->and($actions)->toContain('VISA_DAF_OM')
-        ->and($actions)->toContain('APPROVE_DG_OM');
+    expect($payable())->toBe(1);
 });

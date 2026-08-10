@@ -109,8 +109,6 @@ export interface OrdreMission {
   avance: number
   reliquat: number
   statut: StatutOM
-  /** Circuit complet (CONTROLEUR -> DAF -> DG) actif côté serveur. */
-  circuit_complet?: boolean
   verification?: EtapeCircuit | null
   visa_daf?: EtapeCircuit | null
   validation_dg?: EtapeCircuit | null

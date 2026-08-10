@@ -25,20 +25,12 @@ export const ordresService = {
     return unwrap<OrdreMission>(data)
   },
 
+  /**
+   * Validation OM par OM en une étape : IMPORTE → VALIDE (missions sans état).
+   * Le circuit à trois signatures se joue sur l'état (etatsService).
+   */
   async valider(id: number): Promise<OrdreMission> {
     const { data } = await api.post(`/api/ordres/${id}/valider`)
-    return unwrap<OrdreMission>(data)
-  },
-
-  /** Étape 2 du circuit — visa du DAF : VERIFIE → VISA_DAF. */
-  async viser(id: number, commentaire?: string): Promise<OrdreMission> {
-    const { data } = await api.post(`/api/ordres/${id}/viser`, { commentaire })
-    return unwrap<OrdreMission>(data)
-  },
-
-  /** Étape 3 — validation finale du DG : VISA_DAF → VALIDE (verrouillage). */
-  async approuver(id: number): Promise<OrdreMission> {
-    const { data } = await api.post(`/api/ordres/${id}/approuver`)
     return unwrap<OrdreMission>(data)
   },
 

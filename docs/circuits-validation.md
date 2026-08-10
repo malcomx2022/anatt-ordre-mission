@@ -13,7 +13,7 @@
 |---|---|---|
 | Service | `EtatPaiementService` | `MissionService` / `ValidationController` |
 | Objet validé | l'**état de paiement** de la mission (document signé) | un **OM** isolé |
-| Étapes | récap → `CONTROLE` → `VISA_DAF` → `VALIDE` (par tranche) | `IMPORTE` → `VALIDE` (simple) ; ou `→ VERIFIE → VISA_DAF → VALIDE` (complet) |
+| Étapes | récap → `CONTROLE` → `VISA_DAF` → `VALIDE` (par tranche) | `IMPORTE` → `VALIDE` (**une seule étape**) |
 | Effet sur les OM | la validation finale du DG **propage** `VALIDE` aux N OM | fait passer **l'OM** à `VALIDE` |
 | Quand | mission **avec** état de paiement (cas normal) | mission **sans** état (reprise de données, correction ponctuelle) |
 
@@ -34,7 +34,7 @@ Les deux circuits ne tournent **jamais en parallèle sur une même mission**. D�
 qu'un état de paiement existe pour la mission, le circuit par OM est **fermé** :
 
 ```php
-// MissionService::exigerAbsenceDEtat() — appelé par valider/viser/approuver/rejeter
+// MissionService::exigerAbsenceDEtat() — appelé par valider/rejeter
 if ($etat !== null) {
     throw ValidationException::withMessages([
         'etat' => ["… l'action « {$action} » doit être effectuée sur l'état, pas sur l'OM."],
@@ -74,19 +74,21 @@ Conséquences :
 
 ---
 
-## 4. Le drapeau `workflow.double_validation`
+## 4. Le circuit par OM tient en une seule étape
 
-`config/workflow.php` — défaut **`false`**.
+Le circuit par OM ne connaît qu'une transition : `IMPORTE → VALIDE` (le contrôleur
+valide directement, permission `om.valider`), plus un rejet motivé depuis `IMPORTE`.
+Il n'y a **pas** d'étapes DAF/DG par OM : la validation à trois signatures
+(contrôle → visa DAF → validation DG) se joue **uniquement sur l'état** de la
+mission (`EtatPaiementService`).
 
-- **`false`** (défaut) : le circuit par OM se réduit à **une** étape,
-  `IMPORTE → VALIDE` (comportement historique). Les statuts OM `VERIFIE` /
-  `VISA_DAF` sont alors **inatteignables**.
-- **`true`** : le circuit par OM déroule les trois étapes
-  `IMPORTE → VERIFIE → VISA_DAF → VALIDE`, avec séparation des tâches.
-
-La bascule est une **décision d'exploitation explicite** (`WORKFLOW_DOUBLE_VALIDATION`),
-à ne pas confondre avec le toggle « doubleValidation » de l'écran Paramètres (voir
-l'avertissement dans `config/workflow.php`).
+> Historique : un mode « double validation par OM » a existé (drapeau
+> `workflow.double_validation`, statuts OM `VERIFIE` / `VISA_DAF`). Il était
+> désactivé par défaut, dépourvu d'interface, et redondant avec le circuit par
+> état — il a été retiré. Les valeurs d'enum `VERIFIE` / `VISA_DAF` restent
+> acceptées en base pour d'éventuelles données héritées, mais ne sont plus
+> produites. Seule `separation_des_taches` subsiste dans `config/workflow.php`
+> (appliquée au circuit par état).
 
 ---
 
@@ -118,10 +120,10 @@ où plus aucune mission sans état ne subsiste (fin de la reprise de données).
 |---|---|
 | Circuit par état | `app/Services/EtatPaiementService.php` |
 | Circuit par OM | `app/Services/MissionService.php`, `app/Http/Controllers/Api/ValidationController.php` |
-| Règles de statut / drapeau | `app/Support/Workflow.php`, `config/workflow.php` |
+| Règles de statut / séparation des tâches | `app/Support/Workflow.php`, `config/workflow.php` |
 | Exclusivité (verrou) | `MissionService::exigerAbsenceDEtat()` |
 | Porte de paiement unifiée | `Versement::scopeEligiblesLot()` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |
 | Tests — barrière de paiement | `tests/Feature/Paiement/BarriereEtatTest.php` |
-| Tests — circuit OM complet | `tests/Feature/CircuitValidationTest.php` |
+| Tests — circuit OM (une étape) | `tests/Feature/CircuitValidationTest.php` |
 | Tests — séparation des tâches | `tests/Feature/SeparationTachesTest.php` |

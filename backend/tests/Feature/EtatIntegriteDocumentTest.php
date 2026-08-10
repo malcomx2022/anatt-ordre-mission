@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Storage::fake('local');
-    config(['workflow.double_validation' => true]);
 
     $this->gestionnaire = User::factory()->gestionnaireOm()->create();
     $this->controleur = User::factory()->controleur()->create();
