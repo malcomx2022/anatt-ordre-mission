@@ -74,7 +74,7 @@ class MissionService
                     'role' => $o['role'],
                     'categorie' => $categorie,
                     'zone_code' => $mission->zone_code,
-                    'type_prise_en_charge' => $calc['type_principal'] ?? $o['type_prise_en_charge'],
+                    'type_prise_en_charge' => $calc['type_principal'] ?? ($o['type_prise_en_charge'] ?? null),
                     'nb_jours' => $calc['nb_jours'],
                     'lignes_per_diem' => $calc['lignes'],
                     'montant_transport' => $calc['montant_transport'],
