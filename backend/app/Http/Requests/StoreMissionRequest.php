@@ -26,6 +26,20 @@ class StoreMissionRequest extends FormRequest
                 $this->merge(['zone_code' => $zone]);
             }
         }
+
+        // Mode « répartition détaillée » : l'UI envoie les lignes et laisse le
+        // type de prise en charge à '' (chaîne vide). On le normalise à null pour
+        // que la règle conditionnelle required_without:lignes s'applique
+        // proprement (sinon le `in:` rejette la chaîne vide).
+        $ordres = $this->input('ordres');
+        if (is_array($ordres)) {
+            foreach ($ordres as $i => $ordre) {
+                if (($ordre['type_prise_en_charge'] ?? null) === '') {
+                    $ordres[$i]['type_prise_en_charge'] = null;
+                }
+            }
+            $this->merge(['ordres' => $ordres]);
+        }
     }
 
     public function rules(): array
@@ -46,7 +60,9 @@ class StoreMissionRequest extends FormRequest
             'ordres.*.agent_id' => 'required|integer|exists:agents,id',
             'ordres.*.role' => 'required|in:PARTICIPANT,CAV',
             'ordres.*.categorie' => 'nullable|in:ORDRE_1,ORDRE_2,ORDRE_3',
-            'ordres.*.type_prise_en_charge' => 'required|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',
+            // Requis uniquement en mode simple : en répartition détaillée, ce sont
+            // les `lignes` qui portent les types (le type est alors déduit).
+            'ordres.*.type_prise_en_charge' => 'nullable|required_without:ordres.*.lignes|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',
             'ordres.*.nb_jours' => 'nullable|integer|min:1',
             // Répartition détaillée des jours par type (état ANaTT). Optionnelle :
             // si absente, per diem = type_prise_en_charge × nb_jours.

@@ -212,7 +212,9 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
         agent_id: b.agent_id as number,
         role: b.role,
         categorie: b.categorie,
-        type_prise_en_charge: b.type_prise_en_charge as TypePriseEnCharge,
+        // Omis en répartition détaillée (les lignes portent les types) : n'envoyer
+        // le type de prise en charge que s'il est renseigné (mode simple).
+        type_prise_en_charge: (b.type_prise_en_charge || undefined) as TypePriseEnCharge | undefined,
         nb_jours: b.nb_jours || undefined,
         // Répartition détaillée (jours > 0 uniquement) ; omise si vide.
         lignes: (b.lignes ?? []).filter((l) => l.type && l.nb_jours > 0).length

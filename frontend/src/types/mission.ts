@@ -166,7 +166,8 @@ export interface MissionFormData {
     agent_id: number
     role: RoleOM
     categorie?: Categorie
-    type_prise_en_charge: TypePriseEnCharge
+    // Optionnel : omis en répartition détaillée (les lignes portent les types).
+    type_prise_en_charge?: TypePriseEnCharge
     nb_jours?: number | null
     lignes?: LignePerDiemInput[]
     montant_transport?: number | null

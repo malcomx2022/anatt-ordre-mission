@@ -44,6 +44,47 @@ it('retranscrit une mission en N OM avec versements', function () {
     expect(Versement::where('ordre_mission_id', $om->id)->count())->toBe(2);
 });
 
+it('retranscrit en répartition détaillée sans type_prise_en_charge (mode lignes)', function () {
+    // En mode détaillé, ce sont les lignes qui portent les types : le champ
+    // type_prise_en_charge n'a pas à être fourni.
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        [
+            'reference_semo' => 'SEMO-DET', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT',
+            'lignes' => [
+                ['type' => 'UN_REPAS', 'nb_jours' => 1],
+                ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 2],
+            ],
+        ],
+    ]))->assertStatus(201);
+
+    $om = OrdreMission::where('reference_semo', 'SEMO-DET')->firstOrFail();
+    // ORDRE_1 / INTERIEUR : 15000 x1 (un repas) + 45000 x2 (journée) = 105000
+    expect($om->montant_total)->toBe(105000)
+        ->and($om->type_prise_en_charge)->not->toBeNull()
+        ->and($om->statut)->toBe('IMPORTE');
+});
+
+it('accepte un type_prise_en_charge vide quand des lignes sont fournies (payload UI)', function () {
+    // Régression : l'interface envoie type_prise_en_charge = '' en mode détaillé.
+    // La chaîne vide ne doit pas déclencher « le champ est obligatoire ».
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        [
+            'reference_semo' => 'SEMO-VIDE', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT',
+            'type_prise_en_charge' => '',
+            'lignes' => [['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 2]],
+        ],
+    ]))->assertStatus(201);
+
+    expect(OrdreMission::where('reference_semo', 'SEMO-VIDE')->exists())->toBeTrue();
+});
+
+it('exige le type de prise en charge en l’absence de lignes', function () {
+    // Mode simple : sans lignes ET sans type, la requête est invalide.
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        ['reference_semo' => 'SEMO-NIL', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT'],
+    ]))->assertStatus(422)->assertJsonValidationErrors('ordres.0.type_prise_en_charge');
+});
+
 it('le CAV est payé selon SA catégorie', function () {
     $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
         ['reference_semo' => 'SEMO-CAV', 'agent_id' => $this->cav->id, 'role' => 'CAV', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
