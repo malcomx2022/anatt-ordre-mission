@@ -59,7 +59,8 @@ class Versement extends Model
         return $query
             ->where('type', $tranche)
             ->where('operateur', $operateur)
-            ->where('statut', '!=', 'CONFIRME')
+            // Ni déjà payé, ni en régularisation (trop-perçu).
+            ->whereNotIn('statut', ['CONFIRME', 'A_RECOUVRER', 'RECOUVRE'])
             // Un montant nul ou négatif (reliquat de trop-perçu après amendement)
             // ne part jamais dans un fichier : il relève d'une régularisation.
             ->where('montant', '>', 0)

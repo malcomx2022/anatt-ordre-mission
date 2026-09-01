@@ -155,4 +155,25 @@ class PaiementController extends Controller
         // sans exposer les colonnes internes ; porte le bénéficiaire et la mission.
         return VersementResource::collection($versements)->response();
     }
+
+    /**
+     * Régularisations (trop-perçus) : reliquats négatifs à récupérer par retenue
+     * sur salaire, ou déjà recouvrés. Filtres : statut (A_RECOUVRER|RECOUVRE),
+     * mission_id.
+     */
+    public function regularisations(Request $request): JsonResponse
+    {
+        return $this->success($this->lotService->regularisations($request->only(['statut', 'mission_id'])));
+    }
+
+    /** Marque une régularisation comme recouvrée (retenue appliquée par la RH). */
+    public function recouvrer(Versement $versement, Request $request): JsonResponse
+    {
+        $versement = $this->lotService->marquerRecouvre($versement, $request->user());
+
+        return $this->success(
+            ['versement_id' => $versement->id, 'statut' => $versement->statut],
+            'Régularisation marquée comme recouvrée.',
+        );
+    }
 }

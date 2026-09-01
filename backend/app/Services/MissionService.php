@@ -262,10 +262,16 @@ class MissionService
      */
     private function reventilerVersements(OrdreMission $ordre, int $avance, int $reliquat): void
     {
+        // Un reliquat négatif (trop-perçu) bascule le versement en A_RECOUVRER :
+        // il sort du périmètre payable et rejoint les régularisations. Un reliquat
+        // redevenu ≥ 0 (nouvel amendement) repasse EN_ATTENTE.
         $ordre->versements()
             ->where('type', 'RELIQUAT')
-            ->where('statut', '!=', 'CONFIRME')
-            ->update(['montant' => $reliquat]);
+            ->whereNotIn('statut', ['CONFIRME', 'GENERE'])
+            ->update([
+                'montant' => $reliquat,
+                'statut' => $reliquat < 0 ? 'A_RECOUVRER' : 'EN_ATTENTE',
+            ]);
 
         if ($ordre->avance_engagee === null) {
             $ordre->versements()
