@@ -1,7 +1,7 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
-> **Statut : Phases 1 à 3 (backend) et 5 (frontend) livrées ; reste la Phase 4
-> (intégration état des reliquats) et le document de retenue.** Ce document cadre le
+> **Statut : Phases 1 à 5 livrées ; reste la Phase 6 (docs & démo) et le document
+> de retenue RH.** Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
 > manuel) ; périmètre v1 = amendement **avant** validation de l'état des reliquats ;
@@ -36,9 +36,18 @@
 > nouvel écran **Régularisations** (`/paiements/regularisations`, menu Paiements) qui
 > liste les trop-perçus et permet de les marquer recouvrés ; badges de statut
 > `A_RECOUVRER`/`RECOUVRE` ; tests Vitest (écran + badge) et e2e Playwright
-> (parcours régularisation). **Reste** : Phase 4 (récap reliquats reflète les
-> amendements, re-scellé HMAC, parcours « amendement après état validé ») et le
-> **document de retenue** à générer pour la RH.
+> (parcours régularisation).
+>
+> **Livré (Phase 4)** : intégrité de l'amendement avec l'état des reliquats.
+> Colonnes `etats_paiement.montant_total` / `montant_reliquat` passées en **entiers
+> signés** (un état des reliquats en BROUILLON peut totaliser un trop-perçu négatif).
+> L'observer resynchronise automatiquement l'état BROUILLON/REJETE des reliquats
+> sur les montants amendés ; l'état des AVANCES validé reste **scellé** (HMAC) et
+> intact (avance figée). Garde d'amendement affinée : un état des reliquats en
+> cours de signature (`CONTROLE`/`VISA_DAF`) guide vers le **rejet** (« rejetez-le
+> avant d'amender, puis rétablissez-le »), un état **validé** relève d'un avenant
+> formel (hors périmètre). Tests d'intégrité (`AmendementIntegriteEtatTest`).
+> **Reste** : Phase 6 (docs & démo) et le **document de retenue** RH à générer.
 
 ---
 
@@ -188,7 +197,7 @@ Body: { nb_jours? , lignes? , motif }
 | **1 · Socle données + calcul** ✅ | Migration `avance_engagee` ; figer l'avance dans `propager` ; règle conditionnelle `CalculIndemniteService::repartir($total, $avanceEngagee)` ; **tests** unitaires (rallonge / réduction / trop-perçu) + feature (gel). *Rien d'exposé.* | **livré** |
 | **2 · Endpoint d'amendement** ✅ | Migration `om_amendements` + colonnes signées (`reliquat`, `versements.montant`) ; `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ des versements ; `scopeEligiblesLot > 0` ; tests feature. | **livré** |
 | **3 · Trop-perçu / régularisations** ✅ | Enum `versements.statut` étendu (`A_RECOUVRER`/`RECOUVRE`) ; reliquat négatif basculé en `A_RECOUVRER` (`reventilerVersements`) ; `scopeEligiblesLot` exclut `A_RECOUVRER`/`RECOUVRE` ; endpoints `GET /paiements/regularisations` + `POST …/:versement/recouvrer` ; audit `RECOUVRER_VERSEMENT` ; tests feature. *(Document de retenue reporté en Phase 5.)* | **livré** |
-| **4 · Intégration état reliquats** | récap reflète les amendements ; re-scellé HMAC ; parcours « amendement après état validé » (rejet guidé) ; tests d'intégrité. | PR 4 |
+| **4 · Intégration état reliquats** ✅ | Colonnes `etats_paiement.montant_total`/`montant_reliquat` signées ; l'observer recale l'état BROUILLON/REJETE des reliquats sur les montants amendés ; l'état des avances validé reste scellé (HMAC) et intact ; garde affinée (reliquats `CONTROLE`/`VISA_DAF` → rejet guidé ; `VALIDE` → avenant formel) ; tests d'intégrité. | **livré** |
 | **5 · Frontend** ✅ | Fiche OM (bouton Amender + modale, journal des amendements, badge trop-perçu) ; `avance_engagee` + `amendements` exposés sur `GET /ordres/:id` ; écran Régularisations (`/paiements/regularisations` + menu) avec « marquer recouvré » ; badges `A_RECOUVRER`/`RECOUVRE` ; Vitest + e2e Playwright. | **livré** |
 | **6 · Docs & démo** | doc circuits, guide, `SCENARIO-DEMO`, diagramme du cas d'avenant. | PR 6 |
 

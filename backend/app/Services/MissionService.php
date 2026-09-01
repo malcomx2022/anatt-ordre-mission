@@ -297,9 +297,19 @@ class MissionService
         }
 
         $reliquat = $etats->get(EtatPaiement::TRANCHE_RELIQUAT);
-        if ($reliquat && in_array($reliquat->statut, ['CONTROLE', 'VISA_DAF', 'VALIDE'], true)) {
+        // En cours de signature (CONTROLE / VISA_DAF), le document n'est pas
+        // définitif : on peut le REJETER pour l'amender, puis le rétablir. On
+        // guide donc vers ce rejet plutôt que de bloquer sèchement.
+        if ($reliquat && in_array($reliquat->statut, ['CONTROLE', 'VISA_DAF'], true)) {
             throw ValidationException::withMessages([
-                'etat' => ["L'état des reliquats est « {$reliquat->statut} » : un amendement à ce stade relève d'un avenant (hors périmètre)."],
+                'etat' => ["L'état des reliquats est en cours de signature (« {$reliquat->statut} ») : rejetez-le avant d'amender, puis rétablissez-le."],
+            ]);
+        }
+        // Validé et scellé (HMAC) : il ne peut plus être rejeté par le circuit.
+        // Un amendement postérieur relève d'un avenant formel — hors périmètre v1.
+        if ($reliquat && $reliquat->estValide()) {
+            throw ValidationException::withMessages([
+                'etat' => ["L'état des reliquats est validé et scellé : un amendement à ce stade relève d'un avenant formel (hors périmètre)."],
             ]);
         }
     }
