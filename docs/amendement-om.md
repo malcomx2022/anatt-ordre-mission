@@ -1,9 +1,16 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
-> **Statut : proposition d'analyse (non implémenté).** Ce document cadre le besoin,
-> la règle de gestion, l'implémentation envisagée, les conséquences sur l'existant
-> et un planning d'intégration. Les décisions métier de la §7 doivent être tranchées
-> avant tout développement.
+> **Statut : Phase 1 (socle) livrée ; reste non implémenté.** Ce document cadre le
+> besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
+> tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
+> manuel) ; périmètre v1 = amendement **avant** validation de l'état des reliquats ;
+> amendement par le **gestionnaire** (motif + audit) ; portée = **jours facturés** de l'OM.
+>
+> **Livré (Phase 1)** : colonne `avance_engagee` figée à la validation des avances
+> (`EtatPaiementService::propager`) et règle de répartition conditionnelle
+> (`CalculIndemniteService::repartir($total, $avanceEngagee)`), avec tests. Rien
+> d'exposé côté API/UI. La table `om_amendements` est créée en Phase 2 (avec
+> l'endpoint qui l'écrit) pour éviter une table morte.
 
 ---
 
@@ -104,6 +111,10 @@ Body: { nb_jours? , lignes? , motif }
 
 ### 4.4 Reliquat négatif — trop-perçu
 
+- ⚠️ **Migration requise (Phase 2/3)** : `ordre_missions.reliquat` et
+  `versements.montant` sont actuellement `unsignedBigInteger` (ne stockent PAS de
+  négatif). Il faudra les passer en entiers **signés** pour porter le trop-perçu.
+  *(Hors Phase 1 : le socle livré ne produit encore aucun montant négatif.)*
 - Le modèle **autorise** un `reliquat` négatif (vérité comptable), mais :
   - `Versement::scopeEligiblesLot` reçoit un `where('montant', '>', 0)` → **aucun
     montant ≤ 0 n'entre dans un fichier** (ce filtre n'existe pas aujourd'hui, à
@@ -146,8 +157,8 @@ Body: { nb_jours? , lignes? , motif }
 | Phase | Contenu | Livrable |
 |---|---|---|
 | **0 · Cadrage** | Trancher les décisions métier (§7). Aucun code. | note de décision |
-| **1 · Socle données + calcul** | Migrations (`avance_engagee`, `om_amendements`) ; figer l'avance dans `propager` ; règle conditionnelle dans `CalculIndemniteService` ; **tests unitaires** (rallonge / réduction / trop-perçu). *Rien d'exposé.* | PR 1 |
-| **2 · Endpoint d'amendement** | `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ du versement reliquat ; tests feature. | PR 2 |
+| **1 · Socle données + calcul** ✅ | Migration `avance_engagee` ; figer l'avance dans `propager` ; règle conditionnelle `CalculIndemniteService::repartir($total, $avanceEngagee)` ; **tests** unitaires (rallonge / réduction / trop-perçu) + feature (gel). *Rien d'exposé.* | **livré** |
+| **2 · Endpoint d'amendement** | Migration `om_amendements` ; `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ du versement reliquat ; tests feature. | PR 2 |
 | **3 · Trop-perçu / régularisations** | filtre `> 0` dans `scopeEligiblesLot` + verrou générateurs ; statut `A_RECOUVRER` ; écran/état de reversement ; tests. | PR 3 |
 | **4 · Intégration état reliquats** | récap reflète les amendements ; re-scellé HMAC ; parcours « amendement après état validé » (rejet guidé) ; tests d'intégrité. | PR 4 |
 | **5 · Frontend** | détail OM (amender + historique + badges), écran Régularisations, e2e Playwright. | PR 5 |

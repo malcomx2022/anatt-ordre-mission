@@ -128,3 +128,36 @@ it('applique la règle des 12 h : retour 0-12 h ne compte pas un jour de plus', 
         Carbon::parse('2025-11-13 14:00'),
     ))->toBe(1);
 });
+
+// ── Répartition avec avance ENGAGÉE (amendement après paiement de l'avance) ──
+// Cf. docs/amendement-om.md. Base : 6 j × 45 000 = 270 000, avance figée 189 000.
+
+it('répartit normalement (70/30) quand aucune avance n’est engagée', function () {
+    definirPartAvance(null); // défaut 70 %
+
+    expect($this->service->repartir(270000))->toBe([189000, 81000]);
+});
+
+it('fige l’avance et augmente le reliquat quand les jours augmentent', function () {
+    // Rallonge : total 360 000, avance engagée 189 000 -> reliquat 171 000 (> 30 %).
+    expect($this->service->repartir(360000, 189000))->toBe([189000, 171000]);
+});
+
+it('fige l’avance et réduit le reliquat quand les jours diminuent', function () {
+    // Réduction : total 225 000, avance engagée 189 000 -> reliquat 36 000 (< 30 %).
+    expect($this->service->repartir(225000, 189000))->toBe([189000, 36000]);
+});
+
+it('produit un reliquat NÉGATIF (trop-perçu) en forte réduction', function () {
+    // Forte réduction : total 135 000 < avance 189 000 -> reliquat -54 000.
+    expect($this->service->repartir(135000, 189000))->toBe([189000, -54000]);
+});
+
+it('ignore la part paramétrable une fois l’avance engagée', function () {
+    // Même avec partAvance à 50 %, l'avance engagée prime : le reliquat s'ajuste.
+    definirPartAvance(50);
+
+    expect($this->service->repartir(360000, 189000))->toBe([189000, 171000]);
+
+    definirPartAvance(null);
+});

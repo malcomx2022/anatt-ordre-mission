@@ -39,6 +39,7 @@ class OrdreMission extends Model
         'montant_total',
         'avance',
         'reliquat',
+        'avance_engagee',
         'statut',               // IMPORTE|VALIDE|REJETE|SOLDE|ANNULE (VERIFIE/VISA_DAF : valeurs héritées, plus produites — circuit OM en une étape)
         'conducteur_a_bord',    // mention logistique uniquement
         'reference_autorisation',
@@ -62,6 +63,7 @@ class OrdreMission extends Model
             'montant_total' => 'integer',
             'avance' => 'integer',
             'reliquat' => 'integer',
+            'avance_engagee' => 'integer',
             'verifie_le' => 'datetime',
             'visa_daf_le' => 'datetime',
             'valide_dg_le' => 'datetime',
