@@ -3,7 +3,9 @@ import type { Mission } from './mission'
 
 export type { Operateur }
 export type TrancheVersement = 'AVANCE' | 'RELIQUAT'
-export type StatutVersement = 'EN_ATTENTE' | 'GENERE' | 'CONFIRME' | 'ANNULE'
+// A_RECOUVRER / RECOUVRE : régularisation d'un trop-perçu (reliquat négatif après
+// amendement) — retenue sur salaire, jamais un fichier de paiement Mobile Money.
+export type StatutVersement = 'EN_ATTENTE' | 'GENERE' | 'CONFIRME' | 'ANNULE' | 'A_RECOUVRER' | 'RECOUVRE'
 export type StatutLot = 'GENERE' | 'CONFIRME' | 'ERREUR'
 
 export interface Versement {
@@ -57,4 +59,20 @@ export interface LotPreview {
   nb_lignes: number
   total: number
   beneficiaires: LotBeneficiaire[]
+}
+
+/**
+ * Trop-perçu à récupérer : un reliquat devenu négatif après amendement.
+ * `montant_a_recouvrer` est la valeur absolue du reliquat négatif.
+ */
+export interface Regularisation {
+  versement_id: number
+  reference_semo: string
+  beneficiaire: string
+  mission: string
+  operateur: Operateur
+  telephone: string
+  montant_a_recouvrer: number
+  statut: 'A_RECOUVRER' | 'RECOUVRE'
+  date_regularisation?: string | null
 }

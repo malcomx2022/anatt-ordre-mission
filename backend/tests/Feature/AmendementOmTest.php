@@ -152,3 +152,18 @@ it('exige un motif d’au moins 10 caractères', function () {
     amenderOm($this, ['nb_jours' => 8, 'motif' => 'court'])
         ->assertStatus(422)->assertJsonValidationErrors('motif');
 });
+
+// ── Contrat exposé à la fiche détail (consommé par le frontend) ──
+
+it('expose l’avance engagée et le journal des amendements sur la fiche OM', function () {
+    $this->om->update(['avance_engagee' => 189000]);
+    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Rallonge documentée pour la fiche.'])->assertOk();
+
+    $this->actingAs($this->gestionnaire)
+        ->getJson("/api/ordres/{$this->om->id}")
+        ->assertOk()
+        ->assertJsonPath('data.avance_engagee', 189000)
+        ->assertJsonPath('data.amendements.0.nb_jours_avant', 6)
+        ->assertJsonPath('data.amendements.0.nb_jours_apres', 8)
+        ->assertJsonPath('data.amendements.0.delta_montant', 90000);
+});

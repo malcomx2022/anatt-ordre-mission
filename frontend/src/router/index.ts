@@ -201,6 +201,12 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/paiements/PaiementHistoriqueView.vue'),
     meta: { auth: true, permission: 'paiements.consulter' },
   },
+  {
+    path: '/paiements/regularisations',
+    name: 'paiement-regularisations',
+    component: () => import('@/views/paiements/PaiementRegularisationView.vue'),
+    meta: { auth: true, permission: 'paiements.consulter' },
+  },
 
   // ── TAUX PER DIEM ──
   {

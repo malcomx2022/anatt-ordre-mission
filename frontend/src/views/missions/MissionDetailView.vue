@@ -4,10 +4,12 @@ import { useRoute } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
+import AppModal from '@/components/shared/AppModal.vue'
 import MissionStatusBadge from '@/components/missions/MissionStatusBadge.vue'
 import EtatStatusBadge from '@/components/etats/EtatStatusBadge.vue'
 import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
 import { ordresService } from '@/services/ordres'
+import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { partAvance } from '@/composables/usePartAvance'
@@ -16,6 +18,7 @@ import type { OrdreMission } from '@/types'
 
 const route = useRoute()
 const toast = useToast()
+const { can } = useAuth()
 const id = Number(route.params.id)
 const avancePct = partAvance()
 const reliquatPct = 100 - avancePct
@@ -25,6 +28,45 @@ const loading = ref(true)
 const action = ref(false)
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
+
+// ── Amendement des jours facturés (rallonge / réduction) ──
+// Une fois l'avance engagée (état des avances validé), seul le reliquat bouge et
+// peut devenir négatif : c'est un trop-perçu à récupérer par retenue sur salaire.
+const showAmend = ref(false)
+const amendForm = ref<{ nb_jours: number | null; motif: string }>({ nb_jours: null, motif: '' })
+
+const avanceEngagee = computed(() => ordre.value?.avance_engagee != null)
+const reliquatNegatif = computed(() => (ordre.value?.reliquat ?? 0) < 0)
+
+// Amendable tant que l'OM n'est ni rejeté, ni annulé, ni entièrement soldé. Les
+// gardes fines (état en cours de signature, état des reliquats validé) restent
+// portées par l'API, qui répond 422 le cas échéant.
+const peutAmender = computed(
+  () => can('om.retranscrire') && !!ordre.value && ['IMPORTE', 'VALIDE'].includes(ordre.value.statut),
+)
+
+function ouvrirAmend() {
+  amendForm.value = { nb_jours: ordre.value?.nb_jours ?? null, motif: '' }
+  showAmend.value = true
+}
+
+async function soumettreAmend() {
+  if (!ordre.value) return
+  action.value = true
+  try {
+    await ordresService.amender(id, {
+      nb_jours: amendForm.value.nb_jours,
+      motif: amendForm.value.motif,
+    })
+    showAmend.value = false
+    toast.success('Ordre de mission amendé.')
+    await load()
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
 
 /*
  * La validation ne se joue PAS sur l'OM individuel : elle se joue sur les états
@@ -80,23 +122,36 @@ onMounted(load)
             <h2 class="text-xl font-display font-bold text-gray-800">{{ ordre.reference_semo }}</h2>
             <MissionStatusBadge :statut="ordre.statut" />
             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">{{ ordre.role }}</span>
+            <span v-if="reliquatNegatif" class="px-3 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-600">Trop-perçu</span>
           </div>
-          <AppButton
-            v-if="peutTelechargerBrouillon"
-            variant="outline"
-            :loading="action"
-            @click="telechargerBrouillon"
-          >
-            <span class="inline-flex items-center gap-2">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Télécharger le brouillon
-            </span>
-          </AppButton>
+          <div class="flex items-center gap-3">
+            <AppButton v-if="peutAmender" variant="outline" @click="ouvrirAmend">
+              <span class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+                Amender
+              </span>
+            </AppButton>
+            <AppButton
+              v-if="peutTelechargerBrouillon"
+              variant="outline"
+              :loading="action"
+              @click="telechargerBrouillon"
+            >
+              <span class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Télécharger le brouillon
+              </span>
+            </AppButton>
+          </div>
         </div>
         <p v-if="ordre.statut === 'REJETE' && ordre.commentaire_rejet" class="mt-3 text-sm text-red-600 font-body">
           Motif du rejet : {{ ordre.commentaire_rejet }}
@@ -194,6 +249,69 @@ onMounted(load)
           </tbody>
         </table>
       </AppCard>
+
+      <!-- Historique des amendements -->
+      <AppCard v-if="ordre.amendements && ordre.amendements.length">
+        <h3 class="font-display font-bold text-gray-800 mb-3">Amendements</h3>
+        <ul class="space-y-3">
+          <li v-for="a in ordre.amendements" :key="a.id" class="border-l-4 border-gold-400 pl-4 py-1">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-body">
+              <span class="font-display font-semibold text-gray-800">{{ a.nb_jours_avant }} j → {{ a.nb_jours_apres }} j</span>
+              <span class="text-gray-500">{{ fmt(a.montant_total_avant) }} → {{ fmt(a.montant_total_apres) }} FCFA</span>
+              <span
+                class="px-2 py-0.5 rounded-full text-[11px] font-bold"
+                :class="a.delta_montant >= 0 ? 'bg-anatt-50 text-anatt-600' : 'bg-red-50 text-red-600'"
+              >{{ a.delta_montant >= 0 ? '+' : '' }}{{ fmt(a.delta_montant) }}</span>
+            </div>
+            <p class="text-sm text-gray-600 font-body mt-1">« {{ a.motif }} »</p>
+            <p class="text-[11px] text-gray-400 font-body mt-0.5">
+              {{ a.amende_par_nom ?? '—' }}<span v-if="a.amende_le"> · {{ new Date(a.amende_le).toLocaleString('fr-FR') }}</span>
+            </p>
+          </li>
+        </ul>
+      </AppCard>
     </div>
+
+    <!-- Modale d'amendement -->
+    <AppModal :show="showAmend" title="Amender l’ordre de mission" @close="showAmend = false">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500 font-body">
+          Ajustez le nombre de jours facturés.
+          <template v-if="avanceEngagee">
+            L’avance est <strong>engagée</strong> : elle ne bouge plus, seul le
+            <strong>reliquat</strong> absorbe l’écart (il peut devenir négatif = trop-perçu à recouvrer).
+          </template>
+          <template v-else>
+            L’avance n’est pas encore engagée : avance et reliquat sont recalculés ({{ avancePct }} / {{ reliquatPct }} %).
+          </template>
+        </p>
+        <div>
+          <label class="block text-sm font-display font-medium text-gray-700 mb-1">Nombre de jours</label>
+          <input
+            v-model.number="amendForm.nb_jours"
+            type="number" min="1"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-body
+                   focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+          >
+        </div>
+        <div>
+          <label class="block text-sm font-display font-medium text-gray-700 mb-1">Motif (≥ 10 caractères)</label>
+          <textarea
+            v-model="amendForm.motif" rows="3"
+            placeholder="Justification de l’amendement (rallonge ou réduction de la mission)…"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-body
+                   focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <button class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-display font-medium text-gray-700 hover:bg-gray-50" @click="showAmend = false">Annuler</button>
+        <AppButton
+          :loading="action"
+          :disabled="!amendForm.nb_jours || amendForm.motif.trim().length < 10"
+          @click="soumettreAmend"
+        >Enregistrer l’amendement</AppButton>
+      </template>
+    </AppModal>
   </AppLayout>
 </template>

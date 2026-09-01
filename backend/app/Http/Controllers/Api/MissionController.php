@@ -136,7 +136,7 @@ class MissionController extends Controller
         // On charge l'état de paiement de la mission : c'est LUI qui porte le
         // circuit de validation (contrôle → visa DAF → validation DG). La fiche
         // OM n'affiche donc pas d'action de circuit, elle renvoie vers l'état.
-        $ordre->load(['agent', 'mission.etatPaiement', 'versements']);
+        $ordre->load(['agent', 'mission.etatPaiement', 'versements', 'amendements']);
 
         return $this->success(new OrdreMissionResource($ordre));
     }

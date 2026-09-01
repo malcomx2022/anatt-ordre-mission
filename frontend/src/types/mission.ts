@@ -107,6 +107,8 @@ export interface OrdreMission {
   montant_transport?: number
   montant_total: number
   avance: number
+  /** Avance figée à la validation de l'état des avances : null tant qu'elle n'est pas engagée. */
+  avance_engagee?: number | null
   reliquat: number
   statut: StatutOM
   verification?: EtapeCircuit | null
@@ -117,8 +119,31 @@ export interface OrdreMission {
   moyen_transport?: string | null
   commentaire_rejet?: string | null
   versements?: Versement[]
+  /** Journal des amendements (chargé sur la fiche détail). */
+  amendements?: OmAmendement[]
   created_at?: string
   updated_at?: string
+}
+
+/** Un amendement des jours facturés d'un OM (rallonge ou réduction). */
+export interface OmAmendement {
+  id: number
+  nb_jours_avant: number
+  nb_jours_apres: number
+  montant_total_avant: number
+  montant_total_apres: number
+  delta_montant: number
+  motif: string
+  amende_par_nom?: string | null
+  amende_le?: string | null
+}
+
+/** Charge utile envoyée à POST /api/ordres/:id/amender. */
+export interface AmendementFormData {
+  motif: string
+  /** Type unique × nb_jours ; ou `lignes` détaillées (l'un ou l'autre). */
+  nb_jours?: number | null
+  lignes?: LignePerDiemInput[]
 }
 
 /** Étape 1 du wizard : contexte commun de la mission. */

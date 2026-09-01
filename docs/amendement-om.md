@@ -1,6 +1,7 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
-> **Statut : Phases 1 à 3 (backend) livrées ; reste l'UI (Phase 5).** Ce document cadre le
+> **Statut : Phases 1 à 3 (backend) et 5 (frontend) livrées ; reste la Phase 4
+> (intégration état des reliquats) et le document de retenue.** Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
 > manuel) ; périmètre v1 = amendement **avant** validation de l'état des reliquats ;
@@ -26,8 +27,18 @@
 > **`GET /api/paiements/regularisations`** (liste des trop-perçus, montant à
 > recouvrer en valeur absolue) et **`POST /api/paiements/regularisations/:versement/recouvrer`**
 > (constat manuel de la retenue RH, `paiements.confirmer`), audit
-> `RECOUVRER_VERSEMENT`. **Reste** : Phase 5 (UI d'amendement + écran Régularisations,
-> document de retenue à générer).
+> `RECOUVRER_VERSEMENT`.
+>
+> **Livré (Phase 5, frontend)** : fiche détail OM enrichie — bouton **« Amender »**
+> (modale jours + motif, gated `om.retranscrire`), **journal des amendements**,
+> badge **« Trop-perçu »** quand le reliquat est négatif ; exposition
+> `avance_engagee` + `amendements` sur `GET /api/ordres/:id` (`OrdreMissionResource`) ;
+> nouvel écran **Régularisations** (`/paiements/regularisations`, menu Paiements) qui
+> liste les trop-perçus et permet de les marquer recouvrés ; badges de statut
+> `A_RECOUVRER`/`RECOUVRE` ; tests Vitest (écran + badge) et e2e Playwright
+> (parcours régularisation). **Reste** : Phase 4 (récap reliquats reflète les
+> amendements, re-scellé HMAC, parcours « amendement après état validé ») et le
+> **document de retenue** à générer pour la RH.
 
 ---
 
@@ -178,7 +189,7 @@ Body: { nb_jours? , lignes? , motif }
 | **2 · Endpoint d'amendement** ✅ | Migration `om_amendements` + colonnes signées (`reliquat`, `versements.montant`) ; `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ des versements ; `scopeEligiblesLot > 0` ; tests feature. | **livré** |
 | **3 · Trop-perçu / régularisations** ✅ | Enum `versements.statut` étendu (`A_RECOUVRER`/`RECOUVRE`) ; reliquat négatif basculé en `A_RECOUVRER` (`reventilerVersements`) ; `scopeEligiblesLot` exclut `A_RECOUVRER`/`RECOUVRE` ; endpoints `GET /paiements/regularisations` + `POST …/:versement/recouvrer` ; audit `RECOUVRER_VERSEMENT` ; tests feature. *(Document de retenue reporté en Phase 5.)* | **livré** |
 | **4 · Intégration état reliquats** | récap reflète les amendements ; re-scellé HMAC ; parcours « amendement après état validé » (rejet guidé) ; tests d'intégrité. | PR 4 |
-| **5 · Frontend** | détail OM (amender + historique + badges), écran Régularisations, e2e Playwright. | PR 5 |
+| **5 · Frontend** ✅ | Fiche OM (bouton Amender + modale, journal des amendements, badge trop-perçu) ; `avance_engagee` + `amendements` exposés sur `GET /ordres/:id` ; écran Régularisations (`/paiements/regularisations` + menu) avec « marquer recouvré » ; badges `A_RECOUVRER`/`RECOUVRE` ; Vitest + e2e Playwright. | **livré** |
 | **6 · Docs & démo** | doc circuits, guide, `SCENARIO-DEMO`, diagramme du cas d'avenant. | PR 6 |
 
 Ordre pensé pour que **chaque PR reste verte et non destructive** : le socle (1) ne

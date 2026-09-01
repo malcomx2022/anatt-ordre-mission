@@ -1,5 +1,5 @@
 import { api, toPage, unwrap, saveBlob, filenameFromDisposition, assertValidBlobResponse, type Page } from './http'
-import type { LotPaiement, LotPreview, TrancheVersement, Operateur, Versement } from '@/types'
+import type { LotPaiement, LotPreview, TrancheVersement, Operateur, Versement, Regularisation } from '@/types'
 
 export interface LotSelection {
   mission_id: number
@@ -54,5 +54,17 @@ export const paiementsService = {
   async historique(params: Record<string, unknown> = {}): Promise<Page<Versement>> {
     const { data } = await api.get('/api/paiements/historique', { params })
     return toPage<Versement>(data)
+  },
+
+  /** Trop-perçus à récupérer (reliquats négatifs après amendement). */
+  async regularisations(params: Record<string, unknown> = {}): Promise<Regularisation[]> {
+    const { data } = await api.get('/api/paiements/regularisations', { params })
+    return unwrap<Regularisation[]>(data)
+  },
+
+  /** Marque une régularisation comme recouvrée (retenue appliquée par la RH). */
+  async recouvrer(versementId: number): Promise<{ versement_id: number; statut: string }> {
+    const { data } = await api.post(`/api/paiements/regularisations/${versementId}/recouvrer`)
+    return unwrap(data)
   },
 }

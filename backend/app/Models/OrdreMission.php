@@ -103,6 +103,12 @@ class OrdreMission extends Model
         return $this->hasMany(Versement::class);
     }
 
+    /** Journal des amendements (rallonge / réduction des jours facturés). */
+    public function amendements(): HasMany
+    {
+        return $this->hasMany(OmAmendement::class);
+    }
+
     /**
      * Recherche sur reference_semo, statut, et l'agent associé (nom, prénoms, matricule).
      */
