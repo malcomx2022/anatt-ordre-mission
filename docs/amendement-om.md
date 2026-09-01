@@ -8,9 +8,17 @@
 >
 > **Livré (Phase 1)** : colonne `avance_engagee` figée à la validation des avances
 > (`EtatPaiementService::propager`) et règle de répartition conditionnelle
-> (`CalculIndemniteService::repartir($total, $avanceEngagee)`), avec tests. Rien
-> d'exposé côté API/UI. La table `om_amendements` est créée en Phase 2 (avec
-> l'endpoint qui l'écrit) pour éviter une table morte.
+> (`CalculIndemniteService::repartir($total, $avanceEngagee)`), avec tests.
+>
+> **Livré (Phase 2)** : endpoint **`POST /api/ordres/:id/amender`** (permission
+> `om.retranscrire`, motif obligatoire) + `MissionService::amender` (recalcul au
+> barème, répartition contre l'avance engagée, réajustement des versements non
+> confirmés), table **`om_amendements`** (journal), gardes de périmètre v1 (refus si
+> `REJETE`/`ANNULE`, si un état de tranche est en cours de signature, ou si l'état des
+> reliquats est établi/validé), audit `AMEND_OM`. Colonnes `reliquat` et
+> `versements.montant` passées en **entiers signés** ; `scopeEligiblesLot` exclut les
+> montants ≤ 0 (trop-perçu). **Reste** : Phase 3 (statut `A_RECOUVRER`, écran
+> Régularisations, document de retenue) puis Phase 5 (UI d'amendement).
 
 ---
 
@@ -158,7 +166,7 @@ Body: { nb_jours? , lignes? , motif }
 |---|---|---|
 | **0 · Cadrage** | Trancher les décisions métier (§7). Aucun code. | note de décision |
 | **1 · Socle données + calcul** ✅ | Migration `avance_engagee` ; figer l'avance dans `propager` ; règle conditionnelle `CalculIndemniteService::repartir($total, $avanceEngagee)` ; **tests** unitaires (rallonge / réduction / trop-perçu) + feature (gel). *Rien d'exposé.* | **livré** |
-| **2 · Endpoint d'amendement** | Migration `om_amendements` ; `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ du versement reliquat ; tests feature. | PR 2 |
+| **2 · Endpoint d'amendement** ✅ | Migration `om_amendements` + colonnes signées (`reliquat`, `versements.montant`) ; `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ des versements ; `scopeEligiblesLot > 0` ; tests feature. | **livré** |
 | **3 · Trop-perçu / régularisations** | filtre `> 0` dans `scopeEligiblesLot` + verrou générateurs ; statut `A_RECOUVRER` ; écran/état de reversement ; tests. | PR 3 |
 | **4 · Intégration état reliquats** | récap reflète les amendements ; re-scellé HMAC ; parcours « amendement après état validé » (rejet guidé) ; tests d'intégrité. | PR 4 |
 | **5 · Frontend** | détail OM (amender + historique + badges), écran Régularisations, e2e Playwright. | PR 5 |

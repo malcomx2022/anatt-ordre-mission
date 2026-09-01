@@ -69,6 +69,9 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
 
     // Missions (retranscription SEMO : 1 mission + N OM)
     Route::post('missions', [MissionController::class, 'storeMission'])->middleware('permission:om.retranscrire');
+    // Amendement d'un OM (rallonge/réduction des jours facturés). L'avance engagée
+    // ne bouge plus ; le reliquat absorbe l'écart. Cf. docs/amendement-om.md.
+    Route::post('ordres/{ordre}/amender', [MissionController::class, 'amender'])->middleware('permission:om.retranscrire');
 
     // ── ÉTAT DE PAIEMENT d'une mission : l'objet que le circuit valide ──
     // Un état = 1 mission, N bénéficiaires, colonnes AVANCE et RELIQUAT.

@@ -60,6 +60,9 @@ class Versement extends Model
             ->where('type', $tranche)
             ->where('operateur', $operateur)
             ->where('statut', '!=', 'CONFIRME')
+            // Un montant nul ou négatif (reliquat de trop-perçu après amendement)
+            // ne part jamais dans un fichier : il relève d'une régularisation.
+            ->where('montant', '>', 0)
             ->whereHas('ordreMission', fn (Builder $q) => $q
                 ->where('mission_id', $missionId)
                 ->where('statut', 'VALIDE')
