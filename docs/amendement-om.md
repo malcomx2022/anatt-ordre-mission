@@ -57,7 +57,9 @@
 > **Livré (document de retenue)** : PDF officiel à remettre à la RH, généré par
 > `PdfGenerator::genererDocumentRetenue` (gabarit `pdf.document-retenue`, en-tête
 > ANaTT) — bénéficiaire, mission, décomposition du trop-perçu (avance engagée −
-> montant dû), motif de l'amendement, blocs de signature DAF/RH ; endpoint
+> montant dû), **montant à recouvrer en toutes lettres** (`MontantEnLettres::mention`,
+> ex. « Cinquante-quatre mille (54 000) FRANCS CFA »), motif de l'amendement, blocs
+> de signature DAF/RH ; endpoint
 > **`GET /api/paiements/regularisations/:versement/document`** (`paiements.consulter`),
 > bouton **« Document »** sur l'écran Régularisations. Le document **n'ordonne aucun
 > décaissement** : il formalise la retenue, appliquée hors application par la RH.

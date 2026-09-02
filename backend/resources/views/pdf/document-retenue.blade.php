@@ -127,6 +127,10 @@
     </div>
 
     <div class="note">
+        Arrêté le présent document de retenue à la somme de : <strong>{{ $trop_percu_lettres }}</strong>.
+    </div>
+
+    <div class="note">
         Ce document ne réalise aucune retenue et n'ordonne aucun décaissement : il formalise, à
         l'attention du service en charge de la paie, le montant à recouvrer. La retenue effective
         relève de la procédure RH ; son application est ensuite constatée dans l'application
