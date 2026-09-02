@@ -174,7 +174,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(6):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.2.0  •  Août 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.3.0  •  Septembre 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document destiné aux utilisateurs de l'application"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -229,6 +229,10 @@ bullet("Per diem : indemnité journalière, répartie en AVANCE (70 % par défau
        "La part de l'avance est paramétrable par le SUPER_ADMIN.")
 bullet("Versement : une tranche (AVANCE ou RELIQUAT) d'un OM, pour un opérateur donné.")
 bullet("Lot de paiement : 1 mission × 1 tranche × 1 opérateur = 1 fichier généré.")
+bullet("Amendement (avenant) : ajustement des jours facturés d'un OM après paiement de l'avance ; "
+       "l'avance est figée et seul le reliquat absorbe l'écart (voir chapitre 6.3).")
+bullet("Trop-perçu (régularisation) : reliquat devenu négatif après un amendement à la baisse ; il est "
+       "récupéré par retenue sur salaire, jamais par Mobile Money (voir chapitre 9.5).")
 
 # =========================================================================
 # 2. RÔLES ET PERMISSIONS
@@ -288,6 +292,29 @@ tableau(
     ],
     largeurs=[4.6] + [1.6] * 7,
 )
+encadre("Cette matrice est le défaut — elle est personnalisable",
+        "Le tableau ci-dessus est la configuration par défaut. Depuis la version 1.3, le SUPER_ADMIN peut "
+        "l'ajuster à chaud (voir chapitre 13.2), y compris créer des profils sur mesure. Les droits réels "
+        "d'un utilisateur peuvent donc différer de ce défaut.")
+
+h2("2.2 RBAC flexible : ajuster les droits sans redéploiement")
+para("Les autorisations reposent sur des clés de permission (ex. « Paiements — générer »). Ce qui est "
+     "attribué à chaque profil est modifiable par le SUPER_ADMIN, sur trois niveaux cumulables :")
+bullet("Par profil : cocher / décocher les permissions d'un rôle dans la Matrice des permissions ; "
+       "réinitialisable au défaut à tout moment.")
+bullet("Par utilisateur : accorder une permission supplémentaire à une personne précise, ou lui en "
+       "retirer une que son profil donnerait (droits effectifs = profil + accordées − retirées).")
+bullet("Rôles personnalisés : créer de nouveaux profils au-delà des huit profils système (eux, non "
+       "supprimables), avec leur propre jeu de permissions, puis y affecter des utilisateurs.")
+encadre("Garde-fous",
+        "Le SUPER_ADMIN garde toujours l'accès total et n'est pas modifiable. Certaines clés sensibles "
+        "(gestion des super admins, des paramètres, de la matrice elle-même) lui restent exclusives. Enfin, "
+        "la séparation ordonnateur / payeur est vérifiée à chaque modification : un profil ou un compte qui "
+        "valide l'état (DG) ne peut pas aussi générer ou confirmer les paiements. Toute modification est "
+        "tracée au journal d'audit.")
+para("Les nouveaux droits d'un utilisateur prennent effet à sa connexion (ou à son prochain "
+     "rafraîchissement). La lecture de la matrice est ouverte à l'ADMIN ; sa modification est réservée "
+     "au SUPER_ADMIN.")
 
 # =========================================================================
 # 3. PREMIERS PAS
@@ -391,6 +418,24 @@ bullet("Téléchargement du brouillon de l'OM et consultation de son journal d'a
 para("La validation des ordres de mission ne se fait pas un par un : elle se joue sur l'état de paiement "
      "de la mission (chapitre 7). Le présent chapitre s'arrête donc à la retranscription et à la "
      "consultation.")
+
+h2("6.3 Amender un ordre de mission (avenant)")
+para("Il arrive qu'une mission soit rallongée ou écourtée après le paiement de l'avance. L'application "
+     "permet alors d'amender un OM : ajuster son nombre de jours facturés (ou sa répartition détaillée) "
+     "sans repasser par toute la retranscription. Réservé au GESTIONNAIRE_OM.")
+etape("Depuis la fiche de l'OM, cliquez sur « Amender ».")
+etape("Saisissez le nouveau nombre de jours (ou la nouvelle répartition) et un motif obligatoire (≥ 10 caractères).")
+etape("Validez : le nouveau montant total est recalculé et le reliquat ajusté.")
+encadre("L'avance est figée, seul le reliquat bouge",
+        "Une fois l'état des avances validé, l'avance payée est gelée. Un amendement ne touche donc jamais "
+        "l'avance : c'est le reliquat qui absorbe tout l'écart (reliquat = montant total − avance figée). "
+        "Le reliquat peut ainsi augmenter (rallonge) ou diminuer, voire devenir négatif (réduction) : on "
+        "parle alors de trop-perçu (voir chapitre 9.5).")
+bullet("Chaque amendement est historisé (jours et montants avant / après, écart, motif, auteur, date) et "
+       "consultable sur la fiche de l'OM ; il est tracé au journal d'audit.")
+bullet("L'amendement est refusé si l'OM est rejeté ou annulé, si un état de tranche est en cours de "
+       "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, ou si un trop-perçu "
+       "de l'OM a déjà été recouvré.")
 
 # =========================================================================
 # 7. ÉTAT DE PAIEMENT (CIRCUIT DE VALIDATION)
@@ -511,6 +556,18 @@ bullet("« Statuts » : synthèse des versements par opérateur et par statut.")
 bullet("« Historique » : versements confirmés (avec le bénéficiaire), filtrables par période.")
 bullet("« Réconciliation » : rappel du modèle manuel (aucun réimport de fichier opérateur).")
 
+h2("9.5 Régularisations (trop-perçus)")
+para("Quand un OM est amendé à la baisse après paiement de l'avance, son reliquat peut devenir négatif : "
+     "l'agent a été trop payé. Ce trop-perçu ne part jamais en Mobile Money ; il est récupéré par retenue "
+     "sur salaire, hors application. L'écran « Régularisations » (module Paiements) centralise ces cas.")
+bullet("Le versement concerné bascule automatiquement au statut À RECOUVRER et sort du périmètre payable.")
+etape("Ouvrez « Régularisations » : la liste des trop-perçus (à recouvrer / recouvrés) s'affiche, filtrable et paginée.")
+etape("Téléchargez le « document de retenue sur salaire » (PDF) à remettre à la RH ; il porte le montant à retenir, en chiffres et en toutes lettres.")
+etape("Une fois la retenue appliquée par la RH, cliquez sur « Constater le recouvrement » : le versement passe au statut RECOUVRÉ.")
+para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montants à recouvrer et déjà recouvrés. "
+     "La consultation est ouverte aux profils disposant de « Paiements — consulter » ; le constat de "
+     "recouvrement requiert « Paiements — confirmer ».")
+
 # =========================================================================
 # 10. BARÈME
 # =========================================================================
@@ -526,6 +583,7 @@ h1("11. Rapports et états")
 para("Les états sont alimentés par les versements confirmés.")
 bullet("Rapport mensuel : synthèse par opérateur, par tranche et par statut.")
 bullet("Par agent, par opérateur, par zone, par imputation budgétaire.")
+bullet("Trop-perçus : synthèse des régularisations (montants à recouvrer vs déjà recouvrés).")
 bullet("Export Excel ou PDF (immédiat ou en arrière-plan pour les gros volumes).")
 
 # =========================================================================
@@ -546,6 +604,11 @@ h1("13. Administration")
 para("Module réservé aux administrateurs.")
 h2("13.1 Gestion des utilisateurs")
 bullet("Créer, modifier, activer/désactiver, supprimer des comptes ; réinitialiser un mot de passe.")
+bullet("Modifier le rôle d'un compte existant depuis la liste (action « Modifier le rôle ») : les profils "
+       "système et les rôles personnalisés y sont proposés ; le changement révoque aussitôt les sessions "
+       "actives de l'utilisateur et est tracé au journal d'audit.")
+bullet("Ajuster les permissions d'un utilisateur au-delà de son profil (accorder / retirer une permission ; "
+       "voir chapitre 2.2). Réservé au SUPER_ADMIN.")
 bullet("Toute action sur un super administrateur est réservée à un super administrateur.")
 bullet("Le dernier super administrateur actif ne peut être ni rétrogradé, ni désactivé, ni supprimé.")
 bullet("On ne peut pas désactiver ou supprimer son propre compte.")
@@ -553,11 +616,16 @@ encadre("Sécurité des sessions",
         "Lorsqu'un compte est désactivé, supprimé, change de rôle ou voit son mot de passe réinitialisé, "
         "ses sessions actives sont immédiatement révoquées.")
 h2("13.2 Autres écrans d'administration")
-bullet("Rôles : matrice des permissions par profil (consultation).")
+bullet("Matrice des permissions : consultation par l'ADMIN ; édition à chaud par le SUPER_ADMIN — cocher / "
+       "décocher les droits d'un profil, créer / renommer / supprimer des rôles personnalisés, réinitialiser "
+       "un profil au défaut (voir chapitre 2.2).")
 bullet("Signatures : identités et paraphes scannés du contrôleur, du DAF et du Directeur Général, "
        "imprimés sur l'état de paiement (voir chapitre 7.4).")
 bullet("Paramètres : configuration générale de l'application, dont la part de l'avance (%) appliquée "
        "à la répartition avance / reliquat (70 % par défaut).")
+bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste dynamique) et mois de début "
+       "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
+       "différent produit un exercice à cheval, libellé « 2026-2027 ».")
 bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair.")
 bullet("Sauvegardes : création et gestion des sauvegardes de la base de données.")
 
@@ -586,7 +654,9 @@ h2("Versement")
 tableau(["Statut", "Signification"],
         [["EN_ATTENTE", "Créé, pas encore inclus dans un fichier."],
          ["GENERE", "Inclus dans un fichier généré, non confirmé."],
-         ["CONFIRME", "Paiement confirmé après dépôt."]],
+         ["CONFIRME", "Paiement confirmé après dépôt."],
+         ["A_RECOUVRER", "Trop-perçu (reliquat négatif après amendement) : à récupérer par retenue sur salaire."],
+         ["RECOUVRE", "Trop-perçu régularisé : la retenue sur salaire a été constatée."]],
         largeurs=[4.0, 12.8])
 h2("Lot de paiement")
 tableau(["Statut", "Signification"],
@@ -630,7 +700,10 @@ tableau(["Terme", "Définition"],
          ["Avance / Reliquat", "Tranches du per diem : 70 % puis le reste par défaut (part paramétrable)."],
          ["Lot", "1 mission × 1 tranche × 1 opérateur = 1 fichier de paiement."],
          ["MSISDN", "Numéro de téléphone au format international (229 + numéro)."],
-         ["Exonération", "Prise en charge par un tiers : aucun frais alloué."]],
+         ["Exonération", "Prise en charge par un tiers : aucun frais alloué."],
+         ["Amendement (avenant)", "Ajustement des jours facturés d'un OM après paiement de l'avance ; seul le reliquat bouge."],
+         ["Trop-perçu", "Reliquat négatif après amendement à la baisse ; récupéré par retenue sur salaire."],
+         ["Exercice / année fiscale", "Période budgétaire paramétrable (année + mois de début) ; année civile par défaut."]],
         largeurs=[4.2, 12.6])
 
 doc.add_paragraph()
