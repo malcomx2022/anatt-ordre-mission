@@ -65,6 +65,19 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   - **Deux circuits de validation** (par état = canonique ; par OM = repli des missions sans état) :
     ils sont **exclusifs par mission** (verrou `MissionService::exigerAbsenceDEtat`) et unifiés à la porte
     de paiement (`Versement::scopeEligiblesLot`). Référence unique : `docs/circuits-validation.md`.
+- **Amendement d'un OM (avenant) après paiement de l'avance** — un OM peut voir ses **jours facturés**
+  changer (rallonge/réduction) une fois l'avance payée. L'avance est alors **figée** (`avance_engagee`,
+  posée à la validation de l'état des avances) et **seul le reliquat** absorbe l'écart :
+  `reliquat = montant_total − avance_engagee` (peut être **négatif**). Endpoint
+  `POST /api/ordres/:id/amender` (permission `om.retranscrire`, **motif ≥ 10 car.**, `MissionService::amender`) ;
+  chaque amendement est tracé dans la table **`om_amendements`** + audit `AMEND_OM`.
+  - **Gardes** : refus si OM `REJETE`/`ANNULE`, ou si un état de tranche est en cours de signature
+    (`CONTROLE`/`VISA_DAF` → rejet guidé), ou si l'état des reliquats est **validé** (avenant formel, hors périmètre).
+  - **Trop-perçu** (reliquat négatif) : le versement bascule en **`A_RECOUVRER`**, sort du périmètre payable
+    (`scopeEligiblesLot` exclut les montants ≤ 0 et les statuts `A_RECOUVRER`/`RECOUVRE`) et rejoint l'écran
+    **Régularisations**. La récupération est une **retenue sur salaire hors application** : l'app produit un
+    **document de retenue** (PDF, `PdfGenerator::genererDocumentRetenue`) à remettre à la RH, puis constate le
+    recouvrement (**`RECOUVRE`**). Référence : `docs/amendement-om.md`.
 
 ### Profils utilisateurs (RBAC Sanctum par PERMISSION — middleware `can:`)
 
@@ -195,6 +208,7 @@ anatt-ordre-mission/
 │   │   │   ├── Agent.php
 │   │   │   ├── Mission.php
 │   │   │   ├── OrdreMission.php
+│   │   │   ├── OmAmendement.php    ← journal des amendements (avenants)
 │   │   │   ├── Versement.php
 │   │   │   ├── LotPaiement.php
 │   │   │   ├── Bareme.php
@@ -538,13 +552,15 @@ interface OrdreMission {
   nb_jours: number
   montant_total: number         // taux_journalier × nb_jours (FCFA)
   avance: number                // round(montant_total × 0,70)  (70 %)
-  reliquat: number              // montant_total - avance       (30 %)
+  avance_engagee?: number | null // figée à la validation de l'état des avances (amendement : reliquat = total − avance_engagee)
+  reliquat: number              // montant_total - avance (30 %) ; peut être NÉGATIF après amendement (trop-perçu)
   statut: 'IMPORTE' | 'VALIDE' | 'REJETE' | 'SOLDE' | 'ANNULE' // VERIFIE/VISA_DAF : valeurs héritées, plus produites (circuit OM en une étape ; le 3-signatures vit sur l'état). EN_ATTENTE = statut de versement, pas d'OM.
   conducteur_a_bord?: string    // mention logistique uniquement (≠ bénéficiaire)
   reference_autorisation?: string
   moyen_transport?: string
   commentaire_rejet?: string
   versements?: Versement[]
+  amendements?: OmAmendement[]  // journal des rallonges/réductions (chargé sur la fiche détail)
   created_at: string
   updated_at: string
 }
@@ -590,11 +606,32 @@ interface Versement {
   ordre_mission_id: number
   lot_id?: number              // null tant que non généré
   type: 'AVANCE' | 'RELIQUAT'
-  montant: number
+  montant: number              // entier SIGNÉ : un reliquat de trop-perçu peut être négatif
   operateur: 'MTN' | 'MOOV'    // figé depuis le référentiel agent
   telephone: string
-  statut: 'EN_ATTENTE' | 'GENERE' | 'CONFIRME' | 'ANNULE'
-  date_paiement?: string       // rempli à la confirmation manuelle
+  // A_RECOUVRER / RECOUVRE : régularisation d'un trop-perçu (reliquat négatif après amendement),
+  // jamais un fichier Mobile Money — récupéré par retenue sur salaire (RH).
+  statut: 'EN_ATTENTE' | 'GENERE' | 'CONFIRME' | 'ANNULE' | 'A_RECOUVRER' | 'RECOUVRE'
+  date_paiement?: string       // rempli à la confirmation manuelle (ou au constat de recouvrement)
+}
+```
+
+### OmAmendement (journal d'un amendement des jours facturés d'un OM)
+
+```typescript
+interface OmAmendement {
+  id: number
+  ordre_mission_id: number
+  nb_jours_avant: number
+  nb_jours_apres: number
+  lignes_avant?: LignePerDiem[] // répartition figée avant l'amendement
+  montant_total_avant: number
+  montant_total_apres: number
+  delta_montant: number         // signé (+ rallonge / − réduction)
+  motif: string                 // obligatoire, ≥ 10 caractères
+  amende_par: number
+  amende_par_nom: string        // instantané de l'auteur
+  amende_le: string
 }
 ```
 
@@ -703,11 +740,14 @@ GET    /api/ordres                  → Liste filtrée (statut, zone, agent_id, 
 GET    /api/ordres/:id              → Détail OM (mission, agent, versements)
 POST   /api/ordres/:id/valider      → IMPORTE → VALIDE (rôle controleur : om.valider)
 POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars ; rôle controleur : om.valider)
+POST   /api/ordres/:id/amender      → Amende les jours facturés (avenant). Body: { nb_jours? , lignes? , motif }
+                                       Avance figée → seul le reliquat bouge (peut devenir négatif). Rôle gestionnaire_om : om.retranscrire
 GET    /api/ordres/:id/pdf          → Génère le PDF de l'OM → { url, fichier }
 GET    /api/ordres/:id/pdf/download → Télécharge le PDF
 GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
 ```
 > Les OM ne sont ni créés ni modifiés individuellement (retranscrits via /missions). Pas de PUT/DELETE.
+> Seul l'**amendement** (avenant) ajuste un OM après retranscription — cf. règle « Amendement d'un OM » ci-dessus.
 
 ### États de paiement (circuit par tranche : avances puis reliquats)
 ```
@@ -742,8 +782,13 @@ POST   /api/paiements/lots/:lot/erreur      → Lot → ERREUR (autorise régén
 GET    /api/paiements/lots/job/:trackingId  → Suivi d'une génération asynchrone
 GET    /api/paiements/statuts               → Synthèse versements par opérateur/statut
 GET    /api/paiements/historique            → Versements CONFIRMÉS filtrables (date_paiement)
+GET    /api/paiements/regularisations       → Trop-perçus (A_RECOUVRER/RECOUVRE) ; montant à recouvrer = |reliquat| (paiements.consulter)
+GET    /api/paiements/regularisations/:versement/document → PDF « document de retenue sur salaire » (RH) (paiements.consulter)
+POST   /api/paiements/regularisations/:versement/recouvrer → A_RECOUVRER → RECOUVRE (constat manuel de la retenue RH ; paiements.confirmer)
 ```
 > Idempotence : un versement CONFIRME n'est jamais réinclus. Aucun réimport, aucune API opérateur.
+> **Régularisations** : un trop-perçu (reliquat négatif après amendement) ne part jamais en Mobile Money ;
+> il est récupéré par retenue sur salaire (hors application). Cf. règle « Amendement d'un OM » et `docs/amendement-om.md`.
 
 ### Barème (per diem)
 ```
@@ -975,5 +1020,5 @@ MTN_SUBSCRIPTION_KEY=
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 31 mai 2026*  
+*Dernière mise à jour : 2 septembre 2026 (fonctionnalité amendement d'un OM)*  
 *Version projet : 1.0.0*
