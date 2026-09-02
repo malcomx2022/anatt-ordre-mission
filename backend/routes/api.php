@@ -220,5 +220,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
 
         // Pourcentage d'avance paramétrable (lecture publique, écriture SUPER_ADMIN).
         Route::get('parametres/part-avance', [SettingsController::class, 'partAvance']);
+        // Exercice courant (année fiscale déterminée + mois de début) — lecture publique.
+        Route::get('parametres/annee-fiscale', [SettingsController::class, 'anneeFiscale']);
     });
 });

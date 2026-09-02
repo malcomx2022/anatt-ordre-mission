@@ -56,7 +56,7 @@ class SettingsController extends Controller
         // d'écriture arbitraire). Les clés inconnues sont ignorées silencieusement.
         $clesAutorisees = [
             // Paramètres généraux (SettingsView)
-            'appName', 'appVersion', 'fiscalYear', 'batchSize', 'reconciliationDays',
+            'appName', 'appVersion', 'fiscalYear', 'fiscalYearStartMonth', 'batchSize', 'reconciliationDays',
             'sessionDuration', 'maxLoginAttempts', 'mtnEnabled', 'moovEnabled',
             'forceHttps', 'logConnections', 'maintenanceMode',
             'notifications',
@@ -84,6 +84,28 @@ class SettingsController extends Controller
             }
         }
 
+        // Année fiscale : année valide (2000-2100), stockée en entier.
+        if (array_key_exists('fiscalYear', $entrant)) {
+            $annee = $this->versEntier($entrant['fiscalYear']);
+            if ($annee === null || $annee < 2000 || $annee > 2100) {
+                throw ValidationException::withMessages([
+                    'fiscalYear' => 'L\'année fiscale doit être une année comprise entre 2000 et 2100.',
+                ]);
+            }
+            $entrant['fiscalYear'] = $annee;
+        }
+
+        // Mois de début de l'exercice : 1 (janvier) à 12 (décembre).
+        if (array_key_exists('fiscalYearStartMonth', $entrant)) {
+            $mois = $this->versEntier($entrant['fiscalYearStartMonth']);
+            if ($mois === null || $mois < 1 || $mois > 12) {
+                throw ValidationException::withMessages([
+                    'fiscalYearStartMonth' => 'Le mois de début d\'exercice doit être compris entre 1 et 12.',
+                ]);
+            }
+            $entrant['fiscalYearStartMonth'] = $mois;
+        }
+
         // Fusion avec l'existant : une sauvegarde partielle (ex. paramètres généraux)
         // ne doit pas effacer les autres clés (ex. configuration email).
         $existant = $this->lire();
@@ -108,8 +130,23 @@ class SettingsController extends Controller
             Parametres::invalidateCache();
         }
 
+        // Invalidation du cache de l'exercice si l'année ou son mois de début change.
+        if (array_key_exists('fiscalYear', $entrant) || array_key_exists('fiscalYearStartMonth', $entrant)) {
+            Parametres::invalidateAnneeFiscale();
+        }
+
         // Réponse masquée : ne jamais renvoyer le secret au client.
         return $this->success($this->masquer($settings), 'Parametres enregistres.');
+    }
+
+    /** Convertit un entier ou une chaîne numérique en int ; null sinon. */
+    private function versEntier(mixed $valeur): ?int
+    {
+        if (is_int($valeur)) {
+            return $valeur;
+        }
+
+        return is_string($valeur) && ctype_digit($valeur) ? (int) $valeur : null;
     }
 
     /**
@@ -120,5 +157,18 @@ class SettingsController extends Controller
     public function partAvance(): JsonResponse
     {
         return $this->success(Parametres::partAvance());
+    }
+
+    /**
+     * Exercice courant (lecture publique, tout authentifié) : année déterminée,
+     * mois de début et libellé. L'écriture reste réservée au SUPER_ADMIN via update().
+     */
+    public function anneeFiscale(): JsonResponse
+    {
+        return $this->success([
+            'annee' => Parametres::anneeFiscale(),
+            'mois_debut' => Parametres::moisDebutExercice(),
+            'libelle' => Parametres::libelleAnneeFiscale(),
+        ]);
     }
 }

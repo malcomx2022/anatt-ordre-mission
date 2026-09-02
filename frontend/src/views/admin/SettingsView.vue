@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
@@ -12,8 +12,34 @@ const saving = ref(false)
 
 const appName = ref('Systeme de Paiement des Missions - ANaTT')
 const appVersion = ref('1.0.0')
-const fiscalYear = ref('2026')
+// Année fiscale : dynamique (plus de liste figée). Défaut = année civile courante.
+const fiscalYear = ref<number>(new Date().getFullYear())
+// Mois de début de l'exercice (1 = janvier). Permet de déterminer l'exercice
+// quand il ne coïncide pas avec l'année civile.
+const fiscalYearStartMonth = ref<number>(1)
 const currency = ref('FCFA (XOF)')
+
+/** Années proposées : de l'an prochain jusqu'à 5 ans en arrière. */
+const anneeOptions = computed(() => {
+  const courante = new Date().getFullYear()
+  const annees: number[] = []
+  for (let a = courante + 1; a >= courante - 5; a--) annees.push(a)
+  // Garantit que la valeur enregistrée reste sélectionnable même hors de la plage.
+  if (!annees.includes(fiscalYear.value)) annees.push(fiscalYear.value)
+  return annees.sort((a, b) => b - a)
+})
+
+const MOIS = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+]
+
+/** Libellé de l'exercice : « 2026 » (année civile) ou « 2026-2027 » (à cheval). */
+const libelleExercice = computed(() =>
+  fiscalYearStartMonth.value === 1
+    ? String(fiscalYear.value)
+    : `${fiscalYear.value}-${fiscalYear.value + 1}`,
+)
 const timezone = ref('Africa/Porto-Novo (UTC+1)')
 const batchSize = ref(100)
 const reconciliationDays = ref(7)
@@ -50,7 +76,8 @@ onMounted(async () => {
     const s = data.data || {}
     if (s.appName) appName.value = s.appName
     if (s.appVersion) appVersion.value = s.appVersion
-    if (s.fiscalYear) fiscalYear.value = s.fiscalYear
+    if (s.fiscalYear) fiscalYear.value = Number(s.fiscalYear)
+    if (s.fiscalYearStartMonth) fiscalYearStartMonth.value = Number(s.fiscalYearStartMonth)
     if (s.batchSize) batchSize.value = s.batchSize
     if (s.reconciliationDays) reconciliationDays.value = s.reconciliationDays
     if (s.sessionDuration) sessionDuration.value = s.sessionDuration
@@ -83,6 +110,7 @@ async function saveAll() {
       appName: appName.value,
       appVersion: appVersion.value,
       fiscalYear: fiscalYear.value,
+      fiscalYearStartMonth: fiscalYearStartMonth.value,
       batchSize: batchSize.value,
       reconciliationDays: reconciliationDays.value,
       sessionDuration: sessionDuration.value,
@@ -145,7 +173,21 @@ async function saveAll() {
               <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Version</label><input v-model="appVersion" type="text" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body bg-gray-50 text-gray-500"></div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Annee fiscale en cours</label><select v-model="fiscalYear" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none"><option>2025</option><option>2024</option></select></div>
+              <div>
+                <label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Année fiscale en cours</label>
+                <select v-model.number="fiscalYear" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200">
+                  <option v-for="a in anneeOptions" :key="a" :value="a">{{ a }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Début de l'exercice</label>
+                <select v-model.number="fiscalYearStartMonth" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200">
+                  <option v-for="(nom, i) in MOIS" :key="i" :value="i + 1">{{ nom }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Exercice courant</label><input :value="libelleExercice" type="text" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body bg-gray-50 text-gray-500"></div>
               <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Devise</label><input :value="currency" type="text" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body bg-gray-50 text-gray-500"></div>
             </div>
             <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Fuseau horaire</label><select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none"><option>{{ timezone }}</option></select></div>

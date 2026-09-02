@@ -757,12 +757,21 @@ DELETE /api/admin/roles/:role                  → Supprime un rôle personnalis
 GET    /api/admin/settings                    → Réglages (SUPER_ADMIN : parametres.gerer ; secret SMTP masqué)
 PUT    /api/admin/settings                    → Écrit une liste blanche de clés (dont partAvance, entier 0-100)
 GET    /api/admin/parametres/part-avance      → { data: <int> } Part de l'avance (LECTURE PUBLIQUE, tout authentifié)
+GET    /api/admin/parametres/annee-fiscale    → { data: { annee, mois_debut, libelle } } Exercice courant (LECTURE PUBLIQUE)
 ```
 > `partAvance` (défaut 70) définit la répartition avance/reliquat : `avance = round(montant × partAvance/100)`,
 > le reliquat absorbe l'arrondi. Écriture réservée au SUPER_ADMIN via `/settings` ; **lecture par la route
 > publique dédiée** `parametres/part-avance` (l'UI la lit pour tous les profils — ne pas utiliser `/settings`,
 > qui exige `parametres.gerer`). Appliqué au calcul à la retranscription des OM (`CalculIndemniteService`).
 > Détail : `docs/parametrage-part-avance.md`.
+>
+> **Année fiscale / exercice** (flexible, `App\Support\Parametres`) : `fiscalYear` (année, 2000-2100) et
+> `fiscalYearStartMonth` (mois de début, 1-12 ; défaut 1 = année civile). L'exercice d'une date se
+> **détermine** via `Parametres::anneeFiscalePour($date)` (étiqueté par l'année de début) ; `anneeFiscale()`
+> renvoie la valeur configurée ou, à défaut, l'exercice courant calculé ; `libelleAnneeFiscale()` produit
+> « 2026 » ou « 2026-2027 » (exercice à cheval). Écriture SUPER_ADMIN via `/settings` (validées, mises en
+> cache 60 s, invalidées à l'écriture) ; **lecture publique** via `parametres/annee-fiscale`. Le sélecteur
+> d'année de l'UI est dynamique (plus de liste figée). Détail : `docs/annee-fiscale.md`.
 
 ### Agents
 ```
