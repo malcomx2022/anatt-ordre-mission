@@ -67,4 +67,12 @@ export const paiementsService = {
     const { data } = await api.post(`/api/paiements/regularisations/${versementId}/recouvrer`)
     return unwrap(data)
   },
+
+  /** Télécharge le document de retenue sur salaire (PDF) à remettre à la RH. */
+  async documentRetenue(versementId: number): Promise<void> {
+    const res = await api.get(`/api/paiements/regularisations/${versementId}/document`, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
+    const nom = filenameFromDisposition(res.headers['content-disposition'], `retenue-${versementId}.pdf`)
+    saveBlob(res.data as Blob, nom)
+  },
 }

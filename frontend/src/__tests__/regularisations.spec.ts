@@ -24,11 +24,13 @@ const A_RECOUVRER: Regularisation = {
 
 const regularisations = vi.fn()
 const recouvrer = vi.fn()
+const documentRetenue = vi.fn()
 
 vi.mock('../services/paiements', () => ({
   paiementsService: {
     regularisations: (...args: unknown[]) => regularisations(...args),
     recouvrer: (...args: unknown[]) => recouvrer(...args),
+    documentRetenue: (...args: unknown[]) => documentRetenue(...args),
   },
 }))
 
@@ -52,7 +54,15 @@ async function monter() {
 beforeEach(() => {
   regularisations.mockReset()
   recouvrer.mockReset()
+  documentRetenue.mockReset()
 })
+
+/** Le bouton d'une ligne portant ce libellé (désambiguïse « Document » / « Marquer recouvré »). */
+function bouton(wrapper: Awaited<ReturnType<typeof monter>>, texte: string) {
+  const b = wrapper.findAll('button').find((x) => x.text().includes(texte))
+  if (!b) throw new Error(`Bouton « ${texte} » introuvable`)
+  return b
+}
 
 describe('PaiementRegularisationView', () => {
   it('affiche une ligne à recouvrer et le total', async () => {
@@ -73,12 +83,23 @@ describe('PaiementRegularisationView', () => {
     recouvrer.mockResolvedValue({ versement_id: 7, statut: 'RECOUVRE' })
 
     const wrapper = await monter()
-    await wrapper.get('button.inline-flex').trigger('click')
+    await bouton(wrapper, 'Marquer recouvré').trigger('click')
     await flushPromises()
 
     expect(recouvrer).toHaveBeenCalledWith(7)
     expect(regularisations).toHaveBeenCalledTimes(2)
     expect(wrapper.text()).toContain('Recouvré')
+  })
+
+  it('télécharge le document de retenue d’une ligne', async () => {
+    regularisations.mockResolvedValue([A_RECOUVRER])
+    documentRetenue.mockResolvedValue(undefined)
+
+    const wrapper = await monter()
+    await bouton(wrapper, 'Document').trigger('click')
+    await flushPromises()
+
+    expect(documentRetenue).toHaveBeenCalledWith(7)
   })
 
   it('n’affiche aucune ligne quand la liste est vide', async () => {

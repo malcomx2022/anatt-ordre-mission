@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\OrdreMission;
 use App\Models\User;
+use App\Models\Versement;
 use App\Support\Parametres;
 use App\Support\PdfAssets;
 use App\Support\Workflow;
@@ -11,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PdfGenerator
 {
@@ -168,6 +170,89 @@ class PdfGenerator
         }
 
         return Storage::disk('local')->download($filename, basename($filename));
+    }
+
+    /**
+     * Document de RETENUE SUR SALAIRE pour un trop-perçu (régularisation).
+     *
+     * Ce document n'ordonne aucun décaissement : il formalise, à l'attention de la
+     * RH, le montant à récupérer par retenue après un amendement ayant rendu le
+     * reliquat négatif (l'avance engagée dépasse le nouveau montant dû). Il est
+     * régénéré à chaque appel pour refléter le statut courant (à recouvrer / recouvré).
+     *
+     * @return string chemin du PDF sur le disque local
+     */
+    public function genererDocumentRetenue(Versement $versement): string
+    {
+        $data = $this->donneesRetenue($versement);
+
+        $pdf = Pdf::loadView('pdf.document-retenue', $data)
+            ->setPaper('A4', 'portrait')
+            ->setOption(['defaultFont' => 'sans-serif']);
+
+        $filename = "retenues/RETENUE-{$versement->id}.pdf";
+        Storage::disk('local')->put($filename, $pdf->output());
+
+        return $filename;
+    }
+
+    /**
+     * Charge du document de retenue. N'a de sens que pour un versement en
+     * régularisation (trop-perçu) : à recouvrer ou déjà recouvré.
+     *
+     * @return array<string,mixed>
+     */
+    public function donneesRetenue(Versement $versement): array
+    {
+        if (! in_array($versement->statut, ['A_RECOUVRER', 'RECOUVRE'], true)) {
+            throw ValidationException::withMessages([
+                'versement' => ["Ce versement (statut « {$versement->statut} ») n'est pas une régularisation : aucun document de retenue à produire."],
+            ]);
+        }
+
+        $versement->loadMissing(['ordreMission.agent', 'ordreMission.mission', 'ordreMission.amendements']);
+        $ordre = $versement->ordreMission;
+        $agent = $ordre->agent;
+        $mission = $ordre->mission;
+        // Dernier amendement à l'origine du trop-perçu (le plus récent).
+        $amendement = $ordre->amendements->sortByDesc('amende_le')->first();
+
+        $fmt = fn (int $n) => number_format($n, 0, ',', ' ');
+
+        return [
+            'reference' => 'REG-'.str_pad((string) $versement->id, 6, '0', STR_PAD_LEFT),
+            'statut' => $versement->statut,
+            'recouvre' => $versement->statut === 'RECOUVRE',
+            'date_recouvrement' => $versement->statut === 'RECOUVRE'
+                ? $versement->date_paiement?->format('d/m/Y') : null,
+            'date_generation' => now()->format('d/m/Y H:i'),
+            // Bénéficiaire
+            'beneficiaire' => trim("{$agent->nom} {$agent->prenoms}"),
+            'matricule' => $agent->matricule,
+            'grade' => $agent->grade,
+            'categorie' => $ordre->categorie,
+            // Mission
+            'reference_semo' => $ordre->reference_semo,
+            'objet' => $mission?->objet,
+            'destination' => $mission?->destination,
+            'date_depart' => $mission?->date_depart?->format('d/m/Y'),
+            'date_retour' => $mission?->date_retour?->format('d/m/Y'),
+            // Décomposition du trop-perçu
+            'avance_engagee' => $fmt((int) ($ordre->avance_engagee ?? $ordre->avance)),
+            'montant_total' => $fmt((int) $ordre->montant_total),
+            'trop_percu' => $fmt(abs((int) $versement->montant)),
+            // Amendement à l'origine (peut être absent sur données reprises)
+            'a_amendement' => $amendement !== null,
+            'nb_jours_avant' => $amendement?->nb_jours_avant,
+            'nb_jours_apres' => $amendement?->nb_jours_apres,
+            'montant_avant' => $amendement ? $fmt((int) $amendement->montant_total_avant) : null,
+            'montant_apres' => $amendement ? $fmt((int) $amendement->montant_total_apres) : null,
+            'motif' => $amendement?->motif,
+            'amende_par' => $amendement?->amende_par_nom,
+            'amende_le' => $amendement?->amende_le?->format('d/m/Y'),
+            // Bloc signature
+            'libelle_daf' => self::LIBELLE_DAF,
+        ];
     }
 
     /**

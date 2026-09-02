@@ -109,3 +109,46 @@ it('exige la permission paiements.confirmer pour recouvrer', function () {
         ->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")
         ->assertForbidden();
 });
+
+// ── Document de retenue (PDF pour la RH) ──
+
+it('produit un document de retenue PDF pour un trop-perçu', function () {
+    amenderEnTropPercu($this);
+
+    $reponse = $this->actingAs($this->finance)
+        ->get("/api/paiements/regularisations/{$this->reliquat->id}/document")
+        ->assertOk();
+
+    expect($reponse->headers->get('content-type'))->toContain('application/pdf');
+});
+
+it('produit encore le document une fois la régularisation recouvrée', function () {
+    amenderEnTropPercu($this);
+    $this->actingAs($this->finance)->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")->assertOk();
+
+    $this->actingAs($this->finance)
+        ->get("/api/paiements/regularisations/{$this->reliquat->id}/document")
+        ->assertOk();
+});
+
+it('refuse le document de retenue pour un versement qui n’est pas une régularisation', function () {
+    // Reliquat resté EN_ATTENTE (aucun trop-perçu).
+    $this->actingAs($this->finance)
+        ->getJson("/api/paiements/regularisations/{$this->reliquat->id}/document")
+        ->assertStatus(422)->assertJsonValidationErrors('versement');
+});
+
+it('porte le bénéficiaire, le trop-perçu et le motif dans les données du document', function () {
+    amenderEnTropPercu($this);
+
+    $data = app(App\Services\PdfGenerator::class)->donneesRetenue($this->reliquat->fresh());
+
+    expect($data['beneficiaire'])->toContain($this->agent->nom)
+        ->and($data['trop_percu'])->toBe('54 000')
+        ->and($data['avance_engagee'])->toBe('189 000')
+        ->and($data['statut'])->toBe('A_RECOUVRER')
+        ->and($data['a_amendement'])->toBeTrue()
+        ->and($data['nb_jours_avant'])->toBe(6)
+        ->and($data['nb_jours_apres'])->toBe(3)
+        ->and($data['motif'])->toContain('Forte réduction');
+});
