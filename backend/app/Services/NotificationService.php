@@ -76,6 +76,20 @@ class NotificationService
         ]);
     }
 
+    /**
+     * Un amendement a produit un TROP-PERÇU (reliquat négatif) : l'agent financier
+     * est prévenu qu'une régularisation (retenue sur salaire, hors Mobile Money)
+     * l'attend sur l'écran Régularisations. Cf. docs/amendement-om.md.
+     */
+    public function tropPercuCree(OrdreMission $ordre, int $montantARecouvrer): void
+    {
+        $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'trop_percu_cree', [
+            'reference_semo' => $ordre->reference_semo,
+            'beneficiaire' => $ordre->agent?->nom_complet ?? '—',
+            'montant' => number_format($montantARecouvrer, 0, ',', ' '),
+        ]);
+    }
+
     /** État rejeté : le gestionnaire OM est informé, avec le motif, pour correction. */
     public function etatRejete(EtatPaiement $etat, string $motif): void
     {

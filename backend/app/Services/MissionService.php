@@ -181,7 +181,7 @@ class MissionService
      */
     public function amender(OrdreMission $ordre, array $data, User $user): OrdreMission
     {
-        return DB::transaction(function () use ($ordre, $data, $user) {
+        $ordre = DB::transaction(function () use ($ordre, $data, $user) {
             $ordre = OrdreMission::lockForUpdate()->findOrFail($ordre->id);
 
             if (in_array($ordre->statut, ['REJETE', 'ANNULE'], true)) {
@@ -253,6 +253,14 @@ class MissionService
 
             return $ordre->fresh(['agent', 'mission', 'versements']);
         });
+
+        // Hors transaction : un amendement qui produit un trop-perçu (reliquat
+        // négatif) ouvre une régularisation — l'agent financier en est averti.
+        if ($ordre->reliquat < 0) {
+            $this->notifications->tropPercuCree($ordre, abs((int) $ordre->reliquat));
+        }
+
+        return $ordre;
     }
 
     /**
