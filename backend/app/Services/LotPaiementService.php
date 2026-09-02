@@ -156,30 +156,49 @@ class LotPaiementService
      * @param  array<string,mixed>  $filtres
      * @return array<int,array<string,mixed>>
      */
-    public function regularisations(array $filtres = []): array
+    public function regularisations(array $filtres = [], int $perPage = 20): array
     {
-        $q = Versement::query()
-            ->whereIn('statut', ['A_RECOUVRER', 'RECOUVRE'])
-            ->with(['ordreMission.agent', 'ordreMission.mission']);
+        // Périmètre commun (mission + recherche), avant le filtre par statut :
+        // le « reste à recouvrer » doit rester global à ce périmètre, quel que
+        // soit l'onglet (à recouvrer / recouvrés) affiché.
+        $base = Versement::query()->whereIn('statut', ['A_RECOUVRER', 'RECOUVRE']);
 
-        if (! empty($filtres['statut']) && in_array($filtres['statut'], ['A_RECOUVRER', 'RECOUVRE'], true)) {
-            $q->where('statut', $filtres['statut']);
-        }
         if (! empty($filtres['mission_id'])) {
-            $q->whereHas('ordreMission', fn ($o) => $o->where('mission_id', (int) $filtres['mission_id']));
+            $base->whereHas('ordreMission', fn ($o) => $o->where('mission_id', (int) $filtres['mission_id']));
+        }
+        if (! empty($filtres['search'])) {
+            $terme = '%'.$filtres['search'].'%';
+            $base->whereHas('ordreMission', fn ($o) => $o
+                ->where('reference_semo', 'like', $terme)
+                ->orWhereHas('agent', fn ($a) => $a->where('nom', 'like', $terme)->orWhere('prenoms', 'like', $terme))
+                ->orWhereHas('mission', fn ($m) => $m->where('objet', 'like', $terme)->orWhere('destination', 'like', $terme)));
         }
 
-        return $q->orderByDesc('id')->get()->map(fn (Versement $v) => [
-            'versement_id' => $v->id,
-            'reference_semo' => $v->ordreMission->reference_semo,
-            'beneficiaire' => $v->ordreMission->agent->nom_complet,
-            'mission' => $v->ordreMission->mission->objet.' — '.$v->ordreMission->mission->destination,
-            'operateur' => $v->operateur,
-            'telephone' => $v->telephone,
-            'montant_a_recouvrer' => abs((int) $v->montant),
-            'statut' => $v->statut,
-            'date_regularisation' => $v->date_paiement?->toISOString(),
-        ])->all();
+        // montant d'un A_RECOUVRER est négatif : la somme l'est aussi → valeur absolue.
+        $totalARecouvrer = abs((int) (clone $base)->where('statut', 'A_RECOUVRER')->sum('montant'));
+
+        $liste = clone $base;
+        if (! empty($filtres['statut']) && in_array($filtres['statut'], ['A_RECOUVRER', 'RECOUVRE'], true)) {
+            $liste->where('statut', $filtres['statut']);
+        }
+
+        $page = $liste->with(['ordreMission.agent', 'ordreMission.mission'])
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->through(fn (Versement $v) => [
+                'versement_id' => $v->id,
+                'reference_semo' => $v->ordreMission->reference_semo,
+                'beneficiaire' => $v->ordreMission->agent->nom_complet,
+                'mission' => $v->ordreMission->mission->objet.' — '.$v->ordreMission->mission->destination,
+                'operateur' => $v->operateur,
+                'telephone' => $v->telephone,
+                'montant_a_recouvrer' => abs((int) $v->montant),
+                'statut' => $v->statut,
+                'date_regularisation' => $v->date_paiement?->toISOString(),
+            ]);
+
+        // Paginateur « à plat » (data + current_page/last_page/total…) + le total global.
+        return $page->toArray() + ['total_a_recouvrer' => $totalARecouvrer];
     }
 
     /**

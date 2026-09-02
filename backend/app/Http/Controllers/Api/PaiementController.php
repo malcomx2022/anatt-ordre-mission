@@ -164,7 +164,12 @@ class PaiementController extends Controller
      */
     public function regularisations(Request $request): JsonResponse
     {
-        return $this->success($this->lotService->regularisations($request->only(['statut', 'mission_id'])));
+        // Paginateur « à plat » (data + meta de pagination) + total_a_recouvrer,
+        // consommé côté frontend par toPage(). Filtres : statut, mission_id, search.
+        return response()->json($this->lotService->regularisations(
+            $request->only(['statut', 'mission_id', 'search']),
+            $this->getPerPage($request),
+        ));
     }
 
     /** Marque une régularisation comme recouvrée (retenue appliquée par la RH). */

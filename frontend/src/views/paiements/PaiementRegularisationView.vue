@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
+import AppPagination from '@/components/shared/AppPagination.vue'
 import OperateurBadge from '@/components/paiements/OperateurBadge.vue'
 import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
 import { paiementsService } from '@/services/paiements'
@@ -17,20 +18,29 @@ const lignes = ref<Regularisation[]>([])
 const loading = ref(true)
 const enCours = ref<number | null>(null)
 const filtreStatut = ref<'' | 'A_RECOUVRER' | 'RECOUVRE'>('')
+const recherche = ref('')
+// Total GLOBAL à recouvrer (renvoyé par l'API), indépendant de la pagination.
+const totalARecouvrer = ref(0)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalItems = ref(0)
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 const peutRecouvrer = computed(() => can('paiements.confirmer'))
 
-const totalARecouvrer = computed(() =>
-  lignes.value.filter((l) => l.statut === 'A_RECOUVRER').reduce((s, l) => s + l.montant_a_recouvrer, 0),
-)
-
 async function load() {
   loading.value = true
   try {
-    lignes.value = await paiementsService.regularisations(
-      filtreStatut.value ? { statut: filtreStatut.value } : {},
-    )
+    const { page, totalARecouvrer: total } = await paiementsService.regularisations({
+      page: currentPage.value,
+      statut: filtreStatut.value || undefined,
+      search: recherche.value || undefined,
+    })
+    lignes.value = page.items
+    currentPage.value = page.meta.current_page
+    totalPages.value = page.meta.last_page
+    totalItems.value = page.meta.total
+    totalARecouvrer.value = total
   } finally {
     loading.value = false
   }
@@ -59,8 +69,24 @@ async function telechargerDocument(l: Regularisation) {
 
 function changerFiltre(v: '' | 'A_RECOUVRER' | 'RECOUVRE') {
   filtreStatut.value = v
+  currentPage.value = 1
   load()
 }
+
+function changePage(p: number) {
+  currentPage.value = p
+  load()
+}
+
+// Recherche : on attend une pause de frappe avant de recharger (retour page 1).
+let rechercheTimer: ReturnType<typeof setTimeout> | undefined
+watch(recherche, () => {
+  clearTimeout(rechercheTimer)
+  rechercheTimer = setTimeout(() => {
+    currentPage.value = 1
+    load()
+  }, 300)
+})
 
 onMounted(load)
 </script>
@@ -75,14 +101,23 @@ onMounted(load)
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div class="inline-flex rounded-xl border border-gray-200 overflow-hidden">
-        <button
-          v-for="f in ([['', 'Tous'], ['A_RECOUVRER', 'À recouvrer'], ['RECOUVRE', 'Recouvrés']] as const)"
-          :key="f[0]"
-          class="px-4 py-2 text-sm font-display font-medium transition-colors"
-          :class="filtreStatut === f[0] ? 'bg-anatt-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
-          @click="changerFiltre(f[0])"
-        >{{ f[1] }}</button>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="inline-flex rounded-xl border border-gray-200 overflow-hidden">
+          <button
+            v-for="f in ([['', 'Tous'], ['A_RECOUVRER', 'À recouvrer'], ['RECOUVRE', 'Recouvrés']] as const)"
+            :key="f[0]"
+            class="px-4 py-2 text-sm font-display font-medium transition-colors"
+            :class="filtreStatut === f[0] ? 'bg-anatt-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+            @click="changerFiltre(f[0])"
+          >{{ f[1] }}</button>
+        </div>
+        <input
+          v-model="recherche"
+          type="search"
+          placeholder="Rechercher (bénéficiaire, réf. SEMO, mission)…"
+          class="w-72 max-w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-body
+                 focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+        >
       </div>
       <div v-if="totalARecouvrer > 0" class="text-sm font-body text-gray-500">
         Reste à recouvrer :
@@ -144,6 +179,7 @@ onMounted(load)
           </tbody>
         </table>
       </div>
+      <AppPagination :current-page="currentPage" :last-page="totalPages" :total="totalItems" @page-change="changePage" />
     </div>
   </AppLayout>
 </template>
