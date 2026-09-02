@@ -8,7 +8,8 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import type { User } from '@/types'
 import { ROLE_LABELS } from '@/types'
-import { PROFILS, badgeDeRole } from '@/utils/roles'
+import { badgeDeRole } from '@/utils/roles'
+import { rolesService } from '@/services'
 
 const api = useApi()
 const toast = useToast()
@@ -24,6 +25,23 @@ const totalItems = ref(0)
 const resetResult = ref<{ name: string; password: string } | null>(null)
 // Répartition par rôle GLOBALE (renvoyée par l'API), pas seulement la page courante.
 const roleStats = ref({ total: 0, super_admins: 0, admins: 0, autres: 0 })
+
+// Catalogue des rôles (système + personnalisés) pour le filtre et l'édition.
+const roleOptions = ref<{ value: string; label: string; systeme: boolean }[]>([])
+
+async function loadRoles() {
+  try {
+    const { profils } = await rolesService.matrice()
+    roleOptions.value = profils.map((p) => ({ value: p.cle, label: p.libelle, systeme: p.systeme }))
+  } catch {
+    roleOptions.value = []
+  }
+}
+
+/** Libellé lisible d'un rôle (système ou personnalisé), repli sur le code. */
+function roleLabel(code: string): string {
+  return roleOptions.value.find((r) => r.value === code)?.label ?? ROLE_LABELS[code as keyof typeof ROLE_LABELS] ?? code
+}
 
 const stats = computed(() => [
   { label: 'Utilisateurs total', value: String(roleStats.value.total || totalItems.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
@@ -74,8 +92,43 @@ function handlePageChange(page: number) {
   loadUsers()
 }
 
-onMounted(loadUsers)
+onMounted(() => {
+  loadUsers()
+  loadRoles()
+})
 
+// ── Édition du rôle d'un utilisateur ──
+const editing = ref<User | null>(null)
+const editRole = ref('')
+const savingRole = ref(false)
+
+// Le profil SUPER_ADMIN n'est proposé qu'à un super admin (le serveur l'exige aussi).
+const rolesAssignables = computed(() =>
+  roleOptions.value.filter((r) => r.value !== 'SUPER_ADMIN' || isSuperAdmin()),
+)
+
+function openEditRole(u: User) {
+  editing.value = u
+  editRole.value = u.role
+}
+
+async function saveRole() {
+  if (!editing.value || !editRole.value || editRole.value === editing.value.role) {
+    editing.value = null
+    return
+  }
+  savingRole.value = true
+  try {
+    await api.put(`/api/admin/users/${editing.value.id}`, { role: editRole.value })
+    toast.success('Rôle mis à jour. Les sessions actives de l’utilisateur ont été révoquées.')
+    editing.value = null
+    loadUsers()
+  } catch {
+    // Erreurs (403/422) gérées par useApi (toast).
+  } finally {
+    savingRole.value = false
+  }
+}
 
 function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -150,7 +203,7 @@ function copier(texte: string) {
         </div>
         <select v-model="roleFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
           <option value="">Tous les rôles</option>
-          <option v-for="p in PROFILS" :key="p.value" :value="p.value">{{ p.label }}</option>
+          <option v-for="p in roleOptions" :key="p.value" :value="p.value">{{ p.label }}</option>
         </select>
         <select v-model="statutFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
           <option value="">Tous les statuts</option>
@@ -193,7 +246,7 @@ function copier(texte: string) {
               </div>
             </td>
             <td class="px-5 py-4">
-              <span :class="[badgeDeRole(u.role), 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']" :title="ROLE_LABELS[u.role]">{{ u.role }}</span>
+              <span :class="[badgeDeRole(u.role), 'px-2.5 py-1 text-xs font-display font-semibold rounded-lg']" :title="roleLabel(u.role)">{{ u.role }}</span>
             </td>
             <td class="px-5 py-4">
               <span v-if="u.actif" class="px-2.5 py-1 text-xs font-display font-semibold rounded-lg bg-anatt-50 text-anatt-600">Actif</span>
@@ -207,6 +260,10 @@ function copier(texte: string) {
             </td>
             <td class="px-5 py-4 text-center">
               <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <!-- Modifier le rôle -->
+                <button v-if="peutGerer(u)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-purple-50 text-purple-500" title="Modifier le rôle" @click="openEditRole(u)">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zM19.5 12.75v6.75A2.25 2.25 0 0117.25 21H5.25A2.25 2.25 0 013 18.75V6.75A2.25 2.25 0 015.25 4.5H12" /></svg>
+                </button>
                 <!-- Permissions (overrides par utilisateur) -->
                 <router-link v-if="peutGerer(u)" :to="`/admin/utilisateurs/${u.id}/permissions`" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-anatt-50 text-anatt-600" title="Permissions">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
@@ -248,6 +305,31 @@ function copier(texte: string) {
             <button class="px-2 py-1 text-xs font-display rounded-lg bg-gray-200 hover:bg-gray-300" @click="copier(resetResult.password)">Copier</button>
           </div>
           <button class="w-full px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600" @click="resetResult = null">Fermer</button>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- Modifier le rôle d'un utilisateur -->
+    <teleport to="body">
+      <div v-if="editing" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="editing = null">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+          <h3 class="text-lg font-display font-bold text-gray-800 mb-1">Modifier le rôle</h3>
+          <p class="text-sm font-body text-gray-500 mb-4">
+            Profil de <span class="font-semibold">{{ editing.name }}</span>.
+            Changer le rôle révoque ses sessions actives (nouvelles permissions à la reconnexion).
+          </p>
+          <label class="block text-[11px] text-gray-400 uppercase font-body mb-1">Rôle</label>
+          <select v-model="editRole" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 mb-5">
+            <option v-for="r in rolesAssignables" :key="r.value" :value="r.value">
+              {{ r.label }}{{ r.systeme ? '' : ' (personnalisé)' }}
+            </option>
+          </select>
+          <div class="flex gap-2">
+            <button class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-display font-medium hover:bg-gray-50" :disabled="savingRole" @click="editing = null">Annuler</button>
+            <button class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600 disabled:opacity-50" :disabled="savingRole || editRole === editing.role" @click="saveRole">
+              {{ savingRole ? 'Enregistrement…' : 'Enregistrer' }}
+            </button>
+          </div>
         </div>
       </div>
     </teleport>
