@@ -138,6 +138,33 @@ it('refuse l’amendement quand l’état des reliquats est validé (hors périm
         ->assertStatus(422)->assertJsonValidationErrors('etat');
 });
 
+it('refuse d’amender un OM dont le trop-perçu a déjà été recouvré', function () {
+    // Trop-perçu soldé : reliquat négatif recouvré (retenue RH appliquée).
+    $this->om->update(['avance_engagee' => 189000]);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'RELIQUAT')
+        ->update(['montant' => -54000, 'statut' => 'RECOUVRE']);
+
+    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Ré-amendement après recouvrement du trop-perçu.'])
+        ->assertStatus(422)->assertJsonValidationErrors('versement');
+
+    // Ni l'OM ni le versement recouvré n'ont bougé.
+    expect($this->om->fresh()->nb_jours)->toBe(6)
+        ->and(montantVersement($this->om->id, 'RELIQUAT'))->toBe(-54000);
+});
+
+it('autorise l’amendement tant que le trop-perçu n’est que A_RECOUVRER (non recouvré)', function () {
+    // Contrôle : un trop-perçu encore à recouvrer reste amendable (rien n'a été retenu).
+    $this->om->update(['avance_engagee' => 189000]);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'RELIQUAT')
+        ->update(['montant' => -54000, 'statut' => 'A_RECOUVRER']);
+
+    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Correction avant recouvrement du trop-perçu.'])->assertOk();
+
+    // Rallonge : reliquat = 360 000 − 189 000 = 171 000 → redevient payable.
+    expect(montantVersement($this->om->id, 'RELIQUAT'))->toBe(171000)
+        ->and(Versement::where('ordre_mission_id', $this->om->id)->where('type', 'RELIQUAT')->value('statut'))->toBe('EN_ATTENTE');
+});
+
 it('refuse l’amendement quand l’état des avances est en cours de signature', function () {
     EtatPaiement::create([
         'mission_id' => $this->mission->id, 'tranche' => 'AVANCE', 'statut' => 'CONTROLE',

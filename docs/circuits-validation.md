@@ -148,6 +148,8 @@ flowchart TD
 | État des avances `CONTROLE` / `VISA_DAF` | ⛔ rejetez-le d'abord (document en cours de signature) |
 | État des reliquats `CONTROLE` / `VISA_DAF` | ⛔ **rejet guidé** : rejetez-le, amendez, puis rétablissez-le |
 | État des reliquats `VALIDE` (scellé HMAC) | ⛔ avenant formel — hors périmètre v1 |
+| Trop-perçu de l'OM déjà `RECOUVRE` (retenue soldée) | ⛔ avenant formel — hors périmètre v1 |
+| Trop-perçu de l'OM encore `A_RECOUVRER` (non retenu) | ✅ amendable (rien n'a été retenu) |
 | OM `REJETE` / `ANNULE` | ⛔ |
 
 **Intégrité garantie :**

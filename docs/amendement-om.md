@@ -156,6 +156,9 @@ Body: { nb_jours? , lignes? , motif }
   - refus si l'OM est `REJETE` ou `ANNULE` ;
   - refus si un état de tranche est **en cours de signature** (`CONTROLE` / `VISA_DAF`,
     document scellé) → il faut d'abord le **rejeter** ;
+  - refus si un trop-perçu de l'OM est déjà **`RECOUVRE`** (retenue RH soldée) : ré-amender
+    rouvrirait un versement clos en ignorant le montant déjà retenu → avenant formel, hors
+    périmètre v1. Un trop-perçu encore `A_RECOUVRER` (rien retenu) reste amendable ;
   - autorisé si l'état est en `BROUILLON` (le récapitulatif se rafraîchit) ou si les
     avances sont `VALIDE` (l'avance se fige, seul le reliquat bouge).
 

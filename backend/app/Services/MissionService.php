@@ -287,6 +287,17 @@ class MissionService
      */
     private function exigerAmendementPossible(OrdreMission $ordre): void
     {
+        // Trop-perçu déjà RECOUVRÉ (retenue sur salaire appliquée par la RH) :
+        // la situation est soldée hors application. Ré-amender rouvrirait un
+        // versement clos et ignorerait le montant déjà retenu (risque de
+        // sur-paiement). C'est un avenant formel — hors périmètre v1.
+        // (Un trop-perçu encore A_RECOUVRER, lui, reste amendable : rien n'a été retenu.)
+        if ($ordre->versements()->where('type', 'RELIQUAT')->where('statut', 'RECOUVRE')->exists()) {
+            throw ValidationException::withMessages([
+                'versement' => ['Le trop-perçu de cet ordre de mission a déjà été recouvré (retenue appliquée) : un nouvel amendement relève d\'un avenant formel (hors périmètre).'],
+            ]);
+        }
+
         $etats = EtatPaiement::where('mission_id', $ordre->mission_id)->get()->keyBy('tranche');
 
         $avance = $etats->get(EtatPaiement::TRANCHE_AVANCE);
