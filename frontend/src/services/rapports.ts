@@ -1,5 +1,5 @@
 import { api, unwrap, saveBlob, filenameFromDisposition } from './http'
-import type { RapportMensuel, RapportDimension, ExportFormat, ExportResultat } from '@/types'
+import type { RapportMensuel, RapportDimension, ExportFormat, ExportResultat, RapportTropPercus } from '@/types'
 
 export interface PeriodeFiltres {
   date_debut?: string
@@ -30,6 +30,12 @@ export const rapportsService = {
   async parImputation(params: PeriodeFiltres = {}): Promise<Record<string, unknown>[]> {
     const { data } = await api.get('/api/rapports/imputations', { params })
     return unwrap(data)
+  },
+
+  /** État des trop-perçus (régularisations) : à recouvrer vs recouvrés. */
+  async tropPercus(): Promise<RapportTropPercus> {
+    const { data } = await api.get('/api/rapports/trop-percus')
+    return unwrap<RapportTropPercus>(data)
   },
 
   async export(params: { dimension: RapportDimension; format: ExportFormat } & PeriodeFiltres): Promise<ExportResultat> {

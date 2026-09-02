@@ -43,6 +43,12 @@ class RapportController extends Controller
         return $this->success($this->rapportService->parImputation($this->filtres($request)));
     }
 
+    /** État des trop-perçus (régularisations) : à recouvrer vs recouvrés. */
+    public function tropPercus(): JsonResponse
+    {
+        return $this->success($this->rapportService->tropPercus());
+    }
+
     public function export(Request $request): JsonResponse
     {
         $request->validate([

@@ -809,6 +809,7 @@ GET    /api/rapports/agents         → état par agent (filtres période)
 GET    /api/rapports/operateurs     → état par opérateur
 GET    /api/rapports/zones          → état par zone
 GET    /api/rapports/imputations    → état par imputation budgétaire
+GET    /api/rapports/trop-percus    → synthèse des trop-perçus (régularisations) : à recouvrer vs recouvrés (montants absolus)
 GET    /api/rapports/export         → ?dimension&format=xlsx|pdf&date_debut&date_fin → { fichier, url }
 GET    /api/rapports/export/download → ?fichier=... → téléchargement
 POST   /api/rapports/export-async   → Production en file Redis → { tracking_id }

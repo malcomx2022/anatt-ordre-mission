@@ -83,6 +83,7 @@ export const NAVIGATION: NavGroup[] = [
         children: [
           { label: 'Mensuel', icon: '', to: '/rapports/mensuel', permission: 'rapports.consulter' },
           { label: 'Par agent', icon: '', to: '/rapports/agents', permission: 'rapports.consulter' },
+          { label: 'Trop-percus', icon: '', to: '/rapports/trop-percus', permission: 'rapports.consulter' },
           { label: 'Export', icon: '', to: '/rapports/export', permission: 'rapports.consulter' },
         ],
       },

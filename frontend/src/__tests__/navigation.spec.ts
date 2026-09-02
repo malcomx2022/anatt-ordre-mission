@@ -170,6 +170,7 @@ describe('accès effectif par profil', () => {
       '/rapports',
       '/rapports/mensuel',
       '/rapports/agents',
+      '/rapports/trop-percus',
       '/rapports/export',
     ])
   })

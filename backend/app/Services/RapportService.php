@@ -88,6 +88,44 @@ class RapportService
             ->get();
     }
 
+    /**
+     * État des TROP-PERÇUS (régularisations) : reliquats négatifs après amendement.
+     * Distinct des autres rapports (basés sur les versements CONFIRMÉS) : il porte
+     * sur les statuts A_RECOUVRER / RECOUVRE. Les montants sont en valeur absolue
+     * (un trop-perçu est stocké négatif). Cf. docs/amendement-om.md.
+     */
+    public function tropPercus(): array
+    {
+        $parStatut = Versement::query()
+            ->whereIn('statut', ['A_RECOUVRER', 'RECOUVRE'])
+            ->selectRaw('statut, COUNT(*) as nb, COALESCE(SUM(ABS(montant)),0) as montant')
+            ->groupBy('statut')
+            ->get()->keyBy('statut');
+
+        $aRecouvrer = $parStatut->get('A_RECOUVRER');
+        $recouvre = $parStatut->get('RECOUVRE');
+
+        $bloc = fn ($r) => [
+            'nb' => (int) ($r->nb ?? 0),
+            'montant' => (int) ($r->montant ?? 0),
+        ];
+
+        return [
+            'a_recouvrer' => $bloc($aRecouvrer),
+            'recouvre' => $bloc($recouvre),
+            'total' => [
+                'nb' => (int) (($aRecouvrer->nb ?? 0) + ($recouvre->nb ?? 0)),
+                'montant' => (int) (($aRecouvrer->montant ?? 0) + ($recouvre->montant ?? 0)),
+            ],
+            'par_operateur' => Versement::query()
+                ->whereIn('statut', ['A_RECOUVRER', 'RECOUVRE'])
+                ->selectRaw('operateur, statut, COUNT(*) as nb, COALESCE(SUM(ABS(montant)),0) as montant')
+                ->groupBy('operateur', 'statut')
+                ->orderBy('operateur')
+                ->get(),
+        ];
+    }
+
     /** Génère un export (xlsx ou pdf) d'un état et le stocke ; renvoie ses métadonnées. */
     public function exporter(array $params): array
     {

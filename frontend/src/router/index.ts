@@ -242,6 +242,12 @@ export const routes: RouteRecordRaw[] = [
     meta: { auth: true, permission: 'rapports.consulter' },
   },
   {
+    path: '/rapports/trop-percus',
+    name: 'rapport-trop-percus',
+    component: () => import('@/views/rapports/RapportTropPercusView.vue'),
+    meta: { auth: true, permission: 'rapports.consulter' },
+  },
+  {
     path: '/rapports/export',
     name: 'rapport-export',
     component: () => import('@/views/rapports/RapportExportView.vue'),
