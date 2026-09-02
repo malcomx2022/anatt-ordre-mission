@@ -192,6 +192,10 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
         Route::middleware('permission:roles.gerer')->group(function () {
             Route::put('roles/{role}/permissions', [RoleController::class, 'update']);
             Route::delete('roles/{role}/permissions', [RoleController::class, 'reset']);
+            // Rôles personnalisés (RBAC niveau 3) : création / renommage / suppression.
+            Route::post('roles', [RoleController::class, 'store']);
+            Route::put('roles/{role}', [RoleController::class, 'rename']);
+            Route::delete('roles/{role}', [RoleController::class, 'destroy']);
             // Overrides par utilisateur : écriture réservée au SUPER_ADMIN.
             Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions']);
         });

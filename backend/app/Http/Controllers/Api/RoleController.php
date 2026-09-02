@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRolePermissionsRequest;
+use App\Models\User;
 use App\Services\AuditService;
 use App\Support\PermissionRepository;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -26,17 +29,85 @@ class RoleController extends Controller
     /** Matrice complète + catalogue des clés, pour l'écran d'administration. */
     public function index(): JsonResponse
     {
+        $personnalises = $this->repo->personnalises();
+
         return $this->success([
-            'profils' => collect(Permissions::PROFILS)->map(fn (string $cle) => [
-                'cle' => $cle,
-                'libelle' => Permissions::LIBELLES[$cle] ?? $cle,
-                'verrouille' => $cle === Permissions::SUPER_ADMIN,
-                'personnalise' => in_array($cle, $this->repo->personnalises(), true),
+            'profils' => collect($this->repo->roles())->map(fn (array $r) => [
+                'cle' => $r['code'],
+                'libelle' => $r['libelle'],
+                'systeme' => $r['systeme'],
+                'verrouille' => $r['code'] === Permissions::SUPER_ADMIN,
+                'personnalise' => in_array($r['code'], $personnalises, true),
+                'nb_utilisateurs' => User::where('role', $r['code'])->count(),
             ])->all(),
             'permissions' => Permissions::TOUTES,
             'matrice' => $this->repo->matrice(),
             'non_assignables' => PermissionRepository::NON_ASSIGNABLES,
         ]);
+    }
+
+    /** Crée un rôle personnalisé (permissions initiales optionnelles). */
+    public function store(StoreRoleRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $code = strtoupper($data['code']);
+
+        if ($this->repo->roleExiste($code)) {
+            throw ValidationException::withMessages([
+                'code' => ['Ce code de rôle existe déjà.'],
+            ]);
+        }
+
+        $permissions = array_values(array_unique($data['permissions'] ?? []));
+        $this->assurerAttribuables($permissions);
+        $this->assurerSeparationDesTaches($permissions);
+
+        $role = $this->repo->creerRole($code, $data['libelle'], $permissions);
+
+        AuditService::log($request->user(), 'ROLE_CREATE', 'role', $role->id, [
+            'code' => $code, 'libelle' => $role->libelle, 'permissions' => $permissions,
+        ]);
+
+        return $this->created(
+            ['code' => $role->code, 'libelle' => $role->libelle, 'permissions' => $this->repo->pour($code)],
+            'Rôle personnalisé créé.'
+        );
+    }
+
+    /** Renomme un rôle personnalisé (le code reste immuable). */
+    public function rename(Request $request, string $role): JsonResponse
+    {
+        $role = strtoupper($role);
+        $this->assurerRolePersonnalise($role);
+
+        $data = $request->validate(['libelle' => ['required', 'string', 'max:100']]);
+        $modele = $this->repo->renommerRole($role, $data['libelle']);
+
+        AuditService::log($request->user(), 'ROLE_RENAME', 'role', $modele->id, [
+            'code' => $role, 'libelle' => $modele->libelle,
+        ]);
+
+        return $this->success(['code' => $modele->code, 'libelle' => $modele->libelle], 'Rôle renommé.');
+    }
+
+    /** Supprime un rôle personnalisé (aucun utilisateur ne doit y être rattaché). */
+    public function destroy(Request $request, string $role): JsonResponse
+    {
+        $role = strtoupper($role);
+        $this->assurerRolePersonnalise($role);
+
+        $nb = User::where('role', $role)->count();
+        if ($nb > 0) {
+            throw ValidationException::withMessages([
+                'role' => ["Impossible : {$nb} utilisateur(s) portent encore ce rôle. Réaffectez-les d’abord."],
+            ]);
+        }
+
+        $this->repo->supprimerRole($role);
+
+        AuditService::log($request->user(), 'ROLE_DELETE', 'role', null, ['code' => $role]);
+
+        return $this->success(null, 'Rôle personnalisé supprimé.');
     }
 
     /** Remplace intégralement les permissions d'un profil. */
@@ -87,14 +158,28 @@ class RoleController extends Controller
 
     private function assurerProfilEditable(string $role): void
     {
-        if (! in_array($role, Permissions::PROFILS, true)) {
-            abort(404, 'Profil inconnu.');
+        if (! $this->repo->roleExiste($role)) {
+            abort(404, 'Rôle inconnu.');
         }
 
         if ($role === Permissions::SUPER_ADMIN) {
             throw ValidationException::withMessages([
                 'role' => ['Le super administrateur a accès à tout : sa matrice n’est pas modifiable.'],
             ]);
+        }
+    }
+
+    /** Un rôle personnalisé (renommage/suppression) : ni inconnu, ni système. */
+    private function assurerRolePersonnalise(string $role): void
+    {
+        if ($this->repo->estSysteme($role)) {
+            throw ValidationException::withMessages([
+                'role' => ['Les profils système ne peuvent être ni renommés ni supprimés.'],
+            ]);
+        }
+
+        if (! $this->repo->roleExiste($role)) {
+            abort(404, 'Rôle inconnu.');
         }
     }
 

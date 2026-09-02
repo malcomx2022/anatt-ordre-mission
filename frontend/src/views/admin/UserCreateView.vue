@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { useApi, getValidationErrors } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
 import { PROFILS } from '@/utils/roles'
+import { rolesService } from '@/services'
+
+/** Option de rôle présentée dans le formulaire (profil système OU personnalisé). */
+interface OptionRole {
+  value: string
+  label: string
+  desc: string
+  perms: string[]
+  puce: string
+}
 
 const router = useRouter()
 const api = useApi()
@@ -28,8 +38,31 @@ const form = ref({
   activateNow: true,
 })
 
+// Rôles personnalisés (RBAC niveau 3), chargés depuis l'API et présentés en fin de liste.
+const rolesPersonnalises = ref<OptionRole[]>([])
+
+onMounted(async () => {
+  try {
+    const { profils } = await rolesService.matrice()
+    rolesPersonnalises.value = profils
+      .filter((p) => !p.systeme)
+      .map((p) => ({
+        value: p.cle,
+        label: p.libelle,
+        desc: 'Rôle personnalisé',
+        perms: ['Personnalisé'],
+        puce: 'bg-gray-100 text-gray-600',
+      }))
+  } catch {
+    rolesPersonnalises.value = []
+  }
+})
+
 // Le profil SUPER_ADMIN n'est proposé que si l'utilisateur courant est SUPER_ADMIN.
-const availableRoles = computed(() => PROFILS.filter(r => r.value !== 'SUPER_ADMIN' || isSuperAdmin()))
+const availableRoles = computed<OptionRole[]>(() => [
+  ...PROFILS.filter((r) => r.value !== 'SUPER_ADMIN' || isSuperAdmin()),
+  ...rolesPersonnalises.value,
+])
 
 
 const directions = ['Direction Generale', 'Direction Technique', 'Direction Administrative', 'Direction Financiere', 'Service Informatique', 'Comptabilite']

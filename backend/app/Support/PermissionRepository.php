@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Role;
 use App\Models\RolePermission;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -118,6 +120,124 @@ class PermissionRepository
         Cache::forget(self::CACHE_KEY);
     }
 
+    // ── Rôles personnalisés (RBAC niveau 3) ──
+
+    /**
+     * Tous les rôles (système + personnalisés) pour l'administration.
+     *
+     * @return array<int,array{code:string,libelle:string,systeme:bool}>
+     */
+    public function roles(): array
+    {
+        $systeme = array_map(fn (string $code) => [
+            'code' => $code,
+            'libelle' => Permissions::LIBELLES[$code] ?? $code,
+            'systeme' => true,
+        ], Permissions::PROFILS);
+
+        $personnalises = $this->rolesPersonnalisesModeles()
+            ->map(fn (Role $r) => [
+                'code' => $r->code,
+                'libelle' => $r->libelle,
+                'systeme' => false,
+            ])
+            ->all();
+
+        return array_merge($systeme, $personnalises);
+    }
+
+    /**
+     * Codes de rôle valides (système + personnalisés), SUPER_ADMIN inclus.
+     * Sert à la validation du rôle d'un utilisateur.
+     *
+     * @return string[]
+     */
+    public function codes(): array
+    {
+        return array_values(array_unique(array_merge(
+            Permissions::PROFILS,
+            $this->codesPersonnalises(),
+        )));
+    }
+
+    public function estSysteme(string $code): bool
+    {
+        return in_array($code, Permissions::PROFILS, true);
+    }
+
+    public function libelle(string $code): string
+    {
+        if ($this->estSysteme($code)) {
+            return Permissions::LIBELLES[$code] ?? $code;
+        }
+
+        return optional($this->rolesPersonnalisesModeles()->firstWhere('code', $code))->libelle ?? $code;
+    }
+
+    /**
+     * Crée un rôle personnalisé (permissions initiales optionnelles).
+     * Validation (format du code, unicité, non-système) faite en amont.
+     *
+     * @param  string[]  $permissions
+     */
+    public function creerRole(string $code, string $libelle, array $permissions = []): Role
+    {
+        $role = Role::create(['code' => $code, 'libelle' => $libelle, 'systeme' => false]);
+
+        if ($permissions !== []) {
+            $this->remplacer($code, $permissions); // vide déjà le cache
+        } else {
+            $this->vider();
+        }
+
+        return $role;
+    }
+
+    public function renommerRole(string $code, string $libelle): Role
+    {
+        $role = Role::where('code', $code)->firstOrFail();
+        $role->update(['libelle' => $libelle]);
+        $this->vider();
+
+        return $role;
+    }
+
+    /** Supprime un rôle personnalisé et ses permissions. */
+    public function supprimerRole(string $code): void
+    {
+        DB::transaction(function () use ($code) {
+            RolePermission::where('role', $code)->delete();
+            Role::where('code', $code)->delete();
+        });
+
+        $this->vider();
+    }
+
+    public function roleExiste(string $code): bool
+    {
+        return $this->estSysteme($code) || in_array($code, $this->codesPersonnalises(), true);
+    }
+
+    /**
+     * @return Collection<int,Role>
+     */
+    private function rolesPersonnalisesModeles()
+    {
+        if (! Schema::hasTable('roles')) {
+            return collect();
+        }
+
+        return Role::query()->where('systeme', false)->orderBy('libelle')->get();
+    }
+
+    /**
+     * @return string[]
+     */
+    private function codesPersonnalises(): array
+    {
+        return $this->rolesPersonnalisesModeles()->pluck('code')->all();
+    }
+
     /**
      * @return array<string,string[]>
      */
@@ -126,23 +246,30 @@ class PermissionRepository
         $overrides = $this->overrides();
         $matrice = [];
 
-        foreach (Permissions::PROFILS as $profil) {
-            if ($profil === Permissions::SUPER_ADMIN) {
+        // Tous les rôles éditables : profils système (hors SUPER_ADMIN) + personnalisés.
+        foreach ($this->codes() as $code) {
+            if ($code === Permissions::SUPER_ADMIN) {
                 continue;
             }
-            $matrice[$profil] = $overrides[$profil] ?? $this->defaut($profil);
+            $matrice[$code] = $overrides[$code] ?? $this->defaut($code);
         }
 
         return $matrice;
     }
 
     /**
-     * Défaut immuable d'un profil : config/profils.php, repli sur la constante.
+     * Défaut immuable d'un rôle : config/profils.php pour un profil système,
+     * repli sur la constante ; un rôle personnalisé n'a pas de défaut (= aucune
+     * permission tant qu'on ne lui en attribue pas).
      *
      * @return string[]
      */
     private function defaut(string $profil): array
     {
+        if (! $this->estSysteme($profil)) {
+            return [];
+        }
+
         return config("profils.matrice.$profil")
             ?? Permissions::MATRICE[$profil]
             ?? [];
