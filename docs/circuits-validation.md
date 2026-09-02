@@ -114,7 +114,63 @@ où plus aucune mission sans état ne subsiste (fin de la reprise de données).
 
 ---
 
-## 6. Références
+## 6. L'amendement d'un OM (avenant) après paiement de l'avance
+
+Quand l'avance a déjà été payée, un OM peut voir ses **jours facturés** changer
+(rallonge ou réduction). L'avance est alors **engagée** : elle ne se recalcule
+plus. C'est le **reliquat** qui absorbe tout l'écart — quitte à devenir **négatif**
+(trop-perçu). Cf. `docs/amendement-om.md` pour le détail métier.
+
+Le point charnière est le **gel de l'avance** : à la validation finale de l'état
+des **avances**, chaque OM mémorise son avance dans `avance_engagee`
+(`EtatPaiementService::propager`). À partir de là,
+`reliquat = montant_total − avance_engagee`.
+
+```mermaid
+flowchart TD
+  A["OM retranscrit (IMPORTE)"] --> B["État des AVANCES validé (DG)"]
+  B --> C["avance_engagee figée = avance"]
+  C --> D{"Amendement des jours facturés"}
+  D --> E["Recalcul au barème → nouveau montant_total"]
+  E --> F["avance inchangée · reliquat = montant_total − avance_engagee"]
+  F -->|"reliquat ≥ 0"| G["Versement RELIQUAT EN_ATTENTE<br/>(payable si l'état des reliquats est VALIDE)"]
+  F -->|"reliquat < 0"| H["Trop-perçu → Versement RELIQUAT A_RECOUVRER"]
+  H --> I["Écran Régularisations<br/>retenue sur salaire (RH)"]
+  I --> J["Marquer recouvré → RECOUVRE"]
+```
+
+**Quand l'amendement est-il permis ?** (`MissionService::exigerAmendementPossible`)
+
+| État de la mission | Amendement |
+|---|---|
+| Aucun état, ou état des avances `BROUILLON` | ✅ recalcul complet 70/30 (rien n'est figé) |
+| État des avances `VALIDE` | ✅ avance figée, seul le reliquat bouge |
+| État des avances `CONTROLE` / `VISA_DAF` | ⛔ rejetez-le d'abord (document en cours de signature) |
+| État des reliquats `CONTROLE` / `VISA_DAF` | ⛔ **rejet guidé** : rejetez-le, amendez, puis rétablissez-le |
+| État des reliquats `VALIDE` (scellé HMAC) | ⛔ avenant formel — hors périmètre v1 |
+| OM `REJETE` / `ANNULE` | ⛔ |
+
+**Intégrité garantie :**
+
+- un état des reliquats en `BROUILLON` (ou `REJETE`) est **resynchronisé
+  automatiquement** sur les montants amendés (`OrdreMissionObserver` →
+  `EtatPaiementService::synchroniser`), y compris un total **négatif** (colonnes
+  `etats_paiement` signées) ;
+- un état **signé** (`CONTROLE` / `VISA_DAF` / `VALIDE`) n'est **jamais** altéré
+  par un amendement ; l'état des **avances validé reste scellé** (HMAC), ses
+  montants ne bougeant pas (l'avance est figée) ;
+- un reliquat négatif **ne part jamais** dans un fichier de paiement
+  (`Versement::scopeEligiblesLot` exclut les montants ≤ 0 et les statuts
+  `A_RECOUVRER` / `RECOUVRE`) : il relève d'une **régularisation** manuelle.
+
+Le trop-perçu se récupère **hors Mobile Money** : l'application produit la trace
+(écran Régularisations, statut `A_RECOUVRER`) et constate le recouvrement
+(`RECOUVRE`) une fois la retenue appliquée par la RH — elle ne réalise pas la
+retenue.
+
+---
+
+## 7. Références
 
 | Sujet | Emplacement |
 |---|---|
@@ -123,7 +179,10 @@ où plus aucune mission sans état ne subsiste (fin de la reprise de données).
 | Règles de statut / séparation des tâches | `app/Support/Workflow.php`, `config/workflow.php` |
 | Exclusivité (verrou) | `MissionService::exigerAbsenceDEtat()` |
 | Porte de paiement unifiée | `Versement::scopeEligiblesLot()` |
+| Amendement (avenant) & régularisations | `MissionService::amender()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |
 | Tests — barrière de paiement | `tests/Feature/Paiement/BarriereEtatTest.php` |
 | Tests — circuit OM (une étape) | `tests/Feature/CircuitValidationTest.php` |
 | Tests — séparation des tâches | `tests/Feature/SeparationTachesTest.php` |
+| Tests — amendement & intégrité de l'état | `tests/Feature/AmendementOmTest.php`, `tests/Feature/AmendementIntegriteEtatTest.php` |
+| Tests — trop-perçus / régularisations | `tests/Feature/RegularisationTest.php` |

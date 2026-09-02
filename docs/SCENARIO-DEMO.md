@@ -192,5 +192,73 @@ Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** 
 
 ---
 
+## 7. Variante — avenant : amendement d'un OM après paiement de l'avance
+
+> Cas réel : la mission est partie, **l'avance a été payée**, puis la durée d'un
+> ordre de mission change (on ajoute ou on retire des jours). L'avance est
+> **engagée** : elle ne bouge plus. C'est le **reliquat** qui absorbe l'écart —
+> quitte à devenir **négatif** (trop-perçu à récupérer).
+
+**Point de départ** (bénéficiaire d'illustration, catégorie ORDRE_1, zone
+INTERIEUR, **6 jours journée complète** = 6 × 45 000) :
+
+```
+Total     Avance (70 %)   Reliquat (30 %)
+270 000   189 000         81 000
+```
+
+L'état des **avances** de la mission est **VALIDÉ** (circuit contrôle → DAF → DG) :
+l'avance **189 000** est décaissée et **figée** (`avance_engagee`). Désormais,
+`reliquat = montant_total − 189 000`.
+
+### CAS A — rallonge (mission prolongée de 2 jours)  ·  compte `gestion@`
+
+`Ordres → détail de l'OM` (`/ordres/:id`) → bouton **« Amender »** → **8 jours**
++ motif → **Enregistrer**.
+
+```
+Nouveau total   Avance (figée)   Reliquat
+8 × 45 000       189 000          360 000 − 189 000
+= 360 000                         = 171 000
+```
+
+Le versement **RELIQUAT** passe de 81 000 à **171 000** (statut `EN_ATTENTE`).
+Il sera payable une fois l'**état des reliquats** validé. Le **journal des
+amendements** de la fiche trace `6 j → 8 j`, delta **+90 000**.
+
+### CAS B — réduction forte (mission écourtée à 3 jours) → **trop-perçu**  ·  `gestion@`
+
+Même bouton **« Amender »** → **3 jours** + motif → **Enregistrer**.
+
+```
+Nouveau total   Avance (figée)   Reliquat
+3 × 45 000       189 000          135 000 − 189 000
+= 135 000                         = −54 000   ← trop-perçu
+```
+
+- La fiche affiche le badge **« Trop-perçu »** ; le versement RELIQUAT bascule en
+  **A_RECOUVRER** et **sort du périmètre payable** (il ne part jamais dans un
+  fichier MTN / Moov).
+- `finance@` — `Paiements → Régularisations` (`/paiements/regularisations`) : la
+  ligne apparaît, **à recouvrer = 54 000**. Après la **retenue sur salaire**
+  appliquée par la RH (hors Mobile Money), cliquer **« Marquer recouvré »** →
+  statut **RECOUVRE**.
+
+> 🔒 **Intégrité** : l'état des **avances validé reste scellé** (HMAC) et
+> **inchangé** après l'amendement (l'avance est figée). Un état des **reliquats**
+> encore en `BROUILLON` reflète automatiquement le nouveau montant (même négatif) ;
+> un état des reliquats **en cours de signature** doit être **rejeté** avant
+> d'amender (rejet guidé). Cf. `docs/circuits-validation.md` §6 et
+> `docs/amendement-om.md`.
+
+### Le message à faire passer
+
+L'application **ne re-décaisse pas** l'avance et **ne rembourse pas** toute seule :
+elle **retranscrit** l'avenant, **réajuste le reliquat** et **trace** le trop-perçu
+pour que la RH applique la retenue — cohérent avec la règle d'or (ni décaissement,
+ni retenue automatiques).
+
+---
+
 *Document de préparation de démonstration — ANaTT, Agence Nationale des Transports
 Terrestres, République du Bénin. Données de démonstration uniquement.*
