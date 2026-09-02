@@ -1,0 +1,111 @@
+<?php
+
+use App\Models\Agent;
+use App\Models\Bareme;
+use App\Models\Mission;
+use App\Models\OrdreMission;
+use App\Models\User;
+use App\Models\Versement;
+
+/*
+ * Régularisations (trop-perçus) — Phase 3.
+ * Un amendement fortement réducteur après engagement de l'avance produit un
+ * reliquat NÉGATIF : le versement bascule en A_RECOUVRER, sort du périmètre
+ * payable et rejoint la file des régularisations, jusqu'à ce que la RH ait
+ * appliqué la retenue (statut RECOUVRE). Cf. docs/amendement-om.md.
+ */
+
+beforeEach(function () {
+    $this->gestionnaire = User::factory()->gestionnaireOm()->create();
+    $this->finance = User::factory()->agentFinancier()->create();
+
+    Bareme::factory()->create([
+        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
+    ]);
+
+    $this->mission = Mission::factory()->create([
+        'zone_code' => 'INTERIEUR', 'prise_en_charge_tiers' => false,
+    ]);
+    $this->agent = Agent::factory()->create(['operateur' => 'MTN']);
+    // OM 6 j = 270 000, avance ENGAGÉE à 189 000, reliquat 81 000.
+    $this->om = OrdreMission::factory()->create([
+        'mission_id' => $this->mission->id, 'agent_id' => $this->agent->id, 'statut' => 'VALIDE',
+        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'nb_jours' => 6, 'montant_total' => 270000, 'avance' => 189000, 'reliquat' => 81000,
+        'avance_engagee' => 189000,
+    ]);
+    Versement::factory()->create(['ordre_mission_id' => $this->om->id, 'type' => 'AVANCE', 'montant' => 189000, 'operateur' => 'MTN', 'statut' => 'CONFIRME']);
+    $this->reliquat = Versement::factory()->create(['ordre_mission_id' => $this->om->id, 'type' => 'RELIQUAT', 'montant' => 81000, 'operateur' => 'MTN', 'statut' => 'EN_ATTENTE']);
+});
+
+/** Force le reliquat en trop-perçu via un amendement fortement réducteur. */
+function amenderEnTropPercu(object $t): void
+{
+    $t->actingAs($t->gestionnaire)
+        ->postJson("/api/ordres/{$t->om->id}/amender", ['nb_jours' => 3, 'motif' => 'Forte réduction de la durée de mission.'])
+        ->assertOk();
+}
+
+it('bascule le versement de reliquat en A_RECOUVRER après amendement en trop-perçu', function () {
+    amenderEnTropPercu($this);
+
+    $v = $this->reliquat->fresh();
+    expect($v->montant)->toBe(-54000)
+        ->and($v->statut)->toBe('A_RECOUVRER');
+});
+
+it('liste les régularisations avec le montant à recouvrer en valeur absolue', function () {
+    amenderEnTropPercu($this);
+
+    $reponse = $this->actingAs($this->finance)->getJson('/api/paiements/regularisations')->assertOk();
+
+    $reponse->assertJsonPath('data.0.versement_id', $this->reliquat->id)
+        ->assertJsonPath('data.0.montant_a_recouvrer', 54000)
+        ->assertJsonPath('data.0.statut', 'A_RECOUVRER');
+});
+
+it('filtre les régularisations par statut', function () {
+    amenderEnTropPercu($this);
+
+    $this->actingAs($this->finance)->getJson('/api/paiements/regularisations?statut=RECOUVRE')
+        ->assertOk()->assertJsonCount(0, 'data');
+    $this->actingAs($this->finance)->getJson('/api/paiements/regularisations?statut=A_RECOUVRER')
+        ->assertOk()->assertJsonCount(1, 'data');
+});
+
+it('marque une régularisation comme recouvrée', function () {
+    amenderEnTropPercu($this);
+
+    $this->actingAs($this->finance)
+        ->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")
+        ->assertOk()
+        ->assertJsonPath('data.statut', 'RECOUVRE');
+
+    $v = $this->reliquat->fresh();
+    expect($v->statut)->toBe('RECOUVRE')
+        ->and($v->date_paiement)->not->toBeNull();
+});
+
+it('refuse de recouvrer un versement qui n’est pas à recouvrer', function () {
+    // Reliquat resté EN_ATTENTE (aucun trop-perçu).
+    $this->actingAs($this->finance)
+        ->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")
+        ->assertStatus(422)->assertJsonValidationErrors('versement');
+});
+
+it('exclut un versement A_RECOUVRER du périmètre payable', function () {
+    amenderEnTropPercu($this);
+
+    // Même remis artificiellement à un montant positif, un A_RECOUVRER reste hors lot.
+    Versement::where('id', $this->reliquat->id)->update(['montant' => 40500]);
+    expect(Versement::eligiblesLot($this->mission->id, 'RELIQUAT', 'MTN')->count())->toBe(0);
+});
+
+it('exige la permission paiements.confirmer pour recouvrer', function () {
+    amenderEnTropPercu($this);
+
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")
+        ->assertForbidden();
+});

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Agent;
 use App\Models\EtatPaiement;
 use App\Models\Mission;
+use App\Models\OmAmendement;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
@@ -163,6 +164,154 @@ class MissionService
         $this->notifications->omRejete($ordre);
 
         return $ordre;
+    }
+
+    /**
+     * Amendement d'un OM : nouveau nombre de jours facturés (rallonge ou
+     * réduction) après retranscription. Recalcule le montant au barème puis
+     * répartit avance/reliquat.
+     *
+     * - Avant l'engagement de l'avance (avance_engagee null) : recalcul complet
+     *   70/30 (les deux versements sont réajustés).
+     * - Après (avance figée) : l'avance ne bouge plus, le RELIQUAT absorbe l'écart
+     *   et peut devenir NÉGATIF (trop-perçu, exclu des fichiers).
+     *
+     * Périmètre v1 : refusé dès que l'état des reliquats est établi/validé, ou
+     * qu'un état de tranche est en cours de signature. Cf. docs/amendement-om.md.
+     */
+    public function amender(OrdreMission $ordre, array $data, User $user): OrdreMission
+    {
+        return DB::transaction(function () use ($ordre, $data, $user) {
+            $ordre = OrdreMission::lockForUpdate()->findOrFail($ordre->id);
+
+            if (in_array($ordre->statut, ['REJETE', 'ANNULE'], true)) {
+                throw ValidationException::withMessages([
+                    'statut' => ["Un OM au statut « {$ordre->statut} » ne peut pas être amendé."],
+                ]);
+            }
+            $this->exigerAmendementPossible($ordre);
+
+            $exonere = (bool) ($ordre->mission?->prise_en_charge_tiers);
+
+            // Nouvelles lignes : détaillées si fournies, sinon le type courant de
+            // l'OM × le nouveau nombre de jours.
+            $lignes = ! empty($data['lignes'])
+                ? array_map(fn ($l) => ['type' => $l['type'], 'nb_jours' => (int) $l['nb_jours']], $data['lignes'])
+                : [['type' => $ordre->type_prise_en_charge, 'nb_jours' => (int) $data['nb_jours']]];
+
+            $calc = $this->calcul->calculerDetaille(
+                $ordre->categorie,
+                $ordre->zone_code,
+                $lignes,
+                $exonere,
+                (int) $ordre->montant_transport,
+            );
+
+            // Instantané AVANT.
+            $avant = [
+                'nb_jours' => (int) $ordre->nb_jours,
+                'montant_total' => (int) $ordre->montant_total,
+                'lignes' => $ordre->lignes_per_diem,
+            ];
+
+            // Répartition : l'avance engagée (si posée) prime ; sinon 70/30.
+            [$avance, $reliquat] = $this->calcul->repartir($calc['montant_total'], $ordre->avance_engagee);
+
+            $ordre->update([
+                'type_prise_en_charge' => $calc['type_principal'] ?? $ordre->type_prise_en_charge,
+                'nb_jours' => $calc['nb_jours'],
+                'lignes_per_diem' => $calc['lignes'],
+                'montant_total' => $calc['montant_total'],
+                'avance' => $avance,
+                'reliquat' => $reliquat,
+            ]);
+
+            $this->reventilerVersements($ordre, $avance, $reliquat);
+
+            OmAmendement::create([
+                'ordre_mission_id' => $ordre->id,
+                'nb_jours_avant' => $avant['nb_jours'],
+                'nb_jours_apres' => $calc['nb_jours'],
+                'lignes_avant' => $avant['lignes'],
+                'montant_total_avant' => $avant['montant_total'],
+                'montant_total_apres' => $calc['montant_total'],
+                'delta_montant' => $calc['montant_total'] - $avant['montant_total'],
+                'motif' => (string) $data['motif'],
+                'amende_par' => $user->id,
+                'amende_par_nom' => $user->name,
+                'amende_le' => now(),
+            ]);
+
+            $this->journaliser($user, 'AMEND_OM', $ordre, [
+                'reference_semo' => $ordre->reference_semo,
+                'nb_jours' => $calc['nb_jours'],
+                'montant_total' => $calc['montant_total'],
+                'delta' => $calc['montant_total'] - $avant['montant_total'],
+                'reliquat' => $reliquat,
+                'motif' => (string) $data['motif'],
+            ]);
+
+            return $ordre->fresh(['agent', 'mission', 'versements']);
+        });
+    }
+
+    /**
+     * Répercute la nouvelle répartition sur les versements non confirmés.
+     * Le RELIQUAT suit toujours ; l'AVANCE n'est réajustée que tant qu'elle n'est
+     * pas engagée (avant validation des avances).
+     */
+    private function reventilerVersements(OrdreMission $ordre, int $avance, int $reliquat): void
+    {
+        // Un reliquat négatif (trop-perçu) bascule le versement en A_RECOUVRER :
+        // il sort du périmètre payable et rejoint les régularisations. Un reliquat
+        // redevenu ≥ 0 (nouvel amendement) repasse EN_ATTENTE.
+        $ordre->versements()
+            ->where('type', 'RELIQUAT')
+            ->whereNotIn('statut', ['CONFIRME', 'GENERE'])
+            ->update([
+                'montant' => $reliquat,
+                'statut' => $reliquat < 0 ? 'A_RECOUVRER' : 'EN_ATTENTE',
+            ]);
+
+        if ($ordre->avance_engagee === null) {
+            $ordre->versements()
+                ->where('type', 'AVANCE')
+                ->where('statut', '!=', 'CONFIRME')
+                ->update(['montant' => $avance]);
+        }
+    }
+
+    /**
+     * Garde d'éligibilité de l'amendement (périmètre v1) : on n'amende pas un
+     * document en cours de signature ni un reliquat déjà établi/validé.
+     */
+    private function exigerAmendementPossible(OrdreMission $ordre): void
+    {
+        $etats = EtatPaiement::where('mission_id', $ordre->mission_id)->get()->keyBy('tranche');
+
+        $avance = $etats->get(EtatPaiement::TRANCHE_AVANCE);
+        if ($avance && in_array($avance->statut, ['CONTROLE', 'VISA_DAF'], true)) {
+            throw ValidationException::withMessages([
+                'etat' => ["L'état des avances est en cours de signature (« {$avance->statut} ») : rejetez-le avant d'amender."],
+            ]);
+        }
+
+        $reliquat = $etats->get(EtatPaiement::TRANCHE_RELIQUAT);
+        // En cours de signature (CONTROLE / VISA_DAF), le document n'est pas
+        // définitif : on peut le REJETER pour l'amender, puis le rétablir. On
+        // guide donc vers ce rejet plutôt que de bloquer sèchement.
+        if ($reliquat && in_array($reliquat->statut, ['CONTROLE', 'VISA_DAF'], true)) {
+            throw ValidationException::withMessages([
+                'etat' => ["L'état des reliquats est en cours de signature (« {$reliquat->statut} ») : rejetez-le avant d'amender, puis rétablissez-le."],
+            ]);
+        }
+        // Validé et scellé (HMAC) : il ne peut plus être rejeté par le circuit.
+        // Un amendement postérieur relève d'un avenant formel — hors périmètre v1.
+        if ($reliquat && $reliquat->estValide()) {
+            throw ValidationException::withMessages([
+                'etat' => ["L'état des reliquats est validé et scellé : un amendement à ce stade relève d'un avenant formel (hors périmètre)."],
+            ]);
+        }
     }
 
     /**

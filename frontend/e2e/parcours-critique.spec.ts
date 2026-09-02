@@ -79,7 +79,20 @@ const META = { current_page: 1, last_page: 1, per_page: 100, total: 2 }
  * inexistant → GENERE (après génération) → CONFIRME (après confirmation).
  */
 async function installMocks(page: Page): Promise<void> {
-  const state: { lot: Record<string, unknown> | null } = { lot: null }
+  const state: { lot: Record<string, unknown> | null; regul: Array<Record<string, unknown>> } = {
+    lot: null,
+    // Un trop-perçu (reliquat négatif après amendement) à régulariser.
+    regul: [{
+      versement_id: 21,
+      reference_semo: '0055000167',
+      beneficiaire: 'SOUMANOU DJARA SABIROU',
+      mission: 'Dossiers de passation de marchés — BOHICON',
+      operateur: 'MTN',
+      telephone: '0197984877',
+      montant_a_recouvrer: 54000,
+      statut: 'A_RECOUVRER',
+    }],
+  }
 
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -121,6 +134,18 @@ async function installMocks(page: Page): Promise<void> {
     if (path.match(/\/api\/paiements\/lots\/\d+\/confirmer$/) && method === 'POST') {
       if (state.lot) state.lot = { ...state.lot, statut: 'CONFIRME', confirme_le: new Date().toISOString() }
       return json(route, { data: state.lot })
+    }
+
+    // ── Régularisations (trop-perçus) ──
+    if (path.match(/\/api\/paiements\/regularisations\/\d+\/recouvrer$/) && method === 'POST') {
+      const id = Number(path.split('/').at(-2))
+      state.regul = state.regul.map((r) =>
+        r.versement_id === id ? { ...r, statut: 'RECOUVRE', date_regularisation: new Date().toISOString() } : r)
+      return json(route, { data: { versement_id: id, statut: 'RECOUVRE' } })
+    }
+    if (path.endsWith('/api/paiements/regularisations') && method === 'GET') {
+      const statut = new URL(req.url()).searchParams.get('statut')
+      return json(route, { data: statut ? state.regul.filter((r) => r.statut === statut) : state.regul })
     }
 
     // ── Repli : tout autre appel renvoie une page vide (les écrans rendent leur coquille). ──
@@ -171,4 +196,25 @@ test('parcours critique : connexion → mission → génération du fichier MTN 
   // 7) Confirmation manuelle après dépôt → lot confirmé, réinclusion bloquée.
   await page.getByRole('button', { name: 'Confirmer le paiement' }).click()
   await expect(page.getByText(/Lot confirmé/)).toBeVisible()
+})
+
+test('régularisation : un trop-perçu est listé puis marqué recouvré', async ({ page }) => {
+  await installMocks(page)
+
+  // Connexion (agent financier) puis accès direct à l'écran Régularisations.
+  await page.goto('/paiements/regularisations', { waitUntil: 'domcontentloaded' })
+  await page.getByPlaceholder('votre.email@anatt.bj').fill('finance@anatt.bj')
+  await page.locator('input[type="password"]').fill('password')
+  await page.getByRole('button', { name: /Se connecter/ }).click()
+
+  // Le trop-perçu apparaît, à recouvrer.
+  await expect(page.getByText('SOUMANOU DJARA SABIROU')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Marquer recouvré' })).toBeVisible()
+
+  // Constat de la retenue RH → la ligne bascule en « Recouvré » : le badge de statut
+  // l'affiche et l'action de recouvrement disparaît (plus rien à faire sur la ligne).
+  await page.getByRole('button', { name: 'Marquer recouvré' }).click()
+  await expect(page.getByText(/marquée comme recouvrée/)).toBeVisible()
+  await expect(page.locator('td').getByText('Recouvré', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Marquer recouvré' })).toHaveCount(0)
 })

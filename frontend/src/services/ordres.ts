@@ -1,5 +1,5 @@
 import { api, toPage, unwrap, saveBlob, filenameFromDisposition, type Page } from './http'
-import type { OrdreMission, MissionHistoryEntry } from '@/types'
+import type { OrdreMission, MissionHistoryEntry, AmendementFormData } from '@/types'
 
 export interface OrdreFilters {
   statut?: string
@@ -36,6 +36,15 @@ export const ordresService = {
 
   async rejeter(id: number, motif: string): Promise<OrdreMission> {
     const { data } = await api.post(`/api/ordres/${id}/rejeter`, { motif })
+    return unwrap<OrdreMission>(data)
+  },
+
+  /**
+   * Amende un OM (rallonge / réduction des jours facturés). Après engagement de
+   * l'avance, seul le reliquat bouge (il peut devenir négatif = trop-perçu).
+   */
+  async amender(id: number, payload: AmendementFormData): Promise<OrdreMission> {
+    const { data } = await api.post(`/api/ordres/${id}/amender`, payload)
     return unwrap<OrdreMission>(data)
   },
 

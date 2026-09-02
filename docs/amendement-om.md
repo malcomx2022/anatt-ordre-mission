@@ -1,9 +1,53 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
-> **Statut : proposition d'analyse (non implémenté).** Ce document cadre le besoin,
-> la règle de gestion, l'implémentation envisagée, les conséquences sur l'existant
-> et un planning d'intégration. Les décisions métier de la §7 doivent être tranchées
-> avant tout développement.
+> **Statut : Phases 1 à 5 livrées ; reste la Phase 6 (docs & démo) et le document
+> de retenue RH.** Ce document cadre le
+> besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
+> tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
+> manuel) ; périmètre v1 = amendement **avant** validation de l'état des reliquats ;
+> amendement par le **gestionnaire** (motif + audit) ; portée = **jours facturés** de l'OM.
+>
+> **Livré (Phase 1)** : colonne `avance_engagee` figée à la validation des avances
+> (`EtatPaiementService::propager`) et règle de répartition conditionnelle
+> (`CalculIndemniteService::repartir($total, $avanceEngagee)`), avec tests.
+>
+> **Livré (Phase 2)** : endpoint **`POST /api/ordres/:id/amender`** (permission
+> `om.retranscrire`, motif obligatoire) + `MissionService::amender` (recalcul au
+> barème, répartition contre l'avance engagée, réajustement des versements non
+> confirmés), table **`om_amendements`** (journal), gardes de périmètre v1 (refus si
+> `REJETE`/`ANNULE`, si un état de tranche est en cours de signature, ou si l'état des
+> reliquats est établi/validé), audit `AMEND_OM`. Colonnes `reliquat` et
+> `versements.montant` passées en **entiers signés** ; `scopeEligiblesLot` exclut les
+> montants ≤ 0 (trop-perçu).
+>
+> **Livré (Phase 3)** : statuts de régularisation `A_RECOUVRER` / `RECOUVRE` (enum
+> `versements.statut` étendu) ; un reliquat négatif après amendement bascule
+> automatiquement en `A_RECOUVRER` et sort du périmètre payable
+> (`scopeEligiblesLot` exclut aussi `A_RECOUVRER`/`RECOUVRE`) ; endpoints
+> **`GET /api/paiements/regularisations`** (liste des trop-perçus, montant à
+> recouvrer en valeur absolue) et **`POST /api/paiements/regularisations/:versement/recouvrer`**
+> (constat manuel de la retenue RH, `paiements.confirmer`), audit
+> `RECOUVRER_VERSEMENT`.
+>
+> **Livré (Phase 5, frontend)** : fiche détail OM enrichie — bouton **« Amender »**
+> (modale jours + motif, gated `om.retranscrire`), **journal des amendements**,
+> badge **« Trop-perçu »** quand le reliquat est négatif ; exposition
+> `avance_engagee` + `amendements` sur `GET /api/ordres/:id` (`OrdreMissionResource`) ;
+> nouvel écran **Régularisations** (`/paiements/regularisations`, menu Paiements) qui
+> liste les trop-perçus et permet de les marquer recouvrés ; badges de statut
+> `A_RECOUVRER`/`RECOUVRE` ; tests Vitest (écran + badge) et e2e Playwright
+> (parcours régularisation).
+>
+> **Livré (Phase 4)** : intégrité de l'amendement avec l'état des reliquats.
+> Colonnes `etats_paiement.montant_total` / `montant_reliquat` passées en **entiers
+> signés** (un état des reliquats en BROUILLON peut totaliser un trop-perçu négatif).
+> L'observer resynchronise automatiquement l'état BROUILLON/REJETE des reliquats
+> sur les montants amendés ; l'état des AVANCES validé reste **scellé** (HMAC) et
+> intact (avance figée). Garde d'amendement affinée : un état des reliquats en
+> cours de signature (`CONTROLE`/`VISA_DAF`) guide vers le **rejet** (« rejetez-le
+> avant d'amender, puis rétablissez-le »), un état **validé** relève d'un avenant
+> formel (hors périmètre). Tests d'intégrité (`AmendementIntegriteEtatTest`).
+> **Reste** : Phase 6 (docs & démo) et le **document de retenue** RH à générer.
 
 ---
 
@@ -104,6 +148,10 @@ Body: { nb_jours? , lignes? , motif }
 
 ### 4.4 Reliquat négatif — trop-perçu
 
+- ⚠️ **Migration requise (Phase 2/3)** : `ordre_missions.reliquat` et
+  `versements.montant` sont actuellement `unsignedBigInteger` (ne stockent PAS de
+  négatif). Il faudra les passer en entiers **signés** pour porter le trop-perçu.
+  *(Hors Phase 1 : le socle livré ne produit encore aucun montant négatif.)*
 - Le modèle **autorise** un `reliquat` négatif (vérité comptable), mais :
   - `Versement::scopeEligiblesLot` reçoit un `where('montant', '>', 0)` → **aucun
     montant ≤ 0 n'entre dans un fichier** (ce filtre n'existe pas aujourd'hui, à
@@ -146,11 +194,11 @@ Body: { nb_jours? , lignes? , motif }
 | Phase | Contenu | Livrable |
 |---|---|---|
 | **0 · Cadrage** | Trancher les décisions métier (§7). Aucun code. | note de décision |
-| **1 · Socle données + calcul** | Migrations (`avance_engagee`, `om_amendements`) ; figer l'avance dans `propager` ; règle conditionnelle dans `CalculIndemniteService` ; **tests unitaires** (rallonge / réduction / trop-perçu). *Rien d'exposé.* | PR 1 |
-| **2 · Endpoint d'amendement** | `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ du versement reliquat ; tests feature. | PR 2 |
-| **3 · Trop-perçu / régularisations** | filtre `> 0` dans `scopeEligiblesLot` + verrou générateurs ; statut `A_RECOUVRER` ; écran/état de reversement ; tests. | PR 3 |
-| **4 · Intégration état reliquats** | récap reflète les amendements ; re-scellé HMAC ; parcours « amendement après état validé » (rejet guidé) ; tests d'intégrité. | PR 4 |
-| **5 · Frontend** | détail OM (amender + historique + badges), écran Régularisations, e2e Playwright. | PR 5 |
+| **1 · Socle données + calcul** ✅ | Migration `avance_engagee` ; figer l'avance dans `propager` ; règle conditionnelle `CalculIndemniteService::repartir($total, $avanceEngagee)` ; **tests** unitaires (rallonge / réduction / trop-perçu) + feature (gel). *Rien d'exposé.* | **livré** |
+| **2 · Endpoint d'amendement** ✅ | Migration `om_amendements` + colonnes signées (`reliquat`, `versements.montant`) ; `POST /ordres/:id/amender` + FormRequest + `MissionService::amender` + gardes par statut + audit ; MAJ des versements ; `scopeEligiblesLot > 0` ; tests feature. | **livré** |
+| **3 · Trop-perçu / régularisations** ✅ | Enum `versements.statut` étendu (`A_RECOUVRER`/`RECOUVRE`) ; reliquat négatif basculé en `A_RECOUVRER` (`reventilerVersements`) ; `scopeEligiblesLot` exclut `A_RECOUVRER`/`RECOUVRE` ; endpoints `GET /paiements/regularisations` + `POST …/:versement/recouvrer` ; audit `RECOUVRER_VERSEMENT` ; tests feature. *(Document de retenue reporté en Phase 5.)* | **livré** |
+| **4 · Intégration état reliquats** ✅ | Colonnes `etats_paiement.montant_total`/`montant_reliquat` signées ; l'observer recale l'état BROUILLON/REJETE des reliquats sur les montants amendés ; l'état des avances validé reste scellé (HMAC) et intact ; garde affinée (reliquats `CONTROLE`/`VISA_DAF` → rejet guidé ; `VALIDE` → avenant formel) ; tests d'intégrité. | **livré** |
+| **5 · Frontend** ✅ | Fiche OM (bouton Amender + modale, journal des amendements, badge trop-perçu) ; `avance_engagee` + `amendements` exposés sur `GET /ordres/:id` ; écran Régularisations (`/paiements/regularisations` + menu) avec « marquer recouvré » ; badges `A_RECOUVRER`/`RECOUVRE` ; Vitest + e2e Playwright. | **livré** |
 | **6 · Docs & démo** | doc circuits, guide, `SCENARIO-DEMO`, diagramme du cas d'avenant. | PR 6 |
 
 Ordre pensé pour que **chaque PR reste verte et non destructive** : le socle (1) ne

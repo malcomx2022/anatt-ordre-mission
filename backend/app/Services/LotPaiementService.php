@@ -147,4 +147,60 @@ class LotPaiementService
 
         return $lot->fresh();
     }
+
+    /**
+     * Régularisations : versements de reliquat basculés en A_RECOUVRER (trop-perçu
+     * après amendement) ou déjà RECOUVRE. Le montant à récupérer est la valeur
+     * absolue du reliquat négatif. Cf. docs/amendement-om.md.
+     *
+     * @param  array<string,mixed>  $filtres
+     * @return array<int,array<string,mixed>>
+     */
+    public function regularisations(array $filtres = []): array
+    {
+        $q = Versement::query()
+            ->whereIn('statut', ['A_RECOUVRER', 'RECOUVRE'])
+            ->with(['ordreMission.agent', 'ordreMission.mission']);
+
+        if (! empty($filtres['statut']) && in_array($filtres['statut'], ['A_RECOUVRER', 'RECOUVRE'], true)) {
+            $q->where('statut', $filtres['statut']);
+        }
+        if (! empty($filtres['mission_id'])) {
+            $q->whereHas('ordreMission', fn ($o) => $o->where('mission_id', (int) $filtres['mission_id']));
+        }
+
+        return $q->orderByDesc('id')->get()->map(fn (Versement $v) => [
+            'versement_id' => $v->id,
+            'reference_semo' => $v->ordreMission->reference_semo,
+            'beneficiaire' => $v->ordreMission->agent->nom_complet,
+            'mission' => $v->ordreMission->mission->objet.' — '.$v->ordreMission->mission->destination,
+            'operateur' => $v->operateur,
+            'telephone' => $v->telephone,
+            'montant_a_recouvrer' => abs((int) $v->montant),
+            'statut' => $v->statut,
+            'date_regularisation' => $v->date_paiement?->toISOString(),
+        ])->all();
+    }
+
+    /**
+     * Marque une régularisation comme recouvrée (retenue appliquée par la RH).
+     * Constat manuel : l'application ne réalise pas la retenue sur salaire.
+     */
+    public function marquerRecouvre(Versement $versement, User $user): Versement
+    {
+        if ($versement->statut !== 'A_RECOUVRER') {
+            throw ValidationException::withMessages([
+                'versement' => ["Ce versement est au statut « {$versement->statut} » : seule une régularisation « à recouvrer » peut être marquée recouvrée."],
+            ]);
+        }
+
+        $versement->update(['statut' => 'RECOUVRE', 'date_paiement' => now()]);
+
+        AuditService::log($user, 'RECOUVRER_VERSEMENT', 'versement', $versement->id, [
+            'montant_recouvre' => abs((int) $versement->montant),
+            'ordre_mission_id' => $versement->ordre_mission_id,
+        ]);
+
+        return $versement->fresh();
+    }
 }

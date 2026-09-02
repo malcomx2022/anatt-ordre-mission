@@ -62,6 +62,7 @@ export const NAVIGATION: NavGroup[] = [
           { label: 'Generer MTN', icon: '', to: '/paiements/mtn', permission: 'paiements.generer' },
           { label: 'Generer Moov', icon: '', to: '/paiements/moov', permission: 'paiements.generer' },
           { label: 'Statuts', icon: '', to: '/paiements/statuts', permission: 'paiements.consulter' },
+          { label: 'Regularisations', icon: '', to: '/paiements/regularisations', permission: 'paiements.consulter' },
           { label: 'Historique', icon: '', to: '/paiements/historique', permission: 'paiements.consulter' },
           { label: 'Reconciliation', icon: '', to: '/paiements/reconciliation', permission: 'paiements.consulter' },
         ],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AmenderOrdreMissionRequest;
 use App\Http\Requests\StoreMissionRequest;
 use App\Http\Resources\MissionResource;
 use App\Http\Resources\OrdreMissionResource;
@@ -135,7 +136,7 @@ class MissionController extends Controller
         // On charge l'état de paiement de la mission : c'est LUI qui porte le
         // circuit de validation (contrôle → visa DAF → validation DG). La fiche
         // OM n'affiche donc pas d'action de circuit, elle renvoie vers l'état.
-        $ordre->load(['agent', 'mission.etatPaiement', 'versements']);
+        $ordre->load(['agent', 'mission.etatPaiement', 'versements', 'amendements']);
 
         return $this->success(new OrdreMissionResource($ordre));
     }
@@ -151,6 +152,20 @@ class MissionController extends Controller
         return $this->created(
             new MissionResource($mission),
             'Mission retranscrite : '.$mission->ordresMission->count().' ordre(s) de mission créé(s).',
+        );
+    }
+
+    /**
+     * Amendement d'un OM : nouveau nombre de jours facturés (rallonge/réduction).
+     * L'avance déjà engagée ne bouge plus ; le reliquat absorbe l'écart.
+     */
+    public function amender(AmenderOrdreMissionRequest $request, OrdreMission $ordre): JsonResponse
+    {
+        $ordre = $this->missionService->amender($ordre, $request->validated(), $request->user());
+
+        return $this->success(
+            new OrdreMissionResource($ordre->load(['agent', 'mission', 'versements'])),
+            'Ordre de mission amendé.',
         );
     }
 

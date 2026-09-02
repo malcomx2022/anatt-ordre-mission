@@ -416,6 +416,17 @@ class EtatPaiementService
             ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
             ->update(['statut' => $statutOm]);
 
+        // Fige l'AVANCE ENGAGÉE : à partir d'ici l'avance est décaissable et ne
+        // doit plus se recalculer. Un amendement ultérieur de l'OM n'ajustera que
+        // le reliquat (reliquat = montant_total − avance_engagee). On ne pose la
+        // valeur qu'une seule fois (whereNull), copie colonne à colonne.
+        if ($statutOm === Workflow::STATUT_VALIDE) {
+            OrdreMission::where('mission_id', $etat->mission_id)
+                ->whereNull('avance_engagee')
+                ->whereNotIn('statut', ['ANNULE'])
+                ->update(['avance_engagee' => DB::raw('avance')]);
+        }
+
         // Clôture immédiate (SOLDE) des OM exonérés (montant nul) : ils n'entrent
         // pas dans le cycle de paiement par nature. Un OM SANS versement, en
         // revanche, devient VALIDE comme les autres — la présence de versements

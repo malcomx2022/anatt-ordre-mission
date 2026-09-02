@@ -153,13 +153,27 @@ class CalculIndemniteService
      *
      * @return array{0:int,1:int} [avance, reliquat]
      */
-    private function repartir(int $montantTotal): array
+    /**
+     * Répartition avance / reliquat d'un montant total.
+     *
+     * - $avanceEngagee === null (cas courant) : l'avance est calculée au taux
+     *   paramétrable (partAvance, 70 % par défaut) et le reliquat prend le reste.
+     * - $avanceEngagee fourni (avance déjà figée, ex. après validation des
+     *   avances) : l'avance NE bouge plus ; le reliquat absorbe tout l'écart et
+     *   peut devenir NÉGATIF (trop-perçu à récupérer). Cf. docs/amendement-om.md.
+     *
+     * @return array{0:int,1:int} [avance, reliquat]
+     */
+    public function repartir(int $montantTotal, ?int $avanceEngagee = null): array
     {
+        if ($avanceEngagee !== null) {
+            return [$avanceEngagee, $montantTotal - $avanceEngagee];
+        }
+
         $taux = Parametres::partAvance();
         $avance = (int) round($montantTotal * $taux / 100);
-        $reliquat = $montantTotal - $avance;
 
-        return [$avance, $reliquat];
+        return [$avance, $montantTotal - $avance];
     }
 
     /**

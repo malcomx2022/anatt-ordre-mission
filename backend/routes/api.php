@@ -69,6 +69,9 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
 
     // Missions (retranscription SEMO : 1 mission + N OM)
     Route::post('missions', [MissionController::class, 'storeMission'])->middleware('permission:om.retranscrire');
+    // Amendement d'un OM (rallonge/réduction des jours facturés). L'avance engagée
+    // ne bouge plus ; le reliquat absorbe l'écart. Cf. docs/amendement-om.md.
+    Route::post('ordres/{ordre}/amender', [MissionController::class, 'amender'])->middleware('permission:om.retranscrire');
 
     // ── ÉTAT DE PAIEMENT d'une mission : l'objet que le circuit valide ──
     // Un état = 1 mission, N bénéficiaires, colonnes AVANCE et RELIQUAT.
@@ -121,11 +124,15 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
         Route::get('paiements/historique', [PaiementController::class, 'historique']);
         Route::get('paiements/lots/{lot}/download', [PaiementController::class, 'download']);
         Route::get('paiements/lots/job/{trackingId}', [PaiementController::class, 'statutJob']);
+        // Régularisations (trop-perçus à récupérer) — consultation.
+        Route::get('paiements/regularisations', [PaiementController::class, 'regularisations']);
     });
     Route::middleware('throttle:paiement')->group(function () {
         Route::post('paiements/lots/generer', [PaiementController::class, 'generer'])->middleware('permission:paiements.generer');
         Route::post('paiements/lots/{lot}/erreur', [PaiementController::class, 'marquerErreur'])->middleware('permission:paiements.generer');
         Route::post('paiements/lots/{lot}/confirmer', [PaiementController::class, 'confirmer'])->middleware('permission:paiements.confirmer');
+        // Régularisation recouvrée (retenue appliquée par la RH) — constat manuel.
+        Route::post('paiements/regularisations/{versement}/recouvrer', [PaiementController::class, 'recouvrer'])->middleware('permission:paiements.confirmer');
     });
 
     // Barème (per diem)
