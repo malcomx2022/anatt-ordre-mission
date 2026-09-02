@@ -96,7 +96,24 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 | `DG` | Étape 3 et dernière : validation finale de l'état, ouvre le paiement (`om.approuver`) ; consulte paiements et audit |
 | `LECTEUR` | Lecture seule (dashboard, OM, rapports) |
 
-Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `om.consulter|retranscrire|valider|numeroter|viser|approuver|rejeter` · `paiements.consulter|generer|confirmer` · `baremes.consulter|modifier` · `rapports.consulter` · `audit.consulter` · `utilisateurs.gerer` · `superadmins.gerer` · `parametres.gerer`.
+Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `om.consulter|retranscrire|valider|numeroter|viser|approuver|rejeter` · `paiements.consulter|generer|confirmer` · `baremes.consulter|modifier` · `rapports.consulter` · `audit.consulter` · `utilisateurs.gerer` · `superadmins.gerer` · `parametres.gerer` · `roles.gerer`.
+
+> **RBAC flexible — matrice éditable à chaud.** La matrice rôle → permissions est
+> personnalisable depuis l'écran **Matrice des permissions** (`/admin/roles`) sans
+> redéploiement. Source de vérité vivante : table **`role_permissions`** (via
+> `App\Support\PermissionRepository`, mis en cache, purgé à chaque écriture) ;
+> `config/profils.php` reste le **défaut / repli** (installation neuve, tests,
+> profils jamais personnalisés — le repository retombe seul sur la config si sa
+> table n'existe pas). Un profil sans ligne hérite du défaut ; dès qu'on l'édite,
+> ses lignes font foi (réinitialisable au défaut). `Permissions::pour()` délègue au
+> repository ; les droits de l'utilisateur courant (login + `/auth/me/permissions`)
+> reflètent la matrice à jour dès la connexion/rafraîchissement suivant.
+> **Lecture** de la matrice : `utilisateurs.gerer` (l'ADMIN consulte). **Écriture** :
+> `roles.gerer`, **exclusive au SUPER_ADMIN** (comme `superadmins.gerer` /
+> `parametres.gerer`, jamais attribuables). **Garde-fous serveur** : SUPER_ADMIN non
+> éditable, clés réservées refusées, et **séparation ordonnateur/payeur** (un profil
+> avec `om.approuver` ne peut cumuler `paiements.generer`/`confirmer`). Chaque édition
+> est auditée (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET`). Référence : `docs/rbac-flexible.md`.
 
 > **Cohérence menu ↔ routes ↔ API.** Chaque entrée du menu latéral
 > (`components/shared/navigation.ts`) porte la **même** clé que le `meta.permission`
@@ -705,8 +722,20 @@ POST   /api/admin/users/:id/reset-password    → Réinitialise → { password }
 > Toute action touchant un SUPER_ADMIN exige `superadmins.gerer`. Le dernier SUPER_ADMIN
 > actif ne peut être supprimé/désactivé/rétrogradé ; on ne se désactive/supprime pas soi-même.
 > Autorisation par middleware `permission:{cle}` (Gates + `Gate::before` super admin).
-> Matrice éditable : `config/profils.php`. SUPER_ADMIN initial paramétrable via `.env`
-> (`SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`).
+> Matrice par défaut : `config/profils.php` ; matrice EFFECTIVE éditable à chaud (cf. ci-dessous).
+> SUPER_ADMIN initial paramétrable via `.env` (`SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`).
+
+### Matrice des permissions — RBAC flexible (éditable à chaud)
+```
+GET    /api/admin/roles                        → Matrice effective + catalogue des clés (utilisateurs.gerer)
+PUT    /api/admin/roles/:role/permissions      → Remplace les permissions d'un profil (roles.gerer)
+DELETE /api/admin/roles/:role/permissions      → Réinitialise le profil au défaut config (roles.gerer)
+```
+> Source de vérité vivante : table `role_permissions` (via `App\Support\PermissionRepository`,
+> mise en cache, purgée à l'écriture), repli sur `config/profils.php`. Écriture réservée au
+> SUPER_ADMIN (`roles.gerer`, non attribuable). Garde-fous serveur : SUPER_ADMIN non éditable,
+> clés réservées refusées, séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`).
+> Audité (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET`). Détail : `docs/rbac-flexible.md`.
 
 ### Paramètres système
 ```

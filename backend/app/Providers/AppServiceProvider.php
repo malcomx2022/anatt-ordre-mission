@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\PermissionRepository;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -16,6 +17,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         Schema::defaultStringLength(191);
+
+        // Matrice RBAC éditable : une seule instance (cache mémoire + Redis) par cycle.
+        $this->app->singleton(PermissionRepository::class);
 
         // Telescope (require-dev) : chargé uniquement en local ET s'il est installé.
         // Évite un crash en production où le paquet est absent (composer --no-dev).

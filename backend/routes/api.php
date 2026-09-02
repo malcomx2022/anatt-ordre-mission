@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\EtatPaiementController;
 use App\Http\Controllers\Api\MissionController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SignatureController;
 use App\Http\Controllers\Api\UserController;
@@ -180,6 +181,15 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
             Route::delete('users/{user}', [UserController::class, 'destroy']);
             Route::post('users/{user}/statut', [UserController::class, 'setActif']);
             Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
+
+            // Matrice rôle → permissions : lecture ouverte à l'administrateur.
+            Route::get('roles', [RoleController::class, 'index']);
+        });
+
+        // Édition de la matrice RBAC (flexible) : SUPER_ADMIN uniquement.
+        Route::middleware('permission:roles.gerer')->group(function () {
+            Route::put('roles/{role}/permissions', [RoleController::class, 'update']);
+            Route::delete('roles/{role}/permissions', [RoleController::class, 'reset']);
         });
 
         // Paramètres & sauvegardes : SUPER_ADMIN uniquement (parametres.gerer).
