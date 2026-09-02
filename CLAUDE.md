@@ -516,7 +516,7 @@ extend: {
 
 | ID | Fichier Vue | Route | Description |
 |----|-------------|-------|-------------|
-| ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles (liste, filtres, statut, reset mot de passe) |
+| ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles (liste, filtres, statut, reset mot de passe, **édition du rôle** en modale — révoque les sessions) |
 | ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle, téléphone) |
 | ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
 | ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
