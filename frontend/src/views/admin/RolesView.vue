@@ -4,10 +4,10 @@ import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { rolesService } from '@/services'
+import type { RoleMatrice } from '@/services/roles'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import type { Permission } from '@/utils/permissions'
-import type { UserRole } from '@/types'
 
 /*
  * Matrice rôle → permissions ÉDITABLE (RBAC flexible).
@@ -24,9 +24,14 @@ const editable = computed(() => can('roles.gerer'))
 
 const loading = ref(true)
 const saving = ref(false)
-const roles = ref<{ cle: UserRole; libelle: string; verrouille: boolean; personnalise: boolean }[]>([])
+const roles = ref<RoleMatrice[]>([])
 const permissions = ref<Permission[]>([])
 const nonAssignables = ref<Permission[]>([])
+
+/** Formulaire de création d'un rôle personnalisé. */
+const nouveauCode = ref('')
+const nouveauLibelle = ref('')
+const creating = ref(false)
 
 /** État courant éditable : role → set de permissions cochées. */
 const matrice = ref<Record<string, Set<Permission>>>({})
@@ -78,7 +83,7 @@ const modules = computed(() =>
 )
 
 /** Une case est-elle cochée pour ce rôle ? Le SUPER_ADMIN a tout. */
-function coche(role: { cle: UserRole; verrouille: boolean }, perm: Permission): boolean {
+function coche(role: { cle: string; verrouille: boolean }, perm: Permission): boolean {
   if (role.verrouille) return true
   return matrice.value[role.cle]?.has(perm) ?? false
 }
@@ -88,7 +93,7 @@ function modifiable(role: { verrouille: boolean }, perm: Permission): boolean {
   return editable.value && !role.verrouille && !nonAssignables.value.includes(perm)
 }
 
-function basculer(role: { cle: UserRole; verrouille: boolean }, perm: Permission): void {
+function basculer(role: { cle: string; verrouille: boolean }, perm: Permission): void {
   if (!modifiable(role, perm)) return
   const set = matrice.value[role.cle] ?? (matrice.value[role.cle] = new Set())
   if (set.has(perm)) set.delete(perm)
@@ -96,11 +101,11 @@ function basculer(role: { cle: UserRole; verrouille: boolean }, perm: Permission
 }
 
 /** Signature stable d'une colonne, pour comparer à l'instantané serveur. */
-function signature(role: UserRole): string {
+function signature(role: string): string {
   return [...(matrice.value[role] ?? [])].sort().join('|')
 }
 
-function estModifie(role: UserRole): boolean {
+function estModifie(role: string): boolean {
   return original.value[role] !== undefined && signature(role) !== original.value[role]
 }
 
@@ -153,7 +158,7 @@ async function enregistrer() {
   }
 }
 
-async function reinitialiser(role: { cle: UserRole; libelle: string }) {
+async function reinitialiser(role: { cle: string; libelle: string }) {
   saving.value = true
   try {
     const perms = await rolesService.reinitialiser(role.cle)
@@ -168,6 +173,63 @@ async function reinitialiser(role: { cle: UserRole; libelle: string }) {
     saving.value = false
   }
 }
+
+/** Extrait le premier message d'erreur exploitable d'une réponse 422. */
+function messageErreur(e: unknown, repli: string): string {
+  const payload = (e as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } })?.response?.data
+  const premier = payload?.errors ? Object.values(payload.errors)[0]?.[0] : payload?.message
+  return premier ?? repli
+}
+
+async function creerRole() {
+  const code = nouveauCode.value.trim().toUpperCase()
+  const libelle = nouveauLibelle.value.trim()
+  if (!code || !libelle) return
+  creating.value = true
+  try {
+    await rolesService.creer(code, libelle)
+    nouveauCode.value = ''
+    nouveauLibelle.value = ''
+    await charger()
+    toast.success(`Rôle « ${libelle} » créé.`)
+  } catch (e) {
+    toast.error(messageErreur(e, 'La création du rôle a échoué.'))
+  } finally {
+    creating.value = false
+  }
+}
+
+async function renommerRole(role: { cle: string; libelle: string }) {
+  const libelle = window.prompt('Nouveau libellé du rôle :', role.libelle)?.trim()
+  if (!libelle || libelle === role.libelle) return
+  saving.value = true
+  try {
+    await rolesService.renommer(role.cle, libelle)
+    const ref = roles.value.find((r) => r.cle === role.cle)
+    if (ref) ref.libelle = libelle
+    toast.success('Rôle renommé.')
+  } catch (e) {
+    toast.error(messageErreur(e, 'Le renommage a échoué.'))
+  } finally {
+    saving.value = false
+  }
+}
+
+async function supprimerRole(role: { cle: string; libelle: string; nb_utilisateurs: number }) {
+  if (!window.confirm(`Supprimer le rôle « ${role.libelle} » ? Cette action est irréversible.`)) return
+  saving.value = true
+  try {
+    await rolesService.supprimer(role.cle)
+    await charger()
+    toast.success(`Rôle « ${role.libelle} » supprimé.`)
+  } catch (e) {
+    toast.error(messageErreur(e, 'La suppression a échoué.'))
+  } finally {
+    saving.value = false
+  }
+}
+
+const rolesPersonnalises = computed(() => roles.value.filter((r) => !r.systeme))
 
 onMounted(charger)
 </script>
@@ -245,7 +307,7 @@ onMounted(charger)
         </AppButton>
         <div class="flex flex-wrap gap-2">
           <button
-            v-for="r in roles.filter((x) => x.personnalise && !x.verrouille)"
+            v-for="r in roles.filter((x) => x.personnalise && !x.verrouille && x.systeme)"
             :key="r.cle"
             type="button"
             :disabled="saving"
@@ -257,6 +319,65 @@ onMounted(charger)
           </button>
         </div>
       </div>
+
+      <!-- Rôles personnalisés : création & gestion (SUPER_ADMIN uniquement) -->
+      <AppCard v-if="editable" class="mt-6">
+        <h3 class="font-display font-bold text-gray-800 mb-1">Rôles personnalisés</h3>
+        <p class="text-[12px] text-gray-500 font-body mb-4">
+          Créez un profil sur mesure, puis cochez ses permissions dans la matrice ci-dessus.
+          Les profils système ne sont ni renommables ni supprimables.
+        </p>
+
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+          <div>
+            <label class="block text-[11px] text-gray-400 uppercase font-body mb-1">Code</label>
+            <input
+              v-model="nouveauCode"
+              type="text"
+              placeholder="CAISSIER_REGIONAL"
+              class="px-3 py-2 rounded-xl border border-gray-200 text-sm font-body uppercase
+                     focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] text-gray-400 uppercase font-body mb-1">Libellé</label>
+            <input
+              v-model="nouveauLibelle"
+              type="text"
+              placeholder="Caissier régional"
+              class="px-3 py-2 rounded-xl border border-gray-200 text-sm font-body
+                     focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+            />
+          </div>
+          <AppButton :disabled="!nouveauCode.trim() || !nouveauLibelle.trim() || creating" :loading="creating" @click="creerRole">
+            Créer le rôle
+          </AppButton>
+        </div>
+
+        <div v-if="rolesPersonnalises.length" class="divide-y divide-gray-50 border-t border-gray-100">
+          <div v-for="r in rolesPersonnalises" :key="r.cle" class="flex items-center justify-between py-2.5">
+            <div class="font-body text-sm text-gray-700">
+              <span class="font-display font-semibold">{{ r.libelle }}</span>
+              <span class="text-gray-400"> — {{ r.cle }}</span>
+              <span class="ml-2 text-[11px] text-gray-400">{{ r.nb_utilisateurs }} utilisateur(s)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button" :disabled="saving"
+                class="px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-display text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                @click="renommerRole(r)"
+              >Renommer</button>
+              <button
+                type="button" :disabled="saving || r.nb_utilisateurs > 0"
+                :title="r.nb_utilisateurs > 0 ? 'Réaffectez d’abord les utilisateurs' : 'Supprimer'"
+                class="px-2.5 py-1 rounded-lg border border-red-200 text-xs font-display text-red-500 hover:bg-red-50 disabled:opacity-40"
+                @click="supprimerRole(r)"
+              >Supprimer</button>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-[12px] text-gray-400 font-body">Aucun rôle personnalisé pour l’instant.</p>
+      </AppCard>
     </template>
   </AppLayout>
 </template>

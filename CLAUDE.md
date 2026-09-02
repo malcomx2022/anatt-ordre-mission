@@ -732,16 +732,25 @@ PUT    /api/admin/roles/:role/permissions      → Remplace les permissions d'un
 DELETE /api/admin/roles/:role/permissions      → Réinitialise le profil au défaut config (roles.gerer)
 GET    /api/admin/users/:id/permissions        → Overrides d'un utilisateur : base, accords, retraits, effectif (utilisateurs.gerer)
 PUT    /api/admin/users/:id/permissions        → Remplace les overrides d'un utilisateur (roles.gerer)
+POST   /api/admin/roles                        → Crée un rôle personnalisé (code, libelle, permissions?) (roles.gerer)
+PUT    /api/admin/roles/:role                  → Renomme un rôle personnalisé (roles.gerer)
+DELETE /api/admin/roles/:role                  → Supprime un rôle personnalisé (roles.gerer)
 ```
 > **Niveau 1 (par profil)** : source de vérité vivante table `role_permissions` (via
 > `App\Support\PermissionRepository`, en cache, purgée à l'écriture), repli sur `config/profils.php`.
 > **Niveau 2 (par utilisateur)** : table `user_permissions` — un utilisateur peut se voir ACCORDER
 > une permission en plus de son profil ou en RETIRER une (`App\Services\UserPermissionService`).
 > `permissions_effectives = base_du_profil ∪ accordées − retirées` (`User::permissions()`, mémoïsé).
+> **Niveau 3 (rôles personnalisés)** : table `roles` — création de profils au-delà des 8 système
+> (`systeme=false`) ; leurs permissions vivent dans `role_permissions`. Les 8 profils système restent
+> définis dans le code (sémantique du circuit) et ne sont ni renommables ni supprimables. `users.role`
+> est une chaîne libre ; les codes valides viennent de `PermissionRepository::codes()`.
 > Écriture réservée au SUPER_ADMIN (`roles.gerer`, non attribuable) ; lecture `utilisateurs.gerer`.
-> Garde-fous serveur (les deux niveaux) : SUPER_ADMIN non éditable, clés réservées refusées,
-> séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`). Audité
-> (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET` / `USER_PERM_UPDATE`). Détail : `docs/rbac-flexible.md`.
+> Garde-fous serveur (tous niveaux) : SUPER_ADMIN non éditable, clés réservées refusées,
+> séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`), code de rôle
+> unique et non-système, suppression bloquée si des utilisateurs y sont rattachés. Audité
+> (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET` / `USER_PERM_UPDATE` / `ROLE_CREATE` / `ROLE_RENAME` /
+> `ROLE_DELETE`). Détail : `docs/rbac-flexible.md`.
 
 ### Paramètres système
 ```

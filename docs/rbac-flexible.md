@@ -4,10 +4,12 @@
 > code ni redéployer. L'écran **Matrice des permissions** (`/admin/roles`) devient
 > éditable ; la matrice est persistée en base et prend effet immédiatement.
 >
-> Deux niveaux, cumulables :
+> Trois niveaux, cumulables :
 > - **Niveau 1 — par profil** : la matrice rôle → permissions (ci-dessous).
 > - **Niveau 2 — par utilisateur** : accorder/retirer une permission à **une
 >   personne** au-dessus de son profil (section « Overrides par utilisateur »).
+> - **Niveau 3 — rôles personnalisés** : créer de nouveaux profils au-delà des 8
+>   profils système (section « Rôles personnalisés »).
 
 ## Principe
 
@@ -168,3 +170,62 @@ lecture) et la colonne **Accès effectif** (cases à cocher). Cocher une case ho
 profil = **accordé** ; décocher une case du profil = **retiré**. À l'enregistrement,
 le front dérive `granted` (cochées hors base) et `revoked` (base décochées).
 Édition gardée par `roles.gerer` ; sinon lecture seule.
+
+---
+
+# Rôles personnalisés (RBAC flexible — niveau 3)
+
+> Créer des profils **au-delà des 8 profils système**, avec leur propre jeu de
+> permissions, et y affecter des utilisateurs. Écran : **Matrice des permissions**
+> (`/admin/roles`), carte « Rôles personnalisés ».
+
+## Principe
+
+- Les **8 profils système** restent définis dans le code (`App\Support\Permissions`) :
+  ils portent la sémantique du circuit de signature (CONTROLEUR → DAF → DG) et les
+  protections SUPER_ADMIN. Ils ne sont **ni supprimables ni renommables** (leurs
+  permissions restent éditables — niveau 1).
+- Les **rôles personnalisés** sont des données (table **`roles`**, `systeme = false`).
+  Leur jeu de permissions vit dans `role_permissions` comme pour les profils système
+  (aucun défaut de config : un rôle neuf part sans permission).
+- Un rôle personnalisé est un profil d'**accès** : il n'entre pas dans le circuit de
+  signature (réservé aux profils système qui en portent les clés).
+
+## Composants
+
+| Élément | Rôle |
+|---|---|
+| `database/migrations/..._create_roles_table.php` | table `(code, libelle, systeme)` |
+| `database/migrations/..._change_users_role_to_string.php` | `users.role` : enum figé → chaîne libre |
+| `App\Models\Role` | rôle personnalisé |
+| `App\Support\PermissionRepository` | `roles` / `codes` / `creerRole` / `renommerRole` / `supprimerRole` / `roleExiste` / `estSysteme` ; la matrice boucle sur **tous** les rôles |
+| `App\Http\Controllers\Api\RoleController` | `store` / `rename` / `destroy` |
+| `App\Http\Requests\StoreRoleRequest` | validation (format du code, libellé) |
+| `views/admin/RolesView.vue` | carte « Rôles personnalisés » (créer / renommer / supprimer) |
+
+Les codes de rôle valides pour l'affectation d'un utilisateur (`StoreUserRequest` /
+`UpdateUserRequest`) proviennent désormais de `PermissionRepository::codes()`
+(système + personnalisés), non d'une liste figée.
+
+## API
+
+| Méthode | Route | Permission | Effet |
+|---|---|---|---|
+| `POST` | `/api/admin/roles` | `roles.gerer` | crée un rôle personnalisé (`code`, `libelle`, `permissions?`) |
+| `PUT` | `/api/admin/roles/:role` | `roles.gerer` | renomme un rôle personnalisé (`libelle`) |
+| `DELETE` | `/api/admin/roles/:role` | `roles.gerer` | supprime un rôle personnalisé |
+
+La liste (`GET /api/admin/roles`) renvoie désormais chaque profil avec `systeme`
+et `nb_utilisateurs`. Les permissions d'un rôle personnalisé s'éditent via
+`PUT /api/admin/roles/:role/permissions` (comme un profil système).
+
+## Garde-fous (serveur)
+
+1. **Code** : format `^[A-Z][A-Z0-9_]*$`, unique, sans collision avec un profil système — 422.
+2. **Renommer / supprimer un profil système** — refusé — 422.
+3. **Supprimer un rôle encore porté par des utilisateurs** — refusé (réaffecter d'abord) — 422.
+4. Clés réservées et **séparation ordonnateur/payeur** s'appliquent aussi aux permissions
+   initiales d'un rôle personnalisé — 422.
+
+Audité : `ROLE_CREATE` / `ROLE_RENAME` / `ROLE_DELETE`. La suppression retire aussi
+les lignes `role_permissions` du rôle.

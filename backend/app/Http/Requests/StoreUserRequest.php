@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Support\Permissions;
+use App\Support\PermissionRepository;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -21,7 +21,7 @@ class StoreUserRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'string', Password::defaults()],
             'telephone' => 'nullable|string|max:30',
-            'role' => ['required', Rule::in(Permissions::PROFILS)],
+            'role' => ['required', Rule::in(app(PermissionRepository::class)->codes())],
             'actif' => 'sometimes|boolean',
         ];
     }
