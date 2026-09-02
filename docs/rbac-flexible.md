@@ -258,6 +258,11 @@ utilisateur existant. Aucun nouvel endpoint : `PUT /api/admin/users/:id { role }
 - Action réservée à `utilisateurs.gerer` ; `SUPER_ADMIN` n'est proposé qu'à un
   super administrateur (double contrôle UI + `verrouSuperAdmin`).
 - Le **dernier SUPER_ADMIN actif** ne peut être rétrogradé — 422.
+- **Séparation ordonnateur/payeur au changement de rôle** : le nouveau rôle est
+  combiné aux overrides déjà posés sur le compte ; si l'effectif résultant cumule
+  `om.approuver` et `paiements.generer`/`confirmer`, le changement est refusé (422)
+  — il faut d'abord retirer l'override en cause. (Sans ce contrôle, un override
+  légal sous l'ancien rôle pouvait créer un cumul interdit après changement.)
 - Un changement de rôle **révoque les sessions actives** du compte (les nouvelles
   permissions s'appliquent à la reconnexion) et est **audité** (`CHANGE_ROLE_USER`).
 

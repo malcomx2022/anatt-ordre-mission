@@ -168,6 +168,33 @@ it('refuse l’écriture des overrides à un administrateur sans roles.gerer', f
         ->assertForbidden();
 });
 
+// ── Changement de rôle × overrides : séparation ordonnateur/payeur ──
+
+it('refuse un changement de rôle qui, combiné à un override, créerait un cumul interdit', function () {
+    // LECTEUR (pas d'om.approuver) à qui on a accordé paiements.confirmer : légal en l'état.
+    $u = User::factory()->lecteur()->create();
+    UserPermission::create(['user_id' => $u->id, 'permission' => 'paiements.confirmer', 'granted' => true]);
+
+    // Le passer DG (porte om.approuver) recréerait le cumul om.approuver + paiements.confirmer.
+    $this->actingAs(User::factory()->admin()->create())
+        ->putJson("/api/admin/users/{$u->id}", ['role' => 'DG'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('role');
+
+    expect($u->fresh()->role)->toBe('LECTEUR'); // rôle inchangé
+});
+
+it('autorise un changement de rôle sans cumul malgré un override', function () {
+    $u = User::factory()->lecteur()->create();
+    UserPermission::create(['user_id' => $u->id, 'permission' => 'audit.consulter', 'granted' => true]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->putJson("/api/admin/users/{$u->id}", ['role' => 'DG'])
+        ->assertOk();
+
+    expect($u->fresh()->role)->toBe('DG');
+});
+
 // ── Service ──
 
 it('combine base, accords et retraits sans doublon', function () {

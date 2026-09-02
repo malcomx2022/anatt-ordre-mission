@@ -111,6 +111,20 @@ it('permet d’affecter un utilisateur à un rôle personnalisé via l’API', f
     expect(User::where('email', 'jean.audit@anatt.bj')->first()->role)->toBe('AUDITEUR_EXTERNE');
 });
 
+it('compte les utilisateurs par rôle dans la liste (un seul décompte agrégé)', function () {
+    Role::create(['code' => 'AUDITEUR_EXTERNE', 'libelle' => 'Auditeur externe', 'systeme' => false]);
+    app(PermissionRepository::class)->vider();
+    User::factory()->count(2)->create(['role' => 'AUDITEUR_EXTERNE']);
+    User::factory()->lecteur()->create();
+
+    $reponse = $this->actingAs(User::factory()->admin()->create())
+        ->getJson('/api/admin/roles')
+        ->assertOk();
+
+    $profils = collect($reponse->json('data.profils'));
+    expect($profils->firstWhere('cle', 'AUDITEUR_EXTERNE')['nb_utilisateurs'])->toBe(2);
+});
+
 // ── Garde-fous ──
 
 it('refuse un code de rôle en collision avec un profil système', function () {
