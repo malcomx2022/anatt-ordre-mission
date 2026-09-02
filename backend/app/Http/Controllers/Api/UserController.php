@@ -84,12 +84,30 @@ class UserController extends Controller
         return $this->created(new UserResource($user), 'Utilisateur créé avec succès.');
     }
 
-    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user, UserPermissionService $service): JsonResponse
     {
         $data = $request->validated();
 
         // Toute opération touchant un SUPER_ADMIN (cible ou rôle visé) exige superadmins.gerer.
         $this->verrouSuperAdmin($request, $data['role'] ?? null, $user);
+
+        // Séparation ordonnateur/payeur : un changement de rôle ne doit pas, combiné
+        // aux overrides déjà posés sur ce compte, créer un cumul interdit
+        // (valider l'état + exécuter les paiements). Contrôle absent jusqu'ici, alors
+        // que les overrides survivent au changement de rôle. SUPER_ADMIN exempté.
+        if (isset($data['role']) && $data['role'] !== $user->role && $data['role'] !== User::ROLE_SUPER_ADMIN) {
+            $overrides = $service->overrides($user);
+            $effectives = UserPermissionService::combiner(
+                Permissions::pour($data['role']),
+                $overrides['granted'],
+                $overrides['revoked'],
+            );
+            if ($this->cumuleOrdonnateurPayeur($effectives)) {
+                throw ValidationException::withMessages([
+                    'role' => ['Ce changement de rôle créerait un cumul interdit (validation de l’état + génération/confirmation des paiements) avec les permissions accordées à cet utilisateur. Retirez d’abord l’override en cause.'],
+                ]);
+            }
+        }
 
         // Invariant : le dernier SUPER_ADMIN actif ne peut être ni rétrogradé ni désactivé.
         if ($this->estDernierSuperAdmin($user)) {
@@ -272,8 +290,7 @@ class UserController extends Controller
 
         // Séparation ordonnateur/payeur sur l'EFFECTIF résultant.
         $effectives = UserPermissionService::combiner(Permissions::pour((string) $user->role), $granted, $revoked);
-        if (in_array(Permissions::OM_APPROUVER, $effectives, true)
-            && array_intersect([Permissions::PAIEMENTS_GENERER, Permissions::PAIEMENTS_CONFIRMER], $effectives) !== []) {
+        if ($this->cumuleOrdonnateurPayeur($effectives)) {
             throw ValidationException::withMessages([
                 'granted' => ['Séparation ordonnateur/payeur : un utilisateur qui valide l’état (om.approuver) ne peut pas aussi générer ou confirmer les paiements.'],
             ]);
@@ -293,6 +310,18 @@ class UserController extends Controller
             ['user_id' => $user->id, 'granted' => $granted, 'revoked' => $revoked, 'effectives' => $apres],
             'Permissions de l’utilisateur mises à jour.'
         );
+    }
+
+    /**
+     * L'effectif cumule-t-il validation de l'état (om.approuver) ET exécution des
+     * paiements (paiements.generer/confirmer) ? Règle de séparation ordonnateur/payeur.
+     *
+     * @param  string[]  $effectives
+     */
+    private function cumuleOrdonnateurPayeur(array $effectives): bool
+    {
+        return in_array(Permissions::OM_APPROUVER, $effectives, true)
+            && array_intersect([Permissions::PAIEMENTS_GENERER, Permissions::PAIEMENTS_CONFIRMER], $effectives) !== [];
     }
 
     /**

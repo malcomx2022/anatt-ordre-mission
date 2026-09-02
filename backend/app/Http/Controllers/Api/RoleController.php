@@ -30,6 +30,8 @@ class RoleController extends Controller
     public function index(): JsonResponse
     {
         $personnalises = $this->repo->personnalises();
+        // Comptage des utilisateurs par rôle en UNE requête (évite un N+1 par profil).
+        $comptes = User::query()->groupBy('role')->selectRaw('role, count(*) as total')->pluck('total', 'role');
 
         return $this->success([
             'profils' => collect($this->repo->roles())->map(fn (array $r) => [
@@ -38,7 +40,7 @@ class RoleController extends Controller
                 'systeme' => $r['systeme'],
                 'verrouille' => $r['code'] === Permissions::SUPER_ADMIN,
                 'personnalise' => in_array($r['code'], $personnalises, true),
-                'nb_utilisateurs' => User::where('role', $r['code'])->count(),
+                'nb_utilisateurs' => (int) ($comptes[$r['code']] ?? 0),
             ])->all(),
             'permissions' => Permissions::TOUTES,
             'matrice' => $this->repo->matrice(),
