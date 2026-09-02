@@ -229,3 +229,39 @@ et `nb_utilisateurs`. Les permissions d'un rôle personnalisé s'éditent via
 
 Audité : `ROLE_CREATE` / `ROLE_RENAME` / `ROLE_DELETE`. La suppression retire aussi
 les lignes `role_permissions` du rôle.
+
+---
+
+# Édition du rôle d'un utilisateur existant
+
+> Changer le profil d'un compte déjà créé, directement depuis la liste des
+> utilisateurs. Écran : **Gestion des utilisateurs** (`/admin/utilisateurs`),
+> action « Modifier le rôle » (modale).
+
+## Principe
+
+Le rôle ne se choisissait qu'à la création (`UserCreateView`). Une action par
+ligne ouvre une modale proposant les rôles assignables — **profils système +
+rôles personnalisés** (niveau 3) — et applique le changement via l'endpoint
+utilisateur existant. Aucun nouvel endpoint : `PUT /api/admin/users/:id { role }`.
+
+## Composants
+
+| Élément | Rôle |
+|---|---|
+| `views/admin/UserManagementView.vue` | action + modale ; catalogue des rôles chargé via `rolesService.matrice()` (filtre et libellés de badge inclus) |
+| `UserController::update` (existant) | applique le rôle, révoque les tokens, journalise |
+| `UpdateUserRequest` (niveau 3) | `role` validé contre `PermissionRepository::codes()` (système + personnalisés) |
+
+## Autorisation & garde-fous (serveur, déjà en place)
+
+- Action réservée à `utilisateurs.gerer` ; `SUPER_ADMIN` n'est proposé qu'à un
+  super administrateur (double contrôle UI + `verrouSuperAdmin`).
+- Le **dernier SUPER_ADMIN actif** ne peut être rétrogradé — 422.
+- Un changement de rôle **révoque les sessions actives** du compte (les nouvelles
+  permissions s'appliquent à la reconnexion) et est **audité** (`CHANGE_ROLE_USER`).
+
+## Prise d'effet
+
+Immédiate côté base ; l'utilisateur concerné, ses tokens révoqués, récupère ses
+nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
