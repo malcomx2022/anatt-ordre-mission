@@ -24,6 +24,14 @@ export interface RapportMensuel {
   par_statut: Array<{ statut: string; nb: number; montant: number }>
 }
 
+/** État des trop-perçus (régularisations) : à recouvrer vs recouvrés, montants absolus. */
+export interface RapportTropPercus {
+  a_recouvrer: { nb: number; montant: number }
+  recouvre: { nb: number; montant: number }
+  total: { nb: number; montant: number }
+  par_operateur: Array<{ operateur: string; statut: string; nb: number; montant: number }>
+}
+
 export type RapportDimension = 'agent' | 'operateur' | 'zone' | 'imputation'
 export type ExportFormat = 'xlsx' | 'pdf'
 

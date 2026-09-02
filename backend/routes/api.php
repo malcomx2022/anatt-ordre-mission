@@ -157,6 +157,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
         Route::get('rapports/operateurs', [RapportController::class, 'operateurs']);
         Route::get('rapports/zones', [RapportController::class, 'zones']);
         Route::get('rapports/imputations', [RapportController::class, 'imputations']);
+        Route::get('rapports/trop-percus', [RapportController::class, 'tropPercus']);
         Route::get('rapports/export', [RapportController::class, 'export'])->middleware('throttle:export');
         Route::get('rapports/export/download', [RapportController::class, 'exportDownload']);
         Route::post('rapports/export-async', [RapportController::class, 'exportAsync'])->middleware('throttle:export');
