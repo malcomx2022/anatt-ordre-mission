@@ -6,6 +6,7 @@ use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Services\PdfGenerator;
 
 /*
  * Régularisations (trop-perçus) — Phase 3.
@@ -141,7 +142,7 @@ it('refuse le document de retenue pour un versement qui n’est pas une régular
 it('porte le bénéficiaire, le trop-perçu et le motif dans les données du document', function () {
     amenderEnTropPercu($this);
 
-    $data = app(App\Services\PdfGenerator::class)->donneesRetenue($this->reliquat->fresh());
+    $data = app(PdfGenerator::class)->donneesRetenue($this->reliquat->fresh());
 
     expect($data['beneficiaire'])->toContain($this->agent->nom)
         ->and($data['trop_percu'])->toBe('54 000')

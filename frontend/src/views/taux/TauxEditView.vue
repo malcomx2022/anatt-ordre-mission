@@ -21,7 +21,6 @@ const ZONES: { value: ZoneCode; label: string }[] = [
 ]
 const zone = ref<ZoneCode>('INTERIEUR')
 
-const fmt = (n: number) => n.toLocaleString('fr-FR')
 
 function baremesZone() {
   return baremes.value.filter((b) => b.zone_code === zone.value)

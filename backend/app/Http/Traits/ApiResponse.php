@@ -8,7 +8,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 
 trait ApiResponse
 {
-    protected function success($data = null, string $message = null, int $code = 200): JsonResponse
+    protected function success($data = null, ?string $message = null, int $code = 200): JsonResponse
     {
         $response = [];
 
@@ -38,7 +38,7 @@ trait ApiResponse
     {
         $response = ['message' => $message];
 
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             $response['errors'] = $errors;
         }
 

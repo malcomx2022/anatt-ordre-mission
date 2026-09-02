@@ -6,6 +6,7 @@ use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
 use Database\Seeders\BaremeSeeder;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
  */
 beforeEach(function () {
     // Recette : nombreux appels paiement -> on neutralise le rate limiting.
-    $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+    $this->withoutMiddleware(ThrottleRequests::class);
     Storage::fake('local');
     $this->seed(BaremeSeeder::class);
     $this->admin = User::factory()->superAdmin()->create(); // SUPER_ADMIN : bypass de toutes les gardes (Gate::before)

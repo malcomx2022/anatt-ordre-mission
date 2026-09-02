@@ -15,6 +15,7 @@ use Illuminate\Validation\Validator;
 class AmenderOrdreMissionRequest extends FormRequest
 {
     private const TYPES_INTERIEUR = ['UN_REPAS', 'DEUX_REPAS', 'JOURNEE_COMPLETE'];
+
     private const TYPES_EXTERIEUR = ['JOURNEE_COMPLETE', 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL'];
 
     public function authorize(): bool

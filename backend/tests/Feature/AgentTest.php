@@ -12,7 +12,7 @@ it('crée un agent et déduit la catégorie depuis l’indice', function () {
         'nom' => 'DADA', 'prenoms' => 'Richard', 'matricule' => 'ANT-1001',
         'telephone' => '0190000001', 'operateur' => 'MTN', 'indice' => 850,
     ])->assertStatus(201)
-      ->assertJsonPath('data.categorie', 'ORDRE_1');
+        ->assertJsonPath('data.categorie', 'ORDRE_1');
 
     expect(Agent::where('matricule', 'ANT-1001')->value('categorie'))->toBe('ORDRE_1');
 });
@@ -22,7 +22,7 @@ it('déduit ORDRE_3 depuis le salaire brut', function () {
         'nom' => 'AKPACA', 'prenoms' => 'Gérard', 'matricule' => 'ANT-1002',
         'telephone' => '0140000002', 'operateur' => 'MOOV', 'salaire_brut' => 150000,
     ])->assertStatus(201)
-      ->assertJsonPath('data.categorie', 'ORDRE_3');
+        ->assertJsonPath('data.categorie', 'ORDRE_3');
 });
 
 it('refuse un téléphone au mauvais format', function () {

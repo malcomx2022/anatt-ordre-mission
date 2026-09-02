@@ -10,6 +10,7 @@ class StoreMissionRequest extends FormRequest
 {
     /** Types de prise en charge autorisés selon la portée de la zone. */
     private const TYPES_INTERIEUR = ['UN_REPAS', 'DEUX_REPAS', 'JOURNEE_COMPLETE'];
+
     private const TYPES_EXTERIEUR = ['JOURNEE_COMPLETE', 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL'];
 
     public function authorize(): bool

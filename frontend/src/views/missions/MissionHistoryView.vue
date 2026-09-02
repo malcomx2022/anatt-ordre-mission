@@ -32,7 +32,13 @@ onMounted(async () => {
     missionNumero.value = missionRes.data.data?.numero || `OM-${route.params.id}`
 
     const logs = historiqueRes.data.data || []
-    events.value = logs.map((log: any) => ({
+    events.value = logs.map((log: {
+      action: string
+      user?: { name?: string; role?: string } | null
+      created_at: string
+      ip_address?: string | null
+      details?: unknown
+    }) => ({
       action: formatAction(log.action),
       user: log.user?.name || '--',
       role: log.user?.role || '--',
@@ -60,11 +66,12 @@ function formatAction(action: string): string {
   return map[action] || action
 }
 
-function formatDetails(action: string, details: any): string {
+function formatDetails(action: string, details: unknown): string {
   if (!details) return ''
   if (typeof details === 'string') return details
-  if (details.statut) return `Statut: ${details.statut}`
-  if (details.numero) return `Reference: ${details.numero}`
+  const d = details as { statut?: string; numero?: string }
+  if (d.statut) return `Statut: ${d.statut}`
+  if (d.numero) return `Reference: ${d.numero}`
   return JSON.stringify(details)
 }
 

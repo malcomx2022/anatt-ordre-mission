@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import AppLogo from '@/components/shared/AppLogo.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const password = ref('')
 const passwordConfirm = ref('')
@@ -44,8 +43,9 @@ async function handleSubmit() {
       password_confirmation: passwordConfirm.value,
     })
     done.value = true
-  } catch (e: any) {
-    errorMsg.value = e.response?.data?.message || 'Erreur lors de la reinitialisation.'
+  } catch (e) {
+    const err = e as { response?: { data?: { message?: string } } }
+    errorMsg.value = err.response?.data?.message || 'Erreur lors de la reinitialisation.'
   } finally {
     loading.value = false
   }

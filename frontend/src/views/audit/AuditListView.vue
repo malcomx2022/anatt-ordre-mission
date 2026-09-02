@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import { auditService } from '@/services/audit'

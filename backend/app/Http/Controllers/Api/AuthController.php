@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -99,7 +100,7 @@ class AuthController extends Controller
         // (En contexte de test, le token courant est transient et n'a pas d'id.)
         $courant = $request->user()->currentAccessToken();
         $autres = $user->tokens();
-        if ($courant instanceof \Laravel\Sanctum\PersonalAccessToken) {
+        if ($courant instanceof PersonalAccessToken) {
             $autres->where('id', '!=', $courant->id);
         }
         $autres->delete();
@@ -126,7 +127,7 @@ class AuthController extends Controller
         // que l'email existe ou non (ne pas révéler l'existence d'un compte).
         Password::sendResetLink($request->only('email'));
 
-        return $this->success(null, "Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.");
+        return $this->success(null, 'Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.');
     }
 
     public function resetPassword(Request $request): JsonResponse

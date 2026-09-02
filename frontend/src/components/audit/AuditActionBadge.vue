@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppBadge from '@/components/shared/AppBadge.vue'
 
-const props = defineProps<{
+defineProps<{
   action: string
 }>()
 
