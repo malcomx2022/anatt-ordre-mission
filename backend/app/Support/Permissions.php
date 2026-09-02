@@ -12,12 +12,19 @@ class Permissions
 {
     // ── Profils ──
     public const SUPER_ADMIN = 'SUPER_ADMIN';
+
     public const ADMIN = 'ADMIN';
+
     public const GESTIONNAIRE_OM = 'GESTIONNAIRE_OM';
+
     public const AGENT_FINANCIER = 'AGENT_FINANCIER';
+
     public const DAF = 'DAF';
+
     public const DG = 'DG';
+
     public const CONTROLEUR = 'CONTROLEUR';
+
     public const LECTEUR = 'LECTEUR';
 
     public const PROFILS = [
@@ -44,32 +51,51 @@ class Permissions
 
     // ── Clés de permission ──
     public const DASHBOARD_CONSULTER = 'dashboard.consulter';
+
     public const PERSONNEL_CONSULTER = 'personnel.consulter';
+
     public const PERSONNEL_GERER = 'personnel.gerer';
+
     public const OM_CONSULTER = 'om.consulter';
+
     public const OM_RETRANSCRIRE = 'om.retranscrire';
+
     public const OM_VALIDER = 'om.valider';
+
     /**
      * Numérotation manuelle de l'état, selon le registre papier de l'agence.
      * Détenue par les trois acteurs du circuit — exactement le même périmètre
      * qu'auparavant, où la route empruntait om.rejeter faute de clé dédiée.
      */
     public const OM_NUMEROTER = 'om.numeroter';
+
     /** 1re signature du circuit double : IMPORTE -> VISA_DAF. */
     public const OM_VISER = 'om.viser';
+
     /** 2e et dernière signature : VISA_DAF -> VALIDE (rend l'OM payable). */
     public const OM_APPROUVER = 'om.approuver';
+
     /** Rejet d'un OM : partagé par les trois acteurs du circuit. */
     public const OM_REJETER = 'om.rejeter';
+
     public const PAIEMENTS_CONSULTER = 'paiements.consulter';
+
     public const PAIEMENTS_GENERER = 'paiements.generer';
+
     public const PAIEMENTS_CONFIRMER = 'paiements.confirmer';
+
     public const BAREMES_CONSULTER = 'baremes.consulter';
+
     public const BAREMES_MODIFIER = 'baremes.modifier';
+
     public const RAPPORTS_CONSULTER = 'rapports.consulter';
+
     public const AUDIT_CONSULTER = 'audit.consulter';
+
     public const UTILISATEURS_GERER = 'utilisateurs.gerer';
+
     public const SUPERADMINS_GERER = 'superadmins.gerer';
+
     public const PARAMETRES_GERER = 'parametres.gerer';
 
     /** Toutes les clés de permission existantes. */

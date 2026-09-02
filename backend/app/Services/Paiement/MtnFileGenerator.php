@@ -3,6 +3,7 @@
 namespace App\Services\Paiement;
 
 use App\Models\Mission;
+use App\Models\Versement;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -25,7 +26,7 @@ class MtnFileGenerator extends FileGenerator
     }
 
     /**
-     * @param  Collection<int,\App\Models\Versement>  $versements
+     * @param  Collection<int,Versement>  $versements
      * @return array{chemin:string, nom_fichier:string, nb_lignes:int, montant_total:int}
      */
     protected function construireFichier(Mission $mission, string $tranche, Collection $versements): array

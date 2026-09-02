@@ -31,7 +31,6 @@ const form = ref({
 // Le profil SUPER_ADMIN n'est proposé que si l'utilisateur courant est SUPER_ADMIN.
 const availableRoles = computed(() => PROFILS.filter(r => r.value !== 'SUPER_ADMIN' || isSuperAdmin()))
 
-const selectedRole = computed(() => PROFILS.find(r => r.value === form.value.role))
 
 const directions = ['Direction Generale', 'Direction Technique', 'Direction Administrative', 'Direction Financiere', 'Service Informatique', 'Comptabilite']
 

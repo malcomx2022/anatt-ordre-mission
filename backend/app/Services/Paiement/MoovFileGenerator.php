@@ -3,6 +3,7 @@
 namespace App\Services\Paiement;
 
 use App\Models\Mission;
+use App\Models\Versement;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -39,14 +40,14 @@ class MoovFileGenerator extends FileGenerator
     }
 
     /**
-     * @param  Collection<int,\App\Models\Versement>  $versements
+     * @param  Collection<int,Versement>  $versements
      * @return array{chemin:string, nom_fichier:string, nb_lignes:int, montant_total:int}
      */
     protected function construireFichier(Mission $mission, string $tranche, Collection $versements): array
     {
         $theme = $mission->objet;
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle(config('paiement.moov.sheet', 'Sheet1'));
 

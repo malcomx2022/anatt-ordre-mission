@@ -5,6 +5,7 @@ use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Support\Permissions;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoCircuitSeeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -27,7 +28,7 @@ beforeEach(function () {
         ? file_get_contents($this->fichierParametres)
         : null;
 
-    $this->seed(Database\Seeders\DatabaseSeeder::class);
+    $this->seed(DatabaseSeeder::class);
     $this->seed(DemoCircuitSeeder::class);
 });
 

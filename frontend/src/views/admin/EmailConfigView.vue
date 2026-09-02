@@ -5,7 +5,7 @@ import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 
 const api = useApi()
-const { success: toastSuccess, error: toastError } = useToast()
+const { success: toastSuccess } = useToast()
 const loadingData = ref(true)
 const saving = ref(false)
 
@@ -57,7 +57,7 @@ async function saveConfig() {
     // Charger les settings existants puis merger
     const { data: current } = await api.get('/api/admin/settings')
     const merged = {
-      ...(current.data || {}),
+      ...current.data,
       smtpHost: smtpHost.value,
       smtpPort: smtpPort.value,
       smtpUser: smtpUser.value,

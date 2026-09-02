@@ -138,7 +138,7 @@ class PaiementController extends Controller
         if ($periode = $request->get('periode')) {
             $date = Carbon::parse($periode);
             $query->whereMonth('date_paiement', $date->month)
-                  ->whereYear('date_paiement', $date->year);
+                ->whereYear('date_paiement', $date->year);
         }
 
         if ($dateDebut = $request->get('date_debut')) {

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SignatureController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ValidationController;
+use App\Http\Middleware\ForcePasswordChange;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,7 +34,7 @@ Route::prefix('auth')->middleware('throttle:login')->group(function () {
 // ── Routes protégées par Sanctum + rate limiting global ──
 // ForcePasswordChange bloque l'API tant qu'un changement de mot de passe est requis
 // (création/réinitialisation administrative), sauf l'échappatoire de changement.
-Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePasswordChange::class])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])->group(function () {
 
     // Auth (tous les utilisateurs connectés)
     Route::post('auth/logout', [AuthController::class, 'logout']);

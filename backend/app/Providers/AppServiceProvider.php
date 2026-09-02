@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Telescope\TelescopeServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,8 +19,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Telescope (require-dev) : chargé uniquement en local ET s'il est installé.
         // Évite un crash en production où le paquet est absent (composer --no-dev).
-        if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
-            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+        if ($this->app->environment('local') && class_exists(TelescopeServiceProvider::class)) {
+            $this->app->register(TelescopeServiceProvider::class);
             $this->app->register(\App\Providers\TelescopeServiceProvider::class);
         }
     }
@@ -39,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
         // Le verrou par identifiant bloque le credential stuffing ciblé multi-IP ;
         // le verrou par IP bloque le balayage d'emails depuis une même source.
         RateLimiter::for('login', function (Request $request) {
-            $email = \Illuminate\Support\Str::lower((string) $request->input('email'));
+            $email = Str::lower((string) $request->input('email'));
 
             return [
                 Limit::perMinute(5)->by('login|'.$request->ip()),

@@ -14,8 +14,9 @@ async function handleSubmit() {
   try {
     await useApi().post('/api/auth/mot-de-passe/email', { email: email.value })
     sent.value = true
-  } catch (e: any) {
-    errorMsg.value = e.response?.data?.message || 'Erreur lors de l\'envoi.'
+  } catch (e) {
+    const err = e as { response?: { data?: { message?: string } } }
+    errorMsg.value = err.response?.data?.message || 'Erreur lors de l\'envoi.'
   } finally {
     loading.value = false
   }

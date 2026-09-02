@@ -31,9 +31,9 @@ class AgentService
             ->where('actif', true)
             ->where(function ($q) use ($terme) {
                 $q->where('nom', 'like', "%{$terme}%")
-                  ->orWhere('prenoms', 'like', "%{$terme}%")
-                  ->orWhere('matricule', 'like', "%{$terme}%")
-                  ->orWhere('ifu', 'like', "%{$terme}%");
+                    ->orWhere('prenoms', 'like', "%{$terme}%")
+                    ->orWhere('matricule', 'like', "%{$terme}%")
+                    ->orWhere('ifu', 'like', "%{$terme}%");
             })
             ->orderBy('nom')
             ->limit($limite)
@@ -100,6 +100,7 @@ class AgentService
                     'erreurs' => $erreursLigne,
                     'donnees' => $data,
                 ];
+
                 continue;
             }
 
@@ -139,9 +140,9 @@ class AgentService
         if ($search = ($filters['search'] ?? null)) {
             $query->where(function ($q) use ($search) {
                 $q->where('nom', 'like', "%{$search}%")
-                  ->orWhere('prenoms', 'like', "%{$search}%")
-                  ->orWhere('matricule', 'like', "%{$search}%")
-                  ->orWhere('ifu', 'like', "%{$search}%");
+                    ->orWhere('prenoms', 'like', "%{$search}%")
+                    ->orWhere('matricule', 'like', "%{$search}%")
+                    ->orWhere('ifu', 'like', "%{$search}%");
             });
         }
 

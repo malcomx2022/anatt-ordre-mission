@@ -214,7 +214,7 @@ class EtatPaiementPdf
         // on le journalise, car un tel document est recalculé à la volée et n'a
         // pas la garantie d'intégrité de l'instantané figé.
         if ($etat->lignes === null) {
-            Log::warning("État de paiement sans instantané « lignes » : tableau recalculé à la volée (legacy).", [
+            Log::warning('État de paiement sans instantané « lignes » : tableau recalculé à la volée (legacy).', [
                 'etat_id' => $etat->id,
                 'mission_id' => $etat->mission_id,
                 'tranche' => $etat->tranche,

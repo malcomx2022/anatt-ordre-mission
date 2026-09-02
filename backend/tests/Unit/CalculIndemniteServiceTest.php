@@ -25,7 +25,7 @@ function definirPartAvance(?int $valeur): void
 }
 
 beforeEach(function () {
-    $this->service = new CalculIndemniteService();
+    $this->service = new CalculIndemniteService;
     Bareme::factory()->create([
         'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,

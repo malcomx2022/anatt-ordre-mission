@@ -122,13 +122,18 @@ anatt-ordre-mission/
 ```powershell
 cd backend
 .\vendor\bin\pest                 # 427 tests (53 fichiers)
+.\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
 npm run type-check                # vérification TypeScript
 npm run test:unit -- --run        # Vitest
+npm run lint:check                # ESLint + oxlint (vérification ; `npm run lint` corrige)
 npm run build                     # build de production
 npm run test:e2e                  # Playwright — parcours critique (API mockée, aucun backend requis)
 ```
+
+> Le CI exécute ces mêmes vérifications à chaque PR : un job **Lint** (Pint + ESLint/oxlint, en mode
+> vérification), les suites Pest et Vitest, le build et le parcours Playwright.
 
 ---
 

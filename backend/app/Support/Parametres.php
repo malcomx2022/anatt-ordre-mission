@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Cache;
 class Parametres
 {
     private const FICHIER = 'settings.json';
+
     private const CLE = 'partAvance';
+
     private const VALEUR_PAR_DEFAUT = 70;
 
     /** Pourcentage de l'avance (le reliquat absorbe l'arrondi). */
@@ -31,7 +33,7 @@ class Parametres
 
     private static function lire(): int
     {
-        $chemin = storage_path('app/' . self::FICHIER);
+        $chemin = storage_path('app/'.self::FICHIER);
 
         if (! is_file($chemin)) {
             return self::VALEUR_PAR_DEFAUT;

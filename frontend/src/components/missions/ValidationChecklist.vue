@@ -2,8 +2,6 @@
 defineProps<{
   items: { label: string; ok: boolean }[]
 }>()
-
-const allOk = (items: { ok: boolean }[]) => items.every((i) => i.ok)
 </script>
 
 <template>

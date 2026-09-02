@@ -13,6 +13,7 @@ class Bareme extends Model
 
     /** Types de prise en charge autorisés selon la portée de la zone. */
     public const TYPES_INTERIEUR = ['UN_REPAS', 'DEUX_REPAS', 'JOURNEE_COMPLETE'];
+
     public const TYPES_EXTERIEUR = ['JOURNEE_COMPLETE', 'LOGE_NOURRI', 'LOGE_SEUL', 'NOURRI_SEUL'];
 
     protected $fillable = [

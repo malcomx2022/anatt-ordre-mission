@@ -25,7 +25,7 @@ class UserFactory extends Factory
 
     public function configure(): static
     {
-        return $this->afterCreating(function (\App\Models\User $user) {
+        return $this->afterCreating(function (User $user) {
             if ($user->role === null) {
                 $user->role = User::ROLE_LECTEUR;
                 $user->saveQuietly();

@@ -69,7 +69,7 @@ it('trace l’erreur et bascule le lot en ERREUR si le job échoue', function ()
 
     try {
         GenererLotPaiementJob::dispatchSync(999999, 'AVANCE', 'MTN', $this->finance->id, $trackingId);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         // le job a échoué (sync) : failed() a été déclenché
     }
 

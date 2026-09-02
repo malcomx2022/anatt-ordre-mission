@@ -24,6 +24,7 @@ use Illuminate\Validation\ValidationException;
 class PaiementDemoSeeder extends Seeder
 {
     private ?int $gestionId = null;
+
     private ?int $controleId = null;
 
     public function run(): void

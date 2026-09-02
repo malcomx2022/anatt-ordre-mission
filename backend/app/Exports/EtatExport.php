@@ -10,7 +10,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 /**
  * Export Excel générique d'un état de paiement (en-têtes + lignes déjà préparés).
  */
-class EtatExport implements FromArray, WithHeadings, WithTitle, ShouldAutoSize
+class EtatExport implements FromArray, ShouldAutoSize, WithHeadings, WithTitle
 {
     /**
      * @param  array<int,string>  $entetes

@@ -9,6 +9,7 @@ use App\Models\Versement;
 use App\Services\Paiement\MoovFileGenerator;
 use App\Services\Paiement\MtnFileGenerator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -109,7 +110,7 @@ it('bloque la régénération d’un lot confirmé', function () {
     $resultat['lot']->update(['statut' => 'CONFIRME']);
 
     app(MtnFileGenerator::class)->generer($this->mission->id, 'AVANCE', $this->user);
-})->throws(\Illuminate\Validation\ValidationException::class);
+})->throws(ValidationException::class);
 
 it('génère le fichier Moov .xlsx au format exact', function () {
     fabriquerVersement($this->mission, [

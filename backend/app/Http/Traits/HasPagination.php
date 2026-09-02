@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 trait HasPagination
 {
     protected int $defaultPerPage = 15;
+
     protected int $minPerPage = 5;
+
     protected int $maxPerPage = 100;
 
     protected function getPerPage(Request $request): int
