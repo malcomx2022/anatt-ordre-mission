@@ -62,6 +62,8 @@ it('liste les régularisations avec le montant à recouvrer en valeur absolue', 
     $reponse = $this->actingAs($this->finance)->getJson('/api/paiements/regularisations')->assertOk();
 
     $reponse->assertJsonPath('data.0.versement_id', $this->reliquat->id)
+        // Expose l'OM concerné : l'UI relie la régularisation à la fiche de l'OM (pour l'amender).
+        ->assertJsonPath('data.0.ordre_mission_id', $this->om->id)
         ->assertJsonPath('data.0.montant_a_recouvrer', 54000)
         ->assertJsonPath('data.0.statut', 'A_RECOUVRER');
 });
