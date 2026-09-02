@@ -730,12 +730,18 @@ POST   /api/admin/users/:id/reset-password    → Réinitialise → { password }
 GET    /api/admin/roles                        → Matrice effective + catalogue des clés (utilisateurs.gerer)
 PUT    /api/admin/roles/:role/permissions      → Remplace les permissions d'un profil (roles.gerer)
 DELETE /api/admin/roles/:role/permissions      → Réinitialise le profil au défaut config (roles.gerer)
+GET    /api/admin/users/:id/permissions        → Overrides d'un utilisateur : base, accords, retraits, effectif (utilisateurs.gerer)
+PUT    /api/admin/users/:id/permissions        → Remplace les overrides d'un utilisateur (roles.gerer)
 ```
-> Source de vérité vivante : table `role_permissions` (via `App\Support\PermissionRepository`,
-> mise en cache, purgée à l'écriture), repli sur `config/profils.php`. Écriture réservée au
-> SUPER_ADMIN (`roles.gerer`, non attribuable). Garde-fous serveur : SUPER_ADMIN non éditable,
-> clés réservées refusées, séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`).
-> Audité (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET`). Détail : `docs/rbac-flexible.md`.
+> **Niveau 1 (par profil)** : source de vérité vivante table `role_permissions` (via
+> `App\Support\PermissionRepository`, en cache, purgée à l'écriture), repli sur `config/profils.php`.
+> **Niveau 2 (par utilisateur)** : table `user_permissions` — un utilisateur peut se voir ACCORDER
+> une permission en plus de son profil ou en RETIRER une (`App\Services\UserPermissionService`).
+> `permissions_effectives = base_du_profil ∪ accordées − retirées` (`User::permissions()`, mémoïsé).
+> Écriture réservée au SUPER_ADMIN (`roles.gerer`, non attribuable) ; lecture `utilisateurs.gerer`.
+> Garde-fous serveur (les deux niveaux) : SUPER_ADMIN non éditable, clés réservées refusées,
+> séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`). Audité
+> (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET` / `USER_PERM_UPDATE`). Détail : `docs/rbac-flexible.md`.
 
 ### Paramètres système
 ```

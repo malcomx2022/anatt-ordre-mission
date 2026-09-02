@@ -282,6 +282,14 @@ export const routes: RouteRecordRaw[] = [
     meta: { auth: true, permission: 'utilisateurs.gerer' },
   },
   {
+    // Overrides de permissions par utilisateur (RBAC niveau 2). Atteinte depuis
+    // la liste des utilisateurs ; l'édition exige roles.gerer (gardée en interne).
+    path: '/admin/utilisateurs/:id/permissions',
+    name: 'admin-user-permissions',
+    component: () => import('@/views/admin/UserPermissionsView.vue'),
+    meta: { auth: true, permission: 'utilisateurs.gerer' },
+  },
+  {
     path: '/admin/roles',
     name: 'admin-roles',
     component: () => import('@/views/admin/RolesView.vue'),
