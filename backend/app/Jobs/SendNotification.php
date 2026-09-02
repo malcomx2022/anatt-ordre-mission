@@ -56,6 +56,7 @@ class SendNotification implements ShouldQueue
             'etat_attend_signature' => "État de paiement {$this->data['numero']} — signature attendue",
             'etat_valide' => "État de paiement {$this->data['numero']} validé — fichiers générables",
             'etat_rejete' => "État de paiement {$this->data['numero']} rejeté",
+            'trop_percu_cree' => "Trop-perçu sur OM {$this->data['reference_semo']} — régularisation à traiter",
             default => 'Notification ANaTT',
         };
     }
@@ -69,6 +70,7 @@ class SendNotification implements ShouldQueue
             'etat_attend_signature' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) attend votre intervention dans le circuit de validation.",
             'etat_valide' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) a été validé par le Directeur Général : les fichiers de paiement de cette tranche peuvent être générés.",
             'etat_rejete' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » a été rejeté. Motif : {$this->data['motif']}",
+            'trop_percu_cree' => "L'amendement de l'OM {$this->data['reference_semo']} ({$this->data['beneficiaire']}) a produit un trop-perçu de {$this->data['montant']} FCFA. À récupérer par retenue sur salaire depuis l'écran Régularisations (le versement ne part pas en Mobile Money).",
             default => 'Notification du système ANaTT Missions.',
         };
     }

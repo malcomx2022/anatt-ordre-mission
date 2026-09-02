@@ -175,6 +175,9 @@ Body: { nb_jours? , lignes? , motif }
   - statut de versement `A_RECOUVRER` + écran **« Régularisations / trop-perçus »** qui
     les liste. La récupération (retenue sur salaire, ordre de reversement) est un
     **processus manuel hors Mobile Money**.
+  - **Notification** : dès qu'un amendement produit un trop-perçu, l'agent financier est
+    averti par e-mail (`NotificationService::tropPercuCree`, type `trop_percu_cree`) —
+    la régularisation ne dépend pas d'une consultation manuelle de l'écran.
 
 ### 4.5 État des reliquats
 
