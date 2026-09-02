@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Support\MontantEnLettres;
 use App\Support\Parametres;
 use App\Support\PdfAssets;
 use App\Support\Workflow;
@@ -241,6 +242,8 @@ class PdfGenerator
             'avance_engagee' => $fmt((int) ($ordre->avance_engagee ?? $ordre->avance)),
             'montant_total' => $fmt((int) $ordre->montant_total),
             'trop_percu' => $fmt(abs((int) $versement->montant)),
+            // Montant à recouvrer en toutes lettres : « Cinquante-quatre mille (54 000) FRANCS CFA ».
+            'trop_percu_lettres' => MontantEnLettres::mention(abs((int) $versement->montant)),
             // Amendement à l'origine (peut être absent sur données reprises)
             'a_amendement' => $amendement !== null,
             'nb_jours_avant' => $amendement?->nb_jours_avant,

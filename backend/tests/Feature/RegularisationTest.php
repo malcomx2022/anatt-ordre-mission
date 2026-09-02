@@ -187,6 +187,7 @@ it('porte le bénéficiaire, le trop-perçu et le motif dans les données du doc
 
     expect($data['beneficiaire'])->toContain($this->agent->nom)
         ->and($data['trop_percu'])->toBe('54 000')
+        ->and($data['trop_percu_lettres'])->toBe('Cinquante-quatre mille (54 000) FRANCS CFA')
         ->and($data['avance_engagee'])->toBe('189 000')
         ->and($data['statut'])->toBe('A_RECOUVRER')
         ->and($data['a_amendement'])->toBeTrue()
