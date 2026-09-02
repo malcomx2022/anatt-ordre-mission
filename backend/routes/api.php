@@ -126,6 +126,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', \App\Http\Middleware\ForcePas
         Route::get('paiements/lots/job/{trackingId}', [PaiementController::class, 'statutJob']);
         // Régularisations (trop-perçus à récupérer) — consultation.
         Route::get('paiements/regularisations', [PaiementController::class, 'regularisations']);
+        // Document de retenue sur salaire (PDF) à remettre à la RH.
+        Route::get('paiements/regularisations/{versement}/document', [PaiementController::class, 'documentRetenue']);
     });
     Route::middleware('throttle:paiement')->group(function () {
         Route::post('paiements/lots/generer', [PaiementController::class, 'generer'])->middleware('permission:paiements.generer');

@@ -240,9 +240,13 @@ Nouveau total   Avance (figée)   Reliquat
   **A_RECOUVRER** et **sort du périmètre payable** (il ne part jamais dans un
   fichier MTN / Moov).
 - `finance@` — `Paiements → Régularisations` (`/paiements/regularisations`) : la
-  ligne apparaît, **à recouvrer = 54 000**. Après la **retenue sur salaire**
-  appliquée par la RH (hors Mobile Money), cliquer **« Marquer recouvré »** →
-  statut **RECOUVRE**.
+  ligne apparaît, **à recouvrer = 54 000**.
+- Bouton **« Document »** → **PDF de retenue sur salaire** (en-tête ANaTT) à
+  remettre à la RH : bénéficiaire, mission, décomposition (avance engagée 189 000
+  − montant dû 135 000 = **54 000**), motif de l'amendement, blocs de signature.
+- Après la **retenue sur salaire** appliquée par la RH (hors Mobile Money),
+  cliquer **« Marquer recouvré »** → statut **RECOUVRE** (le document repasse alors
+  la mention « Recouvré le … »).
 
 > 🔒 **Intégrité** : l'état des **avances validé reste scellé** (HMAC) et
 > **inchangé** après l'amendement (l'avance est figée). Un état des **reliquats**

@@ -49,6 +49,14 @@ async function recouvrer(l: Regularisation) {
   }
 }
 
+async function telechargerDocument(l: Regularisation) {
+  try {
+    await paiementsService.documentRetenue(l.versement_id)
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  }
+}
+
 function changerFiltre(v: '' | 'A_RECOUVRER' | 'RECOUVRE') {
   filtreStatut.value = v
   load()
@@ -106,16 +114,31 @@ onMounted(load)
               <td class="px-5 py-3"><OperateurBadge :operateur="(l.operateur as Operateur)" /></td>
               <td class="px-5 py-3 text-right font-display font-bold text-red-600">{{ fmt(l.montant_a_recouvrer) }}</td>
               <td class="px-5 py-3"><PaiementStatusBadge :statut="l.statut" /></td>
-              <td class="px-5 py-3 text-right">
-                <AppButton
-                  v-if="peutRecouvrer && l.statut === 'A_RECOUVRER'"
-                  size="sm"
-                  :loading="enCours === l.versement_id"
-                  @click="recouvrer(l)"
-                >Marquer recouvré</AppButton>
-                <span v-else-if="l.statut === 'RECOUVRE'" class="text-xs font-body text-gray-400">
-                  {{ l.date_regularisation ? new Date(l.date_regularisation).toLocaleDateString('fr-FR') : '—' }}
-                </span>
+              <td class="px-5 py-3">
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-display font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    title="Document de retenue (PDF)"
+                    @click="telechargerDocument(l)"
+                  >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    Document
+                  </button>
+                  <AppButton
+                    v-if="peutRecouvrer && l.statut === 'A_RECOUVRER'"
+                    size="sm"
+                    :loading="enCours === l.versement_id"
+                    @click="recouvrer(l)"
+                  >Marquer recouvré</AppButton>
+                  <span v-else-if="l.statut === 'RECOUVRE'" class="text-xs font-body text-gray-400">
+                    {{ l.date_regularisation ? new Date(l.date_regularisation).toLocaleDateString('fr-FR') : '—' }}
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>

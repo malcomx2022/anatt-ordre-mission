@@ -9,6 +9,7 @@ use App\Jobs\GenererLotPaiementJob;
 use App\Models\LotPaiement;
 use App\Models\Versement;
 use App\Services\LotPaiementService;
+use App\Services\PdfGenerator;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -175,5 +176,16 @@ class PaiementController extends Controller
             ['versement_id' => $versement->id, 'statut' => $versement->statut],
             'Régularisation marquée comme recouvrée.',
         );
+    }
+
+    /**
+     * Document de retenue sur salaire d'un trop-perçu (PDF), à remettre à la RH.
+     * N'a de sens que pour un versement en régularisation (A_RECOUVRER / RECOUVRE).
+     */
+    public function documentRetenue(Versement $versement, PdfGenerator $pdf)
+    {
+        $chemin = $pdf->genererDocumentRetenue($versement);
+
+        return Storage::disk('local')->download($chemin, basename($chemin));
     }
 }

@@ -1,6 +1,6 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
-> **Statut : Phases 1 à 6 livrées ; reste le document de retenue RH (option).**
+> **Statut : fonctionnalité complète — Phases 1 à 6 livrées, document de retenue RH inclus.**
 > Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
@@ -53,7 +53,14 @@
 > l'amendement est permis, garanties d'intégrité et références de tests ;
 > `docs/SCENARIO-DEMO.md` §7 — variante avenant (rallonge → reliquat 171 000 ;
 > réduction forte → trop-perçu −54 000 → régularisation) avec le parcours UI.
-> **Reste** (optionnel) : le **document de retenue** PDF à générer pour la RH.
+>
+> **Livré (document de retenue)** : PDF officiel à remettre à la RH, généré par
+> `PdfGenerator::genererDocumentRetenue` (gabarit `pdf.document-retenue`, en-tête
+> ANaTT) — bénéficiaire, mission, décomposition du trop-perçu (avance engagée −
+> montant dû), motif de l'amendement, blocs de signature DAF/RH ; endpoint
+> **`GET /api/paiements/regularisations/:versement/document`** (`paiements.consulter`),
+> bouton **« Document »** sur l'écran Régularisations. Le document **n'ordonne aucun
+> décaissement** : il formalise la retenue, appliquée hors application par la RH.
 
 ---
 

@@ -180,6 +180,7 @@ retenue.
 | Exclusivité (verrou) | `MissionService::exigerAbsenceDEtat()` |
 | Porte de paiement unifiée | `Versement::scopeEligiblesLot()` |
 | Amendement (avenant) & régularisations | `MissionService::amender()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
+| Document de retenue (PDF pour la RH) | `PdfGenerator::genererDocumentRetenue()`, `GET /api/paiements/regularisations/:versement/document` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |
 | Tests — barrière de paiement | `tests/Feature/Paiement/BarriereEtatTest.php` |
 | Tests — circuit OM (une étape) | `tests/Feature/CircuitValidationTest.php` |
