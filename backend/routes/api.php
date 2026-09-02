@@ -184,12 +184,16 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
 
             // Matrice rôle → permissions : lecture ouverte à l'administrateur.
             Route::get('roles', [RoleController::class, 'index']);
+            // Overrides par utilisateur (RBAC niveau 2) : lecture ouverte à l'administrateur.
+            Route::get('users/{user}/permissions', [UserController::class, 'permissions']);
         });
 
         // Édition de la matrice RBAC (flexible) : SUPER_ADMIN uniquement.
         Route::middleware('permission:roles.gerer')->group(function () {
             Route::put('roles/{role}/permissions', [RoleController::class, 'update']);
             Route::delete('roles/{role}/permissions', [RoleController::class, 'reset']);
+            // Overrides par utilisateur : écriture réservée au SUPER_ADMIN.
+            Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions']);
         });
 
         // Paramètres & sauvegardes : SUPER_ADMIN uniquement (parametres.gerer).

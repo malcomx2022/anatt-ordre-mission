@@ -207,6 +207,10 @@ function copier(texte: string) {
             </td>
             <td class="px-5 py-4 text-center">
               <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <!-- Permissions (overrides par utilisateur) -->
+                <router-link v-if="peutGerer(u)" :to="`/admin/utilisateurs/${u.id}/permissions`" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-anatt-50 text-anatt-600" title="Permissions">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                </router-link>
                 <!-- Réinitialiser le mot de passe -->
                 <button v-if="peutGerer(u)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-500" title="Réinitialiser le mot de passe" @click="resetPassword(u)">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>

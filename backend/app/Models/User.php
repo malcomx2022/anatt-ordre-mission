@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\UserPermissionService;
 use App\Support\Permissions;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -71,6 +72,15 @@ class User extends Authenticatable
         ];
     }
 
+    /** Overrides de permissions propres à cet utilisateur (RBAC niveau 2). */
+    public function permissionOverrides()
+    {
+        return $this->hasMany(UserPermission::class);
+    }
+
+    /** Mémo des permissions effectives, le temps d'une requête. */
+    protected ?array $permissionsCache = null;
+
     /** Compte ayant créé cet utilisateur (auteur). */
     public function creePar()
     {
@@ -92,10 +102,29 @@ class User extends Authenticatable
         return in_array($this->role, $roles, true);
     }
 
-    /** Permissions effectives du profil (SUPER_ADMIN -> toutes). */
+    /**
+     * Permissions effectives (SUPER_ADMIN -> toutes).
+     *
+     * = base du profil ∪ permissions accordées − permissions retirées
+     * (overrides par utilisateur, RBAC niveau 2). Mémoïsé pour la requête.
+     */
     public function permissions(): array
     {
-        return Permissions::pour((string) $this->role);
+        if ($this->isSuperAdmin()) {
+            return Permissions::TOUTES;
+        }
+
+        if ($this->permissionsCache !== null) {
+            return $this->permissionsCache;
+        }
+
+        return $this->permissionsCache = app(UserPermissionService::class)->effectives($this);
+    }
+
+    /** Invalide le mémo (après modification des overrides). */
+    public function oublierPermissions(): void
+    {
+        $this->permissionsCache = null;
     }
 
     /** Le SUPER_ADMIN a toujours la permission (cohérent avec Gate::before). */

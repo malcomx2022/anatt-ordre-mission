@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserPermissionsRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\UserPermissionService;
+use App\Support\PermissionRepository;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -214,6 +218,81 @@ class UserController extends Controller
         AuditService::log($request->user(), 'DELETE_USER', 'user', $user->id, ['email' => $user->email]);
 
         return $this->success(null, 'Utilisateur supprimé.');
+    }
+
+    /**
+     * Overrides de permissions d'un utilisateur (RBAC niveau 2) : base du profil,
+     * accords/retraits, et effectif résultant. Lecture : utilisateurs.gerer.
+     */
+    public function permissions(User $user, UserPermissionService $service): JsonResponse
+    {
+        $overrides = $service->overrides($user);
+
+        return $this->success([
+            'user_id' => $user->id,
+            'role' => $user->role,
+            'super_admin' => $user->isSuperAdmin(),
+            'base' => Permissions::pour((string) $user->role),
+            'granted' => $overrides['granted'],
+            'revoked' => $overrides['revoked'],
+            'effectives' => $service->effectives($user),
+            'non_assignables' => PermissionRepository::NON_ASSIGNABLES,
+        ]);
+    }
+
+    /**
+     * Remplace les overrides d'un utilisateur. Écriture : roles.gerer (SUPER_ADMIN).
+     */
+    public function updatePermissions(UpdateUserPermissionsRequest $request, User $user, UserPermissionService $service): JsonResponse
+    {
+        if ($user->isSuperAdmin()) {
+            throw ValidationException::withMessages([
+                'user' => ['Le super administrateur a accès à tout : aucun override n’a d’effet sur lui.'],
+            ]);
+        }
+
+        $granted = array_values(array_unique($request->validated()['granted']));
+        $revoked = array_values(array_unique($request->validated()['revoked']));
+
+        // Une clé ne peut être à la fois accordée et retirée.
+        $conflit = array_intersect($granted, $revoked);
+        if ($conflit !== []) {
+            throw ValidationException::withMessages([
+                'granted' => ['Une permission ne peut être à la fois accordée et retirée : '.implode(', ', $conflit).'.'],
+            ]);
+        }
+
+        // Clés réservées au SUPER_ADMIN : jamais accordables par override.
+        $reservees = array_values(array_intersect($granted, PermissionRepository::NON_ASSIGNABLES));
+        if ($reservees !== []) {
+            throw ValidationException::withMessages([
+                'granted' => ['Clés réservées au super administrateur, non attribuables : '.implode(', ', $reservees).'.'],
+            ]);
+        }
+
+        // Séparation ordonnateur/payeur sur l'EFFECTIF résultant.
+        $effectives = UserPermissionService::combiner(Permissions::pour((string) $user->role), $granted, $revoked);
+        if (in_array(Permissions::OM_APPROUVER, $effectives, true)
+            && array_intersect([Permissions::PAIEMENTS_GENERER, Permissions::PAIEMENTS_CONFIRMER], $effectives) !== []) {
+            throw ValidationException::withMessages([
+                'granted' => ['Séparation ordonnateur/payeur : un utilisateur qui valide l’état (om.approuver) ne peut pas aussi générer ou confirmer les paiements.'],
+            ]);
+        }
+
+        $avant = $service->effectives($user);
+        $apres = $service->remplacer($user, $granted, $revoked);
+
+        AuditService::log($request->user(), 'USER_PERM_UPDATE', 'user', $user->id, [
+            'granted' => $granted,
+            'revoked' => $revoked,
+            'avant' => $avant,
+            'apres' => $apres,
+        ]);
+
+        return $this->success(
+            ['user_id' => $user->id, 'granted' => $granted, 'revoked' => $revoked, 'effectives' => $apres],
+            'Permissions de l’utilisateur mises à jour.'
+        );
     }
 
     /**
