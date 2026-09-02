@@ -187,6 +187,7 @@ class LotPaiementService
             ->paginate($perPage)
             ->through(fn (Versement $v) => [
                 'versement_id' => $v->id,
+                'ordre_mission_id' => $v->ordre_mission_id,
                 'reference_semo' => $v->ordreMission->reference_semo,
                 'beneficiaire' => $v->ordreMission->agent->nom_complet,
                 'mission' => $v->ordreMission->mission->objet.' — '.$v->ordreMission->mission->destination,

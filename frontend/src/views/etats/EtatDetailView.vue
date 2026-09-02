@@ -283,6 +283,28 @@ async function telechargerFinal() {
       </AppCard>
 
       <div v-else class="space-y-6">
+        <!-- Aide : corriger la durée d'un OM au stade du reliquat (peut créer un trop-perçu) -->
+        <AppCard v-if="trancheActive === 'RELIQUAT' && etat.statut !== 'VALIDE'" class="border-l-4 border-l-gold-400">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-gold-600 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
+            </svg>
+            <div class="text-sm font-body text-gray-600">
+              <p class="font-display font-semibold text-gray-800">Corriger la durée d’un ordre de mission ?</p>
+              <p class="mt-1">
+                La durée se corrige sur la <strong>fiche de l’ordre de mission</strong> (bouton
+                « Amender »), pas sur cet état. Après paiement de l’avance, une <strong>réduction</strong>
+                crée un <strong>trop-perçu</strong> : le versement de reliquat bascule automatiquement en
+                « à recouvrer » et rejoint l’écran
+                <router-link to="/paiements/regularisations" class="text-anatt-600 hover:underline">Régularisations</router-link>.
+              </p>
+              <router-link to="/ordres" class="inline-block mt-2 text-anatt-600 hover:underline font-display font-medium">
+                Ouvrir les ordres de mission →
+              </router-link>
+            </div>
+          </div>
+        </AppCard>
+
         <!-- En-tête : statut et actions du circuit -->
         <AppCard>
           <div class="flex flex-wrap items-center justify-between gap-4">

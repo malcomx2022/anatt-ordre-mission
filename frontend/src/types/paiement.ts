@@ -67,6 +67,8 @@ export interface LotPreview {
  */
 export interface Regularisation {
   versement_id: number
+  /** OM concerné — pour ouvrir sa fiche et l'amender. */
+  ordre_mission_id: number
   reference_semo: string
   beneficiaire: string
   mission: string

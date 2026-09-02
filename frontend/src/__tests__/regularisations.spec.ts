@@ -13,6 +13,7 @@ import type { Regularisation } from '../types'
 
 const A_RECOUVRER: Regularisation = {
   versement_id: 7,
+  ordre_mission_id: 42,
   reference_semo: 'OM-2026-001',
   beneficiaire: 'DADA Richard',
   mission: 'Atelier régional — BOHICON',

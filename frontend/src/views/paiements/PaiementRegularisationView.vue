@@ -144,7 +144,13 @@ onMounted(load)
             <tr v-else-if="!lignes.length"><td colspan="7" class="px-5 py-10 text-center text-gray-400 font-body">Aucune régularisation.</td></tr>
             <tr v-for="l in lignes" :key="l.versement_id" class="hover:bg-anatt-50/30 transition-colors">
               <td class="px-5 py-3 font-body">{{ l.beneficiaire }}</td>
-              <td class="px-5 py-3 font-mono text-xs text-gray-500">{{ l.reference_semo }}</td>
+              <td class="px-5 py-3">
+                <router-link
+                  :to="`/ordres/${l.ordre_mission_id}`"
+                  class="font-mono text-xs text-anatt-600 hover:underline"
+                  title="Ouvrir la fiche de l'ordre de mission (pour l'amender)"
+                >{{ l.reference_semo }}</router-link>
+              </td>
               <td class="px-5 py-3 font-body text-gray-600">{{ l.mission }}</td>
               <td class="px-5 py-3"><OperateurBadge :operateur="(l.operateur as Operateur)" /></td>
               <td class="px-5 py-3 text-right font-display font-bold text-red-600">{{ fmt(l.montant_a_recouvrer) }}</td>
