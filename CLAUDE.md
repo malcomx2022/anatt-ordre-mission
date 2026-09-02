@@ -71,8 +71,10 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   `reliquat = montant_total − avance_engagee` (peut être **négatif**). Endpoint
   `POST /api/ordres/:id/amender` (permission `om.retranscrire`, **motif ≥ 10 car.**, `MissionService::amender`) ;
   chaque amendement est tracé dans la table **`om_amendements`** + audit `AMEND_OM`.
-  - **Gardes** : refus si OM `REJETE`/`ANNULE`, ou si un état de tranche est en cours de signature
-    (`CONTROLE`/`VISA_DAF` → rejet guidé), ou si l'état des reliquats est **validé** (avenant formel, hors périmètre).
+  - **Gardes** : refus si OM `REJETE`/`ANNULE`, si un état de tranche est en cours de signature
+    (`CONTROLE`/`VISA_DAF` → rejet guidé), si l'état des reliquats est **validé**, ou si un trop-perçu de l'OM
+    a déjà été **`RECOUVRE`** (retenue soldée → avenant formel, hors périmètre). Un trop-perçu encore
+    `A_RECOUVRER` reste amendable (rien n'a été retenu).
   - **Trop-perçu** (reliquat négatif) : le versement bascule en **`A_RECOUVRER`**, sort du périmètre payable
     (`scopeEligiblesLot` exclut les montants ≤ 0 et les statuts `A_RECOUVRER`/`RECOUVRE`) et rejoint l'écran
     **Régularisations**. La récupération est une **retenue sur salaire hors application** : l'app produit un
