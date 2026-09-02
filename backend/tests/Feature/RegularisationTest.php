@@ -75,6 +75,47 @@ it('filtre les régularisations par statut', function () {
         ->assertOk()->assertJsonCount(1, 'data');
 });
 
+/** Crée une régularisation (versement A_RECOUVRER) autonome, réf. SEMO au choix. */
+function creerRegularisation(string $reference, int $montantARecouvrer): void
+{
+    $mission = Mission::factory()->create(['zone_code' => 'INTERIEUR', 'prise_en_charge_tiers' => false]);
+    $agent = Agent::factory()->create(['operateur' => 'MTN']);
+    $om = OrdreMission::factory()->create([
+        'mission_id' => $mission->id, 'agent_id' => $agent->id, 'reference_semo' => $reference,
+        'statut' => 'VALIDE', 'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'nb_jours' => 1, 'montant_total' => 1,
+        'avance' => 1, 'reliquat' => -$montantARecouvrer, 'avance_engagee' => 1,
+    ]);
+    Versement::factory()->create([
+        'ordre_mission_id' => $om->id, 'type' => 'RELIQUAT', 'montant' => -$montantARecouvrer,
+        'operateur' => 'MTN', 'statut' => 'A_RECOUVRER',
+    ]);
+}
+
+it('pagine les régularisations et expose le total global à recouvrer', function () {
+    // 6 trop-perçus de 10 000 (le reliquat du contexte reste EN_ATTENTE : hors périmètre).
+    for ($i = 1; $i <= 6; $i++) {
+        creerRegularisation(sprintf('OM-REG-%03d', $i), 10000);
+    }
+
+    $this->actingAs($this->finance)->getJson('/api/paiements/regularisations?per_page=5')
+        ->assertOk()
+        ->assertJsonCount(5, 'data')            // page limitée
+        ->assertJsonPath('total', 6)            // 6 régularisations au total
+        ->assertJsonPath('last_page', 2)
+        ->assertJsonPath('total_a_recouvrer', 60000); // total GLOBAL, pas seulement la page
+});
+
+it('filtre les régularisations par recherche (référence SEMO)', function () {
+    creerRegularisation('OM-ZEBRE-999', 5000);
+    creerRegularisation('OM-LAMBDA-001', 7000);
+
+    $this->actingAs($this->finance)->getJson('/api/paiements/regularisations?search=ZEBRE')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.reference_semo', 'OM-ZEBRE-999');
+});
+
 it('marque une régularisation comme recouvrée', function () {
     amenderEnTropPercu($this);
 

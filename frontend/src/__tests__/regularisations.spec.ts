@@ -57,6 +57,14 @@ beforeEach(() => {
   documentRetenue.mockReset()
 })
 
+/** Enveloppe la nouvelle forme paginée renvoyée par le service. */
+function pageDe(items: Regularisation[], totalARecouvrer = 0) {
+  return {
+    page: { items, meta: { current_page: 1, last_page: 1, per_page: 20, total: items.length } },
+    totalARecouvrer,
+  }
+}
+
 /** Le bouton d'une ligne portant ce libellé (désambiguïse « Document » / « Marquer recouvré »). */
 function bouton(wrapper: Awaited<ReturnType<typeof monter>>, texte: string) {
   const b = wrapper.findAll('button').find((x) => x.text().includes(texte))
@@ -66,7 +74,7 @@ function bouton(wrapper: Awaited<ReturnType<typeof monter>>, texte: string) {
 
 describe('PaiementRegularisationView', () => {
   it('affiche une ligne à recouvrer et le total', async () => {
-    regularisations.mockResolvedValue([A_RECOUVRER])
+    regularisations.mockResolvedValue(pageDe([A_RECOUVRER], 54000))
 
     const wrapper = await monter()
 
@@ -78,8 +86,8 @@ describe('PaiementRegularisationView', () => {
 
   it('marque une régularisation recouvrée et recharge la liste', async () => {
     regularisations
-      .mockResolvedValueOnce([A_RECOUVRER])
-      .mockResolvedValueOnce([{ ...A_RECOUVRER, statut: 'RECOUVRE', date_regularisation: '2026-09-01T10:00:00Z' }])
+      .mockResolvedValueOnce(pageDe([A_RECOUVRER], 54000))
+      .mockResolvedValueOnce(pageDe([{ ...A_RECOUVRER, statut: 'RECOUVRE', date_regularisation: '2026-09-01T10:00:00Z' }], 0))
     recouvrer.mockResolvedValue({ versement_id: 7, statut: 'RECOUVRE' })
 
     const wrapper = await monter()
@@ -92,7 +100,7 @@ describe('PaiementRegularisationView', () => {
   })
 
   it('télécharge le document de retenue d’une ligne', async () => {
-    regularisations.mockResolvedValue([A_RECOUVRER])
+    regularisations.mockResolvedValue(pageDe([A_RECOUVRER], 54000))
     documentRetenue.mockResolvedValue(undefined)
 
     const wrapper = await monter()
@@ -103,7 +111,7 @@ describe('PaiementRegularisationView', () => {
   })
 
   it('n’affiche aucune ligne quand la liste est vide', async () => {
-    regularisations.mockResolvedValue([])
+    regularisations.mockResolvedValue(pageDe([]))
 
     const wrapper = await monter()
 

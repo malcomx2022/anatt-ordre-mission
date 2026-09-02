@@ -56,10 +56,16 @@ export const paiementsService = {
     return toPage<Versement>(data)
   },
 
-  /** Trop-perçus à récupérer (reliquats négatifs après amendement). */
-  async regularisations(params: Record<string, unknown> = {}): Promise<Regularisation[]> {
+  /**
+   * Trop-perçus à récupérer (reliquats négatifs après amendement), paginés.
+   * `totalARecouvrer` est le total GLOBAL du périmètre filtré (pas seulement la page).
+   */
+  async regularisations(params: Record<string, unknown> = {}): Promise<{ page: Page<Regularisation>; totalARecouvrer: number }> {
     const { data } = await api.get('/api/paiements/regularisations', { params })
-    return unwrap<Regularisation[]>(data)
+    return {
+      page: toPage<Regularisation>(data),
+      totalARecouvrer: (data as { total_a_recouvrer?: number }).total_a_recouvrer ?? 0,
+    }
   },
 
   /** Marque une régularisation comme recouvrée (retenue appliquée par la RH). */

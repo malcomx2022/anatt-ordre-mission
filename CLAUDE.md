@@ -784,7 +784,7 @@ POST   /api/paiements/lots/:lot/erreur      → Lot → ERREUR (autorise régén
 GET    /api/paiements/lots/job/:trackingId  → Suivi d'une génération asynchrone
 GET    /api/paiements/statuts               → Synthèse versements par opérateur/statut
 GET    /api/paiements/historique            → Versements CONFIRMÉS filtrables (date_paiement)
-GET    /api/paiements/regularisations       → Trop-perçus (A_RECOUVRER/RECOUVRE) ; montant à recouvrer = |reliquat| (paiements.consulter)
+GET    /api/paiements/regularisations       → Trop-perçus (A_RECOUVRER/RECOUVRE), PAGINÉ ; filtres statut, mission_id, search ; + total_a_recouvrer global ; montant = |reliquat| (paiements.consulter)
 GET    /api/paiements/regularisations/:versement/document → PDF « document de retenue sur salaire » (RH) (paiements.consulter)
 POST   /api/paiements/regularisations/:versement/recouvrer → A_RECOUVRER → RECOUVRE (constat manuel de la retenue RH ; paiements.confirmer)
 ```
