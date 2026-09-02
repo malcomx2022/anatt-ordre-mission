@@ -51,6 +51,7 @@ return [
         'utilisateurs.gerer',
         'superadmins.gerer',
         'parametres.gerer',
+        'roles.gerer',
     ],
 
     // ── Matrice d'attribution par profil (hors SUPER_ADMIN) ──

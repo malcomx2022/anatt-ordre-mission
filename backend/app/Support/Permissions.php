@@ -98,6 +98,9 @@ class Permissions
 
     public const PARAMETRES_GERER = 'parametres.gerer';
 
+    /** Édition de la matrice rôle → permissions (RBAC flexible) : SUPER_ADMIN uniquement. */
+    public const ROLES_GERER = 'roles.gerer';
+
     /** Toutes les clés de permission existantes. */
     public const TOUTES = [
         self::DASHBOARD_CONSULTER,
@@ -111,12 +114,16 @@ class Permissions
         self::UTILISATEURS_GERER,
         self::SUPERADMINS_GERER,
         self::PARAMETRES_GERER,
+        self::ROLES_GERER,
     ];
 
     /**
-     * Matrice d'attribution par profil (hors SUPER_ADMIN, qui a tout via Gate::before).
-     * superadmins.gerer et parametres.gerer ne sont attribués à personne :
-     * ils restent exclusifs au SUPER_ADMIN.
+     * Matrice d'attribution par DÉFAUT, par profil (hors SUPER_ADMIN, qui a tout
+     * via Gate::before). superadmins.gerer, parametres.gerer et roles.gerer ne
+     * sont attribués à personne : ils restent exclusifs au SUPER_ADMIN.
+     *
+     * Ceci n'est que le défaut : la matrice EFFECTIVE peut être personnalisée à
+     * chaud via PermissionRepository (table role_permissions). Cf. ::pour().
      */
     public const MATRICE = [
         self::ADMIN => [
@@ -181,8 +188,10 @@ class Permissions
 
     /**
      * Permissions effectives d'un profil (SUPER_ADMIN -> toutes).
-     * La matrice est lue depuis config/profils.php (source de vérité éditable),
-     * avec repli sur la constante MATRICE si la config est indisponible.
+     *
+     * Déléguée à PermissionRepository : matrice ÉDITABLE (table role_permissions)
+     * en priorité, repli sur config/profils.php puis sur la constante MATRICE.
+     * Le repository retombe seul sur la config si sa table n'existe pas encore.
      */
     public static function pour(string $profil): array
     {
@@ -190,8 +199,6 @@ class Permissions
             return self::TOUTES;
         }
 
-        $matrice = config('profils.matrice', self::MATRICE);
-
-        return $matrice[$profil] ?? self::MATRICE[$profil] ?? [];
+        return app(PermissionRepository::class)->pour($profil);
     }
 }

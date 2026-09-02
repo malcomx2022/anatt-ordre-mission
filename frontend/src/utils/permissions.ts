@@ -16,6 +16,7 @@ export type Permission =
   | 'utilisateurs.gerer'
   | 'superadmins.gerer'
   | 'parametres.gerer'
+  | 'roles.gerer'
 
 export const TOUTES_PERMISSIONS: Permission[] = [
   'dashboard.consulter',
@@ -29,6 +30,7 @@ export const TOUTES_PERMISSIONS: Permission[] = [
   'utilisateurs.gerer',
   'superadmins.gerer',
   'parametres.gerer',
+  'roles.gerer',
 ]
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
