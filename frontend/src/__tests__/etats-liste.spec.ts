@@ -42,7 +42,8 @@ async function monter() {
 
 /** Le statut demandé au service lors du dernier appel `list`. */
 function dernierStatut() {
-  return list.mock.calls.at(-1)?.[0]?.statut
+  const appels = list.mock.calls
+  return appels[appels.length - 1]?.[0]?.statut
 }
 
 beforeEach(() => {
