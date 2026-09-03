@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppAlert from '@/components/shared/AppAlert.vue'
+import AppCombobox from '@/components/shared/AppCombobox.vue'
 import OperateurBadge from '@/components/paiements/OperateurBadge.vue'
 import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
-import { ordresService } from '@/services/ordres'
+import { missionsService } from '@/services/missions'
 import { paiementsService } from '@/services/paiements'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
@@ -17,9 +18,6 @@ const toast = useToast()
 const avancePct = partAvance()
 const reliquatPct = 100 - avancePct
 
-interface MissionItem { id: number; label: string }
-
-const missions = ref<MissionItem[]>([])
 const missionId = ref<number | null>(null)
 const tranche = ref<TrancheVersement>('AVANCE')
 const operateur = ref<Operateur>(props.operateurInitial ?? 'MTN')
@@ -34,20 +32,9 @@ const extension = computed(() => (operateur.value === 'MTN' ? '.txt' : '.xlsx'))
 const confirme = computed(() => lot.value?.statut === 'CONFIRME')
 const peutGenerer = computed(() => !!apercu.value && apercu.value.nb_lignes > 0 && !confirme.value)
 
-onMounted(async () => {
-  await chargerMissions()
-})
-
-async function chargerMissions() {
-  const { items } = await ordresService.list({ per_page: 100 })
-  const map = new Map<number, MissionItem>()
-  for (const o of items) {
-    if (o.mission && !map.has(o.mission.id)) {
-      map.set(o.mission.id, { id: o.mission.id, label: `${o.mission.objet} — ${o.mission.destination}` })
-    }
-  }
-  missions.value = [...map.values()]
-}
+// Sélecteur de mission : recherche serveur débouncée (plus de chargement de
+// TOUS les ordres pour dériver la liste — la liste grandit sans limite).
+const chercherMissions = (q: string) => missionsService.search(q)
 
 async function rafraichir() {
   if (!missionId.value) { apercu.value = null; lot.value = null; return }
@@ -117,10 +104,12 @@ async function marquerErreur() {
       <div class="grid sm:grid-cols-3 gap-4">
         <div>
           <label class="text-[11px] text-gray-500 font-body block mb-1">Mission</label>
-          <select v-model.number="missionId" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-body focus:outline-none focus:border-anatt-500">
-            <option :value="null" disabled>Choisir une mission…</option>
-            <option v-for="m in missions" :key="m.id" :value="m.id">{{ m.label }}</option>
-          </select>
+          <AppCombobox
+            :model-value="missionId"
+            :fetcher="chercherMissions"
+            placeholder="Rechercher une mission (objet, destination)…"
+            @change="(o) => (missionId = o ? Number(o.value) : null)"
+          />
         </div>
         <div>
           <label class="text-[11px] text-gray-500 font-body block mb-1">Tranche</label>
