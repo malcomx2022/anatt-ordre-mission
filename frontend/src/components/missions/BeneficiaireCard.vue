@@ -2,6 +2,8 @@
 /* eslint-disable vue/no-mutating-props -- la carte édite l'objet bénéficiaire réactif fourni par le store */
 import { ref, computed, watch } from 'vue'
 import { agentsService } from '@/services/agents'
+import AppCombobox from '@/components/shared/AppCombobox.vue'
+import type { ComboOption } from '@/components/shared/combobox'
 import { typesPourZone } from '@/types'
 import type { Agent, BeneficiaireForm, Categorie, TypePriseEnCharge, ZoneCode } from '@/types'
 import type { PerDiem } from '@/stores/ordres-mission'
@@ -56,39 +58,42 @@ watch(() => props.zone, () => {
   detaille.value = false
 })
 
-// ── Autocomplétion agent ──────────────────────────────────────────────
-const recherche = ref('')
-const suggestions = ref<Agent[]>([])
-const ouvert = ref(false)
-let timer: ReturnType<typeof setTimeout> | null = null
+// ── Autocomplétion agent (AppCombobox, mode distant) ──────────────────
+// La recherche renvoie des ComboOption ; on conserve l'agent complet dans une
+// map pour le réinjecter dans le formulaire au moment du choix.
+const agentsTrouves = new Map<number, Agent>()
 
-watch(recherche, (q) => {
-  if (timer) clearTimeout(timer)
-  if (!q || q.trim().length < 1) { suggestions.value = []; return }
-  timer = setTimeout(async () => {
-    try {
-      suggestions.value = await agentsService.search(q.trim())
-      ouvert.value = true
-    } catch {
-      suggestions.value = []
-    }
-  }, 250)
-})
+async function chercherAgents(q: string): Promise<ComboOption[]> {
+  const agents = await agentsService.search(q)
+  agentsTrouves.clear()
+  return agents.map((a) => {
+    agentsTrouves.set(a.id, a)
+    return { value: a.id, label: `${a.nom} ${a.prenoms}`, hint: `${a.matricule} · ${a.categorie}` }
+  })
+}
+
+function surChoixAgent(option: ComboOption | null): void {
+  if (!option) { retirerAgent(); return }
+  const agent = agentsTrouves.get(Number(option.value))
+  if (agent) choisirAgent(agent)
+}
 
 function choisirAgent(agent: Agent) {
   props.beneficiaire.agent_id = agent.id
   props.beneficiaire.agent = agent
   // Catégorie reprise de SEMO/référentiel par défaut, modifiable ensuite.
   if (!props.beneficiaire.categorie) props.beneficiaire.categorie = agent.categorie
-  recherche.value = ''
-  suggestions.value = []
-  ouvert.value = false
 }
 
 function retirerAgent() {
   props.beneficiaire.agent_id = null
   props.beneficiaire.agent = null
 }
+
+const labelAgent = computed(() => {
+  const a = props.beneficiaire.agent
+  return a ? (a.nom_complet || `${a.nom} ${a.prenoms}`) : ''
+})
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 </script>
@@ -123,40 +128,15 @@ const fmt = (v: number) => v.toLocaleString('fr-FR')
 
     <div class="grid sm:grid-cols-2 gap-4">
       <!-- Agent (autocomplétion) -->
-      <div class="relative">
+      <div>
         <label class="text-[11px] text-gray-500 font-body block mb-1">Bénéficiaire (agent)</label>
-        <div v-if="beneficiaire.agent" class="flex items-center justify-between px-3 py-2 rounded-lg border border-anatt-200 bg-anatt-50">
-          <span class="text-sm font-body text-gray-800">
-            {{ beneficiaire.agent.nom_complet || (beneficiaire.agent.nom + ' ' + beneficiaire.agent.prenoms) }}
-            <span class="text-[11px] text-gray-400">· {{ beneficiaire.agent.matricule }}</span>
-          </span>
-          <button type="button" class="text-gray-400 hover:text-red-500" @click="retirerAgent">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
-        <template v-else>
-          <input
-            v-model="recherche"
-            type="text"
-            placeholder="Nom, matricule ou IFU…"
-            class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-body focus:outline-none focus:border-anatt-500"
-            @focus="ouvert = true"
-          >
-          <ul
-            v-if="ouvert && suggestions.length"
-            class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto"
-          >
-            <li
-              v-for="a in suggestions"
-              :key="a.id"
-              class="px-3 py-2 text-sm font-body hover:bg-anatt-50 cursor-pointer flex justify-between"
-              @click="choisirAgent(a)"
-            >
-              <span>{{ a.nom }} {{ a.prenoms }}</span>
-              <span class="text-[11px] text-gray-400">{{ a.matricule }} · {{ a.categorie }}</span>
-            </li>
-          </ul>
-        </template>
+        <AppCombobox
+          :model-value="beneficiaire.agent_id"
+          :fetcher="chercherAgents"
+          :selected-label="labelAgent"
+          placeholder="Nom, matricule ou IFU…"
+          @change="surChoixAgent"
+        />
       </div>
 
       <!-- Référence SEMO -->

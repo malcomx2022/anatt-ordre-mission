@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
+import AppCombobox from '@/components/shared/AppCombobox.vue'
+import type { ComboOption } from '@/components/shared/combobox'
 import { useApi } from '@/composables/useApi'
 import { useSearch } from '@/composables/useSearch'
 import { useAuth } from '@/composables/useAuth'
@@ -107,6 +109,14 @@ const rolesAssignables = computed(() =>
   roleOptions.value.filter((r) => r.value !== 'SUPER_ADMIN' || isSuperAdmin()),
 )
 
+// Options pour les sélecteurs recherchables (filtre + modale d'édition).
+const roleOptionsCombo = computed<ComboOption[]>(() =>
+  roleOptions.value.map((r) => ({ value: r.value, label: r.label })),
+)
+const rolesAssignablesCombo = computed<ComboOption[]>(() =>
+  rolesAssignables.value.map((r) => ({ value: r.value, label: r.systeme ? r.label : `${r.label} (personnalisé)` })),
+)
+
 function openEditRole(u: User) {
   editing.value = u
   editRole.value = u.role
@@ -201,10 +211,14 @@ function copier(texte: string) {
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
           <input v-model="searchQuery" type="text" placeholder="Rechercher par nom, email, role..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 outline-none transition-all duration-200">
         </div>
-        <select v-model="roleFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
-          <option value="">Tous les rôles</option>
-          <option v-for="p in roleOptions" :key="p.value" :value="p.value">{{ p.label }}</option>
-        </select>
+        <div class="w-56">
+          <AppCombobox
+            :model-value="roleFilter || null"
+            :options="roleOptionsCombo"
+            placeholder="Tous les rôles"
+            @change="(o) => (roleFilter = o ? String(o.value) : '')"
+          />
+        </div>
         <select v-model="statutFilter" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none">
           <option value="">Tous les statuts</option>
           <option value="1">Actifs</option>
@@ -319,11 +333,15 @@ function copier(texte: string) {
             Changer le rôle révoque ses sessions actives (nouvelles permissions à la reconnexion).
           </p>
           <label class="block text-[11px] text-gray-400 uppercase font-body mb-1">Rôle</label>
-          <select v-model="editRole" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 mb-5">
-            <option v-for="r in rolesAssignables" :key="r.value" :value="r.value">
-              {{ r.label }}{{ r.systeme ? '' : ' (personnalisé)' }}
-            </option>
-          </select>
+          <div class="mb-5">
+            <AppCombobox
+              :model-value="editRole || null"
+              :options="rolesAssignablesCombo"
+              placeholder="Choisir un rôle…"
+              :clearable="false"
+              @change="(o) => (editRole = o ? String(o.value) : '')"
+            />
+          </div>
           <div class="flex gap-2">
             <button class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-display font-medium hover:bg-gray-50" :disabled="savingRole" @click="editing = null">Annuler</button>
             <button class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600 disabled:opacity-50" :disabled="savingRole || editRole === editing.role" @click="saveRole">
