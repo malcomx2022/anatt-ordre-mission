@@ -42,16 +42,27 @@ const filtresTranche: { valeur: TrancheEtat | ''; libelle: string }[] = [
 ]
 
 /**
- * Le statut sur lequel l'utilisateur a la main : c'est sa file d'attente.
- * Le contrôleur traite les brouillons, le DAF les états contrôlés, le DG les
- * états visés.
+ * Les files d'attente que l'utilisateur peut traiter : le contrôleur les
+ * brouillons, le DAF les états contrôlés, le DG les états visés.
  */
-const monStatut = computed<StatutEtat | null>(() => {
-  if (canApprouverOM()) return 'VISA_DAF'
-  if (canViserOM()) return 'CONTROLE'
-  if (canValiderOM()) return 'BROUILLON'
-  return null
+const mesFiles = computed<StatutEtat[]>(() => {
+  const files: StatutEtat[] = []
+  if (canValiderOM()) files.push('BROUILLON')
+  if (canViserOM()) files.push('CONTROLE')
+  if (canApprouverOM()) files.push('VISA_DAF')
+  return files
 })
+
+/**
+ * La file d'attente propre à l'utilisateur — définie SEULEMENT s'il est un
+ * acteur dédié du circuit (une seule étape). Un profil de supervision qui cumule
+ * plusieurs étapes (ADMIN, SUPER_ADMIN) n'est pas piégé sur une file unique : il
+ * voit tous les états par défaut (« Tous »), sinon un statut vide masquerait des
+ * données bien présentes dans les autres statuts.
+ */
+const monStatut = computed<StatutEtat | null>(() =>
+  mesFiles.value.length === 1 ? mesFiles.value[0]! : null,
+)
 
 /** Nombre d'états attendant l'utilisateur courant, dans la page affichée. */
 const aTraiter = computed(() =>
