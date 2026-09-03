@@ -111,9 +111,14 @@ async function installMocks(page: Page): Promise<void> {
     if (path.endsWith('/api/auth/logout')) return json(route, {})
     if (path.endsWith('/api/admin/parametres/part-avance')) return json(route, { data: 70 })
 
-    // ── Ordres de mission (liste : écran Ordres + alimente le sélecteur de mission) ──
+    // ── Ordres de mission (liste : écran Ordres) ──
     if (path.endsWith('/api/ordres') && method === 'GET') {
       return json(route, { data: ORDRES, meta: META })
+    }
+
+    // ── Missions (alimente le sélecteur de mission recherchable AppCombobox) ──
+    if (path.endsWith('/api/missions') && method === 'GET') {
+      return json(route, { data: [MISSION], meta: META })
     }
 
     // ── Génération de paiement ──
@@ -179,9 +184,11 @@ test('parcours critique : connexion → mission → génération du fichier MTN 
   //    (Navigation SPA — on reste dans l'application, sans rechargement complet.)
   await expect(page.getByText('Génération paiement MTN')).toBeVisible()
 
-  // 4) La mission retranscrite (chargée depuis /api/ordres) alimente le sélecteur :
-  //    on la choisit → aperçu des deux bénéficiaires MTN.
-  await page.getByRole('combobox').first().selectOption({ label: 'Dossiers de passation de marchés — BOHICON' })
+  // 4) Sélecteur de mission RECHERCHABLE (AppCombobox) : on ouvre, on cherche, on choisit
+  //    → aperçu des deux bénéficiaires MTN.
+  await page.getByRole('button', { name: /Rechercher une mission/ }).click()
+  await page.getByPlaceholder(/Rechercher une mission/).fill('BOHICON')
+  await page.getByRole('option', { name: /Dossiers de passation de marchés/ }).click()
   await expect(page.getByText('SOUMANOU DJARA SABIROU')).toBeVisible()
   await expect(page.getByText('2 ligne(s)')).toBeVisible()
 
