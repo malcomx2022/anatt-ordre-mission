@@ -94,8 +94,12 @@ class MissionController extends Controller
             })
             // « sans_etat » : les missions dont le récapitulatif reste à établir.
             ->when($request->input('etat') === 'sans_etat', fn ($q) => $q->whereDoesntHave('etatPaiement'))
+            // Le filtre porte sur N'IMPORTE QUELLE tranche (avance OU reliquat) :
+            // la ligne affiche les deux badges, le filtre doit voir les deux. Ne
+            // regarder que l'avance masquerait une mission dont seul le reliquat
+            // est au statut demandé (ex. avance VALIDE, reliquat « Visé DAF »).
             ->when($request->filled('etat') && $request->input('etat') !== 'sans_etat',
-                fn ($q) => $q->whereHas('etatPaiement', fn ($e) => $e->where('statut', $request->string('etat'))))
+                fn ($q) => $q->whereHas('etatsPaiement', fn ($e) => $e->where('statut', $request->string('etat'))))
             ->orderByDesc('id')
             ->paginate((int) $request->integer('per_page', 20));
 

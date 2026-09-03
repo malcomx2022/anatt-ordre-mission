@@ -112,6 +112,35 @@ it('filtre les missions dont le récapitulatif reste à établir', function () {
         ->assertJsonPath('data.0.id', $avecEtat->id);
 });
 
+it('filtre sur le statut de N’IMPORTE QUELLE tranche, pas seulement l’avance', function () {
+    // Mission dont l'avance est validée et dont le RELIQUAT est visé par le DAF.
+    // La ligne affiche bien un badge « Visé DAF » (sur la tranche reliquat) : le
+    // filtre « Visé DAF » doit donc la remonter, même si l'état des AVANCES, lui,
+    // est déjà VALIDE. Historiquement le filtre ne regardait que la tranche AVANCE
+    // et laissait ces missions invisibles (données affichées mais introuvables).
+    $mission = Mission::factory()->create();
+    OrdreMission::factory()->create(['mission_id' => $mission->id, 'statut' => 'VALIDE']);
+    EtatPaiement::create([
+        'mission_id' => $mission->id, 'tranche' => 'AVANCE', 'statut' => 'VALIDE',
+        'nb_beneficiaires' => 1, 'montant_total' => 1, 'montant_avance' => 1, 'montant_reliquat' => 0,
+    ]);
+    EtatPaiement::create([
+        'mission_id' => $mission->id, 'tranche' => 'RELIQUAT', 'statut' => 'VISA_DAF',
+        'nb_beneficiaires' => 1, 'montant_total' => 1, 'montant_avance' => 0, 'montant_reliquat' => 1,
+    ]);
+
+    $this->actingAs($this->lecteur)->getJson('/api/missions?etat=VISA_DAF')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $mission->id);
+
+    // La même mission remonte aussi sur le statut de son avance (VALIDE).
+    $this->actingAs($this->lecteur)->getJson('/api/missions?etat=VALIDE')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $mission->id);
+});
+
 it('recherche par objet, destination ou imputation', function () {
     foreach (['hangars', 'PARAKOU'] as $terme) {
         $this->actingAs($this->lecteur)->getJson("/api/missions?search={$terme}")
