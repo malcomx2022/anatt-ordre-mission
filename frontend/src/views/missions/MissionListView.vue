@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import MissionStatusBadge from '@/components/missions/MissionStatusBadge.vue'
@@ -19,10 +19,16 @@ const totalItems = ref(0)
 const filterStatut = ref('')
 const filterZone = ref('')
 const filterOperateur = ref('')
+const dateDebut = ref('')
+const dateFin = ref('')
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
+// Plage incohérente (Au < Du) : on prévient au lieu d'une liste vide silencieuse.
+const plageInvalide = computed(() => !!dateDebut.value && !!dateFin.value && dateFin.value < dateDebut.value)
+
 async function load() {
+  if (plageInvalide.value) { ordres.value = []; totalItems.value = 0; loading.value = false; return }
   loading.value = true
   try {
     const { items, meta } = await ordresService.list({
@@ -31,6 +37,8 @@ async function load() {
       statut: filterStatut.value || undefined,
       zone: filterZone.value || undefined,
       operateur: filterOperateur.value || undefined,
+      date_debut: dateDebut.value || undefined,
+      date_fin: dateFin.value || undefined,
     })
     ordres.value = items
     currentPage.value = meta.current_page
@@ -41,7 +49,7 @@ async function load() {
   }
 }
 
-watch([debouncedQuery, filterStatut, filterZone, filterOperateur], () => { currentPage.value = 1; load() })
+watch([debouncedQuery, filterStatut, filterZone, filterOperateur, dateDebut, dateFin], () => { currentPage.value = 1; load() })
 onMounted(load)
 
 function changePage(p: number) { currentPage.value = p; load() }
@@ -54,13 +62,11 @@ function changePage(p: number) { currentPage.value = p; load() }
     </template>
 
     <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <input v-model="searchQuery" type="text" placeholder="Réf. SEMO, agent…" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:border-anatt-500">
         <select v-model="filterStatut" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
           <option value="">Tous statuts</option>
           <option value="IMPORTE">Importé</option>
-          <option value="VERIFIE">Vérifié</option>
-          <option value="VISA_DAF">Visé DAF</option>
           <option value="VALIDE">Validé</option>
           <option value="REJETE">Rejeté</option>
           <option value="SOLDE">Soldé</option>
@@ -78,7 +84,16 @@ function changePage(p: number) { currentPage.value = p; load() }
           <option value="MTN">MTN</option>
           <option value="MOOV">MOOV</option>
         </select>
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Départ à partir du</label>
+          <input v-model="dateDebut" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Retour jusqu'au</label>
+          <input v-model="dateFin" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
       </div>
+      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date de fin doit être postérieure à la date de début.</p>
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
