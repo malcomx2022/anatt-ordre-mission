@@ -10,10 +10,24 @@ export interface AgentFilters {
   page?: number
 }
 
+export interface AgentStats {
+  total: number
+  actifs: number
+  inactifs: number
+  mtn: number
+  moov: number
+}
+
 export const agentsService = {
   async list(params: AgentFilters = {}): Promise<Page<Agent>> {
     const { data } = await api.get('/api/agents', { params })
     return toPage<Agent>(data)
+  },
+
+  /** Compteurs GLOBAUX (tout le jeu filtré) pour les cartes de l'écran Personnel. */
+  async stats(params: AgentFilters = {}): Promise<AgentStats> {
+    const { data } = await api.get('/api/agents/stats', { params })
+    return unwrap<AgentStats>(data)
   },
 
   async get(id: number): Promise<Agent> {

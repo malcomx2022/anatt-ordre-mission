@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
     // Agents (référentiel personnel)
     Route::middleware('permission:personnel.consulter')->group(function () {
         Route::get('agents', [AgentController::class, 'index']);
+        Route::get('agents/stats', [AgentController::class, 'stats']);
         Route::get('agents/recherche', [AgentController::class, 'recherche']);
         Route::get('agents/{agent}', [AgentController::class, 'show']);
     });
