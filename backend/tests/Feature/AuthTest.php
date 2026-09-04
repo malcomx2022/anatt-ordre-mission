@@ -1,6 +1,11 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 
 it('authentifie un utilisateur avec identifiants valides', function () {
     $user = User::factory()->admin()->create(['password' => bcrypt('secret123')]);
@@ -106,4 +111,67 @@ it('un compte réinitialisé par un admin doit changer son mot de passe (must_ch
         ->assertOk();
 
     expect($cible->fresh()->must_change_password)->toBeTrue();
+});
+
+it('journalise un changement de mot de passe (PWD_CHANGE)', function () {
+    $user = User::factory()->admin()->create(['password' => bcrypt('AncienMotDePasse1!')]);
+
+    $this->actingAs($user)->postJson('/api/auth/mot-de-passe/changer', [
+        'current_password' => 'AncienMotDePasse1!',
+        'password' => 'NouveauMotDePasse9@',
+        'password_confirmation' => 'NouveauMotDePasse9@',
+    ])->assertOk();
+
+    $log = AuditLog::where('action', 'PWD_CHANGE')->where('entite', 'session')->first();
+    expect($log)->not->toBeNull()
+        ->and((int) $log->user_id)->toBe($user->id);
+});
+
+it('exige l’email pour réinitialiser le mot de passe', function () {
+    $this->postJson('/api/auth/mot-de-passe/reset', [
+        'token' => 'peu-importe',
+        'password' => 'NouveauMotDePasse9@',
+        'password_confirmation' => 'NouveauMotDePasse9@',
+    ])->assertStatus(422)->assertJsonValidationErrors('email');
+});
+
+it('réinitialise le mot de passe, lève le verrou, révoque les sessions et audite', function () {
+    $user = User::factory()->admin()->create([
+        'password' => bcrypt('AncienMotDePasse1!'),
+        'must_change_password' => true,
+    ]);
+    // Une session existante doit être invalidée par la réinitialisation.
+    $user->createToken('ancienne-session');
+    expect($user->tokens()->count())->toBe(1);
+
+    $token = Password::createToken($user);
+
+    $this->postJson('/api/auth/mot-de-passe/reset', [
+        'token' => $token,
+        'email' => $user->email,
+        'password' => 'NouveauMotDePasse9@',
+        'password_confirmation' => 'NouveauMotDePasse9@',
+    ])->assertOk();
+
+    $frais = $user->fresh();
+    expect(Hash::check('NouveauMotDePasse9@', $frais->password))->toBeTrue()
+        ->and($frais->must_change_password)->toBeFalse()
+        ->and($frais->tokens()->count())->toBe(0);
+
+    $log = AuditLog::where('action', 'PWD_RESET')->where('entite', 'session')->first();
+    expect($log)->not->toBeNull()->and((int) $log->user_id)->toBe($user->id);
+});
+
+it('génère un lien de réinitialisation pointant vers la SPA avec l’email', function () {
+    Notification::fake();
+    $user = User::factory()->admin()->create();
+
+    $this->postJson('/api/auth/mot-de-passe/email', ['email' => $user->email])->assertOk();
+
+    Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
+        $url = $notification->toMail($user)->actionUrl;
+
+        return str_contains($url, '/reinitialiser/')
+            && str_contains($url, 'email='.urlencode($user->email));
+    });
 });
