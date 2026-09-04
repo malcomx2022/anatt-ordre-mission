@@ -1,33 +1,4 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-
-const hours = ref(0)
-const minutes = ref(30)
-const seconds = ref(0)
-const notifyEmail = ref('')
-let timer: ReturnType<typeof setInterval>
-
-onMounted(() => {
-  timer = setInterval(() => {
-    if (seconds.value > 0) {
-      seconds.value--
-    } else if (minutes.value > 0) {
-      minutes.value--
-      seconds.value = 59
-    } else if (hours.value > 0) {
-      hours.value--
-      minutes.value = 59
-      seconds.value = 59
-    }
-  }, 1000)
-})
-
-onUnmounted(() => clearInterval(timer))
-
-function pad(n: number): string {
-  return n.toString().padStart(2, '0')
-}
-
 function reload() {
   window.location.reload()
 }
@@ -80,43 +51,7 @@ function reload() {
         </div>
 
         <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Maintenance en cours</h1>
-        <p class="text-gray-500 font-body mb-6 max-w-sm mx-auto">Notre bus est au garage pour une revision ! Le systeme est temporairement indisponible pour amelioration.</p>
-
-        <!-- Progress Bar -->
-        <div class="max-w-xs mx-auto mb-8">
-          <div class="flex items-center justify-between text-xs text-gray-500 font-body mb-2">
-            <span class="font-display font-semibold">Progression</span>
-            <span class="font-mono">~75%</span>
-          </div>
-          <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-anatt-500 via-gold-400 to-anatt-400 rounded-full" style="width:75%; animation: progressFill 4s ease-in-out infinite;"></div>
-          </div>
-          <p class="text-[11px] text-gray-400 font-body mt-2">Temps estime : ~{{ pad(minutes) }}:{{ pad(seconds) }}</p>
-        </div>
-
-        <!-- Info Cards -->
-        <div class="grid grid-cols-2 gap-3 mb-8 max-w-sm mx-auto">
-          <div class="bg-white border border-gray-100 rounded-xl p-4 text-left">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
-              <p class="text-xs font-display font-bold text-gray-700">Debut</p>
-            </div>
-            <p class="text-sm font-display font-semibold text-gray-900">08:00</p>
-            <p class="text-[11px] text-gray-400 font-body">Aujourd'hui</p>
-          </div>
-          <div class="bg-white border border-gray-100 rounded-xl p-4 text-left">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
-              <p class="text-xs font-display font-bold text-gray-700">Fin prevue</p>
-            </div>
-            <p class="text-sm font-display font-semibold text-gray-900">10:30</p>
-            <p class="text-[11px] text-gray-400 font-body">Aujourd'hui</p>
-          </div>
-        </div>
+        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Notre bus est au garage pour une revision ! Le systeme est temporairement indisponible pour amelioration. Merci de reessayer dans quelques instants.</p>
 
         <!-- Actions -->
         <div class="flex flex-col items-center gap-3">
@@ -128,25 +63,6 @@ function reload() {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
             Contacter le support
           </a>
-        </div>
-
-        <!-- Notification subscribe -->
-        <div class="mt-8 bg-anatt-50 border border-anatt-100 rounded-2xl p-4 max-w-sm mx-auto">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-anatt-100 rounded-xl flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-            </div>
-            <div class="text-left">
-              <p class="text-xs font-display font-bold text-anatt-800">Etre notifie du retour</p>
-              <p class="text-[11px] text-anatt-600 font-body">Recevez un email quand le systeme sera retabli</p>
-            </div>
-          </div>
-          <div class="flex mt-3 gap-2">
-            <input v-model="notifyEmail" type="email" placeholder="votre@email.bj" class="flex-1 text-xs px-3 py-2 border border-anatt-200 rounded-lg focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 outline-none bg-white font-body transition-all duration-200">
-            <button class="px-4 py-2 bg-anatt-500 text-white text-xs font-display font-semibold rounded-lg hover:bg-anatt-600 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -169,5 +85,4 @@ function reload() {
 @keyframes gearRotate { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
 .sparkle-anim { animation: sparkle 1.5s ease-in-out infinite; }
 @keyframes sparkle { 0%,100%{opacity:0;transform:scale(0)} 50%{opacity:1;transform:scale(1)} }
-@keyframes progressFill { 0%{width:0} 50%{width:75%} 100%{width:100%} }
 </style>

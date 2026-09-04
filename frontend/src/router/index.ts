@@ -389,18 +389,21 @@ router.beforeEach(async (to) => {
   function checkPermission() {
     if (!to.meta.permission) return true
 
+    // Permission(s) exigée(s) : transmise(s) à l'écran 403 pour un message exact.
+    const required = Array.isArray(to.meta.permission) ? to.meta.permission : [to.meta.permission]
+    const refuser = () => ({ name: 'forbidden', query: { required: required.join(',') } })
+
     const userRole = auth.user?.role
-    if (!userRole) return { name: 'forbidden' }
+    if (!userRole) return refuser()
 
     // Permissions renvoyées par l'API (repli sur la matrice locale si non chargées).
     const perms = auth.permissions.length
       ? (auth.permissions as Permission[])
       : permissionsForRole(userRole)
     const isSuperAdmin = userRole === 'SUPER_ADMIN'
-    const required = Array.isArray(to.meta.permission) ? to.meta.permission : [to.meta.permission]
     const hasAny = isSuperAdmin || required.some((p) => perms.includes(p))
 
-    if (!hasAny) return { name: 'forbidden' }
+    if (!hasAny) return refuser()
     return true
   }
 })
