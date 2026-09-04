@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import OperateurBadge from '@/components/paiements/OperateurBadge.vue'
@@ -9,29 +9,39 @@ import type { Versement, Operateur } from '@/types'
 const versements = ref<Versement[]>([])
 const loading = ref(true)
 const periode = ref('')
+const dateDebut = ref('')
+const dateFin = ref('')
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalItems = ref(0)
+const totalMontant = ref(0)
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
+// Plage incohérente (Au < Du) : on prévient au lieu de renvoyer une liste vide.
+const plageInvalide = computed(() => !!dateDebut.value && !!dateFin.value && dateFin.value < dateDebut.value)
+
 async function load() {
+  if (plageInvalide.value) { versements.value = []; totalItems.value = 0; totalMontant.value = 0; loading.value = false; return }
   loading.value = true
   try {
-    const { items, meta } = await paiementsService.historique({
+    const { page, totalMontant: total } = await paiementsService.historique({
       page: currentPage.value,
       periode: periode.value || undefined,
+      date_debut: dateDebut.value || undefined,
+      date_fin: dateFin.value || undefined,
     })
-    versements.value = items
-    currentPage.value = meta.current_page
-    totalPages.value = meta.last_page
-    totalItems.value = meta.total
+    versements.value = page.items
+    currentPage.value = page.meta.current_page
+    totalPages.value = page.meta.last_page
+    totalItems.value = page.meta.total
+    totalMontant.value = total
   } finally {
     loading.value = false
   }
 }
 
-watch(periode, () => { currentPage.value = 1; load() })
+watch([periode, dateDebut, dateFin], () => { currentPage.value = 1; load() })
 onMounted(load)
 
 function changePage(p: number) { currentPage.value = p; load() }
@@ -39,9 +49,26 @@ function changePage(p: number) { currentPage.value = p; load() }
 
 <template>
   <AppLayout title="Historique des paiements" subtitle="Versements confirmés (date de paiement)">
-    <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6 flex items-center gap-3">
-      <label class="text-sm font-body text-gray-500">Période (mois)</label>
-      <input v-model="periode" type="month" class="border border-gray-200 rounded-xl px-3 py-2 text-sm font-body focus:outline-none focus:border-anatt-500">
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
+      <div class="flex flex-wrap items-end gap-4">
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Mois</label>
+          <input v-model="periode" type="month" class="border border-gray-200 rounded-xl px-3 py-2 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Du</label>
+          <input v-model="dateDebut" type="date" class="border border-gray-200 rounded-xl px-3 py-2 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-body text-gray-500 mb-1">Au</label>
+          <input v-model="dateFin" type="date" class="border border-gray-200 rounded-xl px-3 py-2 text-sm font-body focus:outline-none focus:border-anatt-500">
+        </div>
+        <div class="ml-auto text-right">
+          <p class="text-[11px] font-body text-gray-500">Total confirmé ({{ totalItems }} versement(s))</p>
+          <p class="text-xl font-display font-bold text-anatt-700">{{ fmt(totalMontant) }} FCFA</p>
+        </div>
+      </div>
+      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date « Au » doit être postérieure à « Du ».</p>
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">

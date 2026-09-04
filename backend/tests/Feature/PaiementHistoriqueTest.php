@@ -45,3 +45,15 @@ it('expose le bénéficiaire du versement dans l’historique', function () {
         ->assertOk()
         ->assertJsonPath('data.0.beneficiaire', trim("{$agent->nom} {$agent->prenoms}"));
 });
+
+it('renvoie le total des montants confirmés de la période dans meta', function () {
+    Versement::factory()->confirme()->create(['montant' => 200000, 'date_paiement' => Carbon::parse('2026-01-10 09:00:00')]);
+    Versement::factory()->confirme()->create(['montant' => 150000, 'date_paiement' => Carbon::parse('2026-01-20 09:00:00')]);
+    // Hors période : ne doit pas entrer dans le total.
+    Versement::factory()->confirme()->create(['montant' => 999000, 'date_paiement' => Carbon::parse('2026-02-05 09:00:00')]);
+
+    $this->actingAs($this->user)
+        ->getJson('/api/paiements/historique?date_debut=2026-01-01&date_fin=2026-01-31')
+        ->assertOk()
+        ->assertJsonPath('meta.total_montant', 350000);
+});
