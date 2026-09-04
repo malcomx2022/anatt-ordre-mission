@@ -105,6 +105,9 @@ class AuthController extends Controller
         }
         $autres->delete();
 
+        // Événement de sécurité tracé (comme le login), sans jamais journaliser le secret.
+        AuditService::log($user, 'PWD_CHANGE', 'session', $user->id, ['email' => $user->email]);
+
         return $this->success(null, 'Mot de passe mis à jour.');
     }
 
@@ -141,7 +144,19 @@ class AuthController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
-                $user->forceFill(['password' => Hash::make($password)])->save();
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    // L'utilisateur vient de choisir son mot de passe : le verrou de
+                    // changement forcé (posé à une réinitialisation admin) est levé.
+                    'must_change_password' => false,
+                ])->save();
+
+                // Une réinitialisation invalide TOUS les accès en cours : on révoque
+                // l'ensemble des tokens (un reset fait souvent suite à une compromission).
+                $user->tokens()->delete();
+
+                // Événement de sécurité tracé dans le journal d'audit (jamais le secret).
+                AuditService::log($user, 'PWD_RESET', 'session', $user->id, ['email' => $user->email]);
             }
         );
 

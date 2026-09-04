@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL (SPA)
+    |--------------------------------------------------------------------------
+    |
+    | Racine de l'application Vue. Sert à construire les liens des e-mails
+    | (réinitialisation de mot de passe) qui doivent pointer vers la SPA et non
+    | vers l'API. À défaut, on retombe sur APP_URL.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Support\PermissionRepository;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -35,6 +36,14 @@ class AppServiceProvider extends ServiceProvider
         // ≥ 12 caractères, majuscules + minuscules, chiffres et symboles.
         // Utilisée partout via Password::defaults() (création/MAJ/réinitialisation).
         Password::defaults(fn () => Password::min(12)->mixedCase()->numbers()->symbols());
+
+        // Lien de réinitialisation : pointe vers la SPA (route /reinitialiser/{token})
+        // et embarque l'email en query — le formulaire de reset les renvoie à l'API.
+        ResetPassword::createUrlUsing(function ($notifiable, string $token) {
+            $base = rtrim((string) config('app.frontend_url'), '/');
+
+            return $base.'/reinitialiser/'.$token.'?email='.urlencode($notifiable->getEmailForPasswordReset());
+        });
 
         // Rate limiting global API: 60 req/min par utilisateur
         RateLimiter::for('api', function (Request $request) {

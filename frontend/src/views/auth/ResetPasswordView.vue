@@ -6,6 +6,10 @@ import AppLogo from '@/components/shared/AppLogo.vue'
 
 const route = useRoute()
 
+// L'email accompagne le token dans le lien de réinitialisation (?email=...) ;
+// le backend l'exige pour retrouver le compte. Sans lui, le lien est invalide.
+const email = (Array.isArray(route.query.email) ? route.query.email[0] : route.query.email) ?? ''
+
 const password = ref('')
 const passwordConfirm = ref('')
 const loading = ref(false)
@@ -34,11 +38,16 @@ const rules = computed(() => [
 
 async function handleSubmit() {
   if (!passwordsMatch.value) return
+  if (!email) {
+    errorMsg.value = 'Lien de réinitialisation invalide ou incomplet. Merci de relancer la procédure « Mot de passe oublié ».'
+    return
+  }
   loading.value = true
   errorMsg.value = ''
   try {
     await useApi().post('/api/auth/mot-de-passe/reset', {
       token: route.params.token,
+      email,
       password: password.value,
       password_confirmation: passwordConfirm.value,
     })
