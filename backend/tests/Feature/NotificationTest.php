@@ -3,6 +3,7 @@
 use App\Jobs\SendNotification;
 use App\Models\Bareme;
 use App\Models\Mission;
+use App\Models\Notification;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
@@ -23,7 +24,7 @@ it('notifie l’agent financier à la validation d’un OM', function () {
 
     // E-mail (job) ET notification in-app persistée pour l'agent financier.
     Queue::assertPushed(SendNotification::class);
-    expect(App\Models\Notification::pour($financier->id)->where('type', 'om_valide')->count())->toBe(1);
+    expect(Notification::pour($financier->id)->where('type', 'om_valide')->count())->toBe(1);
 });
 
 it('notifie le gestionnaire OM au rejet d’un OM', function () {
