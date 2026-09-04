@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Jobs\SendNotification;
 use App\Models\EtatPaiement;
 use App\Models\LotPaiement;
+use App\Models\Notification;
 use App\Models\OrdreMission;
 use App\Models\User;
+use App\Support\NotificationContenu;
 
 /**
  * Notifications e-mail des handoffs internes du workflow.
@@ -102,14 +104,24 @@ class NotificationService
     }
 
     /**
-     * Dispatche une notification à tous les utilisateurs d'un rôle.
+     * Notifie tous les utilisateurs d'un rôle : dépose une notification in-app
+     * (feed de la cloche) ET dispatche l'e-mail. Les deux partagent le même
+     * sujet/corps (NotificationContenu), pour ne jamais diverger.
      *
      * @param  array<string,mixed>  $data
      */
     private function notifierRole(string $role, string $type, array $data): void
     {
-        User::where('role', $role)->get()->each(
-            fn (User $u) => SendNotification::dispatch($u->id, $type, $data),
-        );
+        User::where('role', $role)->get()->each(function (User $u) use ($type, $data) {
+            Notification::create([
+                'user_id' => $u->id,
+                'type' => $type,
+                'titre' => NotificationContenu::sujet($type, $data),
+                'message' => NotificationContenu::corps($type, $data),
+                'data' => $data,
+            ]);
+
+            SendNotification::dispatch($u->id, $type, $data);
+        });
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\BackupController;
 use App\Http\Controllers\Api\BaremeController;
 use App\Http\Controllers\Api\EtatPaiementController;
 use App\Http\Controllers\Api\MissionController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaiementController;
 use App\Http\Controllers\Api\RapportController;
 use App\Http\Controllers\Api\RoleController;
@@ -44,6 +45,11 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
     Route::get('auth/me/permissions', [AuthController::class, 'permissions']);
     // Changement de mot de passe par l'utilisateur lui-même (lève must_change_password).
     Route::post('auth/mot-de-passe/changer', [AuthController::class, 'changePassword']);
+
+    // Notifications in-app (feed de la cloche) — personnelles, tout authentifié.
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::post('notifications/lues', [NotificationController::class, 'marquerToutLu']);
+    Route::post('notifications/{notification}/lu', [NotificationController::class, 'marquerLu']);
 
     // Agents (référentiel personnel)
     Route::middleware('permission:personnel.consulter')->group(function () {
