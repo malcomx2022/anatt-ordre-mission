@@ -66,10 +66,8 @@ function resumeDonnees(d: AuditLog['donnees']): string {
           <option value="">Toutes les actions</option>
           <optgroup label="Ordres de mission">
             <option value="IMPORT_OM">Import OM</option>
-            <option value="VERIFY_OM">Vérification OM</option>
             <option value="VALIDATE_OM">Validation OM</option>
-            <option value="VISA_DAF_OM">Visa DAF OM</option>
-            <option value="APPROVE_DG_OM">Validation DG OM</option>
+            <option value="AMEND_OM">Amendement OM</option>
             <option value="REJECT_OM">Rejet OM</option>
           </optgroup>
           <optgroup label="États de paiement">
@@ -85,6 +83,9 @@ function resumeDonnees(d: AuditLog['donnees']): string {
             <option value="CONFIRM_LOT">Confirmation lot</option>
             <option value="ERROR_LOT">Lot en erreur</option>
           </optgroup>
+          <optgroup label="Régularisations">
+            <option value="RECOUVRER_VERSEMENT">Recouvrement trop-perçu</option>
+          </optgroup>
           <optgroup label="Barème">
             <option value="CREATE_BAREME">Création barème</option>
             <option value="UPDATE_BAREME">Modification barème</option>
@@ -98,7 +99,15 @@ function resumeDonnees(d: AuditLog['donnees']): string {
             <option value="DEACTIVATE_USER">Désactivation utilisateur</option>
             <option value="RESET_PASSWORD_USER">Réinit. mot de passe</option>
             <option value="RESET_PASSWORD_SUPERADMIN">Réinit. MDP super admin</option>
+            <option value="USER_PERM_UPDATE">Permissions utilisateur</option>
             <option value="DELETE_USER">Suppression utilisateur</option>
+          </optgroup>
+          <optgroup label="Rôles & permissions">
+            <option value="ROLE_CREATE">Création de rôle</option>
+            <option value="ROLE_RENAME">Renommage de rôle</option>
+            <option value="ROLE_DELETE">Suppression de rôle</option>
+            <option value="ROLE_PERM_UPDATE">Modification permissions rôle</option>
+            <option value="ROLE_PERM_RESET">Réinit. permissions rôle</option>
           </optgroup>
           <optgroup label="Session">
             <option value="LOGIN">Connexion</option>
@@ -109,8 +118,11 @@ function resumeDonnees(d: AuditLog['donnees']): string {
           <option value="ordre_mission">Ordre de mission</option>
           <option value="etat_paiement">État de paiement</option>
           <option value="lot_paiement">Lot de paiement</option>
+          <option value="versement">Versement</option>
           <option value="bareme">Barème</option>
           <option value="user">Utilisateur</option>
+          <option value="role">Rôle</option>
+          <option value="role_permissions">Permissions de rôle</option>
           <option value="session">Session</option>
         </select>
         <div>
