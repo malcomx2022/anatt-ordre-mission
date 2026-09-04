@@ -62,10 +62,23 @@ class BackupController extends Controller
         return response()->json(['message' => 'Sauvegarde creee.', 'details' => $sortie]);
     }
 
-    /** Supprime une sauvegarde (basename forcé : pas de traversée de répertoire). */
+    /**
+     * Supprime une sauvegarde.
+     *  - `basename` : pas de traversée de répertoire.
+     *  - extension .sql / .sql.gz exigée : on ne supprime que des sauvegardes,
+     *    jamais un autre fichier qui traînerait dans le dossier.
+     */
     public function destroy(string $name): JsonResponse
     {
-        $path = $this->repertoire().'/'.basename($name);
+        $fichier = basename($name);
+
+        abort_unless(
+            str_ends_with($fichier, '.sql') || str_ends_with($fichier, '.sql.gz'),
+            422,
+            'Nom de sauvegarde invalide (extension .sql ou .sql.gz attendue).',
+        );
+
+        $path = $this->repertoire().'/'.$fichier;
         if (file_exists($path)) {
             unlink($path);
         }

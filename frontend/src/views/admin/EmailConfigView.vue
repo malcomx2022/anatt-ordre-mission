@@ -16,10 +16,6 @@ const smtpPassword = ref('')
 const smtpEncryption = ref('TLS')
 const fromAddress = ref('')
 const fromName = ref('ANaTT Missions')
-const testEmail = ref('')
-const testSending = ref(false)
-const testSuccess = ref(false)
-const testError = ref('')
 
 // Templates derives du SendNotification job (pas de table, definis dans le code)
 const templates = [
@@ -74,24 +70,6 @@ async function saveConfig() {
     saving.value = false
   }
 }
-
-async function sendTestEmailFn() {
-  if (!testEmail.value) return
-  testSending.value = true
-  testSuccess.value = false
-  testError.value = ''
-  try {
-    // Envoyer un email de test via l'API
-    await api.post('/api/auth/mot-de-passe/email', { email: testEmail.value })
-    testSuccess.value = true
-    setTimeout(() => { testSuccess.value = false }, 5000)
-  } catch {
-    testError.value = 'Echec de l\'envoi. Verifiez la configuration SMTP.'
-    setTimeout(() => { testError.value = '' }, 5000)
-  } finally {
-    testSending.value = false
-  }
-}
 </script>
 
 <template>
@@ -104,8 +82,20 @@ async function sendTestEmailFn() {
       </button>
     </template>
 
+    <!-- Bandeau : transport réel piloté par le .env serveur -->
+    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 flex items-start gap-3 animate-fade-up">
+      <svg class="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+      <p class="text-sm text-blue-800 font-body">
+        Ces paramètres sont <strong>indicatifs</strong> : l'envoi réel des e-mails est piloté par le fichier
+        <code class="px-1 py-0.5 bg-blue-100 rounded text-[12px] font-mono">.env</code> du serveur
+        (variables <code class="px-1 py-0.5 bg-blue-100 rounded text-[12px] font-mono">MAIL_*</code>).
+        Toute modification enregistrée ici sert de référence documentaire et doit être répercutée dans le
+        <code class="px-1 py-0.5 bg-blue-100 rounded text-[12px] font-mono">.env</code> puis appliquée au déploiement.
+      </p>
+    </div>
+
     <!-- SMTP Configuration -->
-    <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 animate-fade-up">
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 animate-fade-up delay-100">
       <h3 class="text-base font-display font-bold text-gray-800 mb-5 flex items-center gap-2">
         <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
         Configuration SMTP
@@ -138,37 +128,16 @@ async function sendTestEmailFn() {
           <input v-model="fromAddress" type="email" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200">
         </div>
       </div>
-
-      <!-- Test email -->
-      <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-        <input v-model="testEmail" type="email" placeholder="Adresse email de test..." class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200 bg-white">
-        <button @click="sendTestEmailFn" :disabled="testSending" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-50">
-          <svg v-if="!testSending" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-          <svg v-else class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
-          {{ testSending ? 'Envoi...' : 'Envoyer un test' }}
-        </button>
-      </div>
-      <div v-if="testSuccess" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 font-body flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-        Email de test envoye avec succes !
-      </div>
-      <div v-if="testError" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-body flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
-        {{ testError }}
-      </div>
     </div>
 
     <!-- Email Templates -->
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-fade-up delay-100">
-      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-fade-up delay-200">
+      <div class="px-6 py-4 border-b border-gray-100">
         <h3 class="text-sm font-display font-semibold text-gray-700">Templates de notification</h3>
-        <button class="text-xs text-anatt-500 font-display font-semibold hover:underline flex items-center gap-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-          Nouveau template
-        </button>
+        <p class="text-[11px] text-gray-400 font-body mt-0.5">Modèles définis dans le code (job d'envoi) — présentés ici à titre de référence.</p>
       </div>
       <div class="divide-y divide-gray-50">
-        <div v-for="tpl in templates" :key="tpl.id" class="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 group">
+        <div v-for="tpl in templates" :key="tpl.id" class="px-6 py-4 flex items-center justify-between">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 bg-anatt-50 rounded-xl flex items-center justify-center">
               <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
@@ -177,12 +146,6 @@ async function sendTestEmailFn() {
               <p class="text-sm font-display font-semibold text-gray-800">{{ tpl.name }}</p>
               <p class="text-[11px] text-gray-400 font-body">Sujet : {{ tpl.subject }}</p>
             </div>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="px-2 py-0.5 bg-green-50 text-green-700 text-[10px] font-display font-semibold rounded-full">Actif</span>
-            <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
-            </button>
           </div>
         </div>
       </div>
