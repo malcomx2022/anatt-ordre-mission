@@ -63,9 +63,12 @@ onMounted(async () => {
       <router-link to="/taux" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">← Barème</router-link>
     </template>
 
-    <div class="flex flex-wrap gap-2 mb-6">
+    <div class="flex flex-wrap gap-2 mb-3">
       <button v-for="z in ZONES" :key="z.value" class="px-4 py-2.5 rounded-xl text-sm font-display font-semibold" :class="zone === z.value ? 'bg-anatt-500 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'" @click="zone = z.value">{{ z.label }}</button>
     </div>
+    <p class="text-[11px] text-gray-400 font-body mb-6">
+      Zone II et Zone III partagent le même taux (règle ANaTT « II = III ») : modifier l'une met l'autre à jour automatiquement.
+    </p>
 
     <AppCard>
       <p v-if="loading" class="text-center text-gray-400 font-body py-8">Chargement…</p>
