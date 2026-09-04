@@ -73,3 +73,14 @@ it('reste idempotent sur la suppression d’une sauvegarde absente', function ()
         ->assertOk()
         ->assertJsonPath('message', 'Sauvegarde supprimee.');
 });
+
+it('refuse de supprimer un fichier qui n’est pas une sauvegarde', function () {
+    @mkdir($this->dir, 0775, true);
+    file_put_contents($this->dir.'/.env', 'SECRET=1');
+
+    $this->actingAs($this->su)->deleteJson('/api/admin/backups/'.rawurlencode('.env'))
+        ->assertStatus(422);
+
+    // Le fichier hors périmètre n'est jamais touché.
+    expect(file_exists($this->dir.'/.env'))->toBeTrue();
+});
