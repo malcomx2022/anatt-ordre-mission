@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
+import StatCard from '@/components/dashboard/StatCard.vue'
+import QuickActions from '@/components/dashboard/QuickActions.vue'
 import MissionStatusBadge from '@/components/missions/MissionStatusBadge.vue'
 import { Bar } from 'vue-chartjs'
 import {
@@ -38,10 +40,10 @@ onMounted(async () => {
 })
 
 const stats = computed(() => [
-  { label: 'Ordres de mission actifs', value: String(totalOrdres.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { label: 'Versements confirmés (mois)', value: String(rapport.value?.synthese.nb_versements ?? 0), iconBg: 'bg-anatt-100', iconColor: 'text-anatt-600' },
-  { label: 'Montant payé (mois)', value: fmt(rapport.value?.synthese.montant_total ?? 0), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
-  { label: 'Opérateurs actifs', value: String(rapport.value?.par_operateur.length ?? 0), iconBg: 'bg-gold-100', iconColor: 'text-gold-600' },
+  { label: 'Ordres de mission actifs', value: String(totalOrdres.value), iconBg: 'bg-blue-100', iconColor: 'text-blue-600', icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z' },
+  { label: 'Versements confirmés (mois)', value: String(rapport.value?.synthese.nb_versements ?? 0), iconBg: 'bg-anatt-100', iconColor: 'text-anatt-600', icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+  { label: 'Montant payé (mois)', value: fmt(rapport.value?.synthese.montant_total ?? 0), iconBg: 'bg-purple-100', iconColor: 'text-purple-600', icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z' },
+  { label: 'Opérateurs actifs', value: String(rapport.value?.par_operateur.length ?? 0), iconBg: 'bg-gold-100', iconColor: 'text-gold-600', icon: 'M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3' },
 ])
 
 const chartData = computed<ChartData<'bar'>>(() => ({
@@ -68,12 +70,15 @@ const chartOptions: ChartOptions<'bar'> = {
     <div v-else class="space-y-6">
       <!-- KPIs -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <AppCard v-for="s in stats" :key="s.label">
-          <div :class="[s.iconBg, 'w-10 h-10 rounded-xl mb-3']"></div>
-          <p class="text-2xl font-display font-bold text-gray-800">{{ s.value }}</p>
-          <p class="text-xs font-body text-gray-500">{{ s.label }}</p>
-        </AppCard>
+        <StatCard v-for="s in stats" :key="s.label" :label="s.label" :value="s.value" :icon-bg="s.iconBg" :icon-color="s.iconColor">
+          <template #icon>
+            <svg :class="[s.iconColor, 'w-5 h-5']" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" :d="s.icon" /></svg>
+          </template>
+        </StatCard>
       </div>
+
+      <!-- Actions rapides (filtrées par permission) -->
+      <QuickActions />
 
       <div class="grid lg:grid-cols-2 gap-6">
         <!-- Graphe par opérateur -->
