@@ -29,6 +29,10 @@ const libelleColonne = computed(() => ({
 
 const fmt = (v: unknown) => Number(v ?? 0).toLocaleString('fr-FR')
 
+// Plage de dates incohérente (Au < Du) : on prévient au lieu de renvoyer une
+// liste vide silencieuse (le backend, lui, refuse l'export dans ce cas).
+const plageInvalide = computed(() => !!dateDebut.value && !!dateFin.value && dateFin.value < dateDebut.value)
+
 function principale(row: Record<string, unknown>): string {
   switch (dimension.value) {
     case 'agent': return `${row.matricule ?? ''} — ${row.nom ?? ''} ${row.prenoms ?? ''}`.trim()
@@ -39,6 +43,7 @@ function principale(row: Record<string, unknown>): string {
 }
 
 async function load() {
+  if (plageInvalide.value) { lignes.value = []; loading.value = false; return }
   loading.value = true
   const params = { date_debut: dateDebut.value || undefined, date_fin: dateFin.value || undefined }
   try {
@@ -59,6 +64,7 @@ watch([dimension, dateDebut, dateFin], load)
 onMounted(load)
 
 async function exporter(format: ExportFormat) {
+  if (plageInvalide.value) { toast.error('La date « Au » doit être postérieure à « Du ».'); return }
   exporting.value = format
   try {
     const res = await rapportsService.export({
@@ -78,7 +84,7 @@ const totalMontant = computed(() => lignes.value.reduce((s, r) => s + Number(r.m
 </script>
 
 <template>
-  <AppLayout title="États de paiement" subtitle="Versements confirmés — par dimension">
+  <AppLayout title="États par dimension" subtitle="Versements confirmés — par agent, opérateur, zone ou imputation">
     <!-- Filtres -->
     <AppCard class="mb-6">
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
@@ -97,10 +103,11 @@ const totalMontant = computed(() => lignes.value.reduce((s, r) => s + Number(r.m
           <input v-model="dateFin" type="date" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-body focus:outline-none focus:border-anatt-500">
         </div>
         <div class="flex gap-2">
-          <AppButton size="sm" variant="outline" :loading="exporting === 'xlsx'" @click="exporter('xlsx')">Excel</AppButton>
-          <AppButton size="sm" variant="outline" :loading="exporting === 'pdf'" @click="exporter('pdf')">PDF</AppButton>
+          <AppButton size="sm" variant="outline" :disabled="plageInvalide" :loading="exporting === 'xlsx'" @click="exporter('xlsx')">Excel</AppButton>
+          <AppButton size="sm" variant="outline" :disabled="plageInvalide" :loading="exporting === 'pdf'" @click="exporter('pdf')">PDF</AppButton>
         </div>
       </div>
+      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date « Au » doit être postérieure à « Du ».</p>
     </AppCard>
 
     <AppCard>
