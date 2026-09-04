@@ -33,6 +33,34 @@ export const TOUTES_PERMISSIONS: Permission[] = [
   'roles.gerer',
 ]
 
+/**
+ * Libellés lisibles des permissions (source unique, exhaustive : une entrée par
+ * clé de `TOUTES_PERMISSIONS`). Utilisée par la fiche profil et l'écran 403.
+ */
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  'dashboard.consulter': 'Tableau de bord',
+  'personnel.consulter': 'Consulter le personnel',
+  'personnel.gerer': 'Gérer le personnel',
+  'om.consulter': 'Consulter les OM',
+  'om.retranscrire': 'Retranscrire les missions',
+  'om.valider': 'Valider / rejeter les OM',
+  'om.numeroter': "Numéroter l'état de paiement",
+  'om.viser': "Viser l'état de paiement (DAF)",
+  'om.approuver': "Approuver l'état de paiement (DG)",
+  'om.rejeter': 'Rejeter un OM',
+  'paiements.consulter': 'Consulter les paiements',
+  'paiements.generer': 'Générer les fichiers de paiement',
+  'paiements.confirmer': 'Confirmer les paiements',
+  'baremes.consulter': 'Consulter le barème',
+  'baremes.modifier': 'Modifier le barème',
+  'rapports.consulter': 'Consulter les rapports',
+  'audit.consulter': "Consulter le journal d'audit",
+  'utilisateurs.gerer': 'Gérer les utilisateurs',
+  'superadmins.gerer': 'Gérer les super administrateurs',
+  'parametres.gerer': 'Paramètres système',
+  'roles.gerer': 'Gérer la matrice des rôles',
+}
+
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   SUPER_ADMIN: TOUTES_PERMISSIONS,
   ADMIN: [
