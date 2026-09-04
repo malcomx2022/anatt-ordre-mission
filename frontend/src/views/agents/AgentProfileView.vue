@@ -30,10 +30,13 @@ const PERMISSION_LABELS: Partial<Record<Permission, string>> = {
   'utilisateurs.gerer': 'Gérer les utilisateurs',
   'superadmins.gerer': 'Gérer les super administrateurs',
   'parametres.gerer': 'Paramètres système',
+  'roles.gerer': 'Gérer la matrice des rôles',
 }
 
+// Repli sur la clé brute : aucune permission ne doit disparaître de l'affichage
+// faute de libellé (ex. une clé ajoutée après cet écran).
 const permissionsLisibles = computed(() =>
-  permissions.value.map((p) => PERMISSION_LABELS[p]).filter((l): l is string => !!l),
+  permissions.value.map((p) => PERMISSION_LABELS[p] ?? p),
 )
 </script>
 

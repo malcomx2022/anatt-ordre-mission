@@ -27,6 +27,14 @@ class AgentController extends Controller
         return AgentResource::collection($agents)->response();
     }
 
+    /** Compteurs globaux (tout le jeu filtré) pour les cartes de l'écran Personnel. */
+    public function stats(Request $request): JsonResponse
+    {
+        return $this->success($this->agentService->statistiques(
+            $request->only(['search', 'categorie', 'operateur', 'actif']),
+        ));
+    }
+
     /**
      * Autocomplétion du wizard OM : recherche par nom / matricule / IFU.
      */

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import AppModal from '@/components/shared/AppModal.vue'
 import AppButton from '@/components/shared/AppButton.vue'
-import { agentsService } from '@/services/agents'
+import { agentsService, type AgentStats } from '@/services/agents'
 import { useSearch } from '@/composables/useSearch'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
@@ -25,27 +25,31 @@ const showDeleteModal = ref(false)
 const agentToDelete = ref<Agent | null>(null)
 const agents = ref<Agent[]>([])
 
-const stats = computed(() => ({
-  total: totalItems.value,
-  actifs: agents.value.filter((a) => a.actif).length,
-  mtn: agents.value.filter((a) => a.operateur === 'MTN').length,
-  moov: agents.value.filter((a) => a.operateur === 'MOOV').length,
-}))
+// Compteurs GLOBAUX (tout le jeu filtré), servis par l'API — pas un décompte de
+// la seule page affichée (qui variait à chaque pagination).
+const stats = ref<AgentStats>({ total: 0, actifs: 0, inactifs: 0, mtn: 0, moov: 0 })
+
+function filtresActuels() {
+  return {
+    search: debouncedQuery.value || undefined,
+    categorie: filterCategorie.value || undefined,
+    operateur: filterOperateur.value || undefined,
+    actif: filterStatut.value === 'Actif' ? true : filterStatut.value === 'Inactif' ? false : undefined,
+  }
+}
 
 async function loadAgents() {
   loading.value = true
   try {
-    const { items, meta } = await agentsService.list({
-      page: currentPage.value,
-      search: debouncedQuery.value || undefined,
-      categorie: filterCategorie.value || undefined,
-      operateur: filterOperateur.value || undefined,
-      actif: filterStatut.value === 'Actif' ? true : filterStatut.value === 'Inactif' ? false : undefined,
-    })
-    agents.value = items
-    currentPage.value = meta.current_page
-    totalPages.value = meta.last_page
-    totalItems.value = meta.total
+    const [page, compteurs] = await Promise.all([
+      agentsService.list({ page: currentPage.value, ...filtresActuels() }),
+      agentsService.stats(filtresActuels()),
+    ])
+    agents.value = page.items
+    currentPage.value = page.meta.current_page
+    totalPages.value = page.meta.last_page
+    totalItems.value = page.meta.total
+    stats.value = compteurs
   } finally {
     loading.value = false
   }
@@ -150,15 +154,15 @@ async function handleDelete() {
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4 text-center">
         <p class="text-2xl font-display font-bold text-anatt-500">{{ stats.actifs }}</p>
-        <p class="text-xs font-body text-gray-500">Actifs (page)</p>
+        <p class="text-xs font-body text-gray-500">Actifs</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4 text-center">
         <p class="text-2xl font-display font-bold text-gold-600">{{ stats.mtn }}</p>
-        <p class="text-xs font-body text-gray-500">MTN (page)</p>
+        <p class="text-xs font-body text-gray-500">MTN</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-100 p-4 text-center">
         <p class="text-2xl font-display font-bold text-blue-600">{{ stats.moov }}</p>
-        <p class="text-xs font-body text-gray-500">MOOV (page)</p>
+        <p class="text-xs font-body text-gray-500">MOOV</p>
       </div>
     </div>
 

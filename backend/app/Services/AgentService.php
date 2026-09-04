@@ -21,6 +21,27 @@ class AgentService
     }
 
     /**
+     * Compteurs GLOBAUX (tout le jeu filtré, pas seulement la page affichée) :
+     * total, actifs/inactifs, répartition par opérateur. Alimente les cartes de
+     * l'écran Personnel de façon cohérente avec le total.
+     *
+     * @param  array<string,mixed>  $filters
+     * @return array<string,int>
+     */
+    public function statistiques(array $filters = []): array
+    {
+        $base = $this->baseQuery($filters);
+
+        return [
+            'total' => (clone $base)->count(),
+            'actifs' => (clone $base)->where('actif', true)->count(),
+            'inactifs' => (clone $base)->where('actif', false)->count(),
+            'mtn' => (clone $base)->where('operateur', 'MTN')->count(),
+            'moov' => (clone $base)->where('operateur', 'MOOV')->count(),
+        ];
+    }
+
+    /**
      * Recherche légère pour l'autocomplétion du wizard OM (nom / matricule / IFU).
      */
     public function rechercher(string $terme, int $limite = 15): Collection
