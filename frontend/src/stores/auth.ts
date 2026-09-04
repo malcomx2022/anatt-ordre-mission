@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { authService } from '@/services/auth'
 import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
+import { useNotificationsStore } from '@/stores/notifications'
 import type { User } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -65,6 +66,8 @@ export const useAuthStore = defineStore('auth', () => {
     permissions.value = []
     // Ne pas conserver le réglage d'une session à l'autre : purge du cache.
     reinitialiserPartAvance()
+    // Purge le feed de la cloche : pas de notifications d'un compte à l'autre.
+    useNotificationsStore().vider()
     localStorage.removeItem('auth_token')
     sessionStorage.clear()
   }

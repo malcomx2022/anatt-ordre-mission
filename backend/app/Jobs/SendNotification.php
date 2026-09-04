@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\User;
+use App\Support\NotificationContenu;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,30 +50,12 @@ class SendNotification implements ShouldQueue
 
     private function getSubject(): string
     {
-        return match ($this->type) {
-            'om_valide' => "OM {$this->data['reference_semo']} validé — paiement préparable",
-            'om_rejete' => "OM {$this->data['reference_semo']} rejeté",
-            'lot_confirme' => "Lot {$this->data['tranche']} {$this->data['operateur']} confirmé",
-            'etat_attend_signature' => "État de paiement {$this->data['numero']} — signature attendue",
-            'etat_valide' => "État de paiement {$this->data['numero']} validé — fichiers générables",
-            'etat_rejete' => "État de paiement {$this->data['numero']} rejeté",
-            'trop_percu_cree' => "Trop-perçu sur OM {$this->data['reference_semo']} — régularisation à traiter",
-            default => 'Notification ANaTT',
-        };
+        return NotificationContenu::sujet($this->type, $this->data);
     }
 
     private function getBody(): string
     {
-        return match ($this->type) {
-            'om_valide' => "L'ordre de mission {$this->data['reference_semo']} ({$this->data['beneficiaire']}, {$this->data['montant']} FCFA) a été validé. Le fichier de paiement peut être généré.",
-            'om_rejete' => "L'ordre de mission {$this->data['reference_semo']} a été rejeté. Motif : {$this->data['motif']}",
-            'lot_confirme' => "Le lot {$this->data['tranche']} / {$this->data['operateur']} (mission {$this->data['mission']}, {$this->data['montant']} FCFA) a été confirmé : versements soldés et horodatés.",
-            'etat_attend_signature' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) attend votre intervention dans le circuit de validation.",
-            'etat_valide' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » ({$this->data['montant']} FCFA) a été validé par le Directeur Général : les fichiers de paiement de cette tranche peuvent être générés.",
-            'etat_rejete' => "L'état de paiement {$this->data['tranche']} {$this->data['numero']} de la mission « {$this->data['mission']} » a été rejeté. Motif : {$this->data['motif']}",
-            'trop_percu_cree' => "L'amendement de l'OM {$this->data['reference_semo']} ({$this->data['beneficiaire']}) a produit un trop-perçu de {$this->data['montant']} FCFA. À récupérer par retenue sur salaire depuis l'écran Régularisations (le versement ne part pas en Mobile Money).",
-            default => 'Notification du système ANaTT Missions.',
-        };
+        return NotificationContenu::corps($this->type, $this->data);
     }
 
     public function failed(\Throwable $exception): void
