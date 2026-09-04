@@ -119,10 +119,16 @@ class PaiementController extends Controller
         return $this->success(new LotPaiementResource($lot->load('mission')), 'Lot marqué en erreur.');
     }
 
-    /** Synthèse des versements par opérateur et statut. */
+    /**
+     * Synthèse des versements du circuit Mobile Money par opérateur et statut.
+     * Exclut A_RECOUVRER / RECOUVRE : ce sont des régularisations (trop-perçus,
+     * montants négatifs, retenue sur salaire) qui fausseraient le montant total
+     * et ont leur propre écran (/paiements/regularisations).
+     */
     public function statuts(): JsonResponse
     {
         $statuts = Versement::selectRaw('operateur, statut, count(*) as total, sum(montant) as montant_total')
+            ->whereNotIn('statut', ['A_RECOUVRER', 'RECOUVRE'])
             ->groupBy('operateur', 'statut')
             ->get();
 
@@ -150,11 +156,17 @@ class PaiementController extends Controller
             $query->where('date_paiement', '<=', Carbon::parse($dateFin)->endOfDay());
         }
 
+        // Total des montants confirmés de la période (avant pagination), pour l'entête.
+        $totalMontant = (int) (clone $query)->sum('montant');
+
         $versements = $query->orderByDesc('date_paiement')->paginate($this->getPerPage($request));
 
         // Resource (et non le modèle brut) : forme cohérente avec les autres listes,
         // sans exposer les colonnes internes ; porte le bénéficiaire et la mission.
-        return VersementResource::collection($versements)->response();
+        $reponse = VersementResource::collection($versements)->response()->getData(true);
+        $reponse['meta']['total_montant'] = $totalMontant;
+
+        return response()->json($reponse);
     }
 
     /**

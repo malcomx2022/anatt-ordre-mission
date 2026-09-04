@@ -51,9 +51,9 @@ export const paiementsService = {
     return unwrap(data)
   },
 
-  async historique(params: Record<string, unknown> = {}): Promise<Page<Versement>> {
+  async historique(params: Record<string, unknown> = {}): Promise<{ page: Page<Versement>; totalMontant: number }> {
     const { data } = await api.get('/api/paiements/historique', { params })
-    return toPage<Versement>(data)
+    return { page: toPage<Versement>(data), totalMontant: Number(data.meta?.total_montant ?? 0) }
   },
 
   /**
