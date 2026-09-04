@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
@@ -17,6 +17,9 @@ const dateFin = ref('')
 const generating = ref(false)
 const dernierFichier = ref<string | null>(null)
 
+// Plage incohérente (Au < Du) : le backend refuserait l'export ; on prévient avant.
+const plageInvalide = computed(() => !!dateDebut.value && !!dateFin.value && dateFin.value < dateDebut.value)
+
 const DIMENSIONS: { value: RapportDimension; label: string }[] = [
   { value: 'agent', label: 'Par agent' },
   { value: 'operateur', label: 'Par opérateur' },
@@ -25,6 +28,7 @@ const DIMENSIONS: { value: RapportDimension; label: string }[] = [
 ]
 
 async function generer() {
+  if (plageInvalide.value) { toast.error('La date « Au » doit être postérieure à « Du ».'); return }
   generating.value = true
   dernierFichier.value = null
   try {
@@ -75,8 +79,9 @@ async function retelecharger() {
             <input v-model="dateFin" type="date" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-body focus:outline-none focus:border-anatt-500">
           </div>
         </div>
+        <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-4">La date « Au » doit être postérieure à « Du ».</p>
         <div class="flex justify-end mt-5">
-          <AppButton :loading="generating" @click="generer">Générer & télécharger</AppButton>
+          <AppButton :disabled="plageInvalide" :loading="generating" @click="generer">Générer & télécharger</AppButton>
         </div>
       </AppCard>
 

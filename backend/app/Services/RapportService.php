@@ -42,8 +42,12 @@ class RapportService
             'par_tranche' => (clone $base)
                 ->selectRaw('versements.type as tranche, COUNT(*) as nb, COALESCE(SUM(versements.montant),0) as montant')
                 ->groupBy('versements.type')->get(),
-            // Instantané global de tous les versements par statut (pipeline).
+            // Instantané global du PIPELINE Mobile Money par statut. On exclut
+            // A_RECOUVRER / RECOUVRE : ce sont des régularisations (trop-perçus,
+            // montants négatifs, retenue sur salaire) qui ne relèvent pas du
+            // circuit de paiement et ont leur propre état (/rapports/trop-percus).
             'par_statut' => Versement::selectRaw('statut, COUNT(*) as nb, COALESCE(SUM(montant),0) as montant')
+                ->whereNotIn('statut', ['A_RECOUVRER', 'RECOUVRE'])
                 ->groupBy('statut')->get(),
         ];
     }
