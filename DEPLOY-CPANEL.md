@@ -203,6 +203,59 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 
 ---
 
+## Mise à jour d'une version déjà en ligne (redéploiement)
+
+Les sections 1 à 8 décrivent la **première** installation. Pour livrer une **nouvelle version**
+sur une instance déjà en place, on ne réimporte pas la base : on met à jour le code, on applique
+les **nouvelles migrations**, puis on rafraîchit le SPA.
+
+> **Avant tout** : sauvegarde. Copiez l'actuel `public_html/` (rollback SPA) et faites une
+> sauvegarde de la base (phpMyAdmin > Export, ou `php artisan db:backup`) **avant** de migrer.
+
+### A. Backend (API Laravel)
+
+1. **Uploader le nouveau code** dans `anatt-api/` (FTP). Écrasez `app/`, `routes/`, `database/`,
+   `config/`, `resources/`, etc. **Ne touchez pas** à `anatt-api/.env` ni à `anatt-api/storage/`.
+   Re-uploadez `vendor/` **uniquement** si les dépendances ont changé
+   (`composer install --no-dev --optimize-autoloader` en local au préalable).
+2. **Appliquer les migrations non encore jouées** :
+   ```bash
+   php artisan migrate --force
+   ```
+   `--force` est requis en production (pas de confirmation interactive). Seules les migrations
+   nouvelles sont exécutées ; les tables existantes ne sont pas touchées.
+   *Exemple :* la version « notifications in-app » ajoute la table `notifications`
+   (migration `..._create_notifications_table`) — elle est créée par cette commande, sans réimport.
+3. **Vider les caches applicatifs** (config/route/vue), sinon l'ancienne config reste servie :
+   ```bash
+   php artisan optimize:clear
+   ```
+
+> **Sans accès SSH** : lancez ces commandes via le **Terminal cPanel** (s'il est activé) ou une
+> **tâche Cron ponctuelle** avec le chemin PHP de l'hébergeur, par exemple :
+> ```bash
+> /usr/local/bin/php /home/anatt/anatt-api/artisan migrate --force
+> /usr/local/bin/php /home/anatt/anatt-api/artisan optimize:clear
+> ```
+> Supprimez la tâche Cron après exécution.
+
+### B. Frontend (SPA)
+
+1. Récupérez le nouveau `frontend/dist/` (build local **ou** artefact CI `frontend-dist` du run `main`).
+2. Dans `public_html/`, **supprimez l'ancien `assets/` et `index.html`**, puis uploadez le nouveau
+   contenu de `dist/`. **Conservez `public_html/runtime-config.js`** (il porte l'`apiUrl` de prod) :
+   ne le réécrasez pas avec celui du build.
+3. **Purgez le cache** : `Ctrl`+`F5` (et navigation privée), plus le cache CDN/LiteSpeed le cas échéant.
+   Vérifiez dans l'onglet Réseau que les `assets/*.js` chargés portent les nouveaux hachages.
+
+### C. Vérification
+
+Déroulez la **checklist post-déploiement** (`docs/checklist-post-deploiement.md`) : santé `/up`,
+connexion, puis la fonctionnalité livrée. Si un souci apparaît, restaurez le `public_html/` et la
+base sauvegardés en début d'opération.
+
+---
+
 ## 10. Dépannage
 
 | Symptôme | Cause probable | Solution |
