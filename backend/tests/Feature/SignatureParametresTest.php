@@ -79,6 +79,18 @@ it('rejette un poste inconnu', function () {
         ->assertStatus(422);
 });
 
+it('refuse une image trop volumineuse (500 Ko maximum)', function () {
+    // 600 Ko > plafond : une signature scannée n'a aucune raison d'être si lourde.
+    $tropLourde = UploadedFile::fake()->create('signature.png', 600, 'image/png');
+
+    $this->actingAs($this->superAdmin)
+        ->post('/api/admin/signatures/daf', ['signature' => $tropLourde], ['Accept' => 'application/json'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('signature');
+
+    expect(Storage::disk('local')->exists('signatures/daf.png'))->toBeFalse();
+});
+
 it('supprime une signature enregistrée', function () {
     $this->actingAs($this->superAdmin)
         ->post('/api/admin/signatures/daf', ['signature' => pngReel()], ['Accept' => 'application/json'])->assertOk();
