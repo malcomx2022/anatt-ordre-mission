@@ -5,6 +5,7 @@ import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { baremesService } from '@/services/baremes'
 import { useToast } from '@/composables/useToast'
+import { categorieLabel } from '@/types'
 import type { Bareme, ZoneCode } from '@/types'
 
 const toast = useToast()
@@ -81,7 +82,7 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="b in baremesZone()" :key="b.id" class="border-b border-gray-50">
-              <td class="py-2 font-display font-semibold text-anatt-700">{{ b.categorie }}</td>
+              <td class="py-2 font-display font-semibold text-anatt-700">{{ categorieLabel(b.categorie) }}</td>
               <td>{{ b.type_prise_en_charge }}</td>
               <td class="text-right">
                 <input

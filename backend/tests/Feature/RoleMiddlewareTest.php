@@ -24,7 +24,7 @@ it('super_admin accède à tout', function () {
     $this->actingAs($su)->postJson('/api/agents', agentPayload())->assertStatus(201);
     $this->actingAs($su)->getJson('/api/admin/settings')->assertOk();           // parametres.gerer (SU only)
     $this->actingAs($su)->postJson('/api/baremes', [
-        'categorie' => 'ORDRE_3', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 8500,
+        'categorie' => 'INDICE_INF_400', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 8500,
     ])->assertStatus(201);
 });
 
@@ -35,7 +35,7 @@ it('admin gère agents, barème, utilisateurs', function () {
     $this->actingAs($admin)->postJson('/api/agents', agentPayload())->assertStatus(201);
     $this->actingAs($admin)->getJson('/api/admin/users')->assertOk();
     $this->actingAs($admin)->postJson('/api/baremes', [
-        'categorie' => 'ORDRE_2', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 10000,
+        'categorie' => 'INDICE_400_799', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 10000,
     ])->assertStatus(201);
 });
 

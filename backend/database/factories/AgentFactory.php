@@ -24,7 +24,7 @@ class AgentFactory extends Factory
             'grade' => fake()->randomElement(['Directeur', 'Chef de service', 'Cadre', 'Agent', 'Conducteur']),
             'indice' => fake()->numberBetween(250, 950),
             'salaire_brut' => fake()->numberBetween(120000, 450000),
-            'categorie' => fake()->randomElement(['ORDRE_1', 'ORDRE_2', 'ORDRE_3']),
+            'categorie' => fake()->randomElement(['INDICE_SUP_800', 'INDICE_400_799', 'INDICE_INF_400']),
             'telephone' => $telephone,
             'operateur' => $operateur,
             'actif' => true,

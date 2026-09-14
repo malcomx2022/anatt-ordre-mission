@@ -46,7 +46,7 @@ c'est exactement `ordre_missions.lignes_per_diem`. Vérification sur la ligne 1 
 indice ≥ 800) : `30 000 × 1 + 45 000 × 4 = 210 000` ✓.
 
 **(d) Le barème en base est conforme au document.** `BaremeSeeder` donne
-ORDRE_1/INTERIEUR = 15 000 / 30 000 / 45 000 et ORDRE_3/INTERIEUR = 8 500 / 15 000 / 30 000,
+INDICE_SUP_800/INTERIEUR = 15 000 / 30 000 / 45 000 et INDICE_INF_400/INTERIEUR = 8 500 / 15 000 / 30 000,
 identiques au scan. Rien à corriger de ce côté.
 
 ---

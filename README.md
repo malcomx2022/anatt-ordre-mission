@@ -75,7 +75,7 @@ npm run dev                     # http://localhost:5173  (terminal C)
 
 ## Concepts métier clés
 
-- **Catégorie** d'agent = `ORDRE_1 / ORDRE_2 / ORDRE_3`, déduite de l'indice (ou du salaire brut), reprise de SEMO.
+- **Catégorie** d'agent = `INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400`, déduite de l'indice (ou du salaire brut), reprise de SEMO.
 - **Per diem** = `taux_journalier(catégorie × zone × type) × nb_jours` selon le **barème officiel ANaTT**
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
   Répartition : **avance 70 %** / **reliquat 30 %** (part de l'avance **paramétrable** par le SUPER_ADMIN, 70 % par défaut ; le reliquat absorbe l'arrondi). Exonération si prise en charge par un tiers.

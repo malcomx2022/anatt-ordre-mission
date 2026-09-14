@@ -27,17 +27,17 @@ function definirPartAvance(?int $valeur): void
 beforeEach(function () {
     $this->service = new CalculIndemniteService;
     Bareme::factory()->create([
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ]);
     Bareme::factory()->create([
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 15000,
     ]);
 });
 
 it('calcule le per diem et répartit avance / reliquat', function () {
-    $r = $this->service->calculer('ORDRE_1', 'INTERIEUR', 'JOURNEE_COMPLETE', 3);
+    $r = $this->service->calculer('INDICE_SUP_800', 'INTERIEUR', 'JOURNEE_COMPLETE', 3);
 
     expect($r['montant_total'])->toBe(135000)   // 45000 x 3
         ->and($r['avance'])->toBe(94500)         // round(135000 x 0,70)
@@ -47,7 +47,7 @@ it('calcule le per diem et répartit avance / reliquat', function () {
 
 it('calcule un per diem détaillé multi-types (état ANaTT) + transport', function () {
     // Cas réel : 1 jour « 1 repas » (15000) + 6 jours « journée complète » (45000).
-    $r = $this->service->calculerDetaille('ORDRE_1', 'INTERIEUR', [
+    $r = $this->service->calculerDetaille('INDICE_SUP_800', 'INTERIEUR', [
         ['type' => 'UN_REPAS', 'nb_jours' => 1],
         ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 6],
     ], exonere: false, montantTransport: 10000);
@@ -64,7 +64,7 @@ it('calcule un per diem détaillé multi-types (état ANaTT) + transport', funct
 });
 
 it('ignore les lignes à zéro jour dans le calcul détaillé', function () {
-    $r = $this->service->calculerDetaille('ORDRE_1', 'INTERIEUR', [
+    $r = $this->service->calculerDetaille('INDICE_SUP_800', 'INTERIEUR', [
         ['type' => 'UN_REPAS', 'nb_jours' => 0],
         ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 3],
     ]);
@@ -78,8 +78,8 @@ it('respecte la part d’avance paramétrable (≠ 70 %)', function () {
     definirPartAvance(60);
 
     try {
-        $simple = $this->service->calculer('ORDRE_1', 'INTERIEUR', 'JOURNEE_COMPLETE', 3);
-        $detaille = $this->service->calculerDetaille('ORDRE_1', 'INTERIEUR', [
+        $simple = $this->service->calculer('INDICE_SUP_800', 'INTERIEUR', 'JOURNEE_COMPLETE', 3);
+        $detaille = $this->service->calculerDetaille('INDICE_SUP_800', 'INTERIEUR', [
             ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 3],
         ]);
 
@@ -93,7 +93,7 @@ it('respecte la part d’avance paramétrable (≠ 70 %)', function () {
 });
 
 it('exonère totalement en cas de prise en charge tiers', function () {
-    $r = $this->service->calculer('ORDRE_1', 'INTERIEUR', 'JOURNEE_COMPLETE', 3, exonere: true);
+    $r = $this->service->calculer('INDICE_SUP_800', 'INTERIEUR', 'JOURNEE_COMPLETE', 3, exonere: true);
 
     expect($r['montant_total'])->toBe(0)
         ->and($r['avance'])->toBe(0)
@@ -102,7 +102,7 @@ it('exonère totalement en cas de prise en charge tiers', function () {
 });
 
 it('lève une erreur si le barème est introuvable', function () {
-    $this->service->calculer('ORDRE_2', 'EXT_ZONE_I', 'LOGE_SEUL', 2);
+    $this->service->calculer('INDICE_400_799', 'EXT_ZONE_I', 'LOGE_SEUL', 2);
 })->throws(ValidationException::class);
 
 it('compte les jours de façon inclusive (12/11 -> 14/11 = 3)', function () {

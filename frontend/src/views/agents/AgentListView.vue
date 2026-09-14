@@ -8,6 +8,7 @@ import { agentsService, type AgentStats } from '@/services/agents'
 import { useSearch } from '@/composables/useSearch'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
+import { CATEGORIES, CATEGORIE_LABELS, categorieLabel } from '@/types'
 import type { Agent } from '@/types'
 
 const { query: searchQuery, debouncedQuery } = useSearch(300)
@@ -129,9 +130,7 @@ async function handleDelete() {
         </div>
         <select v-model="filterCategorie" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500">
           <option value="">Toutes catégories</option>
-          <option value="ORDRE_1">ORDRE_1</option>
-          <option value="ORDRE_2">ORDRE_2</option>
-          <option value="ORDRE_3">ORDRE_3</option>
+          <option v-for="c in CATEGORIES" :key="c" :value="c">{{ CATEGORIE_LABELS[c] }}</option>
         </select>
         <select v-model="filterOperateur" class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body text-gray-700 focus:outline-none focus:border-anatt-500">
           <option value="">Tous opérateurs</option>
@@ -199,7 +198,7 @@ async function handleDelete() {
               </td>
               <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ agent.matricule }}</span></td>
               <td class="px-5 py-3 font-body">{{ agent.grade || '—' }}</td>
-              <td class="px-5 py-3 font-display font-semibold text-anatt-600">{{ agent.categorie }}</td>
+              <td class="px-5 py-3 font-display font-semibold text-anatt-600">{{ categorieLabel(agent.categorie) }}</td>
               <td class="px-5 py-3">
                 <span class="text-xs font-display font-bold px-2 py-1 rounded-lg" :class="agent.operateur === 'MTN' ? 'bg-gold-50 text-gold-600' : 'bg-blue-50 text-blue-600'">
                   {{ agent.operateur }}

@@ -32,11 +32,16 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 - **1 OM SEMO = 1 enregistrement = 1 bénéficiaire** (mono-bénéficiaire).
 - Une **mission** (événement) regroupe **N OM individuels** (participants + chauffeurs).
 - Le **CAV** (conducteur de véhicule administratif) est un **bénéficiaire à part entière**, payé selon **SA** catégorie. Le champ « conducteur à bord » sur l'OM d'un participant n'est qu'une **mention logistique**.
-- **Catégorie d'indice** reprise telle quelle de SEMO :
-  - `ORDRE_1` : indice ≥ 800 — salaire brut ≥ 372 000
-  - `ORDRE_2` : indice 400-799 — salaire brut 186 000-372 000
-  - `ORDRE_3` : indice < 400 — salaire brut < 186 000
+- **Catégorie d'indice** reprise telle quelle de SEMO — le code porte le seuil, jamais affiché brut :
+  - `INDICE_SUP_800` → « Indice ≥ 800 » — salaire brut ≥ 372 000
+  - `INDICE_400_799` → « Indice 400-799 » — salaire brut 186 000-372 000
+  - `INDICE_INF_400` → « Indice < 400 » — salaire brut < 186 000
   - Formule de secours : `indice = salaire_base × 12 / 3097`.
+  - Source de vérité des seuils et libellés : `App\Support\CategorieIndice` (miroir TS :
+    `types/agent.ts` → `CATEGORIE_LABELS` / `categorieLabel()`, seuils dans `utils/benin.ts`).
+  - Les anciens codes `ORDRE_1/2/3` ne sont **plus produits** ; ils restent **acceptés en entrée**
+    (filtres API, import CSV/XLSX) et traduits par `CategorieIndice::normaliser()`. Le journal
+    d'audit conserve le vocabulaire en vigueur au moment de l'action — il ne se réécrit pas.
 - **Per diem** = taux journalier (catégorie × **ZONE** × **type de prise en charge**) × nb jours.
   - 4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` (**II = III**, taux identiques).
   - Types `INTERIEUR` : `UN_REPAS` / `DEUX_REPAS` / `JOURNEE_COMPLETE`.
@@ -564,7 +569,7 @@ interface OrdreMission {
   agent_id: number
   agent?: Agent
   role: 'PARTICIPANT' | 'CAV'    // le CAV est payé selon SA catégorie
-  categorie: 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'  // reprise de SEMO
+  categorie: 'INDICE_SUP_800' | 'INDICE_400_799' | 'INDICE_INF_400'  // reprise de SEMO
   zone_code: 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III'
   type_prise_en_charge: 'UN_REPAS' | 'DEUX_REPAS' | 'JOURNEE_COMPLETE'
                        | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
@@ -595,9 +600,9 @@ interface Agent {
   matricule: string
   ifu?: string
   grade?: string
-  indice?: number              // ORDRE_1 ≥ 800 ; ORDRE_2 400-799 ; ORDRE_3 < 400
+  indice?: number              // ≥ 800 ; 400-799 ; < 400 → détermine la catégorie
   salaire_brut?: number        // ≥ 372000 / 186000-372000 / < 186000
-  categorie: 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'  // déduite de l'indice OU du salaire
+  categorie: 'INDICE_SUP_800' | 'INDICE_400_799' | 'INDICE_INF_400'  // déduite de l'indice OU du salaire
   telephone: string            // national 10 chiffres, débute par 01
   operateur: 'MTN' | 'MOOV'    // cohérent avec le préfixe du numéro
   actif: boolean
@@ -609,7 +614,7 @@ interface Agent {
 ```typescript
 interface Bareme {
   id: number
-  categorie: 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'
+  categorie: 'INDICE_SUP_800' | 'INDICE_400_799' | 'INDICE_INF_400'
   zone_code: 'INTERIEUR' | 'EXT_ZONE_I' | 'EXT_ZONE_II' | 'EXT_ZONE_III' // II = III
   type_prise_en_charge: 'UN_REPAS' | 'DEUX_REPAS' | 'JOURNEE_COMPLETE'
                        | 'LOGE_NOURRI' | 'LOGE_SEUL' | 'NOURRI_SEUL'
@@ -1076,5 +1081,5 @@ MTN_SUBSCRIPTION_KEY=
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 2 septembre 2026 (fonctionnalité amendement d'un OM)*  
+*Dernière mise à jour : 14 septembre 2026 (catégories d'indice nominatives — ORDRE_* remplacé)*  
 *Version projet : 1.0.0*

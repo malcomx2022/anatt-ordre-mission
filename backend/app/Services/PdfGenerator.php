@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Support\CategorieIndice;
 use App\Support\MontantEnLettres;
 use App\Support\Parametres;
 use App\Support\PdfAssets;
@@ -103,7 +104,7 @@ class PdfGenerator
             'statut' => $ordre->statut,
             'beneficiaire' => trim("{$agent->nom} {$agent->prenoms}"),
             'matricule' => $agent->matricule,
-            'categorie' => $ordre->categorie,
+            'categorie' => CategorieIndice::libelle($ordre->categorie),
             'telephone' => $agent->telephone,
             'operateur' => $agent->operateur,
             'grade' => $agent->grade,
@@ -231,7 +232,7 @@ class PdfGenerator
             'beneficiaire' => trim("{$agent->nom} {$agent->prenoms}"),
             'matricule' => $agent->matricule,
             'grade' => $agent->grade,
-            'categorie' => $ordre->categorie,
+            'categorie' => CategorieIndice::libelle($ordre->categorie),
             // Mission
             'reference_semo' => $ordre->reference_semo,
             'objet' => $mission?->objet,

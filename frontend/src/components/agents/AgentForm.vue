@@ -3,7 +3,8 @@
 import { computed, ref, watch } from 'vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { categorieDeduite, operateurPour, telephoneValide } from '@/utils/benin'
-import type { AgentFormData, Categorie } from '@/types'
+import { CATEGORIES, CATEGORIE_LABELS } from '@/types'
+import type { AgentFormData } from '@/types'
 
 const props = defineProps<{
   form: AgentFormData
@@ -14,7 +15,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{ submit: []; cancel: [] }>()
 
-const CATEGORIES: Categorie[] = ['ORDRE_1', 'ORDRE_2', 'ORDRE_3']
 
 const categorieSuggeree = computed(() =>
   categorieDeduite(props.form.indice ?? null, props.form.salaire_brut ?? null),
@@ -79,12 +79,12 @@ function err(champ: string): string | null {
       <div>
         <label class="text-[11px] text-gray-500 font-body block mb-1">
           Catégorie
-          <span v-if="categorieSuggeree" class="text-anatt-500">(déduite : {{ categorieSuggeree }})</span>
+          <span v-if="categorieSuggeree" class="text-anatt-500">(déduite : {{ CATEGORIE_LABELS[categorieSuggeree] }})</span>
         </label>
         <select v-model="form.categorie" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-body focus:outline-none focus:border-anatt-500" @change="categorieTouchee = true"
 >
           <option :value="undefined" disabled>Choisir…</option>
-          <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+          <option v-for="c in CATEGORIES" :key="c" :value="c">{{ CATEGORIE_LABELS[c] }}</option>
         </select>
         <p v-if="err('indice') || err('categorie')" class="text-[11px] text-red-500 mt-1">{{ err('indice') || err('categorie') }}</p>
       </div>

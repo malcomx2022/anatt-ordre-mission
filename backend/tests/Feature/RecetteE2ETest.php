@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Recette de bout en bout (prompt 6.2) :
  * OM réel réf. SEMO 0541405636, mission BOHICON (INTERIEUR, JOURNEE_COMPLETE),
- * un participant ORDRE_1 + un CAV ORDRE_3 ; calcul per diem, versements
+ * un participant INDICE_SUP_800 + un CAV INDICE_INF_400 ; calcul per diem, versements
  * AVANCE/RELIQUAT, génération MTN ET Moov, confirmation, statuts, état mensuel.
  */
 beforeEach(function () {
@@ -21,8 +21,8 @@ beforeEach(function () {
     Storage::fake('local');
     $this->seed(BaremeSeeder::class);
     $this->admin = User::factory()->superAdmin()->create(); // SUPER_ADMIN : bypass de toutes les gardes (Gate::before)
-    $this->dada = Agent::factory()->mtn()->categorie('ORDRE_1')->create(['nom' => 'DADA', 'prenoms' => 'Richard']);
-    $this->cav = Agent::factory()->moov()->categorie('ORDRE_3')->create(['nom' => 'AKPACA', 'prenoms' => 'Gérard']);
+    $this->dada = Agent::factory()->mtn()->categorie('INDICE_SUP_800')->create(['nom' => 'DADA', 'prenoms' => 'Richard']);
+    $this->cav = Agent::factory()->moov()->categorie('INDICE_INF_400')->create(['nom' => 'AKPACA', 'prenoms' => 'Gérard']);
 });
 
 it('déroule le scénario complet SEMO 0541405636 jusqu’à l’état mensuel', function () {
@@ -44,11 +44,11 @@ it('déroule le scénario complet SEMO 0541405636 jusqu’à l’état mensuel',
     $omCav = OrdreMission::where('reference_semo', '0541405637')->first();
     $missionId = $omDada->mission_id;
 
-    // Per diem ORDRE_1 / INTERIEUR / JOURNEE_COMPLETE = 45000 × 3 jours.
+    // Per diem INDICE_SUP_800 / INTERIEUR / JOURNEE_COMPLETE = 45000 × 3 jours.
     expect($omDada->montant_total)->toBe(135000)        // 45000 × 3
         ->and($omDada->avance)->toBe(94500)             // 70 %
         ->and($omDada->reliquat)->toBe(40500);          // 30 %
-    // CAV payé selon SA catégorie (ORDRE_3 = 30000 × 3).
+    // CAV payé selon SA catégorie (INDICE_INF_400 = 30000 × 3).
     expect($omCav->montant_total)->toBe(90000);
 
     // Versements AVANCE + RELIQUAT par OM.

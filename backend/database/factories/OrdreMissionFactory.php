@@ -23,7 +23,7 @@ class OrdreMissionFactory extends Factory
             'mission_id' => Mission::factory(),
             'agent_id' => Agent::factory(),
             'role' => 'PARTICIPANT',
-            'categorie' => 'ORDRE_1',
+            'categorie' => 'INDICE_SUP_800',
             'zone_code' => 'INTERIEUR',
             'type_prise_en_charge' => 'JOURNEE_COMPLETE',
             'nb_jours' => 3,
@@ -36,7 +36,7 @@ class OrdreMissionFactory extends Factory
 
     public function cav(): static
     {
-        return $this->state(fn () => ['role' => 'CAV', 'categorie' => 'ORDRE_3']);
+        return $this->state(fn () => ['role' => 'CAV', 'categorie' => 'INDICE_INF_400']);
     }
 
     public function statut(string $statut): static

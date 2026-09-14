@@ -14,6 +14,7 @@ import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { partAvance } from '@/composables/usePartAvance'
 import { numeroEtat } from '@/utils/etats'
+import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
@@ -208,7 +209,7 @@ onMounted(load)
           <dl class="grid grid-cols-2 gap-2 text-sm font-body">
             <dt class="text-gray-400">Agent</dt><dd>{{ ordre.agent ? `${ordre.agent.nom} ${ordre.agent.prenoms}` : '—' }}</dd>
             <dt class="text-gray-400">Matricule</dt><dd>{{ ordre.agent?.matricule }}</dd>
-            <dt class="text-gray-400">Catégorie</dt><dd class="font-semibold text-anatt-600">{{ ordre.categorie }}</dd>
+            <dt class="text-gray-400">Catégorie</dt><dd class="font-semibold text-anatt-600">{{ categorieLabel(ordre.categorie) }}</dd>
             <dt class="text-gray-400">Type</dt><dd>{{ ordre.type_prise_en_charge }}</dd>
             <dt class="text-gray-400">Nb jours</dt><dd>{{ ordre.nb_jours }}</dd>
             <template v-if="ordre.lignes_per_diem && ordre.lignes_per_diem.length > 1">

@@ -13,7 +13,7 @@ class BaremeFactory extends Factory
     public function definition(): array
     {
         return [
-            'categorie' => 'ORDRE_1',
+            'categorie' => 'INDICE_SUP_800',
             'zone_code' => 'INTERIEUR',
             'type_prise_en_charge' => 'JOURNEE_COMPLETE',
             'taux_journalier' => 45000,

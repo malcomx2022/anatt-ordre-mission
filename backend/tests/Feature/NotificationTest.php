@@ -50,13 +50,13 @@ it('n’envoie aucune notification si aucun destinataire du rôle', function () 
 function omEngageAvecReliquat(): OrdreMission
 {
     Bareme::factory()->create([
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ]);
     $mission = Mission::factory()->create(['zone_code' => 'INTERIEUR', 'prise_en_charge_tiers' => false]);
     $om = OrdreMission::factory()->create([
         'mission_id' => $mission->id, 'statut' => 'VALIDE',
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
         'nb_jours' => 6, 'montant_total' => 270000, 'avance' => 189000, 'reliquat' => 81000, 'avance_engagee' => 189000,
     ]);
     Versement::factory()->create(['ordre_mission_id' => $om->id, 'type' => 'RELIQUAT', 'montant' => 81000, 'statut' => 'EN_ATTENTE']);

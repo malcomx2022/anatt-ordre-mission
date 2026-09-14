@@ -360,7 +360,7 @@ para("Le référentiel des agents centralise les bénéficiaires. C'est lui qui 
 
 h2("5.1 Consulter la liste")
 bullet("Recherche par nom, matricule ou IFU.")
-bullet("Filtres par catégorie (ORDRE_1/2/3), par opérateur et par statut actif/inactif.")
+bullet("Filtres par catégorie d'indice (≥ 800 / 400-799 / < 400), par opérateur et par statut actif/inactif.")
 bullet("Pagination et accès à la fiche détaillée d'un agent.")
 
 h2("5.2 Créer ou modifier un agent")
@@ -368,7 +368,7 @@ para("Réservé aux profils disposant de « Personnel — gérer » (GESTIONNAIR
 etape("Cliquez sur « Nouvel agent » (ou « Modifier » depuis une fiche).")
 etape("Renseignez l'identité, le matricule, l'indice ou le salaire brut (la catégorie en est déduite).")
 etape("Saisissez le téléphone (10 chiffres, commençant par 01) et l'opérateur cohérent avec le numéro.")
-etape("Enregistrez. La catégorie ORDRE_1/2/3 est calculée automatiquement.")
+etape("Enregistrez. La catégorie d'indice (≥ 800 / 400-799 / < 400) est calculée automatiquement.")
 
 h2("5.3 Importer des agents (Excel / CSV)")
 etape("Ouvrez « Import » dans le module Personnel.")
@@ -669,21 +669,21 @@ doc.add_page_break()
 h1("Annexe B — Barème officiel (FCFA / jour)")
 h2("Zone INTERIEUR")
 tableau(["Catégorie", "Un repas", "Deux repas", "Journée complète"],
-        [["ORDRE_1", "15 000", "30 000", "45 000"],
-         ["ORDRE_2", "10 000", "20 000", "35 000"],
-         ["ORDRE_3", "8 500", "15 000", "30 000"]],
+        [["INDICE_SUP_800", "15 000", "30 000", "45 000"],
+         ["INDICE_400_799", "10 000", "20 000", "35 000"],
+         ["INDICE_INF_400", "8 500", "15 000", "30 000"]],
         largeurs=[4.2, 4.2, 4.2, 4.2])
 h2("Zone EXT_ZONE_I")
 tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nourri seul"],
-        [["ORDRE_1", "175 000", "60 000", "90 000", "120 000"],
-         ["ORDRE_2", "140 000", "50 000", "70 000", "95 000"],
-         ["ORDRE_3", "105 000", "35 000", "55 000", "70 000"]],
+        [["INDICE_SUP_800", "175 000", "60 000", "90 000", "120 000"],
+         ["INDICE_400_799", "140 000", "50 000", "70 000", "95 000"],
+         ["INDICE_INF_400", "105 000", "35 000", "55 000", "70 000"]],
         largeurs=[3.3, 3.5, 3.3, 3.3, 3.3])
 h2("Zones EXT_ZONE_II et EXT_ZONE_III (taux identiques)")
 tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nourri seul"],
-        [["ORDRE_1", "105 000", "35 000", "55 000", "70 000"],
-         ["ORDRE_2", "85 000", "30 000", "45 000", "60 000"],
-         ["ORDRE_3", "65 000", "25 000", "35 000", "45 000"]],
+        [["INDICE_SUP_800", "105 000", "35 000", "55 000", "70 000"],
+         ["INDICE_400_799", "85 000", "30 000", "45 000", "60 000"],
+         ["INDICE_INF_400", "65 000", "25 000", "35 000", "45 000"]],
         largeurs=[3.3, 3.5, 3.3, 3.3, 3.3])
 para("Note : ces montants sont ceux du barème par défaut et peuvent être ajustés par l'ADMIN dans le "
      "module Barème. Les zones EXT_ZONE_II et EXT_ZONE_III étant identiques, modifier un taux de l'une "

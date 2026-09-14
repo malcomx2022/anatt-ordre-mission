@@ -357,7 +357,7 @@ tableau(
     [
         ["reference_semo", "string", "Clé naturelle UNIQUE (anti-doublon)."],
         ["role", "enum", "PARTICIPANT | CAV (le CAV est payé selon SA catégorie)."],
-        ["categorie", "enum", "ORDRE_1 | ORDRE_2 | ORDRE_3 (reprise de SEMO)."],
+        ["categorie", "enum", "INDICE_SUP_800 | INDICE_400_799 | INDICE_INF_400 (reprise de SEMO)."],
         ["zone_code", "enum", "INTERIEUR | EXT_ZONE_I | EXT_ZONE_II | EXT_ZONE_III."],
         ["type_prise_en_charge", "enum", "UN_REPAS | DEUX_REPAS | JOURNEE_COMPLETE | LOGE_NOURRI | LOGE_SEUL | NOURRI_SEUL."],
         ["nb_jours", "int", "Décompte inclusif (règle des 12 h)."],
@@ -410,7 +410,7 @@ para("Réservé en écriture aux profils disposant de « personnel.gerer ». Le 
      "téléphone et l'opérateur utilisés au paiement (jamais l'OM).")
 bullet("PERS-01 — Liste : recherche (nom/matricule/IFU), filtres catégorie/opérateur/statut.")
 bullet("PERS-02 — Fiche : informations complètes + historique des missions.")
-bullet("PERS-03 — Création : la catégorie ORDRE_1/2/3 est déduite de l'indice ou du salaire.")
+bullet("PERS-03 — Création : la catégorie d'indice (INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400) est déduite de l'indice ou du salaire.")
 bullet("PERS-04 — Modification ; PERS-05 — Mon profil ; PERS-06 — Import Excel/CSV.")
 
 h2("3.4 Module Ordres de mission")
@@ -553,9 +553,9 @@ h2("5.2 Catégories d'indice (reprises de SEMO)")
 tableau(
     ["Catégorie", "Indice", "Salaire brut (formule de secours : indice = salaire × 12 / 3097)"],
     [
-        ["ORDRE_1", "≥ 800", "≥ 372 000 FCFA"],
-        ["ORDRE_2", "400 – 799", "186 000 – 372 000 FCFA"],
-        ["ORDRE_3", "< 400", "< 186 000 FCFA"],
+        ["INDICE_SUP_800", "≥ 800", "≥ 372 000 FCFA"],
+        ["INDICE_400_799", "400 – 799", "186 000 – 372 000 FCFA"],
+        ["INDICE_INF_400", "< 400", "< 186 000 FCFA"],
     ],
     largeurs=[3.2, 3.0, 10.6],
 )
@@ -840,21 +840,21 @@ doc.add_page_break()
 h1("Annexe A — Barème officiel (FCFA / jour)")
 h2("Zone INTERIEUR")
 tableau(["Catégorie", "Un repas", "Deux repas", "Journée complète"],
-        [["ORDRE_1", "15 000", "30 000", "45 000"],
-         ["ORDRE_2", "10 000", "20 000", "35 000"],
-         ["ORDRE_3", "8 500", "15 000", "30 000"]],
+        [["INDICE_SUP_800", "15 000", "30 000", "45 000"],
+         ["INDICE_400_799", "10 000", "20 000", "35 000"],
+         ["INDICE_INF_400", "8 500", "15 000", "30 000"]],
         largeurs=[4.2, 4.2, 4.2, 4.2])
 h2("Zone EXT_ZONE_I")
 tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nourri seul"],
-        [["ORDRE_1", "175 000", "60 000", "90 000", "120 000"],
-         ["ORDRE_2", "140 000", "50 000", "70 000", "95 000"],
-         ["ORDRE_3", "105 000", "35 000", "55 000", "70 000"]],
+        [["INDICE_SUP_800", "175 000", "60 000", "90 000", "120 000"],
+         ["INDICE_400_799", "140 000", "50 000", "70 000", "95 000"],
+         ["INDICE_INF_400", "105 000", "35 000", "55 000", "70 000"]],
         largeurs=[3.3, 3.5, 3.3, 3.3, 3.3])
 h2("Zones EXT_ZONE_II et EXT_ZONE_III (taux identiques, synchronisés à l'édition)")
 tableau(["Catégorie", "Journée complète", "Logé+nourri", "Logé seul", "Nourri seul"],
-        [["ORDRE_1", "105 000", "35 000", "55 000", "70 000"],
-         ["ORDRE_2", "85 000", "30 000", "45 000", "60 000"],
-         ["ORDRE_3", "65 000", "25 000", "35 000", "45 000"]],
+        [["INDICE_SUP_800", "105 000", "35 000", "55 000", "70 000"],
+         ["INDICE_400_799", "85 000", "30 000", "45 000", "60 000"],
+         ["INDICE_INF_400", "65 000", "25 000", "35 000", "45 000"]],
         largeurs=[3.3, 3.5, 3.3, 3.3, 3.3])
 para("Note : barème par défaut, ajustable par l'ADMIN dans le module Barème.", italic=True, color=GRIS)
 

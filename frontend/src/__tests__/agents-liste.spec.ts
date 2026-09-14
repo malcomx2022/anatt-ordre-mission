@@ -30,7 +30,7 @@ beforeEach(() => {
   list.mockReset(); stats.mockReset()
   // La page ne contient qu'UN agent MTN, mais les totaux globaux en comptent bien plus.
   list.mockResolvedValue({
-    items: [{ id: 1, nom: 'A', prenoms: 'B', matricule: 'M1', categorie: 'ORDRE_1', operateur: 'MTN', telephone: '0190000000', actif: true }],
+    items: [{ id: 1, nom: 'A', prenoms: 'B', matricule: 'M1', categorie: 'INDICE_SUP_800', operateur: 'MTN', telephone: '0190000000', actif: true }],
     meta: { current_page: 1, last_page: 3, per_page: 15, total: 42 },
   })
   stats.mockResolvedValue({ total: 42, actifs: 40, inactifs: 2, mtn: 25, moov: 17 })

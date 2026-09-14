@@ -15,7 +15,7 @@ beforeEach(function () {
     $this->seed(BaremeSeeder::class);
     $this->service = app(MissionService::class);
     $this->user = User::factory()->gestionnaireOm()->create();
-    $this->agent = Agent::factory()->categorie('ORDRE_1')->create();
+    $this->agent = Agent::factory()->categorie('INDICE_SUP_800')->create();
 });
 
 function donneesMission(Agent $agent, array $surcharge = []): array
@@ -45,14 +45,14 @@ it('crée la mission, les OM et leurs versements', function () {
 });
 
 it('reprend la catégorie de l’agent quand non fournie', function () {
-    $cav = Agent::factory()->categorie('ORDRE_3')->create();
+    $cav = Agent::factory()->categorie('INDICE_INF_400')->create();
     $this->service->creerAvecOrdres(donneesMission($this->agent, [
         'ordres' => [
             ['reference_semo' => 'SEMO-CAV', 'agent_id' => $cav->id, 'role' => 'CAV', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
         ],
     ]), $this->user);
 
-    expect(OrdreMission::where('reference_semo', 'SEMO-CAV')->value('categorie'))->toBe('ORDRE_3');
+    expect(OrdreMission::where('reference_semo', 'SEMO-CAV')->value('categorie'))->toBe('INDICE_INF_400');
 });
 
 it('n’alloue aucun versement si exonération', function () {

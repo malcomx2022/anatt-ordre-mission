@@ -31,14 +31,14 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
 **Mission SEMO** — *Dossiers de passation de marchés*
 **Lieu** : BOHICON (zone **INTERIEUR**) · **Période** : du 18 au 23 mai 2026
 **Répartition per diem** (état ANaTT) : **1 jour « un repas » (15 000) + 6 jours
-« journée complète » (45 000)** = **285 000** par bénéficiaire (catégorie ORDRE_1).
+« journée complète » (45 000)** = **285 000** par bénéficiaire (catégorie INDICE_SUP_800).
 
 | Réf. SEMO | Bénéficiaire | Catégorie | Téléphone | → Opérateur (auto) | Transport |
 |---|---|---|---|---|---|
-| 0055000167 | SOUMANOU DJARA Sabirou | ORDRE_1 | 01 97 98 48 77 | **MTN** (préfixe 97) | — |
-| 0055000161 | ATCHA Gabriel | ORDRE_1 | 01 96 69 58 24 | **MTN** (préfixe 96) | **10 000** |
-| 0055000165 | MONHOUNVEDO Rousselot | ORDRE_1 | 01 67 26 74 55 | **MOOV** (préfixe 67) | — |
-| 0055000162 | ABLESSOU Sacré cœur | ORDRE_1 | 01 67 75 20 11 | **MOOV** (préfixe 67) | — |
+| 0055000167 | SOUMANOU DJARA Sabirou | INDICE_SUP_800 | 01 97 98 48 77 | **MTN** (préfixe 97) | — |
+| 0055000161 | ATCHA Gabriel | INDICE_SUP_800 | 01 96 69 58 24 | **MTN** (préfixe 96) | **10 000** |
+| 0055000165 | MONHOUNVEDO Rousselot | INDICE_SUP_800 | 01 67 26 74 55 | **MOOV** (préfixe 67) | — |
+| 0055000162 | ABLESSOU Sacré cœur | INDICE_SUP_800 | 01 67 75 20 11 | **MOOV** (préfixe 67) | — |
 
 > 🔑 **Point clé** : l'opérateur n'est **pas choisi** — il est **déduit
 > automatiquement du numéro** (référentiel agent : préfixes MTN 50-59/90-99,
@@ -186,9 +186,9 @@ Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** 
 
 | Catégorie | Un repas | Deux repas | Journée complète |
 |---|---|---|---|
-| ORDRE_1 (indice ≥ 800) | 15 000 | 30 000 | 45 000 |
-| ORDRE_2 (indice 400-799) | 10 000 | 20 000 | 35 000 |
-| ORDRE_3 (indice < 400) | 8 500 | 15 000 | 30 000 |
+| INDICE_SUP_800 (indice ≥ 800) | 15 000 | 30 000 | 45 000 |
+| INDICE_400_799 (indice 400-799) | 10 000 | 20 000 | 35 000 |
+| INDICE_INF_400 (indice < 400) | 8 500 | 15 000 | 30 000 |
 
 ---
 
@@ -199,7 +199,7 @@ Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** 
 > **engagée** : elle ne bouge plus. C'est le **reliquat** qui absorbe l'écart —
 > quitte à devenir **négatif** (trop-perçu à récupérer).
 
-**Point de départ** (bénéficiaire d'illustration, catégorie ORDRE_1, zone
+**Point de départ** (bénéficiaire d'illustration, catégorie INDICE_SUP_800, zone
 INTERIEUR, **6 jours journée complète** = 6 × 45 000) :
 
 ```

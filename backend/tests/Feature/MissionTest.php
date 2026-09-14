@@ -10,8 +10,8 @@ beforeEach(function () {
     $this->seed(BaremeSeeder::class);
     $this->gestion = User::factory()->gestionnaireOm()->create();   // retranscription (om.retranscrire)
     $this->controleur = User::factory()->controleur()->create();     // validation/rejet (om.valider)
-    $this->dada = Agent::factory()->categorie('ORDRE_1')->create();
-    $this->cav = Agent::factory()->categorie('ORDRE_3')->moov()->create();
+    $this->dada = Agent::factory()->categorie('INDICE_SUP_800')->create();
+    $this->cav = Agent::factory()->categorie('INDICE_INF_400')->moov()->create();
 });
 
 function missionPayload(array $agents): array
@@ -35,7 +35,7 @@ it('retranscrit une mission en N OM avec versements', function () {
     expect(OrdreMission::count())->toBe(2);
 
     $om = OrdreMission::where('reference_semo', 'SEMO-1')->first();
-    // ORDRE_1 / INTERIEUR / JOURNEE_COMPLETE = 45000 x 3 = 135000
+    // INDICE_SUP_800 / INTERIEUR / JOURNEE_COMPLETE = 45000 x 3 = 135000
     expect($om->montant_total)->toBe(135000)
         ->and($om->avance)->toBe(94500)     // 70 %
         ->and($om->reliquat)->toBe(40500)   // 30 %
@@ -58,7 +58,7 @@ it('retranscrit en répartition détaillée sans type_prise_en_charge (mode lign
     ]))->assertStatus(201);
 
     $om = OrdreMission::where('reference_semo', 'SEMO-DET')->firstOrFail();
-    // ORDRE_1 / INTERIEUR : 15000 x1 (un repas) + 45000 x2 (journée) = 105000
+    // INDICE_SUP_800 / INTERIEUR : 15000 x1 (un repas) + 45000 x2 (journée) = 105000
     expect($om->montant_total)->toBe(105000)
         ->and($om->type_prise_en_charge)->not->toBeNull()
         ->and($om->statut)->toBe('IMPORTE');
@@ -90,7 +90,7 @@ it('le CAV est payé selon SA catégorie', function () {
         ['reference_semo' => 'SEMO-CAV', 'agent_id' => $this->cav->id, 'role' => 'CAV', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
     ]))->assertStatus(201);
 
-    // ORDRE_3 / INTERIEUR / JOURNEE_COMPLETE = 30000 x 3 = 90000
+    // INDICE_INF_400 / INTERIEUR / JOURNEE_COMPLETE = 30000 x 3 = 90000
     expect(OrdreMission::where('reference_semo', 'SEMO-CAV')->value('montant_total'))->toBe(90000);
 });
 

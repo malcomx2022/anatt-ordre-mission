@@ -24,22 +24,22 @@ it('refuse la lecture du barème au lecteur', function () {
 
 it('crée une ligne de barème', function () {
     $this->actingAs($this->admin)->postJson('/api/baremes', [
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ])->assertStatus(201)->assertJsonPath('data.taux_journalier', 45000);
 });
 
 it('refuse un triplet en doublon', function () {
-    Bareme::factory()->create(['categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE']);
+    Bareme::factory()->create(['categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE']);
 
     $this->actingAs($this->admin)->postJson('/api/baremes', [
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 99999,
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 99999,
     ])->assertStatus(422);
 });
 
 it('refuse un type incompatible avec la zone', function () {
     // UN_REPAS (repas) interdit en zone extérieure.
     $this->actingAs($this->admin)->postJson('/api/baremes', [
-        'categorie' => 'ORDRE_1', 'zone_code' => 'EXT_ZONE_I', 'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 10000,
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'EXT_ZONE_I', 'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 10000,
     ])->assertStatus(422)->assertJsonValidationErrors(['type_prise_en_charge']);
 });
 

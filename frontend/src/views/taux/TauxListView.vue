@@ -4,7 +4,7 @@ import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import { baremesService } from '@/services/baremes'
 import { useAuth } from '@/composables/useAuth'
-import { typesPourZone } from '@/types'
+import { CATEGORIES, CATEGORIE_LABELS, typesPourZone } from '@/types'
 import type { Bareme, Categorie, ZoneCode, TypePriseEnCharge } from '@/types'
 
 const { canManageBaremes } = useAuth()
@@ -19,7 +19,6 @@ const ZONES: { value: ZoneCode; label: string }[] = [
   { value: 'EXT_ZONE_III', label: 'Extérieur — Zone III' },
 ]
 
-const CATEGORIES: Categorie[] = ['ORDRE_1', 'ORDRE_2', 'ORDRE_3']
 const TYPE_LABELS: Record<TypePriseEnCharge, string> = {
   UN_REPAS: 'Un repas', DEUX_REPAS: 'Deux repas', JOURNEE_COMPLETE: 'Journée complète',
   LOGE_NOURRI: 'Logé + nourri', LOGE_SEUL: 'Logé seul', NOURRI_SEUL: 'Nourri seul',
@@ -69,7 +68,7 @@ onMounted(async () => {
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr v-for="c in CATEGORIES" :key="c" class="hover:bg-gray-50">
-              <td class="px-4 py-3 font-display font-bold text-anatt-700">{{ c }}</td>
+              <td class="px-4 py-3 font-display font-bold text-anatt-700">{{ CATEGORIE_LABELS[c] }}</td>
               <td v-for="t in types" :key="t" class="px-4 py-3 text-right">
                 <span v-if="taux(c, t) !== null" class="font-display font-semibold text-gray-800">{{ fmt(taux(c, t)!) }}</span>
                 <span v-else class="text-gray-300">—</span>

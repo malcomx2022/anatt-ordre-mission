@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Bareme;
 use App\Models\OrdreMission;
+use App\Support\CategorieIndice;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,8 +16,9 @@ class BaremeService
     {
         $query = Bareme::query();
 
+        // Le filtre accepte encore l'ancien code ORDRE_*.
         if ($categorie = ($filters['categorie'] ?? null)) {
-            $query->where('categorie', $categorie);
+            $query->where('categorie', CategorieIndice::normaliser($categorie) ?? $categorie);
         }
 
         if ($zone = ($filters['zone_code'] ?? null)) {

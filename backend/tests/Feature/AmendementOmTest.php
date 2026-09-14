@@ -10,7 +10,7 @@ use App\Models\Versement;
 
 /*
  * Amendement d'un OM (rallonge / réduction des jours facturés) — Phase 2.
- * Base : ORDRE_1 / INTERIEUR / journée complète (45 000). OM à 6 j = 270 000,
+ * Base : INDICE_SUP_800 / INTERIEUR / journée complète (45 000). OM à 6 j = 270 000,
  * avance 189 000 (70 %), reliquat 81 000. Cf. docs/amendement-om.md.
  */
 
@@ -18,7 +18,7 @@ beforeEach(function () {
     $this->gestionnaire = User::factory()->gestionnaireOm()->create();
 
     Bareme::factory()->create([
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ]);
 
@@ -27,7 +27,7 @@ beforeEach(function () {
     ]);
     $this->om = OrdreMission::factory()->create([
         'mission_id' => $this->mission->id, 'statut' => 'IMPORTE',
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
         'nb_jours' => 6, 'montant_total' => 270000, 'avance' => 189000, 'reliquat' => 81000,
     ]);
     Versement::factory()->create(['ordre_mission_id' => $this->om->id, 'type' => 'AVANCE', 'montant' => 189000, 'statut' => 'EN_ATTENTE']);

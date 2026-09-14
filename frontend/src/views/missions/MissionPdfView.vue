@@ -7,6 +7,7 @@ import AppButton from '@/components/shared/AppButton.vue'
 import { ordresService } from '@/services/ordres'
 import { useToast } from '@/composables/useToast'
 import { partAvance } from '@/composables/usePartAvance'
+import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
@@ -69,7 +70,7 @@ async function telechargerPdf() {
         <p><span class="text-gray-400">Destination :</span> {{ ordre.mission?.destination }} ({{ ordre.zone_code }})</p>
         <p><span class="text-gray-400">Période :</span> {{ ordre.mission?.date_depart }} → {{ ordre.mission?.date_retour }}</p>
         <p><span class="text-gray-400">Durée :</span> {{ ordre.nb_jours }} jour(s)</p>
-        <p><span class="text-gray-400">Catégorie :</span> {{ ordre.categorie }}</p>
+        <p><span class="text-gray-400">Catégorie :</span> {{ categorieLabel(ordre.categorie) }}</p>
         <p><span class="text-gray-400">Prise en charge :</span> {{ ordre.type_prise_en_charge }}</p>
       </div>
 

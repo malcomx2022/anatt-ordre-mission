@@ -30,7 +30,7 @@ class OrdreMission extends Model
         'mission_id',
         'agent_id',
         'role',                 // PARTICIPANT | CAV
-        'categorie',            // ORDRE_1 | ORDRE_2 | ORDRE_3 (reprise SEMO)
+        'categorie',            // INDICE_SUP_800 | INDICE_400_799 | INDICE_INF_400 (reprise SEMO)
         'zone_code',
         'type_prise_en_charge',
         'nb_jours',
