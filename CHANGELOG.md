@@ -9,6 +9,23 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Ajouté
+
+- **Garde-fou sur les modèles d'import du personnel**
+  Les fichiers distribués aux utilisateurs (`docs/modele-import-agents.csv`, à
+  séparateur **point-virgule** comme le produit Excel en configuration française,
+  et son jumeau `.xlsx`) sont désormais importés par la suite de tests elle-même.
+  Leur lisibilité ne tenait à aucun réglage du projet : c'est le défaut
+  `excel.imports.csv.delimiter = null` de maatwebsite/excel qui laisse
+  PhpSpreadsheet **inférer** le séparateur. Publier `config/excel.php` et
+  « harmoniser » ce délimiteur sur celui des exports (`,`) rendrait le modèle
+  illisible — silencieusement : une seule colonne reconnue, un rapport d'erreurs
+  incompréhensible pour l'utilisateur. Vérifié en provoquant la régression :
+  le modèle n'importe alors plus aucun agent et les tests tombent.
+  Test : `backend/tests/Feature/ImportModeleAgentsTest.php` (4 cas : modèle CSV
+  avec BOM et colonnes alignées, couverture des 3 catégories et des 2 opérateurs,
+  modèle XLSX avec le téléphone préservé en texte, et fichier à séparateur `,`).
+
 ### Modifié
 
 - **Catégories d'indice nominatives — `ORDRE_1/2/3` remplacé**
