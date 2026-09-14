@@ -12,7 +12,7 @@ use App\Models\User;
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
-    $this->cle = ['categorie' => 'ORDRE_1', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'];
+    $this->cle = ['categorie' => 'INDICE_SUP_800', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'];
 });
 
 it('crée le jumeau EXT_ZONE_III en créant un barème EXT_ZONE_II', function () {
@@ -65,7 +65,7 @@ it('bloque la suppression si le jumeau est utilisé par une mission en cours', f
 });
 
 it('n’a aucun effet croisé pour une zone sans jumelle (INTERIEUR)', function () {
-    $int = Bareme::factory()->create(['categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 40000]);
+    $int = Bareme::factory()->create(['categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 40000]);
 
     $this->actingAs($this->admin)->putJson("/api/baremes/{$int->id}", ['taux_journalier' => 42000])->assertOk();
 

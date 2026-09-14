@@ -9,6 +9,36 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Modifié
+
+- **Catégories d'indice nominatives — `ORDRE_1/2/3` remplacé**
+  La catégorie d'un agent ne s'appelle plus « ordre » mais porte l'indice
+  qu'elle désigne : `INDICE_SUP_800` (« Indice ≥ 800 »), `INDICE_400_799`
+  (« Indice 400-799 ») et `INDICE_INF_400` (« Indice < 400 »). Le vocabulaire
+  de l'application rejoint ainsi celui déjà imprimé dans la colonne
+  *Grade/Indice* des états de paiement signés.
+  Les écrans et les PDF affichent désormais un **libellé** et non plus le code
+  brut (personnel, retranscription d'OM, matrice du barème, fiches, impressions).
+  Les seuils (800 / 400 / 372 000 / 186 000), jusqu'ici dupliqués en quatre
+  endroits côté serveur, sont centralisés.
+  **Transition** : les anciens codes `ORDRE_*` ne sont plus produits mais restent
+  **acceptés en entrée** — filtres `?categorie=`, fichiers d'import déjà préparés,
+  création d'agent, de barème et retranscription — et sont traduits silencieusement.
+  Le journal d'audit n'est pas réécrit : ses entrées antérieures conservent
+  l'ancien vocabulaire.
+  Fichiers : `backend/app/Support/CategorieIndice.php` (nouveau, source de vérité),
+  `backend/database/migrations/2026_09_14_090000_renommer_categories_ordre_en_indice.php`
+  (bascule des trois colonnes `enum` en trois temps — élargir, traduire, refermer),
+  `frontend/src/types/agent.ts` (`CATEGORIE_LABELS`, `categorieLabel()`),
+  + requests, services, seeders, factories, 10 écrans et les PDF.
+  Tests : `backend/tests/Feature/CategorieIndiceTransitionTest.php` (7 cas :
+  vocabulaire produit, anciens codes acceptés à la création, dans les filtres
+  agents et barème, à l'import CSV, code inconnu toujours rejeté) et
+  `backend/tests/Unit/CategorieTest.php` (normalisation, libellés, plages).
+  Documentation : `docs/categories-indice.md`.
+  Non impactés (vérifié) : scellé HMAC des états, états déjà signés, formats de
+  fichiers MTN/Moov, et tous les montants.
+
 ### Ajouté
 
 - **Auto-synchronisation de l'état de paiement avec ses OM**

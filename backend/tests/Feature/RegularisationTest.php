@@ -21,7 +21,7 @@ beforeEach(function () {
     $this->finance = User::factory()->agentFinancier()->create();
 
     Bareme::factory()->create([
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ]);
 
@@ -32,7 +32,7 @@ beforeEach(function () {
     // OM 6 j = 270 000, avance ENGAGÉE à 189 000, reliquat 81 000.
     $this->om = OrdreMission::factory()->create([
         'mission_id' => $this->mission->id, 'agent_id' => $this->agent->id, 'statut' => 'VALIDE',
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
         'nb_jours' => 6, 'montant_total' => 270000, 'avance' => 189000, 'reliquat' => 81000,
         'avance_engagee' => 189000,
     ]);
@@ -84,7 +84,7 @@ function creerRegularisation(string $reference, int $montantARecouvrer): void
     $agent = Agent::factory()->create(['operateur' => 'MTN']);
     $om = OrdreMission::factory()->create([
         'mission_id' => $mission->id, 'agent_id' => $agent->id, 'reference_semo' => $reference,
-        'statut' => 'VALIDE', 'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'statut' => 'VALIDE', 'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'nb_jours' => 1, 'montant_total' => 1,
         'avance' => 1, 'reliquat' => -$montantARecouvrer, 'avance_engagee' => 1,
     ]);

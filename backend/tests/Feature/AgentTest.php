@@ -12,17 +12,17 @@ it('crée un agent et déduit la catégorie depuis l’indice', function () {
         'nom' => 'DADA', 'prenoms' => 'Richard', 'matricule' => 'ANT-1001',
         'telephone' => '0190000001', 'operateur' => 'MTN', 'indice' => 850,
     ])->assertStatus(201)
-        ->assertJsonPath('data.categorie', 'ORDRE_1');
+        ->assertJsonPath('data.categorie', 'INDICE_SUP_800');
 
-    expect(Agent::where('matricule', 'ANT-1001')->value('categorie'))->toBe('ORDRE_1');
+    expect(Agent::where('matricule', 'ANT-1001')->value('categorie'))->toBe('INDICE_SUP_800');
 });
 
-it('déduit ORDRE_3 depuis le salaire brut', function () {
+it('déduit INDICE_INF_400 depuis le salaire brut', function () {
     $this->actingAs($this->gestion)->postJson('/api/agents', [
         'nom' => 'AKPACA', 'prenoms' => 'Gérard', 'matricule' => 'ANT-1002',
         'telephone' => '0140000002', 'operateur' => 'MOOV', 'salaire_brut' => 150000,
     ])->assertStatus(201)
-        ->assertJsonPath('data.categorie', 'ORDRE_3');
+        ->assertJsonPath('data.categorie', 'INDICE_INF_400');
 });
 
 it('refuse un téléphone au mauvais format', function () {
@@ -72,10 +72,10 @@ it('désactive un agent', function () {
 });
 
 it('filtre les agents par catégorie', function () {
-    Agent::factory()->categorie('ORDRE_1')->create();
-    Agent::factory()->categorie('ORDRE_3')->create();
+    Agent::factory()->categorie('INDICE_SUP_800')->create();
+    Agent::factory()->categorie('INDICE_INF_400')->create();
 
-    $this->actingAs($this->gestion)->getJson('/api/agents?categorie=ORDRE_1')
+    $this->actingAs($this->gestion)->getJson('/api/agents?categorie=INDICE_SUP_800')
         ->assertOk()
         ->assertJsonCount(1, 'data');
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\CategorieIndice;
 use App\Support\ZoneResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -38,6 +39,11 @@ class StoreMissionRequest extends FormRequest
                 if (($ordre['type_prise_en_charge'] ?? null) === '') {
                     $ordres[$i]['type_prise_en_charge'] = null;
                 }
+
+                // Catégorie transmise sous l'ancien code ORDRE_* : on la traduit.
+                if ($normalisee = CategorieIndice::normaliser($ordre['categorie'] ?? null)) {
+                    $ordres[$i]['categorie'] = $normalisee;
+                }
             }
             $this->merge(['ordres' => $ordres]);
         }
@@ -60,7 +66,7 @@ class StoreMissionRequest extends FormRequest
             'ordres.*.reference_semo' => 'required|string|max:255|distinct|unique:ordre_missions,reference_semo',
             'ordres.*.agent_id' => 'required|integer|exists:agents,id',
             'ordres.*.role' => 'required|in:PARTICIPANT,CAV',
-            'ordres.*.categorie' => 'nullable|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'ordres.*.categorie' => 'nullable|'.CategorieIndice::regleIn(),
             // Requis uniquement en mode simple : en répartition détaillée, ce sont
             // les `lignes` qui portent les types (le type est alors déduit).
             'ordres.*.type_prise_en_charge' => 'nullable|required_without:ordres.*.lignes|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',

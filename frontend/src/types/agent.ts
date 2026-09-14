@@ -1,5 +1,24 @@
-export type Categorie = 'ORDRE_1' | 'ORDRE_2' | 'ORDRE_3'
+export type Categorie = 'INDICE_SUP_800' | 'INDICE_400_799' | 'INDICE_INF_400'
 export type Operateur = 'MTN' | 'MOOV'
+
+/** Ordre d'affichage : de la catégorie la plus élevée à la plus basse. */
+export const CATEGORIES: Categorie[] = ['INDICE_SUP_800', 'INDICE_400_799', 'INDICE_INF_400']
+
+/**
+ * Miroir de App\Support\CategorieIndice::LIBELLES (backend).
+ * Le code porte le seuil, le libellé le rend lisible : jamais afficher le code brut.
+ */
+export const CATEGORIE_LABELS: Record<Categorie, string> = {
+  INDICE_SUP_800: 'Indice ≥ 800',
+  INDICE_400_799: 'Indice 400-799',
+  INDICE_INF_400: 'Indice < 400',
+}
+
+/** Libellé d'une catégorie, tolérant aux valeurs héritées (journal d'audit). */
+export function categorieLabel(code?: Categorie | string | null): string {
+  if (!code) return '—'
+  return CATEGORIE_LABELS[code as Categorie] ?? code
+}
 
 export interface Agent {
   id: number

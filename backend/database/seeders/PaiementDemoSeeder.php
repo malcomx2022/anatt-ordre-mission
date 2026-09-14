@@ -41,9 +41,9 @@ class PaiementDemoSeeder extends Seeder
                 'destination' => 'PARAKOU', 'zone_code' => 'INTERIEUR',
                 'imputation' => 'ANATT-2026-DT-021', 'nb_jours' => 3,
                 'oms' => [
-                    ['ref' => '0541405640', 'matricule' => 'ANT-1007', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_1', 'type' => 'JOURNEE_COMPLETE'],
-                    ['ref' => '0541405641', 'matricule' => 'ANT-1003', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_2', 'type' => 'JOURNEE_COMPLETE'],
-                    ['ref' => '0541405642', 'matricule' => 'ANT-1006', 'role' => 'CAV', 'categorie' => 'ORDRE_3', 'type' => 'JOURNEE_COMPLETE'],
+                    ['ref' => '0541405640', 'matricule' => 'ANT-1007', 'role' => 'PARTICIPANT', 'categorie' => 'INDICE_SUP_800', 'type' => 'JOURNEE_COMPLETE'],
+                    ['ref' => '0541405641', 'matricule' => 'ANT-1003', 'role' => 'PARTICIPANT', 'categorie' => 'INDICE_400_799', 'type' => 'JOURNEE_COMPLETE'],
+                    ['ref' => '0541405642', 'matricule' => 'ANT-1006', 'role' => 'CAV', 'categorie' => 'INDICE_INF_400', 'type' => 'JOURNEE_COMPLETE'],
                 ],
             ],
             [
@@ -51,8 +51,8 @@ class PaiementDemoSeeder extends Seeder
                 'destination' => 'LOMÉ (TOGO)', 'zone_code' => 'EXT_ZONE_I',
                 'imputation' => 'ANATT-2026-DG-007', 'nb_jours' => 2,
                 'oms' => [
-                    ['ref' => '0541405643', 'matricule' => 'ANT-1004', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_2', 'type' => 'LOGE_NOURRI'],
-                    ['ref' => '0541405644', 'matricule' => 'ANT-1005', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_3', 'type' => 'LOGE_NOURRI'],
+                    ['ref' => '0541405643', 'matricule' => 'ANT-1004', 'role' => 'PARTICIPANT', 'categorie' => 'INDICE_400_799', 'type' => 'LOGE_NOURRI'],
+                    ['ref' => '0541405644', 'matricule' => 'ANT-1005', 'role' => 'PARTICIPANT', 'categorie' => 'INDICE_INF_400', 'type' => 'LOGE_NOURRI'],
                 ],
             ],
             [
@@ -60,8 +60,8 @@ class PaiementDemoSeeder extends Seeder
                 'destination' => 'ABOMEY', 'zone_code' => 'INTERIEUR',
                 'imputation' => 'ANATT-2026-DT-022', 'nb_jours' => 1,
                 'oms' => [
-                    ['ref' => '0541405645', 'matricule' => 'ANT-1001', 'role' => 'PARTICIPANT', 'categorie' => 'ORDRE_1', 'type' => 'DEUX_REPAS'],
-                    ['ref' => '0541405646', 'matricule' => 'ANT-1002', 'role' => 'CAV', 'categorie' => 'ORDRE_3', 'type' => 'DEUX_REPAS'],
+                    ['ref' => '0541405645', 'matricule' => 'ANT-1001', 'role' => 'PARTICIPANT', 'categorie' => 'INDICE_SUP_800', 'type' => 'DEUX_REPAS'],
+                    ['ref' => '0541405646', 'matricule' => 'ANT-1002', 'role' => 'CAV', 'categorie' => 'INDICE_INF_400', 'type' => 'DEUX_REPAS'],
                 ],
             ],
         ];

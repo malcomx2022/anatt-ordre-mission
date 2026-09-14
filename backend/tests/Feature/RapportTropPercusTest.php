@@ -19,7 +19,7 @@ function versementRegul(string $statut, int $montantAbs, string $operateur = 'MT
     $agent = Agent::factory()->create(['operateur' => $operateur]);
     $om = OrdreMission::factory()->create([
         'mission_id' => $mission->id, 'agent_id' => $agent->id, 'statut' => 'VALIDE',
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
         'nb_jours' => 1, 'montant_total' => 1, 'avance' => 1, 'reliquat' => -$montantAbs, 'avance_engagee' => 1,
     ]);
     Versement::factory()->create([

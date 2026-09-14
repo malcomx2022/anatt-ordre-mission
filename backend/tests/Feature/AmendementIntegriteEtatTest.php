@@ -30,7 +30,7 @@ beforeEach(function () {
     $this->dg = User::factory()->dg()->create();
 
     Bareme::factory()->create([
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ]);
 
@@ -40,7 +40,7 @@ beforeEach(function () {
     // OM 6 j = 270 000, avance 189 000 (70 %), reliquat 81 000.
     $this->om = OrdreMission::factory()->create([
         'mission_id' => $this->mission->id, 'statut' => 'IMPORTE',
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
         'nb_jours' => 6, 'montant_total' => 270000, 'avance' => 189000, 'reliquat' => 81000,
     ]);
     Versement::factory()->create(['ordre_mission_id' => $this->om->id, 'type' => 'AVANCE', 'montant' => 189000, 'statut' => 'EN_ATTENTE']);

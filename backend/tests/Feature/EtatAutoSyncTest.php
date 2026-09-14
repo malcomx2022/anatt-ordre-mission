@@ -112,7 +112,7 @@ it('recale un état REJETE quand un nouvel OM est créé pour la mission', funct
         'mission_id' => $mission->id,
         'agent_id' => Agent::factory()->create(['indice' => 500])->id,
         'role' => 'PARTICIPANT',
-        'categorie' => 'ORDRE_2',
+        'categorie' => 'INDICE_400_799',
         'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE',
         'nb_jours' => 2,

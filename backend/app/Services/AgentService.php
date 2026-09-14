@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Imports\AgentsImport;
 use App\Models\Agent;
 use App\Models\Versement;
+use App\Support\CategorieIndice;
 use App\Support\Telephone;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -167,8 +168,10 @@ class AgentService
             });
         }
 
+        // Le filtre accepte encore l'ancien code ORDRE_* (liens en favori,
+        // intégrations existantes) : on le traduit avant d'interroger la base.
         if ($categorie = ($filters['categorie'] ?? null)) {
-            $query->where('categorie', $categorie);
+            $query->where('categorie', CategorieIndice::normaliser($categorie) ?? $categorie);
         }
 
         if ($operateur = ($filters['operateur'] ?? null)) {
@@ -198,7 +201,7 @@ class AgentService
             'grade' => $get('grade'),
             'indice' => $get('indice') !== null ? (int) $get('indice') : null,
             'salaire_brut' => $get('salaire_brut') !== null ? (int) $get('salaire_brut') : null,
-            'categorie' => $get('categorie'),
+            'categorie' => CategorieIndice::normaliser($get('categorie')) ?? $get('categorie'),
             'telephone' => $get('telephone'),
             'operateur' => $get('operateur') ? strtoupper($get('operateur')) : null,
         ];
@@ -228,7 +231,7 @@ class AgentService
             'grade' => 'nullable|string|max:255',
             'indice' => 'nullable|integer|min:0',
             'salaire_brut' => 'nullable|integer|min:0',
-            'categorie' => 'required|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'categorie' => 'required|'.CategorieIndice::regleIn(),
             'telephone' => ['required', 'string', 'regex:'.config('benin.telephone.regex'), 'unique:agents,telephone'],
             'operateur' => 'required|in:MTN,MOOV',
         ]);

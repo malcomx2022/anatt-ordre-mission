@@ -25,7 +25,7 @@ class AuditLogSeeder extends Seeder
             ['user' => $admin, 'action' => 'LOGIN', 'entite' => 'session', 'entite_id' => null, 'donnees' => ['ip' => '192.168.1.100'], 'ip' => '192.168.1.100', 'ago' => 0],
             ['user' => $gestion, 'action' => 'LOGIN', 'entite' => 'session', 'entite_id' => null, 'donnees' => ['ip' => '192.168.1.115'], 'ip' => '192.168.1.115', 'ago' => 0],
             ['user' => $controle, 'action' => 'LOGIN', 'entite' => 'session', 'entite_id' => null, 'donnees' => ['ip' => '192.168.1.120'], 'ip' => '192.168.1.120', 'ago' => 1],
-            ['user' => $admin, 'action' => 'UPDATE_BAREME', 'entite' => 'bareme', 'entite_id' => 1, 'donnees' => ['categorie' => 'ORDRE_1', 'zone' => 'INTERIEUR', 'type' => 'JOURNEE_COMPLETE'], 'ip' => '192.168.1.100', 'ago' => 10],
+            ['user' => $admin, 'action' => 'UPDATE_BAREME', 'entite' => 'bareme', 'entite_id' => 1, 'donnees' => ['categorie' => 'INDICE_SUP_800', 'zone' => 'INTERIEUR', 'type' => 'JOURNEE_COMPLETE'], 'ip' => '192.168.1.100', 'ago' => 10],
         ];
 
         foreach ($logs as $log) {

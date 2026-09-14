@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Agent;
+use App\Support\CategorieIndice;
 use App\Support\Telephone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,14 @@ class UpdateAgentRequest extends FormRequest
             $categorie = Agent::determinerCategorie($indice, $salaire);
             if ($categorie) {
                 $this->merge(['categorie' => $categorie]);
+
+                return;
             }
+        }
+
+        // Catégorie transmise sous l'ancien code ORDRE_* : on la traduit.
+        if ($normalisee = CategorieIndice::normaliser($this->input('categorie'))) {
+            $this->merge(['categorie' => $normalisee]);
         }
     }
 
@@ -45,7 +53,7 @@ class UpdateAgentRequest extends FormRequest
             'grade' => 'nullable|string|max:255',
             'indice' => 'nullable|integer|min:0',
             'salaire_brut' => 'nullable|integer|min:0',
-            'categorie' => 'sometimes|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'categorie' => 'sometimes|'.CategorieIndice::regleIn(),
             'telephone' => ['sometimes', 'string', 'regex:'.config('benin.telephone.regex'), Rule::unique('agents', 'telephone')->ignore($agentId)],
             'operateur' => 'sometimes|in:MTN,MOOV',
             'actif' => 'sometimes|boolean',

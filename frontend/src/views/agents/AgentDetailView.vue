@@ -7,6 +7,7 @@ import AppBadge from '@/components/shared/AppBadge.vue'
 import { agentsService } from '@/services/agents'
 import { ordresService } from '@/services/ordres'
 import { useAuth } from '@/composables/useAuth'
+import { categorieLabel } from '@/types'
 import type { Agent, OrdreMission } from '@/types'
 
 const route = useRoute()
@@ -62,7 +63,7 @@ function statutVariant(s: string) {
             <div class="flex items-center gap-3 mb-1">
               <h2 class="text-xl font-display font-bold text-gray-800">{{ agent.nom }} {{ agent.prenoms }}</h2>
               <AppBadge :variant="agent.actif ? 'success' : 'danger'">{{ agent.actif ? 'Actif' : 'Inactif' }}</AppBadge>
-              <AppBadge variant="info">{{ agent.categorie }}</AppBadge>
+              <AppBadge variant="info">{{ categorieLabel(agent.categorie) }}</AppBadge>
             </div>
             <p class="text-sm font-body text-gray-500 mb-3">{{ agent.grade || '—' }}</p>
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm font-body text-gray-600">

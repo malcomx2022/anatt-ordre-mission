@@ -65,6 +65,12 @@ function reset() {
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             <span v-for="c in colonnesAttendues" :key="c" class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-center font-mono">{{ c }}</span>
           </div>
+          <p class="text-[11px] font-body text-gray-500 mt-3">
+            <span class="font-mono">categorie</span> : <span class="font-mono">INDICE_SUP_800</span> ·
+            <span class="font-mono">INDICE_400_799</span> · <span class="font-mono">INDICE_INF_400</span>.
+            Laissée vide, elle est déduite de l'indice (ou du salaire brut).
+            Les anciens codes <span class="font-mono">ORDRE_1/2/3</span> restent acceptés et sont traduits à l'import.
+          </p>
         </div>
 
         <input type="file" accept=".xlsx,.xls,.csv" class="block w-full text-sm font-body text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-anatt-500 file:text-white file:font-display file:text-sm hover:file:bg-anatt-600" @change="onFile">

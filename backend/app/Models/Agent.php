@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\CategorieIndice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -49,32 +50,17 @@ class Agent extends Model
      * Détermine la catégorie d'indice ANaTT à partir de l'indice OU du salaire brut.
      *
      * Concordance officielle :
-     *   ORDRE_1 : indice ≥ 800   | salaire brut ≥ 372 000
-     *   ORDRE_2 : indice 400-799 | salaire brut 186 000-372 000
-     *   ORDRE_3 : indice < 400   | salaire brut < 186 000
+     *   INDICE_SUP_800 : indice ≥ 800   | salaire brut ≥ 372 000
+     *   INDICE_400_799 : indice 400-799 | salaire brut 186 000-372 000
+     *   INDICE_INF_400 : indice < 400   | salaire brut < 186 000
      *
      * Priorité à l'indice ; à défaut, on applique les seuils directs du salaire brut
-     * (concordants avec ceux de l'indice).
+     * (concordants avec ceux de l'indice). Les seuils eux-mêmes vivent dans
+     * App\Support\CategorieIndice, source de vérité unique côté serveur.
      */
     public static function determinerCategorie(?int $indice, ?int $salaireBrut): ?string
     {
-        if ($indice !== null) {
-            return match (true) {
-                $indice >= 800 => 'ORDRE_1',
-                $indice >= 400 => 'ORDRE_2',
-                default => 'ORDRE_3',
-            };
-        }
-
-        if ($salaireBrut !== null) {
-            return match (true) {
-                $salaireBrut >= 372000 => 'ORDRE_1',
-                $salaireBrut >= 186000 => 'ORDRE_2',
-                default => 'ORDRE_3',
-            };
-        }
-
-        return null;
+        return CategorieIndice::determiner($indice, $salaireBrut);
     }
 
     /**

@@ -15,7 +15,7 @@ beforeEach(function () {
 
 it('journalise la création d’un barème', function () {
     $this->actingAs($this->admin)->postJson('/api/baremes', [
-        'categorie' => 'ORDRE_1', 'zone_code' => 'INTERIEUR',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
         'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 45000,
     ])->assertStatus(201);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Agent;
+use App\Support\CategorieIndice;
 use App\Support\Telephone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -16,7 +17,8 @@ class StoreAgentRequest extends FormRequest
 
     /**
      * Détermine automatiquement la catégorie depuis l'indice ou le salaire brut
-     * lorsqu'elle n'est pas fournie explicitement.
+     * lorsqu'elle n'est pas fournie explicitement, et ramène au vocabulaire
+     * courant une catégorie transmise sous l'ancien code ORDRE_*.
      */
     protected function prepareForValidation(): void
     {
@@ -27,6 +29,12 @@ class StoreAgentRequest extends FormRequest
                     $this->integer('salaire_brut') ?: null,
                 ),
             ]);
+
+            return;
+        }
+
+        if ($normalisee = CategorieIndice::normaliser($this->input('categorie'))) {
+            $this->merge(['categorie' => $normalisee]);
         }
     }
 
@@ -40,7 +48,7 @@ class StoreAgentRequest extends FormRequest
             'grade' => 'nullable|string|max:255',
             'indice' => 'nullable|integer|min:0',
             'salaire_brut' => 'nullable|integer|min:0',
-            'categorie' => 'required|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'categorie' => 'required|'.CategorieIndice::regleIn(),
             // Téléphone national : 10 chiffres débutant par 01.
             'telephone' => ['required', 'string', 'regex:'.config('benin.telephone.regex'), 'unique:agents,telephone'],
             'operateur' => 'required|in:MTN,MOOV',

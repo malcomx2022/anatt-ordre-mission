@@ -17,8 +17,8 @@ class OrdreMissionSeeder extends Seeder
             ->where('destination', 'BOHICON')
             ->value('id');
 
-        $dada = DB::table('agents')->where('matricule', 'ANT-1001')->value('id');   // DADA Richard (ORDRE_1)
-        $cav = DB::table('agents')->where('matricule', 'ANT-1002')->value('id');     // AKPACA Gérard (CAV, ORDRE_3)
+        $dada = DB::table('agents')->where('matricule', 'ANT-1001')->value('id');   // DADA Richard (INDICE_SUP_800)
+        $cav = DB::table('agents')->where('matricule', 'ANT-1002')->value('id');     // AKPACA Gérard (CAV, INDICE_INF_400)
 
         // nb_jours selon la règle des 12 h : 12/11 -> 14/11 = 3 jours entiers.
         $nbJours = 3;
@@ -28,7 +28,7 @@ class OrdreMissionSeeder extends Seeder
                 'reference_semo' => '0541405636',
                 'agent_id' => $dada,
                 'role' => 'PARTICIPANT',
-                'categorie' => 'ORDRE_1',
+                'categorie' => 'INDICE_SUP_800',
                 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
                 // Mention logistique : le conducteur à bord est payé via SON propre OM (ci-dessous).
                 'conducteur_a_bord' => 'AKPACA Gérard',
@@ -39,7 +39,7 @@ class OrdreMissionSeeder extends Seeder
                 'reference_semo' => '0541405637',
                 'agent_id' => $cav,
                 'role' => 'CAV',
-                'categorie' => 'ORDRE_3',
+                'categorie' => 'INDICE_INF_400',
                 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
                 'conducteur_a_bord' => null,
                 'reference_autorisation' => 'AUT-2025-0114',

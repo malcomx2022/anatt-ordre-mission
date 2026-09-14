@@ -158,7 +158,7 @@
             <div class="amount-box">
                 <div class="label">Montant total à payer</div>
                 <div class="amount">{{ $montant_total }} FCFA</div>
-                <div class="details">{{ $nb_jours }} jour(s) × {{ $taux_journalier }} FCFA — Catégorie {{ $categorie }} / {{ $zone }}</div>
+                <div class="details">{{ $nb_jours }} jour(s) × {{ $taux_journalier }} FCFA — {{ $categorie }} / {{ $zone }}</div>
             </div>
         @endif
     </div>

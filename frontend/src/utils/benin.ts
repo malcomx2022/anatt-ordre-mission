@@ -34,18 +34,18 @@ export function operateurCoherent(tel: string | null | undefined, operateur: Ope
 
 /**
  * Catégorie déduite de l'indice (prioritaire) ou du salaire brut.
- * Concordance ANaTT : ORDRE_1 ≥ 800 / ≥ 372000 ; ORDRE_2 400-799 / 186000-372000 ; ORDRE_3 sinon.
+ * Concordance ANaTT : INDICE_SUP_800 ≥ 800 / ≥ 372000 ; INDICE_400_799 400-799 / 186000-372000 ; INDICE_INF_400 sinon.
  */
 export function categorieDeduite(indice?: number | null, salaireBrut?: number | null): Categorie | null {
   if (indice != null) {
-    if (indice >= 800) return 'ORDRE_1'
-    if (indice >= 400) return 'ORDRE_2'
-    return 'ORDRE_3'
+    if (indice >= 800) return 'INDICE_SUP_800'
+    if (indice >= 400) return 'INDICE_400_799'
+    return 'INDICE_INF_400'
   }
   if (salaireBrut != null) {
-    if (salaireBrut >= 372000) return 'ORDRE_1'
-    if (salaireBrut >= 186000) return 'ORDRE_2'
-    return 'ORDRE_3'
+    if (salaireBrut >= 372000) return 'INDICE_SUP_800'
+    if (salaireBrut >= 186000) return 'INDICE_400_799'
+    return 'INDICE_INF_400'
   }
   return null
 }

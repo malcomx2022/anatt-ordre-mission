@@ -6,6 +6,7 @@ import MissionStatusBadge from '@/components/missions/MissionStatusBadge.vue'
 import { ordresService } from '@/services/ordres'
 import { useSearch } from '@/composables/useSearch'
 import { useAuth } from '@/composables/useAuth'
+import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
 
 const { query: searchQuery, debouncedQuery } = useSearch(300)
@@ -118,7 +119,7 @@ function changePage(p: number) { currentPage.value = p; load() }
               <td class="px-5 py-3 font-body">{{ o.agent ? `${o.agent.nom} ${o.agent.prenoms}` : '—' }}</td>
               <td class="px-5 py-3">{{ o.role }}</td>
               <td class="px-5 py-3 font-body">{{ o.mission?.destination ?? '—' }}</td>
-              <td class="px-5 py-3 font-display font-semibold text-anatt-600">{{ o.categorie }}</td>
+              <td class="px-5 py-3 font-display font-semibold text-anatt-600">{{ categorieLabel(o.categorie) }}</td>
               <td class="px-5 py-3 font-display font-semibold">{{ fmt(o.montant_total) }}</td>
               <td class="px-5 py-3"><MissionStatusBadge :statut="o.statut" /></td>
             </tr>

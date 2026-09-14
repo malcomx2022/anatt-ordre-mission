@@ -18,7 +18,7 @@ function fabriquerVersement(Mission $mission, array $agentAttrs, string $tranche
 {
     $agent = Agent::create(array_merge([
         'nom' => 'NOM', 'prenoms' => 'Prenom', 'matricule' => 'M-'.uniqid(),
-        'categorie' => 'ORDRE_1', 'telephone' => '0190000000', 'operateur' => 'MTN', 'actif' => true,
+        'categorie' => 'INDICE_SUP_800', 'telephone' => '0190000000', 'operateur' => 'MTN', 'actif' => true,
     ], $agentAttrs));
 
     $om = OrdreMission::create([
@@ -114,7 +114,7 @@ it('bloque la régénération d’un lot confirmé', function () {
 
 it('génère le fichier Moov .xlsx au format exact', function () {
     fabriquerVersement($this->mission, [
-        'nom' => 'AKPACA', 'prenoms' => 'Gérard', 'telephone' => '0140000002', 'operateur' => 'MOOV', 'categorie' => 'ORDRE_3',
+        'nom' => 'AKPACA', 'prenoms' => 'Gérard', 'telephone' => '0140000002', 'operateur' => 'MOOV', 'categorie' => 'INDICE_INF_400',
     ], 'AVANCE', 30000);
 
     $resultat = app(MoovFileGenerator::class)->generer($this->mission->id, 'AVANCE', $this->user);

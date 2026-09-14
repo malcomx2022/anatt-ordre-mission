@@ -4,8 +4,8 @@ import { ref, computed, watch } from 'vue'
 import { agentsService } from '@/services/agents'
 import AppCombobox from '@/components/shared/AppCombobox.vue'
 import type { ComboOption } from '@/components/shared/combobox'
-import { typesPourZone } from '@/types'
-import type { Agent, BeneficiaireForm, Categorie, TypePriseEnCharge, ZoneCode } from '@/types'
+import { CATEGORIES, CATEGORIE_LABELS, categorieLabel, typesPourZone } from '@/types'
+import type { Agent, BeneficiaireForm, TypePriseEnCharge, ZoneCode } from '@/types'
 import type { PerDiem } from '@/stores/ordres-mission'
 
 const props = defineProps<{
@@ -20,7 +20,6 @@ const props = defineProps<{
 
 defineEmits<{ remove: [] }>()
 
-const CATEGORIES: Categorie[] = ['ORDRE_1', 'ORDRE_2', 'ORDRE_3']
 const TYPE_LABELS: Record<TypePriseEnCharge, string> = {
   UN_REPAS: 'Un repas',
   DEUX_REPAS: 'Deux repas',
@@ -68,7 +67,7 @@ async function chercherAgents(q: string): Promise<ComboOption[]> {
   agentsTrouves.clear()
   return agents.map((a) => {
     agentsTrouves.set(a.id, a)
-    return { value: a.id, label: `${a.nom} ${a.prenoms}`, hint: `${a.matricule} · ${a.categorie}` }
+    return { value: a.id, label: `${a.nom} ${a.prenoms}`, hint: `${a.matricule} · ${categorieLabel(a.categorie)}` }
   })
 }
 
@@ -160,7 +159,7 @@ const fmt = (v: number) => v.toLocaleString('fr-FR')
           class="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-body focus:outline-none focus:border-anatt-500"
         >
           <option :value="undefined" disabled>Choisir…</option>
-          <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+          <option v-for="c in CATEGORIES" :key="c" :value="c">{{ CATEGORIE_LABELS[c] }}</option>
         </select>
       </div>
 

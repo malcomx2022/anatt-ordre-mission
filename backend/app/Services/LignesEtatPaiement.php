@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\OrdreMission;
+use App\Support\CategorieIndice;
 
 /**
  * Lignes du tableau de l'état de paiement, telles qu'elles sont imprimées.
@@ -99,12 +100,7 @@ class LignesEtatPaiement
     /** Colonne GRADE/INDICE de l'état : « ≥ 800 » / « 400-799 » / « < 400 ». */
     private static function grade(string $categorie, ?int $indice): string
     {
-        return match ($categorie) {
-            'ORDRE_1' => '≥ 800',
-            'ORDRE_2' => '400-799',
-            'ORDRE_3' => '< 400',
-            default => $indice !== null ? (string) $indice : '—',
-        };
+        return CategorieIndice::plage($categorie, $indice);
     }
 
     /** Téléphone en groupes de 2, comme sur l'état officiel (01 96 30 24 90). */

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Bareme;
+use App\Support\CategorieIndice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -13,10 +14,18 @@ class StoreBaremeRequest extends FormRequest
         return true;
     }
 
+    /** Accepte une catégorie transmise sous l'ancien code ORDRE_*. */
+    protected function prepareForValidation(): void
+    {
+        if ($normalisee = CategorieIndice::normaliser($this->input('categorie'))) {
+            $this->merge(['categorie' => $normalisee]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'categorie' => 'required|in:ORDRE_1,ORDRE_2,ORDRE_3',
+            'categorie' => 'required|'.CategorieIndice::regleIn(),
             'zone_code' => 'required|in:INTERIEUR,EXT_ZONE_I,EXT_ZONE_II,EXT_ZONE_III',
             'type_prise_en_charge' => 'required|in:UN_REPAS,DEUX_REPAS,JOURNEE_COMPLETE,LOGE_NOURRI,LOGE_SEUL,NOURRI_SEUL',
             'taux_journalier' => 'required|integer|min:0',
