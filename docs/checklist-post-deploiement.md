@@ -18,14 +18,19 @@ Le back-end doit répondre **avant** tout test du SPA.
 - [ ] **Santé** : `https://api-omsemo.anatt.bj/up` renvoie la page de santé Laravel en **200**.
 - [ ] **Route API** : un POST sur `/api/auth/login` répond en JSON ; un GET renvoie une erreur JSON (route vivante, pas une page cPanel).
 - [ ] **`.env` serveur correct** : `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` renseignée, `APP_URL=https://api-omsemo.anatt.bj`, `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`.
-- [ ] **Base de données** : `DB_DATABASE / DB_USERNAME / DB_PASSWORD` valides et **schéma à jour** (nouvelles migrations appliquées via `php artisan migrate --force` ou import SQL).
+- [ ] **Base de données** : `DB_DATABASE / DB_USERNAME / DB_PASSWORD` valides et **schéma à jour**.
+- [ ] **Aucune migration en attente** : dans phpMyAdmin, `SELECT migration FROM migrations ORDER BY id;` contient bien **tous** les noms de fichiers de `backend/database/migrations/` (sans `.php`). Un nom manquant = migration non jouée. Voir `DEPLOY-CPANEL.md` § *Mise à jour*, B et D.
 - [ ] **PHP 8.2 / 8.3** sélectionné, extensions actives : `mbstring, openssl, pdo_mysql, tokenizer, xml, ctype, json, bcmath, fileinfo, gd, zip, curl`.
 - [ ] **Permissions** : `storage/` (récursif) et `bootstrap/cache/` en écriture (755/775) — sinon erreur 500 au premier appel.
 - [ ] **Caches applicatifs vidés** après changement de code ou de `.env` : `php artisan optimize:clear` (ou `config:clear` + `view:clear`).
 - [ ] **HTTPS (AutoSSL)** actif sur `api-omsemo.anatt.bj`.
 
-> Sur mutualisé sans SSH, les commandes `artisan` passent par le **Terminal cPanel** (si disponible) ou une
-> **tâche Cron ponctuelle** avec le chemin PHP de l'hébergeur (souvent `/usr/local/bin/php /home/anatt/anatt-api/artisan …`).
+> Sur mutualisé sans SSH, les commandes `artisan` passent par une **tâche Cron ponctuelle** (voie la plus
+> largement disponible) ou le **Terminal cPanel** s'il est activé, avec le chemin **explicite** de la
+> version PHP sélectionnée — `/opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan …`
+> et non l'alias `/usr/local/bin/php`, qui pointe souvent vers une autre version. Si l'hébergeur n'offre
+> ni l'un ni l'autre, la base se met à jour par **migration à blanc en local puis réimport**
+> (`DEPLOY-CPANEL.md` § *Mise à jour*, D, voie 3).
 
 ---
 
