@@ -16,7 +16,9 @@ vendor.zip
 backend/storage/app/backups/
 
 # Builds
-# frontend/dist/ est volontairement VERSIONNÉ (déploiement FTP sans build serveur) — cf. DEPLOY-CPANEL.md
+# frontend/dist/ n'est PAS versionné : il se régénère (`npm run build`) ou se récupère
+# depuis l'artefact CI `frontend-dist` du run `main` — cf. DEPLOY-CPANEL.md §2.
+frontend/dist/
 backend/public/storage
 
 # Logs
@@ -31,8 +33,11 @@ desktop.ini
 .vscode/
 .idea/
 .env.*
-# Le gabarit de variables (sans secrets) reste versionné : CI et start-dev.ps1 le copient.
+# Les gabarits de variables (sans secrets) restent versionnés : CI et start-dev.ps1
+# copient .env.example ; .env.production.example est le modèle du .env serveur
+# (cf. DEPLOY-CPANEL.md §5.1) — il ne contient aucune valeur réelle.
 !.env.example
+!.env.production.example
 *.env
 credentials.json
 *.pem

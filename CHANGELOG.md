@@ -11,6 +11,41 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ### Ajouté
 
+- **Mise à jour d'une instance en ligne sans accès SSH — procédure complète**
+  La section « Mise à jour » de `DEPLOY-CPANEL.md` ne couvrait la migration de la
+  base qu'en une ligne (« Terminal cPanel ou tâche Cron »), sans dire quoi faire
+  quand l'hébergeur n'offre ni l'un ni l'autre. Elle décrit désormais, dans
+  l'ordre d'exécution : sauvegarde préalable (base **avec `DROP TABLE`**, SPA,
+  `.env`), **relevé des migrations manquantes** depuis phpMyAdmin
+  (`SELECT migration FROM migrations ORDER BY id;` comparé au contenu de
+  `database/migrations/`), upload du code **avant** la migration, puis
+  **trois voies** : tâche Cron ponctuelle (la plus largement disponible),
+  Terminal cPanel, et — si aucun PHP en ligne de commande n'est accessible —
+  **migration à blanc d'une copie locale de la base de production, puis
+  réimport**. Cette troisième voie laisse Laravel jouer lui-même les migrations
+  et tenir la table `migrations` à jour : aucun SQL n'est rédigé à la main, donc
+  aucune divergence possible avec ce qu'attend le code.
+  Deux pièges d'exploitation sont documentés : le chemin PHP des tâches Cron
+  (`/usr/local/bin/php` est un alias pointant souvent vers une **autre** version
+  que celle de « Select PHP Version » — d'où `/opt/cpanel/ea-php83/root/usr/bin/php`),
+  et la **redirection de sortie** vers `/home/anatt/` (hors racine web), seule
+  fenêtre sur le résultat quand on n'a pas de terminal.
+  S'y ajoutent la purge des caches **sans artisan** (les trois dossiers à vider,
+  dont `storage/framework/cache/data` qui porte la matrice des permissions), une
+  procédure de **retour arrière**, un récapitulatif des artefacts propre à la mise
+  à jour (avec ce qu'il ne faut **pas** écraser : `.env`, `storage/`,
+  `runtime-config.js`) et huit entrées de dépannage spécifiques.
+
+- **`backend/.env.production.example` — le gabarit manquait au dépôt**
+  `DEPLOY-CPANEL.md` §5.1 demandait de copier ce fichier en `anatt-api/.env`,
+  mais il n'avait jamais été versionné : la règle `.gitignore` `.env.*` l'excluait
+  et seul `!.env.example` était ré-autorisé. Un déploiement suivant le guide à la
+  lettre butait donc sur un fichier absent. Le gabarit est ajouté (valeurs de
+  production commentées, aucune valeur réelle) et l'exception `.gitignore`
+  étendue. Les clés qu'il porte ont été vérifiées une à une dans `config/`
+  (`CORS_ALLOWED_ORIGINS`, `WORKFLOW_SEPARATION_TACHES`, `PAIEMENT_*`,
+  `MTN_COMPTE`, `DB_DUMP_BINARY`, `FRONTEND_URL`, `SUPERADMIN_*`).
+
 - **Garde-fou sur les modèles d'import du personnel**
   Les fichiers distribués aux utilisateurs (`docs/modele-import-agents.csv`, à
   séparateur **point-virgule** comme le produit Excel en configuration française,
@@ -25,6 +60,16 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   Test : `backend/tests/Feature/ImportModeleAgentsTest.php` (4 cas : modèle CSV
   avec BOM et colonnes alignées, couverture des 3 catégories et des 2 opérateurs,
   modèle XLSX avec le téléphone préservé en texte, et fichier à séparateur `,`).
+
+### Corrigé (documentation)
+
+- **`.gitignore` : commentaire contredisant le déploiement**
+  Le bloc « Builds » affirmait que `frontend/dist/` était « volontairement
+  VERSIONNÉ (déploiement FTP sans build serveur) », alors que `dist/` n'est
+  versionné ni en fait (`git ls-files` le confirme) ni en intention —
+  `DEPLOY-CPANEL.md` §2 et le job CI `dist` le produisent comme artefact
+  `frontend-dist`. Le commentaire est corrigé et `frontend/dist/` explicitement
+  ignoré, pour qu'un build local ne se retrouve pas commité par accident.
 
 ### Modifié
 

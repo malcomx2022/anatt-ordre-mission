@@ -193,13 +193,18 @@ Le projet tourne en `QUEUE_CONNECTION=sync` : **aucun cron requis** pour fonctio
 Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes planifiées :
 
 ```bash
-# cPanel > Cron Jobs (chemin PHP de l'hébergeur, souvent /usr/local/bin/php)
+# cPanel > Cron Jobs. Utilisez le chemin EXPLICITE de la version PHP sélectionnée
+# (/usr/local/bin/php est un alias qui pointe souvent vers une autre version).
 # Sauvegarde quotidienne à 02h00
-0 2 * * *  /usr/local/bin/php /home/anatt/anatt-api/artisan db:backup --compress
+0 2 * * *  /opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan db:backup --compress
 
 # (si QUEUE_CONNECTION=database) traiter la file chaque minute
-* * * * *  /usr/local/bin/php /home/anatt/anatt-api/artisan queue:work --stop-when-empty
+* * * * *  /opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan queue:work --stop-when-empty
 ```
+
+> `db:backup` appelle `mysqldump` via `exec()`. Certains mutualisés désactivent `exec` ou
+> n'exposent pas `mysqldump` : renseignez alors `DB_DUMP_BINARY` dans le `.env`, et si la
+> sauvegarde échoue malgré tout, restez sur l'export **phpMyAdmin** (§ Mise à jour, A.1).
 
 ---
 
@@ -209,50 +214,201 @@ Les sections 1 à 8 décrivent la **première** installation. Pour livrer une **
 sur une instance déjà en place, on ne réimporte pas la base : on met à jour le code, on applique
 les **nouvelles migrations**, puis on rafraîchit le SPA.
 
-> **Avant tout** : sauvegarde. Copiez l'actuel `public_html/` (rollback SPA) et faites une
-> sauvegarde de la base (phpMyAdmin > Export, ou `php artisan db:backup`) **avant** de migrer.
+Ordre imposé : **BDD d'abord, SPA en dernier**. Un SPA neuf devant une base ancienne provoque des
+500 en série ; l'inverse (base à jour, SPA ancien) est inoffensif — l'ancien SPA n'appelle
+simplement pas les nouveaux champs.
 
-### A. Backend (API Laravel)
+### A. Sauvegarde préalable (non négociable)
 
-1. **Uploader le nouveau code** dans `anatt-api/` (FTP). Écrasez `app/`, `routes/`, `database/`,
-   `config/`, `resources/`, etc. **Ne touchez pas** à `anatt-api/.env` ni à `anatt-api/storage/`.
-   Re-uploadez `vendor/` **uniquement** si les dépendances ont changé
-   (`composer install --no-dev --optimize-autoloader` en local au préalable).
-2. **Appliquer les migrations non encore jouées** :
-   ```bash
+1. **Base** : phpMyAdmin > base `anatt_missions` > onglet **Exporter** > méthode **Personnalisée** >
+   cochez **« Ajouter DROP TABLE / VIEW »** > compression **gzip** > Exécuter.
+   Gardez ce fichier : c'est votre seul point de retour si une migration se passe mal.
+2. **SPA** : Gestionnaire de fichiers cPanel > `public_html` > tout sélectionner > **Compresser**
+   en `public_html_AAAA-MM-JJ.zip`, puis téléchargez-le.
+3. **`.env`** : téléchargez `anatt-api/.env` (il ne sera pas écrasé, mais il est irremplaçable).
+
+### B. Savoir CE QUI manque à la base en ligne (préalable à tout)
+
+Laravel tient la liste des migrations déjà jouées dans la table **`migrations`**. Sans SSH, on la
+lit depuis phpMyAdmin — onglet **SQL** de la base `anatt_missions` :
+
+```sql
+SELECT migration, batch FROM migrations ORDER BY id;
+```
+
+Comparez le résultat avec le contenu de `backend/database/migrations/` de la nouvelle version
+(noms de fichiers sans `.php`). **Tout nom présent dans le dossier et absent de la table est une
+migration à appliquer.** Notez-les : c'est exactement ce que la suite doit produire.
+
+> Exemple : une base installée avant le 14/09 n'aura pas
+> `2026_09_14_090000_renommer_categories_ordre_en_indice` — la bascule du vocabulaire
+> `ORDRE_1/2/3` → `INDICE_*` reste donc à jouer.
+
+### C. Uploader le nouveau code de l'API
+
+Dans `anatt-api/` (FTP), écrasez `app/`, `config/`, `database/`, `public/`, `resources/`,
+`routes/`, ainsi que `bootstrap/app.php` et `bootstrap/providers.php`.
+
+**Ne touchez pas** à :
+
+- `anatt-api/.env` — il porte vos identifiants de base et votre `APP_KEY` ;
+- `anatt-api/storage/` — il porte les PDF générés, les sauvegardes et les logs ;
+- `anatt-api/bootstrap/cache/` — à **vider**, jamais à écraser par le dossier local (§ E).
+
+Re-uploadez `vendor/` **uniquement** si `composer.lock` a changé (`composer install --no-dev
+--optimize-autoloader` en local d'abord — cf. `UPLOAD-VENDOR.md` pour l'envoi zippé).
+
+> Le code doit être en place **avant** de migrer : les fichiers de migration que vous venez
+> d'uploader sont précisément ce que la commande va exécuter.
+
+### D. Appliquer les migrations — trois voies sans SSH
+
+Les trois voies produisent le même résultat. Prenez la première qui fonctionne chez votre hébergeur.
+
+#### Voie 1 — Tâche Cron ponctuelle *(recommandée : présente sur quasiment tout cPanel)*
+
+Une tâche Cron exécute du PHP en ligne de commande sans qu'aucun accès SSH soit ouvert.
+
+**1. Trouvez le vrai binaire PHP.** `/usr/local/bin/php` est un alias qui pointe souvent vers une
+version **différente** de celle choisie dans « Select PHP Version » — une migration lancée avec
+PHP 7.4 échouera. Utilisez le chemin explicite de la version sélectionnée :
+
+```
+/opt/cpanel/ea-php83/root/usr/bin/php     (PHP 8.3)
+/opt/cpanel/ea-php82/root/usr/bin/php     (PHP 8.2)
+```
+
+Vérifiez-le d'abord avec une tâche de contrôle (cPanel > **Cron Jobs**, planification « Once per
+five minutes » le temps du test) :
+
+```bash
+/opt/cpanel/ea-php83/root/usr/bin/php -v > /home/anatt/migration.log 2>&1
+```
+
+Ouvrez `/home/anatt/migration.log` dans le Gestionnaire de fichiers : il doit afficher `PHP 8.3.x`.
+
+**2. Listez d'abord, migrez ensuite.** Jamais l'inverse — `migrate:status` ne modifie rien et
+confirme la liste établie en **B** :
+
+```bash
+/opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan migrate:status > /home/anatt/migration.log 2>&1
+```
+
+Le rapport distingue `Ran` (déjà jouée) de `Pending` (à jouer).
+
+**3. Migrez** — une seule tâche, qui enchaîne migration et purge des caches :
+
+```bash
+/opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration.log 2>&1 && /opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration.log 2>&1
+```
+
+`--force` est obligatoire en production (il remplace la confirmation interactive, impossible en
+Cron). La redirection `>> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
+fenêtre sur ce qui s'est passé.
+
+**4. Relisez le log**, confirmez que chaque migration attendue affiche `DONE`, puis
+**supprimez les tâches Cron** (sinon elles se rejoueront ; `migrate` serait sans effet, mais le
+log serait écrasé et la tâche de test inutile tourne pour rien).
+
+> ⚠️ Écrivez le log dans `/home/anatt/`, **jamais** dans `public_html/` ni dans
+> `anatt-api/public/` : il serait téléchargeable par n'importe qui.
+
+#### Voie 2 — Terminal cPanel *(si l'hébergeur l'a activé)*
+
+cPanel > **Terminal**. Mêmes commandes, en interactif, avec la sortie à l'écran :
+
+```bash
+cd ~/anatt-api
+/opt/cpanel/ea-php83/root/usr/bin/php artisan migrate:status
+/opt/cpanel/ea-php83/root/usr/bin/php artisan migrate --force
+/opt/cpanel/ea-php83/root/usr/bin/php artisan optimize:clear
+```
+
+#### Voie 3 — Migration à blanc en local, puis réimport *(aucun PHP en ligne de commande côté serveur)*
+
+Si l'hébergeur n'offre **ni Cron ni Terminal**, on ne rédige pas le SQL à la main : on laisse
+Laravel migrer une **copie** de la base de production sur votre poste, et on renvoie le résultat.
+Aucune requête n'est écrite manuellement, donc aucune divergence possible avec ce qu'attend le code.
+
+> Cette voie impose une **fenêtre de maintenance** : toute saisie faite en ligne entre l'export
+> (étape 1) et le réimport (étape 6) serait perdue. Prévenez les utilisateurs et choisissez une
+> heure creuse.
+
+1. **Exporter la production** : phpMyAdmin > `anatt_missions` > **Exporter** > **Personnalisée** >
+   cochez **« Ajouter DROP TABLE / VIEW »** > **Exécuter**. Vous obtenez `anatt_missions.sql`.
+2. **Recréer la base en local** (phpMyAdmin local ou ligne de commande WAMP) : créez
+   `anatt_prod_copie`, puis importez-y `anatt_missions.sql`.
+3. **Pointer l'application locale sur cette copie** — dans `backend/.env`, le temps de l'opération :
+   ```env
+   DB_DATABASE=anatt_prod_copie
+   ```
+4. **Migrer la copie** depuis `backend/` :
+   ```powershell
    php artisan migrate --force
+   php artisan migrate:status     # tout doit afficher "Ran"
    ```
-   `--force` est requis en production (pas de confirmation interactive). Seules les migrations
-   nouvelles sont exécutées ; les tables existantes ne sont pas touchées.
-   *Exemple :* la version « notifications in-app » ajoute la table `notifications`
-   (migration `..._create_notifications_table`) — elle est créée par cette commande, sans réimport.
-3. **Vider les caches applicatifs** (config/route/vue), sinon l'ancienne config reste servie :
-   ```bash
-   php artisan optimize:clear
-   ```
+   Laravel joue **exactement** les migrations manquantes et met lui-même la table `migrations`
+   à jour. Si une migration échoue, elle échoue **ici**, sur une copie, pas en production.
+5. **Vérifier en local** : démarrez l'application (`php artisan serve` dans `backend/` **et**
+   `npm run dev` dans `frontend/`, ou `start-dev.ps1`), connectez-vous, ouvrez la liste des OM
+   et un état de paiement. C'est le test qui vaut la peine — il porte sur vos vraies données,
+   pas sur un jeu de démonstration.
+6. **Réexporter et réimporter** : exportez `anatt_prod_copie` (toujours avec **« Ajouter DROP
+   TABLE »**, compression **gzip** si le fichier dépasse la limite d'upload de phpMyAdmin, souvent
+   50 Mo), puis, dans le phpMyAdmin **de production**, sélectionnez `anatt_missions` > **Importer**
+   > ce fichier. Les `DROP TABLE` en tête remplacent proprement l'ancien schéma.
+7. **Remettre votre `.env` local** sur `DB_DATABASE=anatt_missions` pour ne pas continuer à
+   travailler sur la copie.
 
-> **Sans accès SSH** : lancez ces commandes via le **Terminal cPanel** (s'il est activé) ou une
-> **tâche Cron ponctuelle** avec le chemin PHP de l'hébergeur, par exemple :
-> ```bash
-> /usr/local/bin/php /home/anatt/anatt-api/artisan migrate --force
-> /usr/local/bin/php /home/anatt/anatt-api/artisan optimize:clear
-> ```
-> Supprimez la tâche Cron après exécution.
+> Si l'import phpMyAdmin s'interrompt (timeout sur un gros dump), déposez le `.sql` dans
+> `/home/anatt/` par FTP et utilisez **phpMyAdmin > Importer > « sélectionner depuis le serveur »**,
+> ou découpez l'export table par table.
 
-### B. Frontend (SPA)
+### E. Après la migration : purger les caches de l'API
+
+Laravel met en cache configuration, routes et vues. Après tout changement de code **ou** de `.env`,
+l'ancienne version reste servie tant que ces caches ne sont pas vidés.
+
+- Voies 1 et 2 : `php artisan optimize:clear` (déjà enchaîné dans la commande Cron ci-dessus).
+- Voie 3 (aucun PHP CLI) : par **FTP ou Gestionnaire de fichiers**, videz ces trois dossiers
+  (**gardez les dossiers eux-mêmes et leur `.gitignore`** — Laravel régénère le contenu à la
+  requête suivante) :
+
+  | Dossier | Contenu à supprimer | Ce que cela débloque |
+  |---|---|---|
+  | `anatt-api/bootstrap/cache/` | `config.php`, `routes-v7.php`, `packages.php`, `services.php` | Config et routes compilées (un `.env` modifié reste sinon sans effet) |
+  | `anatt-api/storage/framework/views/` | les `*.php` | Vues Blade compilées (gabarits PDF) |
+  | `anatt-api/storage/framework/cache/data/` | tout le contenu | Cache applicatif (`CACHE_STORE=file`) : matrice des permissions et paramètres système, sinon servis dans leur ancienne version |
+
+### F. Frontend (SPA)
 
 1. Récupérez le nouveau `frontend/dist/` (build local **ou** artefact CI `frontend-dist` du run `main`).
-2. Dans `public_html/`, **supprimez l'ancien `assets/` et `index.html`**, puis uploadez le nouveau
-   contenu de `dist/`. **Conservez `public_html/runtime-config.js`** (il porte l'`apiUrl` de prod) :
-   ne le réécrasez pas avec celui du build.
-3. **Purgez le cache** : `Ctrl`+`F5` (et navigation privée), plus le cache CDN/LiteSpeed le cas échéant.
-   Vérifiez dans l'onglet Réseau que les `assets/*.js` chargés portent les nouveaux hachages.
+2. Dans `public_html/`, **supprimez l'ancien dossier `assets/` et `index.html`**, puis uploadez le
+   nouveau contenu de `dist/`. Supprimer l'ancien `assets/` évite d'accumuler les bundles des
+   versions précédentes (les noms portent un hachage : rien ne les écrase).
+3. **Conservez `public_html/runtime-config.js`** — il porte l'`apiUrl` de production. Le fichier
+   livré dans `dist/` contient `apiUrl: ""` et casserait la connexion à l'API s'il l'écrasait.
+4. **Purgez le cache** : <kbd>Ctrl</kbd>+<kbd>F5</kbd> (et navigation privée), plus le cache
+   CDN/LiteSpeed le cas échéant. Vérifiez dans l'onglet Réseau que les `assets/*.js` chargés
+   portent les nouveaux hachages.
 
-### C. Vérification
+### G. Vérification
 
 Déroulez la **checklist post-déploiement** (`docs/checklist-post-deploiement.md`) : santé `/up`,
-connexion, puis la fonctionnalité livrée. Si un souci apparaît, restaurez le `public_html/` et la
-base sauvegardés en début d'opération.
+connexion, puis la fonctionnalité livrée.
+
+### H. Retour arrière
+
+Si la vérification échoue :
+
+1. **SPA** : videz `public_html/` et réextrayez le zip de l'étape A.2.
+2. **Base** : phpMyAdmin > **Importer** le dump de l'étape A.1 (il contient les `DROP TABLE`,
+   il remplace donc l'état actuel sans intervention manuelle).
+3. **Code API** : re-uploadez le `anatt-api/` de la version précédente.
+
+En sens inverse, une migration s'annule aussi par `php artisan migrate:rollback --step=1` (voies 1
+et 2) : toutes les migrations du projet implémentent `down()`. Restaurer le dump reste malgré tout
+plus sûr — un `rollback` ne rend pas les données qu'une migration a transformées.
 
 ---
 
@@ -269,9 +425,24 @@ base sauvegardés en début d'opération.
 | Sauvegarde « Échec » | mysqldump introuvable | Renseigner `DB_DUMP_BINARY` (chemin fourni par le support de l'hébergeur) |
 | Lenteur 1er chargement | config non cachée | (Optionnel, si Terminal cPanel dispo) `php artisan config:cache route:cache` |
 
+### Spécifique à la mise à jour (migrations sans SSH)
+
+| Symptôme | Cause probable | Solution |
+|---|---|---|
+| La tâche Cron ne produit **aucun log** | mauvais chemin PHP, ou log écrit dans un dossier non inscriptible | Testez d'abord `php -v` (§ Mise à jour, D, voie 1, étape 1) ; écrivez le log dans `/home/anatt/` |
+| Cron : `Could not open input file: artisan` | chemin de `artisan` erroné | Chemin **absolu** complet : `/home/anatt/anatt-api/artisan` |
+| Cron : `PHP Parse error` ou `syntax error, unexpected ...` | Cron exécuté avec une **ancienne version de PHP** (alias `/usr/local/bin/php`) | Chemin explicite `/opt/cpanel/ea-php83/root/usr/bin/php` |
+| `migrate` répond `Nothing to migrate` alors que des migrations manquent | le nouveau code n'a pas été uploadé **avant** de migrer | Uploadez `database/migrations/` (§ Mise à jour, C) puis relancez |
+| `SQLSTATE[42S01] Table ... already exists` | la table a été créée à la main, mais sa ligne manque dans `migrations` | Insérez la ligne manquante : `INSERT INTO migrations (migration, batch) VALUES ('<nom_du_fichier_sans_.php>', (SELECT COALESCE(MAX(batch),0)+1 FROM migrations m));` puis relancez |
+| 500 sur l'API **après** une migration réussie | caches applicatifs encore compilés sur l'ancien code | Purgez (§ Mise à jour, E) |
+| Le SPA affiche encore l'ancienne version | bundle en cache navigateur/CDN | <kbd>Ctrl</kbd>+<kbd>F5</kbd>, navigation privée, purge LiteSpeed/Cloudflare ; vérifiez les hachages dans l'onglet Réseau |
+| Import phpMyAdmin interrompu (« Maximum execution time ») | dump trop volumineux | Export **gzip**, ou dépôt FTP dans `/home/anatt/` + « Importer depuis le serveur », ou découpage table par table |
+
 ---
 
 ## Récapitulatif des artefacts à uploader
+
+### Première installation
 
 | Source (local) | Destination (cPanel) |
 |---|---|
@@ -279,3 +450,14 @@ base sauvegardés en début d'opération.
 | `backend/.env.production.example` → rempli | `anatt-api/.env` |
 | `frontend/dist/` (build local **ou** artefact CI `frontend-dist`) | `public_html/` |
 | `anatt_prod.sql` | importé via phpMyAdmin |
+
+### Mise à jour d'une instance en ligne
+
+| Source (local) | Destination (cPanel) | Remarque |
+|---|---|---|
+| `backend/app/ bootstrap/ config/ database/ public/ resources/ routes/` | `anatt-api/` (écrasement) | **Avant** de migrer |
+| `backend/vendor/` (zippé) | `anatt-api/` | **Seulement** si `composer.lock` a changé |
+| `frontend/dist/` (sans `runtime-config.js`) | `public_html/` | **Après** la migration ; supprimer l'ancien `assets/` d'abord |
+| — | `anatt-api/.env` | **Ne pas toucher** |
+| — | `anatt-api/storage/` | **Ne pas toucher** (PDF et sauvegardes générés) |
+| — | `public_html/runtime-config.js` | **Ne pas toucher** (porte l'`apiUrl` de prod) |
