@@ -17,8 +17,9 @@ anatt-api/public/            -> racine du sous-domaine api-omsemo.anatt.bj
 
 ## 0. Prérequis (sur votre PC)
 
-PHP 8.2+, Composer et Node 18+ installés en local (pour préparer les artefacts).
-Le serveur mutualisé n'aura besoin **ni de Composer ni de Node** : on y envoie le code déjà prêt.
+**PHP 8.4+**, Composer et Node 18+ installés en local (pour préparer les artefacts).
+Le serveur mutualisé n'aura besoin **ni de Composer ni de Node** : on y envoie le code déjà prêt,
+mais il devra lui aussi tourner en **PHP 8.4** (cf. §4).
 
 ---
 
@@ -106,8 +107,20 @@ Dans les deux cas, `dist/` contient : `index.html`, `assets/`, les favicons,
 1. **cPanel > Domains (ou Subdomains)** : créez `api-omsemo.anatt.bj`.
 2. Réglez sa **Document Root** sur `anatt-api/public`
    (créez le dossier `anatt-api` à la racine du compte, **au même niveau** que `public_html`, pas dedans).
-3. **cPanel > Select PHP Version** : choisissez **PHP 8.2 ou 8.3** et activez les extensions :
+3. **cPanel > Select PHP Version** : choisissez **PHP 8.4** et activez les extensions :
    `mbstring, openssl, pdo_mysql, tokenizer, xml, ctype, json, bcmath, fileinfo, gd, zip, curl`.
+
+> ⚠️ **PHP 8.4 est un minimum, pas une préférence.** `composer.lock` épingle six paquets de
+> production qui exigent PHP ≥ 8.4 (`symfony/clock`, `css-selector`, `event-dispatcher`, `string`,
+> `translation` — Symfony 8 — et `spatie/laravel-activitylog`). Composer grave cette exigence dans
+> `vendor/composer/platform_check.php`, exécuté à **chaque** requête : sous PHP 8.3, l'API renvoie
+> un **500 sur tous les appels**, avec le message « Your Composer dependencies require a PHP
+> version ">= 8.4.0" ». Ce n'est pas un avertissement que l'on peut ignorer.
+>
+> `composer.json` annonce `"php": "^8.2"`, mais c'est le **lock** qui fait foi pour le `vendor/`
+> que vous uploadez. Si votre hébergeur ne propose pas encore PHP 8.4, il faut rétrograder les
+> dépendances en local (Symfony 7 au lieu de 8) et régénérer `composer.lock` **avant** de
+> déployer — ce n'est pas un réglage serveur.
 
 ---
 
@@ -196,10 +209,10 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 # cPanel > Cron Jobs. Utilisez le chemin EXPLICITE de la version PHP sélectionnée
 # (/usr/local/bin/php est un alias qui pointe souvent vers une autre version).
 # Sauvegarde quotidienne à 02h00
-0 2 * * *  /opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan db:backup --compress
+0 2 * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan db:backup --compress
 
 # (si QUEUE_CONNECTION=database) traiter la file chaque minute
-* * * * *  /opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan queue:work --stop-when-empty
+* * * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan queue:work --stop-when-empty
 ```
 
 > `db:backup` appelle `mysqldump` via `exec()`. Certains mutualisés désactivent `exec` ou
@@ -261,37 +274,38 @@ Re-uploadez `vendor/` **uniquement** si `composer.lock` a changé (`composer ins
 > Le code doit être en place **avant** de migrer : les fichiers de migration que vous venez
 > d'uploader sont précisément ce que la commande va exécuter.
 
-### D. Appliquer les migrations — trois voies sans SSH
+### D. Appliquer les migrations — par tâche Cron (procédure de référence)
 
-Les trois voies produisent le même résultat. Prenez la première qui fonctionne chez votre hébergeur.
+**cPanel > Cron Jobs** exécute du PHP en ligne de commande sans qu'aucun accès SSH soit ouvert.
+C'est la voie normale de ce projet ; deux replis sont décrits plus bas pour les hébergeurs qui
+ne l'offrent pas.
 
-#### Voie 1 — Tâche Cron ponctuelle *(recommandée : présente sur quasiment tout cPanel)*
-
-Une tâche Cron exécute du PHP en ligne de commande sans qu'aucun accès SSH soit ouvert.
+> Pour le déroulé pas-à-pas du jour J, avec les commandes prêtes à coller et les cases à cocher,
+> voir **[`docs/runbook-mise-a-jour-cron.md`](docs/runbook-mise-a-jour-cron.md)**. La présente
+> section explique *pourquoi* chaque étape est là.
 
 **1. Trouvez le vrai binaire PHP.** `/usr/local/bin/php` est un alias qui pointe souvent vers une
 version **différente** de celle choisie dans « Select PHP Version » — une migration lancée avec
-PHP 7.4 échouera. Utilisez le chemin explicite de la version sélectionnée :
+PHP 8.3 échouera sur le contrôle de plate-forme de Composer (cf. §4). Utilisez le chemin explicite de la version sélectionnée :
 
 ```
-/opt/cpanel/ea-php83/root/usr/bin/php     (PHP 8.3)
-/opt/cpanel/ea-php82/root/usr/bin/php     (PHP 8.2)
+/opt/cpanel/ea-php84/root/usr/bin/php     (PHP 8.4 — la version exigée, cf. §4)
 ```
 
 Vérifiez-le d'abord avec une tâche de contrôle (cPanel > **Cron Jobs**, planification « Once per
 five minutes » le temps du test) :
 
 ```bash
-/opt/cpanel/ea-php83/root/usr/bin/php -v > /home/anatt/migration.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php -v > /home/anatt/migration.log 2>&1
 ```
 
-Ouvrez `/home/anatt/migration.log` dans le Gestionnaire de fichiers : il doit afficher `PHP 8.3.x`.
+Ouvrez `/home/anatt/migration.log` dans le Gestionnaire de fichiers : il doit afficher `PHP 8.4.x`.
 
 **2. Listez d'abord, migrez ensuite.** Jamais l'inverse — `migrate:status` ne modifie rien et
 confirme la liste établie en **B** :
 
 ```bash
-/opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan migrate:status > /home/anatt/migration.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate:status > /home/anatt/migration-status.log 2>&1
 ```
 
 Le rapport distingue `Ran` (déjà jouée) de `Pending` (à jouer).
@@ -299,32 +313,49 @@ Le rapport distingue `Ran` (déjà jouée) de `Pending` (à jouer).
 **3. Migrez** — une seule tâche, qui enchaîne migration et purge des caches :
 
 ```bash
-/opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration.log 2>&1 && /opt/cpanel/ea-php83/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
 ```
 
 `--force` est obligatoire en production (il remplace la confirmation interactive, impossible en
-Cron). La redirection `>> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
+Cron). La redirection `> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
 fenêtre sur ce qui s'est passé.
 
 **4. Relisez le log**, confirmez que chaque migration attendue affiche `DONE`, puis
-**supprimez les tâches Cron** (sinon elles se rejoueront ; `migrate` serait sans effet, mais le
-log serait écrasé et la tâche de test inutile tourne pour rien).
+**supprimez les tâches Cron** — sinon elles se rejouent toutes les cinq minutes : `migrate`
+serait sans effet, mais chaque passage **écrase le log** que vous étiez en train de lire.
 
-> ⚠️ Écrivez le log dans `/home/anatt/`, **jamais** dans `public_html/` ni dans
-> `anatt-api/public/` : il serait téléchargeable par n'importe qui.
+Trois règles qui évitent les mauvaises surprises :
 
-#### Voie 2 — Terminal cPanel *(si l'hébergeur l'a activé)*
+- **Une seule tâche active à la fois.** Créez la suivante après avoir supprimé la précédente.
+  Deux tâches concurrentes se disputent les fichiers de log (d'où un fichier distinct par étape).
+- **Le log va dans `/home/anatt/`**, jamais dans `public_html/` ni `anatt-api/public/` : il y
+  serait téléchargeable par n'importe qui.
+- **Pas de `%` dans la commande Cron.** Cron l'interprète comme un saut de ligne et tronque la
+  commande ; un nom de fichier horodaté façon `$(date +%Y)` casse silencieusement la tâche.
+  Gardez des noms de log fixes, ou échappez en `\%`.
+
+> cPanel n'a pas de planification « une seule fois ». Réglez la tâche sur **« Once Per Five
+> Minutes »**, laissez-la passer une fois, puis supprimez-la. Renseigner l'adresse e-mail du
+> Cron Job vous donne en prime une copie de la sortie par courriel — une seconde fenêtre utile
+> si le fichier de log n'a pas été écrit du tout (typiquement : mauvais chemin PHP).
+
+#### Replis — si les tâches Cron ne sont pas disponibles
+
+Les deux voies suivantes produisent le même résultat que la procédure ci-dessus. Elles ne servent
+que si **cPanel > Cron Jobs** est absent ou désactivé chez votre hébergeur.
+
+##### Repli A — Terminal cPanel *(si l'hébergeur l'a activé)*
 
 cPanel > **Terminal**. Mêmes commandes, en interactif, avec la sortie à l'écran :
 
 ```bash
 cd ~/anatt-api
-/opt/cpanel/ea-php83/root/usr/bin/php artisan migrate:status
-/opt/cpanel/ea-php83/root/usr/bin/php artisan migrate --force
-/opt/cpanel/ea-php83/root/usr/bin/php artisan optimize:clear
+/opt/cpanel/ea-php84/root/usr/bin/php artisan migrate:status
+/opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
+/opt/cpanel/ea-php84/root/usr/bin/php artisan optimize:clear
 ```
 
-#### Voie 3 — Migration à blanc en local, puis réimport *(aucun PHP en ligne de commande côté serveur)*
+##### Repli B — Migration à blanc en local, puis réimport *(aucun PHP en ligne de commande côté serveur)*
 
 Si l'hébergeur n'offre **ni Cron ni Terminal**, on ne rédige pas le SQL à la main : on laisse
 Laravel migrer une **copie** de la base de production sur votre poste, et on renvoie le résultat.
@@ -369,8 +400,8 @@ Aucune requête n'est écrite manuellement, donc aucune divergence possible avec
 Laravel met en cache configuration, routes et vues. Après tout changement de code **ou** de `.env`,
 l'ancienne version reste servie tant que ces caches ne sont pas vidés.
 
-- Voies 1 et 2 : `php artisan optimize:clear` (déjà enchaîné dans la commande Cron ci-dessus).
-- Voie 3 (aucun PHP CLI) : par **FTP ou Gestionnaire de fichiers**, videz ces trois dossiers
+- Cron et Terminal : `php artisan optimize:clear` (déjà enchaîné dans la commande Cron ci-dessus).
+- Repli B (aucun PHP CLI) : par **FTP ou Gestionnaire de fichiers**, videz ces trois dossiers
   (**gardez les dossiers eux-mêmes et leur `.gitignore`** — Laravel régénère le contenu à la
   requête suivante) :
 
@@ -406,8 +437,8 @@ Si la vérification échoue :
    il remplace donc l'état actuel sans intervention manuelle).
 3. **Code API** : re-uploadez le `anatt-api/` de la version précédente.
 
-En sens inverse, une migration s'annule aussi par `php artisan migrate:rollback --step=1` (voies 1
-et 2) : toutes les migrations du projet implémentent `down()`. Restaurer le dump reste malgré tout
+En sens inverse, une migration s'annule aussi par `php artisan migrate:rollback --step=1` (Cron
+ou Terminal) : toutes les migrations du projet implémentent `down()`. Restaurer le dump reste malgré tout
 plus sûr — un `rollback` ne rend pas les données qu'une migration a transformées.
 
 ---
@@ -429,9 +460,9 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
-| La tâche Cron ne produit **aucun log** | mauvais chemin PHP, ou log écrit dans un dossier non inscriptible | Testez d'abord `php -v` (§ Mise à jour, D, voie 1, étape 1) ; écrivez le log dans `/home/anatt/` |
+| La tâche Cron ne produit **aucun log** | mauvais chemin PHP, ou log écrit dans un dossier non inscriptible | Testez d'abord `php -v` (§ Mise à jour, D, étape 1) ; écrivez le log dans `/home/anatt/` |
 | Cron : `Could not open input file: artisan` | chemin de `artisan` erroné | Chemin **absolu** complet : `/home/anatt/anatt-api/artisan` |
-| Cron : `PHP Parse error` ou `syntax error, unexpected ...` | Cron exécuté avec une **ancienne version de PHP** (alias `/usr/local/bin/php`) | Chemin explicite `/opt/cpanel/ea-php83/root/usr/bin/php` |
+| Cron : `PHP Parse error` ou `syntax error, unexpected ...` | Cron exécuté avec une **ancienne version de PHP** (alias `/usr/local/bin/php`) | Chemin explicite `/opt/cpanel/ea-php84/root/usr/bin/php` |
 | `migrate` répond `Nothing to migrate` alors que des migrations manquent | le nouveau code n'a pas été uploadé **avant** de migrer | Uploadez `database/migrations/` (§ Mise à jour, C) puis relancez |
 | `SQLSTATE[42S01] Table ... already exists` | la table a été créée à la main, mais sa ligne manque dans `migrations` | Insérez la ligne manquante : `INSERT INTO migrations (migration, batch) VALUES ('<nom_du_fichier_sans_.php>', (SELECT COALESCE(MAX(batch),0)+1 FROM migrations m));` puis relancez |
 | 500 sur l'API **après** une migration réussie | caches applicatifs encore compilés sur l'ancien code | Purgez (§ Mise à jour, E) |
