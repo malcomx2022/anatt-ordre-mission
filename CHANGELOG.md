@@ -9,7 +9,54 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Corrigé
+
+- **Déploiement : la version de PHP annoncée rendait l'API inutilisable**
+  `DEPLOY-CPANEL.md` §4 demandait de sélectionner « PHP 8.2 ou 8.3 » dans cPanel.
+  Or `composer.lock` épingle six paquets de production qui exigent **PHP ≥ 8.4** :
+  `symfony/clock`, `symfony/css-selector`, `symfony/event-dispatcher`,
+  `symfony/string`, `symfony/translation` (Symfony 8) et
+  `spatie/laravel-activitylog`. Composer grave cette exigence dans
+  `vendor/composer/platform_check.php`, que `autoload_real.php` charge à
+  **chaque** requête : sous PHP 8.3 l'API répond **500 sur tous les appels**
+  (« Your Composer dependencies require a PHP version ">= 8.4.0" »). Le guide
+  aurait donc conduit tout droit à une instance morte.
+  `composer.json` annonce encore `"php": "^8.2"` — laissé tel quel puisque c'est
+  le **lock** qui détermine le `vendor/` uploadé, mais la contrainte réelle est
+  désormais écrite noir sur blanc, avec la sortie de secours (rétrograder vers
+  Symfony 7 en local et régénérer le lock) si l'hébergeur ne propose pas 8.4.
+  Corrigé dans `DEPLOY-CPANEL.md` (§0, §4, toutes les commandes Cron passent à
+  `ea-php84`), `docs/checklist-post-deploiement.md`, `README.md` et `CLAUDE.md`.
+
+- **Deux tâches Cron se disputaient le même fichier de log**
+  `migrate:status` écrivait dans `migration.log` avec `>` et `migrate --force`
+  y ajoutait avec `>>`. Une tâche de statut restée active — cPanel n'ayant pas
+  de planification « une seule fois », elle se rejoue toutes les cinq minutes —
+  **tronquait le log de migration** en cours de lecture. Un fichier distinct par
+  étape (`migration-status.log` / `migration-run.log`), et la règle « une seule
+  tâche active à la fois » est explicite.
+
+- **Faits obsolètes dans `README.md` et `CLAUDE.md`**
+  Laravel 11 → **12** (`laravel/framework v12.56.0`), PHP 8.3+ → **8.4+**,
+  et le compte de tests (495 / 59 fichiers → **531 / 62**), mesuré en exécutant
+  la suite.
+
 ### Ajouté
+
+- **`docs/runbook-mise-a-jour-cron.md` — déroulé du jour J**
+  Les tâches Cron étant disponibles sur l'instance ANaTT, la procédure de
+  référence de `DEPLOY-CPANEL.md` est désormais celle par Cron (Terminal cPanel
+  et migration à blanc en local deviennent des **replis**, pour les hébergeurs
+  qui ne l'offrent pas). Le runbook en tire une page opérationnelle : neuf
+  étapes cochables, commandes prêtes à coller, de la sauvegarde au ménage des
+  tâches temporaires, avec le retour arrière en pied de page.
+  Trois pièges propres à Cron y sont traités, qu'aucune documentation du projet
+  ne couvrait : cPanel n'a pas de planification « une seule fois » (régler sur
+  *Once Per Five Minutes*, laisser passer, **supprimer**) ; un `%` dans la
+  commande est interprété comme un saut de ligne et tronque la tâche
+  silencieusement ; et l'adresse e-mail du Cron Job donne une seconde fenêtre
+  sur la sortie quand le fichier de log n'a pas été écrit du tout — le symptôme
+  d'un mauvais chemin PHP.
 
 - **Mise à jour d'une instance en ligne sans accès SSH — procédure complète**
   La section « Mise à jour » de `DEPLOY-CPANEL.md` ne couvrait la migration de la

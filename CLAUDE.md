@@ -145,8 +145,8 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Tests** : Vitest + Vue Test Utils
 
 ### Backend
-- **Framework** : Laravel 11
-- **PHP** : 8.3+
+- **Framework** : Laravel 12
+- **PHP** : **8.4+** (minimum imposé par `composer.lock` : Symfony 8 + spatie/laravel-activitylog)
 - **Auth** : Laravel Sanctum (SPA tokens)
 - **BDD** : MySQL 8 (production) / SQLite (tests)
 - **Cache/Queue** : Redis
@@ -216,7 +216,7 @@ anatt-ordre-mission/
 │   ├── tailwind.config.ts
 │   └── vite.config.ts
 │
-├── backend/                     ← API Laravel 11
+├── backend/                     ← API Laravel 12
 │   ├── app/
 │   │   ├── Http/Controllers/Api/
 │   │   │   ├── AuthController.php

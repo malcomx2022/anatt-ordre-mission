@@ -10,15 +10,19 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 | Couche | Technologies |
 |---|---|
-| Backend | Laravel 11 · PHP 8.3+ · Sanctum · MySQL 8 · (Redis facultatif) |
+| Backend | Laravel 12 · **PHP 8.4+** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (495 tests, 59 fichiers) · Vitest · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (531 tests, 62 fichiers) · Vitest · Playwright (parcours critique e2e) |
 
 ---
 
 ## Démarrage rapide (Windows)
 
-Prérequis : **WAMP** (MySQL démarré), **PHP 8.3+**, **Node 18+**, **Composer**.
+Prérequis : **WAMP** (MySQL démarré), **PHP 8.4+**, **Node 18+**, **Composer**.
+
+> PHP 8.4 est un **minimum** : `composer.lock` épingle Symfony 8 et `spatie/laravel-activitylog`,
+> qui l'exigent. Sous 8.3, Composer refuse de charger l'autoloader. Même contrainte en production
+> (cf. [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) §4).
 
 ```powershell
 cd C:\wamp64\www\anatt-ordre-mission
@@ -121,7 +125,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 495 tests (59 fichiers)
+.\vendor\bin\pest                 # 531 tests (62 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
