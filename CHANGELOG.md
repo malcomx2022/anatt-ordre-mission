@@ -222,6 +222,12 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — README (compléments)
+
+- **`README.md`** : concepts métier — trois signataires distincts, PDF de l'OM signé par l'état ;
+  exploitation — matrice des permissions rétablie dès la restauration, et ce qui reste **hors
+  sauvegarde de la base** (`settings.json`, paraphes, fichiers produits) à conserver avec `storage/`.
+
 #### Documentation — documentation technique (compléments)
 
 - **Documentation technique** (`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`, régénérée par
