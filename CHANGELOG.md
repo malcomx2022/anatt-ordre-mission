@@ -213,6 +213,22 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     nulle part et contredisaient la règle d'or.
   - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
 
+#### Documentation — amendement d'un OM
+
+- **`docs/amendement-om.md`** aligné sur la 1.3 :
+  - encadré « Révisé (revue d'octobre 2026) » : avance engagée à l'amendement sur le circuit
+    par OM, garde « fichier en attente de dépôt », verrou `lockForUpdate`, état des reliquats
+    au montant payable ;
+  - §3 : tableau du moment de l'amendement complété (mission sans état, états des reliquats
+    `BROUILLON` / en signature / `VALIDE`) ; « 70/30 » remplacé par la part d'avance ;
+  - §4 : textes au présent (colonnes signées et filtre `montant > 0` livrés, colonnes réelles
+    de `om_amendements`) ; §4.5 corrigé — un état des reliquats validé **refuse**
+    l'amendement, il n'est pas « invalidé » ;
+  - §5 : écarts signalés (pas de contrôle dans les générateurs, rapports sans distinction
+    initial / ajusté) ; §7 : décisions de cadrage notées comme **tranchées**, avec leur
+    réponse ;
+  - références et tests complétés.
+
 #### Documentation — circuits de validation
 
 - **`docs/circuits-validation.md`** aligné sur la 1.3 :

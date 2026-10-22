@@ -1,6 +1,7 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
-> **Statut : fonctionnalité complète — Phases 1 à 6 livrées, document de retenue RH inclus.**
+> **Statut : fonctionnalité complète — Phases 1 à 6 livrées, document de retenue RH inclus,
+> durcie par la revue d'octobre 2026 (version 1.3).**
 > Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
@@ -65,6 +66,17 @@
 > **`GET /api/paiements/regularisations/:versement/document`** (`paiements.consulter`),
 > bouton **« Document »** sur l'écran Régularisations. Le document **n'ordonne aucun
 > décaissement** : il formalise la retenue, appliquée hors application par la RH.
+>
+> **Révisé (revue d'octobre 2026, version 1.3)** — cf. `docs/revue-projet-2026-10.md` :
+> - **circuit par OM** (mission sans état) : une avance déjà payée (`CONFIRME`) est
+>   **engagée à l'amendement**. Auparavant l'amendement recalculait toute la répartition et
+>   ignorait l'avance décaissée (sur-paiement sans trop-perçu détecté) ;
+> - **garde « fichier en attente de dépôt »** : amendement refusé tant qu'un versement de l'OM
+>   est `GENERE` (confirmer le lot, ou le passer en `ERREUR`) ;
+> - **verrou** : l'OM puis les états de la mission sont lus avec `lockForUpdate`, pour qu'un
+>   contrôle concurrent ne signe pas l'état entre la garde et la resynchronisation ;
+> - **état des reliquats au montant payable** (Σ des reliquats positifs) : un trop-perçu
+>   n'abaisse plus le total signé (cf. Phase 4 ci-dessus).
 
 ---
 
@@ -75,13 +87,13 @@ payées**. Ensuite, un ou plusieurs OM sont **amendés** : SEMO modifie le **nom
 jours** de la mission (rallonge ou réduction). L'ajustement — en plus ou en moins —
 doit se répercuter sur le **reliquat**, puisque l'avance est déjà décaissée.
 
-Aujourd'hui ce cas n'est pas géré :
+*Constat de départ (avant la fonctionnalité)* — ce cas n'était pas géré :
 
-- les montants (`montant_total`, `avance`, `reliquat`) sont **figés à la
+- les montants (`montant_total`, `avance`, `reliquat`) étaient **figés à la
   retranscription** (`CalculIndemniteService`) ;
 - les OM **ne sont pas modifiables** individuellement (retranscription seule, pas de
-  `PUT /ordres/:id`) ;
-- la répartition est fixe : `avance = round(total × partAvance/100)` puis
+  `PUT /ordres/:id`) — c'est toujours vrai : seul l'**amendement** (§4.3) les ajuste ;
+- la répartition était fixe : `avance = round(total × partAvance/100)` puis
   `reliquat = total − avance`.
 
 ---
@@ -99,8 +111,8 @@ reliquat = nouveau_montant_total − avance_déjà_engagée
 
 | Cas | Total | Reliquat ajusté | Conséquence |
 |---|---|---|---|
-| **Jours en hausse** (rallonge) | ↑ | **> 30 %** | complément à verser au bénéficiaire |
-| **Jours en baisse** (réduction modérée) | ↓ | **< 30 %**, ≥ 0 | reliquat réduit |
+| **Jours en hausse** (rallonge) | ↑ | **au-delà** de la part initiale du reliquat (30 % avec la part d'avance par défaut) | complément à verser au bénéficiaire |
+| **Jours en baisse** (réduction modérée) | ↓ | **en deçà** de cette part, ≥ 0 | reliquat réduit |
 | **Jours en forte baisse** | ↓↓ | **négatif** | **trop-perçu** : l'avance dépasse le nouveau total → à **récupérer**, non payable en Mobile Money |
 
 Le troisième cas est le point dur : un fichier MTN (`.txt`) ou Moov (`.xlsx`) ne peut
@@ -112,24 +124,30 @@ porter qu'un montant **strictement positif**.
 
 | Amendement survenant… | Traitement |
 |---|---|
-| **Avant** le récapitulatif des avances (OM `IMPORTE`) | Recalcul complet 70/30, trivial. **Aucun cas spécial** — équivaut à corriger la retranscription. |
+| **Avant** le récapitulatif des avances (OM `IMPORTE`) | Recalcul complet avec la part d'avance (`Parametres::partAvance()`, 70 % par défaut), trivial. **Aucun cas spécial** — équivaut à corriger la retranscription. |
 | **Après** validation des avances, **avant** l'état des reliquats | ⭐ **Cas central** : avance figée, `reliquat = new_total − avance`. |
-| **Après** l'état des reliquats établi / validé / payé | **Avenant** : re-signature de l'état (scellé HMAC invalidé) et/ou versement de complément / trop-perçu. Cas le plus lourd. |
+| Mission **sans état**, avance déjà payée (`CONFIRME`) | Même règle : l'amendement **engage** l'avance payée, puis seul le reliquat bouge. |
+| État des reliquats en `BROUILLON` / `REJETE` | Autorisé : le récapitulatif se **resynchronise** sur les montants amendés. |
+| État des reliquats en `CONTROLE` / `VISA_DAF` | Refusé avec **rejet guidé** : rejeter l'état, amender, puis le rétablir. |
+| État des reliquats `VALIDE` (scellé), ou trop-perçu déjà `RECOUVRE` | **Avenant formel** — hors périmètre v1, refusé par l'application. |
 
 C'est le franchissement « avance figée » qui introduit la nouvelle règle.
 
 ---
 
-## 4. Implémentation proposée
+## 4. Implémentation
 
 ### 4.1 Donnée — figer l'avance engagée
 
-- Nouvelle colonne `ordre_missions.avance_engagee` (int, **nullable**). Elle est posée
-  **au moment où l'état des avances passe `VALIDE`** (`EtatPaiementService::propager`).
-  Tant qu'elle est `null`, le comportement actuel 70/30 est **strictement inchangé**.
-- Nouvelle table `om_amendements` (traçabilité) :
+- Colonne `ordre_missions.avance_engagee` (int, **nullable**). Elle est posée
+  **au moment où l'état des avances passe `VALIDE`** (`EtatPaiementService::propager`)
+  ou, sur une mission **sans état**, **par l'amendement** lui-même si l'avance est déjà
+  `CONFIRME` (`MissionService::amender`).
+  Tant qu'elle est `null`, la répartition par la part d'avance est **strictement inchangée**.
+- Table `om_amendements` (traçabilité, migration `2026_08_18_130000`) :
   `ordre_mission_id, nb_jours_avant, nb_jours_apres, lignes_avant (json),
-  delta_montant, motif, amende_par, amende_le`.
+  montant_total_avant, montant_total_apres, delta_montant (signé), motif, amende_par,
+  amende_par_nom (instantané), amende_le`.
 - Migrations **additives** (aucun `drop`, non destructif).
 
 ### 4.2 Calcul — `CalculIndemniteService`
@@ -155,7 +173,8 @@ Body: { nb_jours? , lignes? , motif }
 
 - Recalcule `montant_total` au barème, applique la règle §4.2, met à jour le
   **versement RELIQUAT** (si non `CONFIRME`), journalise `AMEND_OM`, écrit dans
-  `om_amendements`.
+  `om_amendements`. Le tout dans une transaction qui verrouille l'OM puis les états de la
+  mission (`lockForUpdate`).
 - **Garde-fous** :
   - refus si l'OM est `REJETE` ou `ANNULE` ;
   - refus si un état de tranche est **en cours de signature** (`CONTROLE` / `VISA_DAF`,
@@ -172,46 +191,53 @@ Body: { nb_jours? , lignes? , motif }
 
 ### 4.4 Reliquat négatif — trop-perçu
 
-- ⚠️ **Migration requise (Phase 2/3)** : `ordre_missions.reliquat` et
-  `versements.montant` sont actuellement `unsignedBigInteger` (ne stockent PAS de
-  négatif). Il faudra les passer en entiers **signés** pour porter le trop-perçu.
-  *(Hors Phase 1 : le socle livré ne produit encore aucun montant négatif.)*
+- `ordre_missions.reliquat` et `versements.montant` sont des entiers **signés**
+  (migration de la Phase 2) : ils portent le trop-perçu.
 - Le modèle **autorise** un `reliquat` négatif (vérité comptable), mais :
-  - `Versement::scopeEligiblesLot` reçoit un `where('montant', '>', 0)` → **aucun
-    montant ≤ 0 n'entre dans un fichier** (ce filtre n'existe pas aujourd'hui, à
-    ajouter de toute façon comme défense en profondeur) ;
+  - `Versement::scopeEligiblesLot` filtre `montant > 0` → **aucun montant ≤ 0 n'entre
+    dans un fichier**, et exclut les statuts `A_RECOUVRER` / `RECOUVRE` ;
   - statut de versement `A_RECOUVRER` + écran **« Régularisations / trop-perçus »** qui
     les liste. La récupération (retenue sur salaire, ordre de reversement) est un
     **processus manuel hors Mobile Money**.
   - **Notification** : dès qu'un amendement produit un trop-perçu, l'agent financier est
-    averti par e-mail (`NotificationService::tropPercuCree`, type `trop_percu_cree`) —
+    averti dans l'application (cloche) et par e-mail (`NotificationService::tropPercuCree`,
+    type `trop_percu_cree`) —
     la régularisation ne dépend pas d'une consultation manuelle de l'écran.
 
 ### 4.5 État des reliquats
 
 - Le récapitulatif du reliquat étant **recalculé depuis les OM**, il reflète
-  automatiquement les amendements tant qu'il est en `BROUILLON`.
-- S'il est déjà `VALIDE`, le **scellé HMAC** protège le document : un amendement
-  postérieur l'**invalide** → il faut le **rejeter et refaire** (ou gérer un avenant
-  formel). C'est le cas « après l'état des reliquats » à cadrer (§7).
+  automatiquement les amendements tant qu'il est en `BROUILLON` (ou `REJETE`) :
+  `OrdreMissionObserver` → `EtatPaiementService::synchroniser`.
+- Son total est le montant **payable** : Σ des reliquats **positifs**
+  (`EtatPaiementService::montantsTranche`). Un trop-perçu n'abaisse pas le total signé ;
+  le PDF le mentionne à part (« trop-perçus hors total, à recouvrer par retenue sur
+  salaire »).
+- En cours de signature (`CONTROLE` / `VISA_DAF`) : amendement refusé avec un message qui
+  guide vers le **rejet** de l'état, puis son rétablissement.
+- `VALIDE` : le **scellé HMAC** protège le document ; l'amendement est **refusé** (avenant
+  formel, hors périmètre v1 — décision §7.2).
 
 ---
 
 ## 5. Conséquences sur l'existant
 
+> Tableau d'analyse d'impact établi au cadrage. Ce qui a été réalisé est décrit au §4 et
+> dans l'en-tête ; les écarts sont signalés dans la colonne « Impact ».
+
 | # | Composant | Impact |
 |---|---|---|
-| 1 | `CalculIndemniteService` | Répartition 70/30 **conditionnelle** ; `partAvance` neutralisé après engagement. Tests de calcul à étendre. |
+| 1 | `CalculIndemniteService` | Répartition par la part d'avance **conditionnelle** (`repartir($total, $avanceEngagee)`) ; `partAvance` neutralisé après engagement. Tests de calcul étendus. |
 | 2 | `MissionService` | Nouvelle méthode `amender()` ; `exigerAbsenceDEtat` **ne peut plus** bloquer (l'amendement doit agir sur une mission avec état) → garde plus fine par statut d'état. |
 | 3 | `EtatPaiementService::propager` | Fige `avance_engagee` à la validation des avances. |
 | 4 | `Versement` | `montant` peut être **négatif** ; `scopeEligiblesLot` exclut `≤ 0` ; éventuel statut `A_RECOUVRER`. |
-| 5 | Générateurs MTN / Moov | Verrou « montants > 0 uniquement » (défense en profondeur). |
+| 5 | Générateurs MTN / Moov | Montants > 0 garantis par `scopeEligiblesLot` (seule source des lignes des fichiers) ; pas de contrôle supplémentaire dans les générateurs. |
 | 6 | Migrations | `avance_engagee`, table `om_amendements`, éventuel statut — **additif**. |
 | 7 | Frontend | Détail OM : bouton **Amender** (jours/lignes + motif), **historique**, badges « reliquat ajusté » / « trop-perçu » ; écran **Régularisations**. |
-| 8 | PDF / état général | Tracer montant initial → avenant → reliquat ajusté. |
+| 8 | PDF | Réalisé sous deux formes : trop-perçus mentionnés hors total sur l'état des reliquats ; document de retenue (avant / après amendement, motif). |
 | 9 | Audit | Action `AMEND_OM`. |
-| 10 | Rapports | Distinguer per-diem initial vs ajusté ; les totaux évoluent. |
-| 11 | Idempotence | Garde-fou renforcé : une avance `CONFIRME` n'est **jamais** re-touchée. |
+| 10 | Rapports | Réalisé : rapport des trop-perçus (`GET /api/rapports/trop-percus`, à recouvrer vs recouvrés). La distinction per diem initial / ajusté n'est pas faite : les rapports portent les montants courants. |
+| 11 | Idempotence | Garde-fou renforcé : une avance `CONFIRME` n'est **jamais** re-touchée ; aucun amendement tant qu'un versement est `GENERE`. |
 | 12 | Docs | `circuits-validation.md`, guide utilisateur, `SCENARIO-DEMO.md`. |
 
 ---
@@ -234,21 +260,21 @@ durcit le périmètre payable ; le front (5) arrive en dernier.
 
 ---
 
-## 7. Décisions métier à trancher (Phase 0)
+## 7. Décisions métier (Phase 0 — tranchées)
 
-Questions de gestion, pas techniques — elles déterminent le périmètre :
+Questions de gestion posées au cadrage, et la réponse retenue :
 
-1. **Trop-perçu** — comment le récupère-t-on concrètement ? Retenue sur salaire, ordre
-   de reversement papier, compensation sur une mission future ? (Détermine l'écran
-   « Régularisations » et le statut `A_RECOUVRER`.)
-2. **Amendement après l'état des reliquats déjà validé / payé** — dans le périmètre v1
-   (avenant complet + re-signature) ou v2 (v1 se limite à « avant l'état reliquat ») ?
-3. **Qui amende, et faut-il une validation ?** — le gestionnaire seul, ou un mini-circuit
-   (contrôleur) sur l'avenant ?
-4. **Portée de l'amendement** — modifie-t-il aussi les **dates de la mission**, ou
-   seulement les **jours facturés** de l'OM ?
-
-> Recommandation : trancher au moins **1** et **2** avant de lancer la Phase 1.
+1. **Trop-perçu** — comment le récupère-t-on ? → **Retenue sur salaire**, hors
+   application. L'application constate (`A_RECOUVRER`), produit le **document de retenue**
+   pour la RH, puis enregistre le recouvrement (`RECOUVRE`).
+2. **Amendement après l'état des reliquats validé / payé** → **hors périmètre v1** :
+   l'amendement est permis jusqu'à la validation de l'état des reliquats ; au-delà,
+   avenant formel (refusé par l'application).
+3. **Qui amende ?** → le **gestionnaire** seul (`om.retranscrire`), sans circuit de
+   validation propre, mais avec **motif obligatoire** (≥ 10 caractères), journal
+   `om_amendements` et audit `AMEND_OM`. Le contrôle reste celui de l'état des reliquats.
+4. **Portée** → les **jours facturés** de l'OM (`nb_jours` ou `lignes`) ; les dates de la
+   mission ne changent pas.
 
 ---
 
@@ -261,3 +287,8 @@ Questions de gestion, pas techniques — elles déterminent le périmètre :
 | Périmètre payable | `Versement::scopeEligiblesLot()` |
 | Part de l'avance paramétrable | `docs/parametrage-part-avance.md` |
 | Générateurs de fichiers | `app/Services/Paiement/{MtnFileGenerator,MoovFileGenerator}.php` |
+| Amendement et gardes | `MissionService::amender()`, `MissionService::exigerAmendementPossible()` |
+| Régularisations et document de retenue | `LotPaiementService::regularisations()`, `PdfGenerator::genererDocumentRetenue()` |
+| Notification du trop-perçu | `NotificationService::tropPercuCree()` |
+| Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest` |
+| Revue d'octobre 2026 | `docs/revue-projet-2026-10.md` (§3 n° 3, §4 *Intégrité des paiements*) |
