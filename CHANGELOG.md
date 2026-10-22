@@ -9,120 +9,30 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
-### Documentation (CLAUDE.md)
+Contenu de la **version 1.3** (revue d'octobre 2026, 22/10/2026) en tête ; les entrées plus
+anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
+instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
+`2026_10_22_090000_add_sequence_to_lots_paiement`, `vendor/` inchangé, SPA à redéployer).
 
-- **`CLAUDE.md`** remis au niveau du code :
-  - **§2 Stack** : Vite 8, Pinia 3, Vue Router 5, Vitest 4 et Playwright, Sanctum 4, Pest 3.
-    Redis est facultatif. Le DevOps réel est WAMP, cPanel et GitHub Actions ; il n'y a pas de
-    Docker dans le dépôt.
-  - **§3 Structure** réécrite d'après l'arborescence réelle : contrôleurs, services, Support,
-    commandes `db:backup` et `db:restore`, tests, e2e, documentation et maquettes HTML. Les
-    fichiers inexistants ont été retirés : `docker-compose.yml`, `manuel-utilisateur.docx`,
-    `specs-techniques.pdf`.
-  - **§7** :
-    - 401 JSON sur `/api/*` ;
-    - pagination bornée de `/missions` et `/etats` ;
-    - filtre opérateur de `/ordres` ;
-    - `sequence` des lots.
-  - **§8** : calcul avec la part d'avance paramétrable, le transport (y compris sans jour
-    facturé) et `avance_engagee`. Nouvelles règles « un agent par mission », « OM rejeté » et
-    « lot complémentaire ».
-  - **§10** : commandes à jour (lint, e2e, worker, `db:backup`, `db:restore`, `start-dev.ps1`).
-  - **§12** : ajout de `DB_DUMP_BINARY`, `DB_RESTORE_BINARY`, `MTN_COMPTE` et
-    `PAIEMENT_ASYNC_SEUIL`. Les variables d'API Mobile Money sont retirées : elles ne sont lues
-    nulle part et contredisaient la règle d'or.
-  - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
+### Version 1.3 — revue d'octobre 2026
 
-### Documentation (README)
+#### Corrigé (première passe)
 
-- **`README.md`** :
-  - concepts métier complétés : deux états de paiement par mission, état des reliquats au
-    montant payable, lot en erreur, lot complémentaire, OM rejeté, amendement et trop-perçus ;
-  - séparation ordonnateur/payeur ;
-  - nouvelle section **Exploitation** : sauvegardes, restauration et mise à jour d'une instance ;
-  - tests : 113 tests Vitest, suite Pest sans `.env`, variable `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ;
-  - **index de la documentation**.
-- **Chemin de stockage corrigé** dans `DEPLOY-CPANEL.md` et dans la documentation technique : les
-  fichiers de paiement sont dans `storage/app/private/paiements/{mission_id}/`, qui est la racine du
-  disque `local`. La mention `storage/app/paiements/…` était inexacte.
+- **Revue complète d'octobre 2026 — huit défauts corrigés** (détail et points
+  restants : `docs/revue-projet-2026-10.md`). Bloquants reproduits sur l'API réelle :
+  un OM **rejeté** avant le récapitulatif redevenait `VALIDE` et **payable** à la
+  validation de l'état des avances (`EtatPaiementService::propager` exclut `REJETE`) ;
+  deux missions de **même objet** partageaient le même fichier de paiement, si bien que
+  le re-téléchargement d'un lot servait celui de l'autre (un dossier par mission,
+  `paiements/{mission_id}/`) ; sur le circuit par OM, un amendement après paiement de
+  l'avance recalculait 70/30 en ignorant l'avance décaissée (l'avance `GENERE`/`CONFIRME`
+  est désormais engagée). Également : 401 JSON au lieu d'une page 500 sur `/api/*` sans
+  en-tête `Accept` ; téléversement des paraphes (le FormData partait sérialisé en JSON) ;
+  mois courant calculé en UTC (décalé d'un mois au Bénin dans les rapports) ; catégorie
+  suggérée fausse quand l'indice est vidé ; historique OM-08 muet (champs et codes
+  d'action obsolètes).
 
-### Documentation (déploiement)
-
-- **`DEPLOY-CPANEL.md`** :
-  - nouveau §9.1 *Restaurer une sauvegarde* : prérequis `exec()`, `mysqldump` et `mysql`, et
-    restauration par tâche Cron pour les grosses bases ;
-  - variable `DB_RESTORE_BINARY` ;
-  - **Notes de version 1.3** : migration `add_sequence_to_lots_paiement`, `vendor/` inchangé, SPA
-    à redéployer, et rangement des fichiers de paiement par mission. Les fichiers déjà écrasés par
-    l'ancienne collision sont signalés ;
-  - trois entrées de dépannage pour la restauration.
-- **`docs/checklist-post-deploiement.md`** : contrôles propres à la 1.3 (migration, 401 JSON, lots
-  re-téléchargeables, sauvegardes, paraphes, mois par défaut du rapport mensuel).
-- **`docs/runbook-mise-a-jour-cron.md`** : renvoi vers ces contrôles.
-- **`.env.production.example` / `.env.example`** : variable `DB_RESTORE_BINARY`.
-
-### Corrigé (scénario de démo)
-
-- **Le badge « complémentaire n° N » ne s'affichait jamais** : `LotPaiementResource` n'exposait pas
-  `sequence`, la liste des lots ne pouvait donc pas distinguer un lot complémentaire. Repéré en
-  rejouant le scénario de démo sur l'API ; test ajouté (`PaiementTest`).
-
-### Documentation (scénario de démo)
-
-- **`docs/SCENARIO-DEMO.md`** rejoué sur l'API le 22/10/2026 : montants et fichiers inchangés pour le
-  parcours principal. Ajouts :
-  - le refus d'un agent en double dans une mission ;
-  - les gros lots générés en arrière-plan ;
-  - la garde « lot en attente de dépôt » avant tout amendement ;
-  - l'état des reliquats au montant payable, avec le trop-perçu affiché hors total.
-
-  Nouveau **§8** avec des fichiers réels :
-  - lot en erreur, puis régénération avec le numéro corrigé ;
-  - changement d'opérateur suivi d'un **lot complémentaire** (`…_COMPL2.txt`) ;
-  - mission sans état (Valider / Rejeter) ;
-  - sauvegarde et restauration.
-
-### Documentation
-
-- **Documentation technique 1.3** (`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`, régénérée
-  par `docs/generer_documentation_technique.py`) : chapitre « Évolutions de la version 1.3 ».
-  - Stack à jour : Laravel 12, PHP 8.4, Vite 8, Pinia 3, Vue Router 5, Vitest 4, Playwright.
-  - Entités ajoutées : `om_amendements`, `roles`, `role_permissions`, `user_permissions` et
-    `notifications` ; le nom de la table `ordre_missions` est corrigé.
-  - Statuts des versements et des lots. Nouveaux workflows : amendement (§4.6) et
-    sauvegarde/restauration (§4.7).
-  - Montants des états (§5.4) et RBAC flexible (§6.2.1). Audit et API complétés : amendement,
-    régularisations, notifications, rôles, sauvegardes, suivi des jobs.
-  - Stockage des fichiers par mission. Mise à jour d'instance (§9.5) et nouveau chapitre
-    10 « Qualité et tests ».
-  - Comptes de démo `daf@` et `dg@` ajoutés.
-
-- **Guide utilisateur 1.4** (`docs/Guide-Utilisateur-ANaTT.docx`, régénéré par
-  `docs/generer_guide_utilisateur.py`) : nouveau chapitre « Nouveautés de la version 1.4 » et
-  mise à jour des chapitres concernés.
-  - Retranscription : un agent par mission ; filtre opérateur ; Valider / Rejeter pour les missions sans état.
-  - Amendement : refus tant qu'un lot est en attente de dépôt.
-  - État des reliquats : montant payable, trop-perçus mentionnés hors total.
-  - Per diem : le transport est conservé sans jour facturé.
-  - Paiements : gros lots avec progression, lot en erreur, lots complémentaires.
-  - Barème et droits d'accès.
-  - Nouvelle section 13.3 « Sauvegardes et restauration ».
-  - Annexes : statut `ANNULE`, séquence des lots.
-  - Mise en page : les étapes numérotées repartent à 1 dans chaque procédure, et les largeurs
-    de colonnes sont respectées aussi sous LibreOffice.
-
-### Corrigé (revue d'octobre 2026, troisième passe)
-
-- **Pagination de `/api/missions` et `/api/etats`** : `per_page` est désormais plafonné à 100,
-  avec une valeur par défaut de 20.
-- **Filtre `operateur` de `/api/ordres`** : il porte sur l'opérateur du versement (celui du
-  paiement), et non plus sur l'opérateur actuel de l'agent.
-- **Exports de rapports** : un suffixe aléatoire est ajouté au nom du fichier, si bien que deux
-  exports lancés dans la même seconde ne s'écrasent plus.
-- **Calcul du per diem** : un OM sans jour facturé garde son transport. Seule une prise en
-  charge par un tiers ramène tous les montants à 0.
-
-### Modifié
+#### Modifié (seconde passe)
 
 - **Revue d'octobre 2026, seconde passe — points restants traités** (détail :
   `docs/revue-projet-2026-10.md` §4).
@@ -151,21 +61,151 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   - **Tests** : la suite Pest s'exécute sans `.env` (`APP_KEY` de test). Le binaire
     Chromium de Playwright peut être fourni par variable d'environnement.
 
-### Corrigé
+#### Corrigé (troisième passe)
 
-- **Revue complète d'octobre 2026 — huit défauts corrigés** (détail et points
-  restants : `docs/revue-projet-2026-10.md`). Bloquants reproduits sur l'API réelle :
-  un OM **rejeté** avant le récapitulatif redevenait `VALIDE` et **payable** à la
-  validation de l'état des avances (`EtatPaiementService::propager` exclut `REJETE`) ;
-  deux missions de **même objet** partageaient le même fichier de paiement, si bien que
-  le re-téléchargement d'un lot servait celui de l'autre (un dossier par mission,
-  `paiements/{mission_id}/`) ; sur le circuit par OM, un amendement après paiement de
-  l'avance recalculait 70/30 en ignorant l'avance décaissée (l'avance `GENERE`/`CONFIRME`
-  est désormais engagée). Également : 401 JSON au lieu d'une page 500 sur `/api/*` sans
-  en-tête `Accept` ; téléversement des paraphes (le FormData partait sérialisé en JSON) ;
-  mois courant calculé en UTC (décalé d'un mois au Bénin dans les rapports) ; catégorie
-  suggérée fausse quand l'indice est vidé ; historique OM-08 muet (champs et codes
-  d'action obsolètes).
+- **Pagination de `/api/missions` et `/api/etats`** : `per_page` est désormais plafonné à 100,
+  avec une valeur par défaut de 20.
+- **Filtre `operateur` de `/api/ordres`** : il porte sur l'opérateur du versement (celui du
+  paiement), et non plus sur l'opérateur actuel de l'agent.
+- **Exports de rapports** : un suffixe aléatoire est ajouté au nom du fichier, si bien que deux
+  exports lancés dans la même seconde ne s'écrasent plus.
+- **Calcul du per diem** : un OM sans jour facturé garde son transport. Seule une prise en
+  charge par un tiers ramène tous les montants à 0.
+
+#### Corrigé (scénario de démo)
+
+- **Le badge « complémentaire n° N » ne s'affichait jamais** : `LotPaiementResource` n'exposait pas
+  `sequence`, la liste des lots ne pouvait donc pas distinguer un lot complémentaire. Repéré en
+  rejouant le scénario de démo sur l'API ; test ajouté (`PaiementTest`).
+
+#### Vérification
+
+- **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.
+- **Vitest** : 113 tests ; **Playwright** : parcours critique (3 tests, API mockée).
+- **Recette sur l'API réelle** : 76 / 76 contrôles ; scénario de démo rejoué (fichiers MTN/Moov réels).
+- Chaque correctif a un test de non-régression vu en échec sans le correctif.
+- **CI** (`.github/workflows/ci.yml`) : Lint, Pest, Vitest + type-check, Playwright et build
+  `frontend-dist` exécutés sur chaque PR.
+
+#### Documentation — guide utilisateur et documentation technique
+
+- **Documentation technique 1.3** (`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`, régénérée
+  par `docs/generer_documentation_technique.py`) : chapitre « Évolutions de la version 1.3 ».
+  - Stack à jour : Laravel 12, PHP 8.4, Vite 8, Pinia 3, Vue Router 5, Vitest 4, Playwright.
+  - Entités ajoutées : `om_amendements`, `roles`, `role_permissions`, `user_permissions` et
+    `notifications` ; le nom de la table `ordre_missions` est corrigé.
+  - Statuts des versements et des lots. Nouveaux workflows : amendement (§4.6) et
+    sauvegarde/restauration (§4.7).
+  - Montants des états (§5.4) et RBAC flexible (§6.2.1). Audit et API complétés : amendement,
+    régularisations, notifications, rôles, sauvegardes, suivi des jobs.
+  - Stockage des fichiers par mission. Mise à jour d'instance (§9.5) et nouveau chapitre
+    10 « Qualité et tests ».
+  - Comptes de démo `daf@` et `dg@` ajoutés.
+
+- **Guide utilisateur 1.4** (`docs/Guide-Utilisateur-ANaTT.docx`, régénéré par
+  `docs/generer_guide_utilisateur.py`) : nouveau chapitre « Nouveautés de la version 1.4 » et
+  mise à jour des chapitres concernés.
+  - Retranscription : un agent par mission ; filtre opérateur ; Valider / Rejeter pour les missions sans état.
+  - Amendement : refus tant qu'un lot est en attente de dépôt.
+  - État des reliquats : montant payable, trop-perçus mentionnés hors total.
+  - Per diem : le transport est conservé sans jour facturé.
+  - Paiements : gros lots avec progression, lot en erreur, lots complémentaires.
+  - Barème et droits d'accès.
+  - Nouvelle section 13.3 « Sauvegardes et restauration ».
+  - Annexes : statut `ANNULE`, séquence des lots.
+  - Mise en page : les étapes numérotées repartent à 1 dans chaque procédure, et les largeurs
+    de colonnes sont respectées aussi sous LibreOffice.
+
+#### Documentation — scénario de démo
+
+- **`docs/SCENARIO-DEMO.md`** rejoué sur l'API le 22/10/2026 : montants et fichiers inchangés pour le
+  parcours principal. Ajouts :
+  - le refus d'un agent en double dans une mission ;
+  - les gros lots générés en arrière-plan ;
+  - la garde « lot en attente de dépôt » avant tout amendement ;
+  - l'état des reliquats au montant payable, avec le trop-perçu affiché hors total.
+
+  Nouveau **§8** avec des fichiers réels :
+  - lot en erreur, puis régénération avec le numéro corrigé ;
+  - changement d'opérateur suivi d'un **lot complémentaire** (`…_COMPL2.txt`) ;
+  - mission sans état (Valider / Rejeter) ;
+  - sauvegarde et restauration.
+
+#### Documentation — déploiement
+
+- **`DEPLOY-CPANEL.md`** :
+  - nouveau §9.1 *Restaurer une sauvegarde* : prérequis `exec()`, `mysqldump` et `mysql`, et
+    restauration par tâche Cron pour les grosses bases ;
+  - variable `DB_RESTORE_BINARY` ;
+  - **Notes de version 1.3** : migration `add_sequence_to_lots_paiement`, `vendor/` inchangé, SPA
+    à redéployer, et rangement des fichiers de paiement par mission. Les fichiers déjà écrasés par
+    l'ancienne collision sont signalés ;
+  - trois entrées de dépannage pour la restauration.
+- **`docs/checklist-post-deploiement.md`** : contrôles propres à la 1.3 (migration, 401 JSON, lots
+  re-téléchargeables, sauvegardes, paraphes, mois par défaut du rapport mensuel).
+- **`docs/runbook-mise-a-jour-cron.md`** : renvoi vers ces contrôles.
+- **`.env.production.example` / `.env.example`** : variable `DB_RESTORE_BINARY`.
+
+#### Documentation — README
+
+- **`README.md`** :
+  - concepts métier complétés : deux états de paiement par mission, état des reliquats au
+    montant payable, lot en erreur, lot complémentaire, OM rejeté, amendement et trop-perçus ;
+  - séparation ordonnateur/payeur ;
+  - nouvelle section **Exploitation** : sauvegardes, restauration et mise à jour d'une instance ;
+  - tests : 113 tests Vitest, suite Pest sans `.env`, variable `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ;
+  - **index de la documentation**.
+- **Chemin de stockage corrigé** dans `DEPLOY-CPANEL.md` et dans la documentation technique : les
+  fichiers de paiement sont dans `storage/app/private/paiements/{mission_id}/`, qui est la racine du
+  disque `local`. La mention `storage/app/paiements/…` était inexacte.
+
+#### Documentation — CLAUDE.md
+
+- **`CLAUDE.md`** remis au niveau du code :
+  - **§2 Stack** : Vite 8, Pinia 3, Vue Router 5, Vitest 4 et Playwright, Sanctum 4, Pest 3.
+    Redis est facultatif. Le DevOps réel est WAMP, cPanel et GitHub Actions ; il n'y a pas de
+    Docker dans le dépôt.
+  - **§3 Structure** réécrite d'après l'arborescence réelle : contrôleurs, services, Support,
+    commandes `db:backup` et `db:restore`, tests, e2e, documentation et maquettes HTML. Les
+    fichiers inexistants ont été retirés : `docker-compose.yml`, `manuel-utilisateur.docx`,
+    `specs-techniques.pdf`.
+  - **§7** :
+    - 401 JSON sur `/api/*` ;
+    - pagination bornée de `/missions` et `/etats` ;
+    - filtre opérateur de `/ordres` ;
+    - `sequence` des lots.
+  - **§8** : calcul avec la part d'avance paramétrable, le transport (y compris sans jour
+    facturé) et `avance_engagee`. Nouvelles règles « un agent par mission », « OM rejeté » et
+    « lot complémentaire ».
+  - **§10** : commandes à jour (lint, e2e, worker, `db:backup`, `db:restore`, `start-dev.ps1`).
+  - **§12** : ajout de `DB_DUMP_BINARY`, `DB_RESTORE_BINARY`, `MTN_COMPTE` et
+    `PAIEMENT_ASYNC_SEUIL`. Les variables d'API Mobile Money sont retirées : elles ne sont lues
+    nulle part et contredisaient la règle d'or.
+  - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
+
+#### Documentation — AGENTS.md
+
+- **`AGENTS.md`** mis à jour pour les sessions d'agents.
+  - **Deux erreurs corrigées** :
+    - la route publique de la part d'avance est `/api/admin/parametres/part-avance`, et non
+      `/api/parametres/...` ;
+    - le partage avance/reliquat est paramétrable, il n'est pas codé en dur à 70/30.
+  - **Ajouts** :
+    - prérequis PHP 8.4, tests sans `.env`, variable pour Chromium ;
+    - `lint:check` plutôt que `lint`, et la règle « prouver qu'un test échoue sans le correctif » ;
+    - pièges de l'API : 401 JSON, `FormData` en multipart, `getPerPage`, `moisLocal`, séparation
+      des rôles par membre ;
+    - paiements : stockage par mission, séquence et lots complémentaires, barrières
+      d'éligibilité, lot en erreur, état des reliquats payable, OM rejeté ;
+    - amendements, sauvegardes et restauration, comptes de démo ;
+    - documents à régénérer après une évolution fonctionnelle.
+
+- **`CHANGELOG.md`** : section « Non publié » réorganisée — la revue d'octobre 2026 est
+  regroupée sous « Version 1.3 », avec la vérification et le renvoi vers les notes de mise à jour.
+
+### Antérieur à la version 1.3
+
+#### Corrigé
 
 - **Déploiement : la version de PHP annoncée rendait l'API inutilisable**
   `DEPLOY-CPANEL.md` §4 demandait de sélectionner « PHP 8.2 ou 8.3 » dans cPanel.
@@ -197,7 +237,7 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   et le compte de tests (495 / 59 fichiers → **531 / 62**), mesuré en exécutant
   la suite.
 
-### Ajouté
+#### Ajouté
 
 - **`docs/runbook-mise-a-jour-cron.md` — déroulé du jour J**
   Les tâches Cron étant disponibles sur l'instance ANaTT, la procédure de
@@ -264,7 +304,7 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   avec BOM et colonnes alignées, couverture des 3 catégories et des 2 opérateurs,
   modèle XLSX avec le téléphone préservé en texte, et fichier à séparateur `,`).
 
-### Corrigé (documentation)
+#### Corrigé (documentation)
 
 - **`.gitignore` : commentaire contredisant le déploiement**
   Le bloc « Builds » affirmait que `frontend/dist/` était « volontairement
@@ -274,7 +314,7 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   `frontend-dist`. Le commentaire est corrigé et `frontend/dist/` explicitement
   ignoré, pour qu'un build local ne se retrouve pas commité par accident.
 
-### Modifié
+#### Modifié
 
 - **Catégories d'indice nominatives — `ORDRE_1/2/3` remplacé**
   La catégorie d'un agent ne s'appelle plus « ordre » mais porte l'indice
@@ -304,7 +344,7 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   Non impactés (vérifié) : scellé HMAC des états, états déjà signés, formats de
   fichiers MTN/Moov, et tous les montants.
 
-### Ajouté
+#### Ajouté
 
 - **Auto-synchronisation de l'état de paiement avec ses OM**
   Dès qu'un OM est créé, modifié (montant, statut) ou supprimé, l'état de la
@@ -326,7 +366,7 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   fonctions référencées par les tests (mécanisme qui a laissé passer l'incident
   du 30/07).
 
-### Corrigé
+#### Corrigé
 
 - **API — clé `data` toujours exposée dans les réponses `success()`**
   `App\Http\Traits\ApiResponse::success()` retournait `{}` (objet vide) lorsque
@@ -359,7 +399,7 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   `normaliserErreurBlob` mais échouaient silencieusement sans CI — voir plus
   bas).
 
-### Notes de maintenance
+#### Notes de maintenance
 
 - **Branches distantes obsolètes** (état au 31/07) — toutes à 0 commit d'avance
   sur `main`, aucun apport unique. Suppression recommandée après validation :
