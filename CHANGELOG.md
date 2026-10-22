@@ -222,6 +222,23 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Modifié — signatures sur le PDF de l'OM
+
+- **Le PDF d'un OM reprend les signatures de l'état des avances.** Sur le circuit par état,
+  les trois signatures (contrôle, « Vu » DAF, validation DG) sont portées par l'état de
+  paiement, pas par l'OM : le PDF d'un OM d'une mission validée affichait donc ses cases
+  « en attente ». `PdfGenerator` reprend désormais, au fur et à mesure du circuit, les
+  signatures de l'état des avances qui couvre l'OM : instantané du signataire, paraphe
+  archivé, même code de vérification que l'état.
+  - Garde-fous : un OM absent du tableau figé de l'état (rejeté, annulé) n'en reçoit aucune ;
+    un état rejeté n'en fournit aucune ; un brouillon d'OM n'en montre jamais ; une
+    signature portée par l'OM lui-même (circuit par OM, données héritées) reste prioritaire.
+  - Cache : la clé du PDF inclut le statut de l'état (`…-ETAT-CONTROLE.pdf`), pour qu'une
+    signature apposée sur l'état régénère le PDF de l'OM resté au même statut.
+  - Tests : `OmPdfSignaturesEtatTest` (5 cas, 3 rouges sans le correctif). Pest : 558 tests.
+  - Documentation : `workflows-par-profil.md` §5, `SCENARIO-DEMO.md`,
+    `checklist-post-deploiement.md`, rapport de revue (n° 11), README, CLAUDE.md.
+
 #### Documentation — checklist post-déploiement (compléments)
 
 - **`docs/checklist-post-deploiement.md`** :

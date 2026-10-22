@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EtatPaiement;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
@@ -98,6 +99,11 @@ class PdfGenerator
         $montantTransport = (int) $ordre->montant_transport;
         $perDiem = $ordre->montant_total - $montantTransport;
 
+        // Circuit par ÉTAT : les signatures vivent sur l'état des avances, pas sur
+        // l'OM. Elles sont reprises ici, à défaut de signature portée par l'OM
+        // lui-même (circuit par OM ou données héritées), qui reste prioritaire.
+        $etat = $brouillon ? null : $this->etatSignataire($ordre);
+
         return [
             'reference_semo' => $ordre->reference_semo,
             'role' => $ordre->role,
@@ -139,27 +145,27 @@ class PdfGenerator
             'libelle_controle' => self::LIBELLE_CONTROLE,
             'libelle_daf' => self::LIBELLE_DAF,
             'libelle_dg' => self::LIBELLE_DG,
-            'verification' => $brouillon ? null : $this->signature(
+            'verification' => $brouillon ? null : ($this->signature(
                 $ordre->verifie_nom,
                 $ordre->verifie_le,
                 $ordre->signature_verif_hash,
                 $ordre->verifiePar,
                 $ordre->verifie_fonction,
-            ),
-            'visa_daf' => $brouillon ? null : $this->signature(
+            ) ?? $this->signatureEtat($etat, 'controle', 'signature_controle_hash', 'signature_controle_image', 'controleur')),
+            'visa_daf' => $brouillon ? null : ($this->signature(
                 $ordre->visa_daf_nom,
                 $ordre->visa_daf_le,
                 $ordre->signature_daf_hash,
                 $ordre->visaDaf,
                 $ordre->visa_daf_fonction,
-            ),
-            'valide_dg' => $brouillon ? null : $this->signature(
+            ) ?? $this->signatureEtat($etat, 'visa_daf', 'signature_daf_hash', 'signature_daf_image', 'daf')),
+            'valide_dg' => $brouillon ? null : ($this->signature(
                 $ordre->valide_dg_nom,
                 $ordre->valide_dg_le,
                 $ordre->signature_dg_hash,
                 $ordre->valideDg,
                 $ordre->valide_dg_fonction,
-            ),
+            ) ?? $this->signatureEtat($etat, 'valide_dg', 'signature_dg_hash', 'signature_dg_image', 'dg')),
         ];
     }
 
@@ -276,13 +282,69 @@ class PdfGenerator
             return "ordres/OM-{$slug}-BROUILLON.pdf";
         }
 
-        $etat = match ($ordre->statut) {
+        $statut = match ($ordre->statut) {
             'VISA_DAF' => 'VISA-DAF',
             'VALIDE', 'SOLDE' => 'FINAL',
             default => $ordre->statut,
         };
 
-        return "ordres/OM-{$slug}-{$etat}.pdf";
+        // Les signatures reprises de l'état progressent sans que l'OM change de
+        // statut (contrôle, visa) : le statut de l'état entre donc dans la clé.
+        $etat = $this->etatSignataire($ordre);
+        $suffixe = $etat !== null ? "-ETAT-{$etat->statut}" : '';
+
+        return "ordres/OM-{$slug}-{$statut}{$suffixe}.pdf";
+    }
+
+    /**
+     * État des avances dont les signatures valent pour cet OM, ou null.
+     *
+     * Seul un OM présent dans le tableau figé au récapitulatif est couvert par
+     * l'état : un OM rejeté (ou annulé) n'en fait pas partie et ne doit jamais
+     * paraître signé. Un état rejeté n'a plus de signatures.
+     */
+    private function etatSignataire(OrdreMission $ordre): ?EtatPaiement
+    {
+        if (in_array($ordre->statut, ['REJETE', 'ANNULE'], true)) {
+            return null;
+        }
+
+        $etat = EtatPaiement::where('mission_id', $ordre->mission_id)
+            ->where('tranche', EtatPaiement::TRANCHE_AVANCE)
+            ->first();
+
+        if ($etat === null || $etat->statut === 'REJETE') {
+            return null;
+        }
+
+        $couvert = collect($etat->lignes ?? [])->contains(fn ($l) => ($l['numero'] ?? null) === $ordre->reference_semo);
+
+        return $couvert ? $etat : null;
+    }
+
+    /**
+     * Signature reprise de l'état : instantané du signataire, scellé de l'état et
+     * paraphe archivé à la signature (repli sur le paraphe en poste, comme
+     * l'état lui-même).
+     *
+     * @return array{nom:string, fonction:?string, date:string, code:?string, image:?string}|null
+     */
+    private function signatureEtat(?EtatPaiement $etat, string $prefixe, string $hash, string $image, string $poste): ?array
+    {
+        $nom = $etat?->{"{$prefixe}_nom"};
+        $date = $etat?->{"{$prefixe}_le"};
+
+        if ($etat === null || empty($nom) || $date === null) {
+            return null;
+        }
+
+        return [
+            'nom' => $nom,
+            'fonction' => $etat->{"{$prefixe}_fonction"} ?: null,
+            'date' => Carbon::parse($date)->format('d/m/Y à H:i'),
+            'code' => Workflow::codeVerification($etat->{$hash}),
+            'image' => PdfAssets::signatureDataUri($etat->{$image}) ?? SignatureParametres::pour($poste)['image'],
+        ];
     }
 
     /**

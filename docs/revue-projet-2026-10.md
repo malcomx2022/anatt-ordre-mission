@@ -89,6 +89,7 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 8 | Majeur | L'historique OM (OM-08) affichait `OM-<id>`, des codes d'action bruts et aucun détail : la vue lisait `numero`, `details` et des codes obsolètes. | La vue lit `reference_semo`, la colonne `donnees` et les codes `IMPORT_OM`, `VALIDATE_OM`, `REJECT_OM`, `AMEND_OM`. |
 | 9 | Mineur | *(trouvé au rejeu du scénario de démo, après la seconde passe)* Le badge « complémentaire n° N » ne s'affichait jamais : `LotPaiementResource` n'exposait pas `sequence`. | Champ `sequence` ajouté à la ressource, test dans `PaiementTest`. |
 | 10 | Majeur | *(trouvé après la revue, en mettant à jour `docs/rbac-flexible.md`)* `db:restore` ne purgeait pas la matrice des permissions, en cache sans expiration : les droits d'avant la restauration restaient appliqués. | `DatabaseRestore` appelle `PermissionRepository::vider()` après une restauration réussie ; test dans `BackupControllerTest` (Pest : 553 tests). |
+| 11 | Mineur | *(constaté en réécrivant `docs/workflows-par-profil.md`)* Le PDF d'un OM validé par le circuit par état affichait ses trois cases de signature « en attente » : les signatures vivent sur l'état et n'étaient pas reprises. | `PdfGenerator` reprend les signatures de l'état des avances qui couvre l'OM (scellé, paraphe archivé) ; OM rejeté exclu ; clé de cache incluant le statut de l'état. Tests `OmPdfSignaturesEtatTest` (Pest : 558 tests). |
 
 ## 4. Points restants — tous traités (seconde passe)
 

@@ -265,13 +265,13 @@ signés (et la tranche). Si un montant est altéré après signature, le scellé
 diverge. C'est un contrôle d'intégrité interne — **pas** une signature électronique
 qualifiée : aucune PKI, aucun certificat, aucune valeur probante au sens légal.
 
-> **Le PDF de l'OM** garde quatre blocs (bénéficiaire, contrôleur, « Vu » DAF, DG). Ils ne
-> se remplissent qu'avec les signatures portées par **l'OM lui-même** : le bloc
-> « contrôleur » par la validation par OM (mission sans état), les blocs DAF et DG
-> uniquement pour des données héritées de l'ancien circuit. Sur le circuit par état, les
-> signatures vivent sur l'**état** et ne sont pas recopiées sur l'OM : le PDF de l'OM d'une
-> mission validée par état affiche donc ces blocs « en attente ». Le document probant est
-> l'état de paiement.
+> **Le PDF de l'OM** porte quatre blocs (bénéficiaire, contrôleur, « Vu » DAF, DG). Sur le
+> circuit par état, il **reprend les signatures de l'état des avances** qui couvre l'OM, au
+> fur et à mesure qu'elles sont apposées : même nom, même fonction, même paraphe archivé,
+> même code de vérification que sur l'état (`PdfGenerator::etatSignataire`). Un OM absent
+> de l'état signé (rejeté, annulé) n'en reçoit aucune ; une signature portée par l'OM
+> lui-même (validation par OM d'une mission sans état, données héritées) reste prioritaire.
+> Le document probant demeure l'**état de paiement**.
 
 ---
 

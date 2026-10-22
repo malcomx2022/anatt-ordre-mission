@@ -118,7 +118,7 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **États de reliquats déjà validés** : leur montant scellé est **inchangé** après la mise à jour (la nouvelle règle « montant payable » ne s'applique qu'aux récapitulatifs établis ou rafraîchis ensuite).
 - [ ] **Fichiers de paiement** : à la **première génération réelle** après la mise à jour, le fichier apparaît dans `anatt-api/storage/app/private/paiements/{mission_id}/` (Gestionnaire de fichiers cPanel). Ne déplacer aucun ancien fichier.
 - [ ] **Réglages conservés** : `anatt-api/storage/app/settings.json` est toujours présent et l'écran **Paramètres** affiche les mêmes valeurs qu'avant (part d'avance, exercice, SMTP). Ce fichier n'est **pas** dans les sauvegardes de la base : s'il a disparu (dossier `storage/` écrasé), le restaurer depuis la copie de `storage/` faite avant la mise à jour.
-- [ ] **PDF signé à vérifier** : sur une mission validée par le circuit, le document signé est le PDF de l'**état** (« Télécharger l'état ») — trois signatures, numéro, paraphes. Le PDF de l'**OM** garde ses cases de signature « en attente » : comportement attendu, pas une anomalie (cf. `docs/workflows-par-profil.md` §5).
+- [ ] **PDF signés** : sur une mission validée par le circuit, le PDF de l'**état** (« Télécharger l'état ») porte les trois signatures, le numéro et les paraphes ; le PDF d'un **OM** de cette mission reprend les mêmes signatures (même code de vérification). Un OM rejeté n'en porte aucune (cf. `docs/workflows-par-profil.md` §5).
 
 #### Sur l'instance de recette uniquement
 
