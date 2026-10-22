@@ -9,6 +9,34 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation (README)
+
+- **`README.md`** :
+  - concepts métier complétés : deux états de paiement par mission, état des reliquats au
+    montant payable, lot en erreur, lot complémentaire, OM rejeté, amendement et trop-perçus ;
+  - séparation ordonnateur/payeur ;
+  - nouvelle section **Exploitation** : sauvegardes, restauration et mise à jour d'une instance ;
+  - tests : 113 tests Vitest, suite Pest sans `.env`, variable `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ;
+  - **index de la documentation**.
+- **Chemin de stockage corrigé** dans `DEPLOY-CPANEL.md` et dans la documentation technique : les
+  fichiers de paiement sont dans `storage/app/private/paiements/{mission_id}/`, qui est la racine du
+  disque `local`. La mention `storage/app/paiements/…` était inexacte.
+
+### Documentation (déploiement)
+
+- **`DEPLOY-CPANEL.md`** :
+  - nouveau §9.1 *Restaurer une sauvegarde* : prérequis `exec()`, `mysqldump` et `mysql`, et
+    restauration par tâche Cron pour les grosses bases ;
+  - variable `DB_RESTORE_BINARY` ;
+  - **Notes de version 1.3** : migration `add_sequence_to_lots_paiement`, `vendor/` inchangé, SPA
+    à redéployer, et rangement des fichiers de paiement par mission. Les fichiers déjà écrasés par
+    l'ancienne collision sont signalés ;
+  - trois entrées de dépannage pour la restauration.
+- **`docs/checklist-post-deploiement.md`** : contrôles propres à la 1.3 (migration, 401 JSON, lots
+  re-téléchargeables, sauvegardes, paraphes, mois par défaut du rapport mensuel).
+- **`docs/runbook-mise-a-jour-cron.md`** : renvoi vers ces contrôles.
+- **`.env.production.example` / `.env.example`** : variable `DB_RESTORE_BINARY`.
+
 ### Corrigé (scénario de démo)
 
 - **Le badge « complémentaire n° N » ne s'affichait jamais** : `LotPaiementResource` n'exposait pas

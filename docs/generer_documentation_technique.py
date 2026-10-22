@@ -914,7 +914,7 @@ h1("8. Intégrations Mobile Money (formats de fichiers)")
 para("L'application produit des fichiers à déposer manuellement sur les plateformes opérateurs. Le numéro "
      "est normalisé au format international (229 + numéro national à 10 chiffres) ; le libellé est en "
      "majuscules. Un lot = 1 mission × 1 tranche × 1 opérateur (× 1 séquence).")
-bullet("Stockage : storage/app/paiements/{mission_id}/{slug-objet}_{TRANCHE}[_COMPL{n}].{txt|xlsx} — un dossier "
+bullet("Stockage : storage/app/private/paiements/{mission_id}/ (disque « local »){slug-objet}_{TRANCHE}[_COMPL{n}].{txt|xlsx} — un dossier "
        "par mission, le nom remis à la plateforme ne change pas.")
 
 h2("8.1 MTN Bénin — fichier .txt")

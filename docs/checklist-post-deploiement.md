@@ -93,6 +93,15 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Filtre missions** : une mission dont le reliquat est « Visé DAF » (avance déjà validée) remonte bien sous le filtre **Visé DAF** (le filtre couvre désormais les deux tranches, cohérent avec les deux badges affichés).
 - [ ] **File de travail** : un Super Administrateur ouvre `/etats` sur « Tous », pas piégé sur une file vide (un acteur dédié — contrôleur / DAF / DG — atterrit toujours sur sa propre file).
 
+### Version 1.3 (revue d'octobre 2026)
+
+- [ ] **Migration** : `2026_10_22_090000_add_sequence_to_lots_paiement` figure dans la table `migrations`.
+- [ ] **API sans en-tête Accept** : ouvrir `https://api-omsemo.anatt.bj/api/auth/me` dans un navigateur répond **401 en JSON** (`{"message":"Non authentifie."}`), plus une page 500.
+- [ ] **Liste des lots** (`/paiements`) : les lots existants s'affichent et restent **re-téléchargeables** (fichiers antérieurs à la mise à jour inclus).
+- [ ] **Sauvegardes** (`/admin/sauvegardes`, SUPER_ADMIN) : « Nouvelle sauvegarde » réussit, puis l'icône **Télécharger** récupère le fichier. *(La restauration se teste sur une base de recette, jamais en production.)*
+- [ ] **Signatures** (`/admin/signatures`) : téléverser un paraphe réussit (il était envoyé vide avant la 1.3).
+- [ ] **Rapport mensuel** (`/rapports/mensuel`) : le mois proposé par défaut est bien le mois **en cours**.
+
 ---
 
 ## 07 · Filet de sécurité

@@ -145,6 +145,8 @@ Copiez `backend/.env.production.example` en `anatt-api/.env` (via l'éditeur de 
 - `DB_DATABASE / DB_USERNAME / DB_PASSWORD` de l'étape 3
 - `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`
 - `DB_DUMP_BINARY=` chemin mysqldump de l'hébergeur si vous utilisez les sauvegardes (sinon laissez `mysqldump`)
+- `DB_RESTORE_BINARY=` chemin du client `mysql` de l'hébergeur, utilisé par la **restauration** d'une
+  sauvegarde (écran *Sauvegardes* ou `artisan db:restore`) ; sinon laissez `mysql`
 - Bloc `MAIL_*` (SMTP de l'hébergeur)
 
 Rappels déjà positionnés pour le mutualisé : `APP_DEBUG=false`, `CACHE_STORE=file`,
@@ -219,6 +221,32 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 > n'exposent pas `mysqldump` : renseignez alors `DB_DUMP_BINARY` dans le `.env`, et si la
 > sauvegarde échoue malgré tout, restez sur l'export **phpMyAdmin** (§ Mise à jour, A.1).
 
+### 9.1 Restaurer une sauvegarde
+
+Depuis la version 1.3, l'écran **Administration › Sauvegardes** (SUPER_ADMIN) sait aussi
+**télécharger** et **restaurer** une sauvegarde de `anatt-api/storage/app/backups/`. La
+restauration passe par `artisan db:restore`, qui :
+
+1. prend d'abord une **sauvegarde de sécurité** de l'état courant (`db:backup` — si elle échoue,
+   la restauration est annulée et la base n'est pas touchée) ;
+2. décompresse le `.sql.gz` en PHP, puis rejoue le dump avec le client `mysql`
+   (`DB_RESTORE_BINARY`, via `exec()`) ;
+3. trace l'opération au journal d'audit (`BACKUP_RESTORE`).
+
+Elle a donc les **mêmes prérequis** que la sauvegarde (`exec()` autorisé, `mysqldump` **et**
+`mysql` accessibles). Sur un mutualisé, une restauration lancée depuis l'écran tourne dans la
+requête HTTP : pour une base volumineuse, elle peut dépasser le `max_execution_time` de PHP.
+Préférez alors une **tâche Cron ponctuelle** (même méthode qu'au § Mise à jour, D) :
+
+```bash
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan db:restore backup_2026-10-22_020000.sql.gz --force > /home/anatt/restore.log 2>&1
+```
+
+> Une restauration **remplace toute la base** : les saisies postérieures à la sauvegarde sont
+> perdues. Prévenez les utilisateurs, choisissez une heure creuse, et **testez-la une fois sur une
+> base de recette** avant d'en avoir besoin en production. Le repli reste l'import phpMyAdmin
+> d'un dump (§ Mise à jour, H).
+
 ---
 
 ## Mise à jour d'une version déjà en ligne (redéploiement)
@@ -253,9 +281,11 @@ Comparez le résultat avec le contenu de `backend/database/migrations/` de la no
 (noms de fichiers sans `.php`). **Tout nom présent dans le dossier et absent de la table est une
 migration à appliquer.** Notez-les : c'est exactement ce que la suite doit produire.
 
-> Exemple : une base installée avant le 14/09 n'aura pas
+> Exemples : une base installée avant le 14/09 n'aura pas
 > `2026_09_14_090000_renommer_categories_ordre_en_indice` — la bascule du vocabulaire
-> `ORDRE_1/2/3` → `INDICE_*` reste donc à jouer.
+> `ORDRE_1/2/3` → `INDICE_*` reste donc à jouer. Une base antérieure à la **version 1.3**
+> (octobre 2026) n'aura pas `2026_10_22_090000_add_sequence_to_lots_paiement` (cf. *Notes de
+> version 1.3* ci-dessous).
 
 ### C. Uploader le nouveau code de l'API
 
@@ -423,6 +453,19 @@ l'ancienne version reste servie tant que ces caches ne sont pas vidés.
    CDN/LiteSpeed le cas échéant. Vérifiez dans l'onglet Réseau que les `assets/*.js` chargés
    portent les nouveaux hachages.
 
+### Notes de version 1.3 (octobre 2026)
+
+Ce qui change pour la mise à jour d'une instance en 1.2 (revue d'octobre 2026) :
+
+| Élément | À faire |
+|---|---|
+| **Migration** `2026_10_22_090000_add_sequence_to_lots_paiement` | À jouer (§ D). Ajoute `lots_paiement.sequence` (défaut 1 : les lots existants deviennent des lots initiaux) et remplace la clé unique du lot ; la nouvelle clé est créée **avant** la suppression de l'ancienne, ce qui reste compatible avec la clé étrangère `mission_id` sous MySQL. Rapide, sans transformation de données. |
+| **`vendor/`** | **Inchangé** (`composer.lock` non modifié) : pas de ré-upload. |
+| **`.env`** | Facultatif : `DB_RESTORE_BINARY` si le client `mysql` n'est pas dans le PATH (§ 5.1, § 9.1). |
+| **Fichiers de paiement** | Les **nouveaux** fichiers sont rangés dans `storage/app/private/paiements/{mission_id}/`. Les anciens lots gardent leur chemin enregistré et restent re-téléchargeables : **ne rien déplacer**. ⚠️ Avant la 1.3, deux missions de **même objet** partageaient le même nom de fichier : le fichier de la plus ancienne a pu être écrasé par celui de l'autre. Contrôlez le contenu d'un tel fichier avant de le redéposer. |
+| **SPA** | À redéployer (§ F) : suivi des gros lots, lots complémentaires, boutons Valider / Rejeter du circuit par OM, page de maintenance, restauration des sauvegardes. |
+| **Comportement** | L'état des reliquats est désormais signé au montant **payable** : un état des reliquats déjà **validé** garde son montant scellé ; seuls les récapitulatifs établis ou rafraîchis après la mise à jour suivent la nouvelle règle. |
+
 ### G. Vérification
 
 Déroulez la **checklist post-déploiement** (`docs/checklist-post-deploiement.md`) : santé `/up`,
@@ -454,6 +497,9 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 | Connexion impossible / « Network error » | mauvaise `apiUrl` | Corriger `public_html/runtime-config.js` |
 | `Class ... not found` au chargement | `vendor/` incomplet | Re-uploader `vendor/` (composer install --no-dev en local) |
 | Sauvegarde « Échec » | mysqldump introuvable | Renseigner `DB_DUMP_BINARY` (chemin fourni par le support de l'hébergeur) |
+| Restauration « Échec » … *client mysql introuvable* | `mysql` hors du PATH | Renseigner `DB_RESTORE_BINARY` (ex. `/usr/bin/mysql`) |
+| Restauration « Sauvegarde de sécurité impossible » | `mysqldump` ou `exec()` indisponible | Corriger `DB_DUMP_BINARY` ; à défaut, restaurer par import phpMyAdmin (§ Mise à jour, H) |
+| Restauration interrompue (timeout, page d'erreur) | base volumineuse, `max_execution_time` | Relancer par tâche Cron `artisan db:restore <fichier> --force` (§ 9.1) |
 | Lenteur 1er chargement | config non cachée | (Optionnel, si Terminal cPanel dispo) `php artisan config:cache route:cache` |
 
 ### Spécifique à la mise à jour (migrations sans SSH)
