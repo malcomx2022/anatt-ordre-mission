@@ -15,6 +15,7 @@ Sources de vérité : CLAUDE.md, backend/routes/api.php, app/Support/Permissions
 seeders (Bareme/Zone/User), générateurs MTN/Moov, frontend/src/router & utils/permissions.
 """
 import os
+from datetime import date
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -151,6 +152,11 @@ def tableau(entetes, lignes, largeurs=None):
         for j, val in enumerate(ligne):
             set_cell_text(cells[j], str(val), size=9.5)
     if largeurs:
+        # Largeurs fixes : sur les cellules (Word) ET sur la grille du tableau,
+        # que LibreOffice lit seule — sinon les colonnes y restent égales.
+        t.autofit = False
+        for j, w in enumerate(largeurs):
+            t.columns[j].width = Cm(w)
         for row in t.rows:
             for j, w in enumerate(largeurs):
                 row.cells[j].width = Cm(w)
@@ -196,7 +202,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(5):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.2.0  •  Août 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.3.0  •  Octobre 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document interne — Usage restreint"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -206,6 +212,33 @@ doc.add_page_break()
 # =========================================================================
 h1("Sommaire")
 toc()
+doc.add_page_break()
+
+# =========================================================================
+# ÉVOLUTIONS
+# =========================================================================
+h1("Évolutions de la version 1.3 (octobre 2026)")
+para("Cette version intègre la revue complète d'octobre 2026 (rapport : docs/revue-projet-2026-10.md) et "
+     "met à jour la documentation sur les fonctionnalités livrées depuis la 1.2 (amendement des OM, "
+     "régularisations, RBAC flexible, notifications).")
+tableau(
+    ["Domaine", "Évolution", "Référence"],
+    [
+        ["Intégrité des paiements", "Un OM rejeté n'est plus rendu payable par la validation de l'état ; ses versements passent ANNULE.", "§4.2, §5.3"],
+        ["Intégrité des paiements", "Fichiers de paiement rangés par mission (paiements/{mission_id}/) : plus de collision entre missions de même objet.", "§8"],
+        ["État des reliquats", "Montant signé = montant PAYABLE (Σ reliquats > 0) ; trop-perçus mentionnés hors total.", "§5.4"],
+        ["Lots complémentaires", "Colonne lots_paiement.sequence : un lot CONFIRME n'est jamais réécrit, un versement devenu payable part dans le lot suivant.", "§4.3, §2.4"],
+        ["Lot en erreur", "Versements remis EN_ATTENTE avec les coordonnées courantes de l'agent.", "§4.3"],
+        ["Amendement", "Refus si un versement est GENERE ; états verrouillés (lockForUpdate) ; circuit par OM : avance confirmée engagée.", "§4.6"],
+        ["RBAC", "Séparation ordonnateur/payeur contrôlée sur l'effectif de chaque membre d'un profil édité.", "§6.2"],
+        ["Sauvegardes", "Téléchargement et restauration (db:restore, sauvegarde de sécurité préalable, audit BACKUP_RESTORE).", "§4.7, §9.3"],
+        ["API", "401 JSON sur /api/* même sans en-tête Accept ; per_page plafonné (5-100) sur /missions et /etats ; filtre opérateur de /ordres sur le versement.", "§7"],
+        ["Per diem", "Sans jour facturé, le transport reste dû ; seule l'exonération annule tout.", "§5.1"],
+        ["Frontend", "Suivi des gros lots (202), part d'avance réactive, Valider / Rejeter du circuit par OM, gestion des erreurs, téléversement des paraphes en multipart.", "§3"],
+        ["Plateforme", "Laravel 12 / PHP 8.4 (imposé par composer.lock) ; suites de tests exécutables sans .env.", "§2.2, §10"],
+    ],
+    largeurs=[3.6, 10.6, 2.6],
+)
 doc.add_page_break()
 
 # =========================================================================
@@ -233,6 +266,9 @@ bullet("Référentiel des agents bénéficiaires (identité, catégorie, télép
 bullet("Calcul automatique des indemnités (per diem) selon le barème officiel ANaTT.")
 bullet("Circuit de validation de l'état de paiement de la mission en trois niveaux (contrôleur, DAF, Directeur Général).")
 bullet("Génération des fichiers de virement Mobile Money (.txt MTN / .xlsx Moov) et confirmation manuelle.")
+bullet("Amendement des OM après paiement de l'avance (avenant) et régularisation des trop-perçus "
+       "(retenue sur salaire, hors application).")
+bullet("Notifications internes aux acteurs du circuit (état à signer, état validé / rejeté, trop-perçu, lot confirmé).")
 bullet("Génération de documents officiels (OM en PDF) et d'états/rapports (Excel, PDF).")
 bullet("Audit et traçabilité complète des actions sensibles.")
 
@@ -262,7 +298,8 @@ h2("1.4 Contraintes et exigences")
 bullet("Authentification obligatoire par tokens Laravel Sanctum (Bearer).")
 bullet("Autorisation fine par permission (middleware permission:, Gates, Gate::before pour le super admin).")
 bullet("Référence SEMO unique par OM (clé naturelle anti-doublon).")
-bullet("Idempotence des paiements : un versement confirmé n'est jamais réinclus dans un nouveau fichier.")
+bullet("Idempotence des paiements : un versement confirmé — ou porté par un lot confirmé — n'est jamais "
+       "réinclus dans un nouveau fichier.")
 bullet("Journalisation (audit log) de toutes les actions sensibles.")
 bullet("Formats de fichiers MTN/Moov strictement conformes aux gabarits validés par les opérateurs.")
 bullet("Export PDF des OM conforme aux standards administratifs (en-tête officiel ANaTT).")
@@ -276,7 +313,7 @@ h2("2.1 Vue d'ensemble")
 para("Le système suit une architecture en couches découplées : une SPA (frontend) consomme une API REST "
      "(backend) protégée par tokens. Cette séparation facilite la maintenance, les tests et le déploiement.")
 encadre("Architecture",
-        "SPA Vue 3 (frontend) → API REST Laravel 11 (backend) → base MySQL. Communication HTTP/HTTPS avec "
+        "SPA Vue 3 (frontend) → API REST Laravel 12 (backend) → base MySQL. Communication HTTP/HTTPS avec "
         "tokens Bearer (Sanctum). Files de travaux (queue) pour les générations volumineuses (fichiers de "
         "paiement, états). Déploiement : WampServer ou Docker Compose (dev) ; serveur Linux + Nginx (prod).",
         fond="EDFAF2")
@@ -287,15 +324,16 @@ tableau(
     ["Technologie", "Version", "Usage"],
     [
         ["Vue.js", "3.x (Composition API)", "Framework JavaScript principal"],
-        ["TypeScript", "5.x", "Typage statique strict"],
-        ["Vite", "5.x", "Build et serveur de développement"],
+        ["TypeScript", "6.x", "Typage statique strict (vue-tsc)"],
+        ["Vite", "8.x", "Build et serveur de développement"],
         ["Tailwind CSS", "3.4+", "Framework CSS utilitaire (charte ANaTT)"],
-        ["Pinia", "2.x", "Gestion de l'état global (stores)"],
-        ["Vue Router", "4.x", "Navigation SPA + guards d'authentification/permissions"],
+        ["Pinia", "3.x", "Gestion de l'état global (stores)"],
+        ["Vue Router", "5.x", "Navigation SPA + guards d'authentification/permissions"],
         ["Axios", "1.x", "Client HTTP avec intercepteurs (token Bearer)"],
         ["Chart.js", "4.x", "Graphiques du tableau de bord et des rapports"],
         ["VuePDF", "—", "Aperçu PDF dans le navigateur"],
-        ["Vitest", "—", "Tests unitaires et d'intégration"],
+        ["Vitest", "4.x", "Tests unitaires et de composants (Vue Test Utils, jsdom)"],
+        ["Playwright", "1.5x", "Test e2e du parcours critique (Chromium)"],
     ],
     largeurs=[4.6, 4.0, 8.2],
 )
@@ -303,14 +341,14 @@ h3("2.2.2 Backend (API et logique métier)")
 tableau(
     ["Technologie", "Version", "Usage"],
     [
-        ["Laravel", "11.x", "Framework PHP principal"],
-        ["PHP", "8.3+", "Langage backend"],
-        ["Laravel Sanctum", "—", "Authentification API par tokens"],
+        ["Laravel", "12.x", "Framework PHP principal"],
+        ["PHP", "8.4+", "Langage backend (minimum imposé par composer.lock : Symfony 8)"],
+        ["Laravel Sanctum", "4.x", "Authentification API par tokens"],
         ["MySQL", "8.0", "Base de données (SQLite en tests)"],
         ["Redis", "7.x (optionnel)", "Cache et files (driver « database » utilisable sans Redis)"],
-        ["DomPDF", "—", "Génération des PDF (ordres de mission)"],
+        ["DomPDF (barryvdh)", "3.1", "Génération des PDF (OM, états, document de retenue, rapports)"],
         ["Maatwebsite Excel / PhpSpreadsheet", "3.1", "Import agents et génération .xlsx Moov / exports"],
-        ["Pest PHP", "—", "Tests (BDD/PHPUnit)"],
+        ["Pest PHP", "3.x", "Tests unitaires et Feature (PHPUnit 11)"],
     ],
     largeurs=[6.0, 3.4, 7.4],
 )
@@ -323,12 +361,14 @@ code("anatt-ordre-mission/\n"
      "    src/stores/            Pinia (auth, missions, notifications)\n"
      "    src/composables/       Logique réutilisable (useApi, useAuth, useMissions...)\n"
      "    src/utils/permissions.ts  Miroir RBAC frontend (guards + directive v-permission)\n"
-     "  backend/                 API Laravel 11\n"
+     "  backend/                 API Laravel 12\n"
      "    app/Http/Controllers/Api/  Contrôleurs REST\n"
      "    app/Models/            Modèles Eloquent\n"
      "    app/Services/          Logique métier (calcul, lots, barème, rapports, audit)\n"
      "    app/Services/Paiement/  Générateurs MTN (.txt) et Moov (.xlsx)\n"
      "    app/Support/Permissions  Source unique des clés de permission (RBAC)\n"
+     "    app/Support/PermissionRepository  Matrice effective (table role_permissions, cache)\n"
+     "    app/Console/Commands/  db:backup / db:restore\n"
      "    app/Jobs/              Tâches asynchrones (génération de lots, états)\n"
      "  docs/                    Documentation (.docx + scripts générateurs)\n"
      "  CLAUDE.md                Contexte projet")
@@ -341,13 +381,17 @@ tableau(
         ["User", "users", "Compte de connexion (email, password, rôle, actif)."],
         ["Agent", "agents", "Bénéficiaire (matricule, catégorie, téléphone, opérateur MM)."],
         ["Mission", "missions", "Événement regroupant N ordres de mission."],
-        ["OrdreMission", "ordres_mission", "1 enregistrement = 1 bénéficiaire (réf. SEMO unique)."],
-        ["EtatPaiement", "etats_paiement", "État récapitulatif d'une mission (1 par mission) : circuit + signatures."],
-        ["Versement", "versements", "Une tranche (AVANCE / RELIQUAT) d'un OM."],
-        ["LotPaiement", "lots_paiement", "1 mission × 1 tranche × 1 opérateur = 1 fichier."],
+        ["OrdreMission", "ordre_missions", "1 enregistrement = 1 bénéficiaire (réf. SEMO unique)."],
+        ["OmAmendement", "om_amendements", "Journal des amendements d'un OM (jours et montants avant / après, motif, auteur)."],
+        ["EtatPaiement", "etats_paiement", "État d'une TRANCHE de mission (unicité mission × tranche AVANCE / RELIQUAT) : circuit, lignes figées, signatures."],
+        ["Versement", "versements", "Une tranche (AVANCE / RELIQUAT) d'un OM ; montant SIGNÉ (trop-perçu négatif)."],
+        ["LotPaiement", "lots_paiement", "1 mission × 1 tranche × 1 opérateur × 1 séquence = 1 fichier (séquence ≥ 2 : lot complémentaire)."],
         ["Bareme", "baremes", "Taux journalier par catégorie × zone × type."],
         ["ZoneGeographique", "zones_geographiques", "Référentiel des 4 zones (intérieur / extérieur)."],
         ["AuditLog", "audit_logs", "Journal horodaté des actions sensibles."],
+        ["Role / RolePermission", "roles / role_permissions", "Rôles personnalisés et matrice rôle → permissions éditable à chaud."],
+        ["UserPermission", "user_permissions", "Permissions accordées / retirées à un utilisateur précis."],
+        ["Notification", "notifications", "Notifications internes de l'utilisateur (lues / non lues)."],
     ],
     largeurs=[3.6, 4.0, 9.2],
 )
@@ -363,12 +407,27 @@ tableau(
         ["nb_jours", "int", "Décompte inclusif (règle des 12 h)."],
         ["montant_total", "int", "(per diem + transport) = taux journalier × nb_jours + transport (FCFA)."],
         ["avance / reliquat", "int", "avance = round(total × partAvance/100), 70 % par défaut (part paramétrable) ; reliquat = total − avance."],
-        ["statut", "enum", "IMPORTE (retranscrit) → VALIDE (état des avances validé par le DG) → SOLDE. VERIFIE / VISA_DAF (circuit par OM en option), REJETE / ANNULE possibles."],
+        ["avance_engagee", "int|null", "Avance figée à la validation de l'état des avances (ou à l'amendement si l'avance est déjà CONFIRME sur le circuit par OM) ; ensuite reliquat = total − avance_engagee, éventuellement NÉGATIF."],
+        ["statut", "enum", "IMPORTE (retranscrit) → VALIDE (état des avances validé par le DG) → SOLDE. REJETE / ANNULE possibles ; VERIFIE / VISA_DAF : valeurs héritées, plus produites."],
     ],
     largeurs=[4.2, 2.4, 10.2],
 )
 para("Le statut de l'OM ne transite pas par le circuit : il reste IMPORTE tout au long de la validation "
-     "de l'état, et ne passe VALIDE (payable) qu'à la validation finale du DG.", italic=True, color=GRIS)
+     "de l'état, et ne passe VALIDE (payable) qu'à la validation finale du DG. Un OM REJETE n'est jamais "
+     "repris par cette propagation.", italic=True, color=GRIS)
+h3("2.4.3 Statuts — Versement et LotPaiement")
+tableau(
+    ["Objet", "Statut", "Signification"],
+    [
+        ["Versement", "EN_ATTENTE", "Créé, pas encore dans un fichier (ou remis en attente par un lot en ERREUR)."],
+        ["Versement", "GENERE", "Inclus dans un fichier généré, non confirmé."],
+        ["Versement", "CONFIRME", "Paiement confirmé après dépôt (date_paiement renseignée)."],
+        ["Versement", "ANNULE", "Versement d'un OM rejeté — jamais payé."],
+        ["Versement", "A_RECOUVRER / RECOUVRE", "Trop-perçu (reliquat négatif) à retenir sur salaire / retenue constatée."],
+        ["LotPaiement", "GENERE / CONFIRME / ERREUR", "Fichier produit / dépôt confirmé (définitif) / dépôt échoué (régénération)."],
+    ],
+    largeurs=[3.0, 4.6, 9.2],
+)
 
 # =========================================================================
 # 3. DESCRIPTION FONCTIONNELLE — MODULES
@@ -384,8 +443,8 @@ tableau(
         ["Personnel (agents)", "GESTIONNAIRE_OM, ADMIN", "Référentiel agents, import, profil."],
         ["Ordres de mission", "Tous (selon droits)", "Retranscription, suivi, PDF de l'OM."],
         ["États de paiement", "GESTIONNAIRE_OM, CONTROLEUR, DAF, DG", "Récapitulatif, circuit de validation, PDF brouillon/final."],
-        ["Paiements", "AGENT_FINANCIER", "Génération fichiers MTN/Moov, confirmation."],
-        ["Barème per diem", "Tous (lecture) / ADMIN (édition)", "Taux par catégorie/zone/type."],
+        ["Paiements", "AGENT_FINANCIER (consultation : paiements.consulter)", "Génération fichiers MTN/Moov, confirmation, régularisations."],
+        ["Barème per diem", "baremes.consulter (lecture, hors LECTEUR) / ADMIN (édition)", "Taux par catégorie/zone/type."],
         ["Rapports", "Tous (rapports.consulter)", "États, exports Excel/PDF."],
         ["Audit", "ADMIN, CONTROLEUR, DAF, DG", "Journal d'activité système."],
         ["Administration", "ADMIN / SUPER_ADMIN", "Utilisateurs, rôles, signatures, paramètres, e-mail, sauvegardes."],
@@ -417,10 +476,12 @@ h2("3.4 Module Ordres de mission")
 para("Les OM sont retranscrits depuis SEMO ; ils ne sont ni créés ni modifiés individuellement à la main "
      "(pas de PUT/DELETE unitaire). La validation ne se fait pas sur l'OM mais sur l'état de sa mission.")
 bullet("Liste des missions : point d'entrée du circuit (N OM + 1 état par mission).")
-bullet("Liste des OM : filtres statut/zone/opérateur/agent/dates, recherche par référence SEMO.")
+bullet("Liste des OM : filtres statut/zone/opérateur/agent/dates, recherche par référence SEMO. Le filtre "
+       "opérateur porte sur l'opérateur des versements (repli sur l'agent pour un OM sans versement).")
 bullet("Retranscription : assistant mission + N bénéficiaires (participants + CAV), per diem en temps réel.")
-bullet("Détail d'un OM : mission, bénéficiaire, montants, versements ; renvoie vers l'état de la mission "
-       "(aucune action de circuit sur l'OM). Brouillon PDF de l'OM et historique d'audit.")
+bullet("Détail d'un OM : mission, bénéficiaire, montants, versements, journal des amendements ; renvoie vers "
+       "l'état de la mission. Boutons Valider / Rejeter uniquement pour une mission SANS état (repli). "
+       "Amender (om.retranscrire). Brouillon PDF de l'OM et historique d'audit (OM-08).")
 
 h2("3.5 Module États de paiement")
 para("Objet central du circuit de validation. DEUX états par mission — l'état des AVANCES puis l'état des "
@@ -441,6 +502,17 @@ bullet("PAY-02 / PAY-03 — Génération Moov (.xlsx) / MTN (.txt) : mission + t
 bullet("PAY-04 — Synthèse des versements par opérateur/statut.")
 bullet("PAY-05 — Réconciliation : écran d'information (modèle manuel, aucun réimport).")
 bullet("PAY-06 — Historique des versements confirmés (avec bénéficiaire) par période.")
+bullet("Génération asynchrone : au-delà de config('paiement.async_seuil') (50 lignes), l'API répond 202 + "
+       "tracking_id ; l'écran interroge /lots/job/:id puis télécharge le lot à la fin.")
+bullet("Lots complémentaires signalés par un badge « complémentaire n° N » dans la liste.")
+
+h2("3.7 Module Régularisations (trop-perçus)")
+para("Un amendement à la baisse après paiement de l'avance peut rendre le reliquat négatif (trop-perçu). "
+     "Le versement passe A_RECOUVRER, sort du périmètre payable et apparaît dans l'écran Régularisations.")
+bullet("Liste paginée (statut, mission, recherche) + total à recouvrer ; lien vers la fiche OM.")
+bullet("Document de retenue sur salaire (PDF) à remettre à la RH ; constat du recouvrement → RECOUVRE "
+       "(paiements.confirmer).")
+bullet("Rapport « Trop-perçus » : synthèse à recouvrer / recouvrés (montants absolus).")
 
 # =========================================================================
 # 4. WORKFLOWS DÉTAILLÉS
@@ -490,8 +562,10 @@ encadre("Deux barrières avant paiement",
         "2) La génération d'un fichier vérifie en outre que l'état DE SA TRANCHE est VALIDE : la validation "
         "des avances ouvre les fichiers d'avance, celle des reliquats ouvre les fichiers de reliquat. Un "
         "versement dont l'état de tranche n'est pas validé n'apparaît pas parmi les bénéficiaires éligibles.")
-para("Circuit OM par OM (reprise de données) : les routes /api/ordres/:id/valider|viser|approuver|rejeter "
-     "subsistent pour corriger une mission dépourvue d'état ; elles sont refusées dès qu'un état existe.",
+para("Circuit OM par OM (reprise de données) : POST /api/ordres/:id/valider (om.valider) et "
+     "/api/ordres/:id/rejeter (om.rejeter) subsistent pour une mission dépourvue d'état ; ils sont refusés dès "
+     "qu'un état existe (MissionService::exigerAbsenceDEtat). Le rejet annule les versements EN_ATTENTE de "
+     "l'OM. La validation de l'état des avances ne repropage jamais VALIDE à un OM REJETE.",
      italic=True, color=GRIS)
 
 h2("4.3 Génération et confirmation des paiements")
@@ -504,14 +578,19 @@ tableau(
         ["3", "Système", "Petit lot : téléchargement direct. Gros lot : traitement en file (202 + tracking_id).", "Fichier disponible / suivi de job"],
         ["4", "Agent financier", "Dépose le fichier sur la plateforme de l'opérateur (hors application).", "Virements exécutés côté opérateur"],
         ["5", "Agent financier", "Revient dans l'application et confirme le lot (statut GENERE requis).", "Lot + versements → CONFIRME (horodatés) ; OM soldé → SOLDE"],
-        ["6", "Agent financier", "En cas de problème : marque le lot « en erreur », puis régénère.", "Lot → ERREUR → (régénération) → GENERE avant toute confirmation"],
+        ["6", "Agent financier", "En cas de problème : marque le lot « en erreur », corrige au besoin l'agent, puis régénère.", "Lot → ERREUR ; versements → EN_ATTENTE (coordonnées agent rafraîchies) → régénération → GENERE"],
+        ["7", "Agent financier", "Un versement devient payable après la confirmation du lot (OM validé tard, changement d'opérateur…).", "Nouvelle génération → lot COMPLÉMENTAIRE (sequence + 1, fichier …_COMPL{n})"],
     ],
     largeurs=[0.8, 2.6, 7.6, 5.8],
 )
 encadre("Idempotence & confirmation",
         "Un versement CONFIRME n'est jamais réinclus dans un nouveau fichier (protection anti-double-paiement). "
         "La régénération n'est possible que tant que le lot n'est pas confirmé. Seul un lot au statut GENERE "
-        "peut être confirmé : un lot en ERREUR doit d'abord être régénéré (on ne confirme pas un fichier invalidé).")
+        "peut être confirmé : un lot en ERREUR doit d'abord être régénéré (on ne confirme pas un fichier invalidé). "
+        "Versement::scopeEligiblesLot exclut CONFIRME, ANNULE, A_RECOUVRER, RECOUVRE, les montants ≤ 0 et tout "
+        "versement porté par un lot CONFIRME (seconde barrière). Un lot CONFIRME n'est jamais réécrit : la "
+        "génération suivante crée le lot de séquence suivante. Génération sous transaction avec lockForUpdate "
+        "sur le dernier lot de la clé.")
 
 h2("4.4 Génération de l'ordre de mission en PDF")
 tableau(
@@ -535,17 +614,51 @@ tableau(
     largeurs=[0.8, 2.6, 8.6, 4.8],
 )
 
+h2("4.6 Amendement d'un OM (avenant)")
+para("Acteur : GESTIONNAIRE_OM (om.retranscrire). POST /api/ordres/:id/amender — body { nb_jours? | lignes?, "
+     "motif ≥ 10 car. } — MissionService::amender, en transaction (OM et états verrouillés).")
+tableau(
+    ["#", "Étape", "Règle"],
+    [
+        ["1", "Gardes", "Refus si OM REJETE/ANNULE ; si un versement de l'OM est GENERE (fichier en attente de dépôt) ; "
+                        "si un état de tranche est CONTROLE/VISA_DAF (rejet guidé) ; si l'état des reliquats est VALIDE ; "
+                        "si un trop-perçu est déjà RECOUVRE."],
+        ["2", "Engagement", "Circuit par OM : une avance CONFIRME sans avance_engagee est engagée à ce moment."],
+        ["3", "Recalcul", "Montant au barème (lignes détaillées ou type × jours, transport conservé). Avant engagement : "
+                          "répartition 70/30 ; après : reliquat = total − avance_engagee (peut être négatif)."],
+        ["4", "Versements", "RELIQUAT non GENERE/CONFIRME réécrit ; négatif → A_RECOUVRER, sinon EN_ATTENTE. AVANCE "
+                            "réécrite seulement tant qu'elle n'est pas engagée."],
+        ["5", "Traçabilité", "Ligne om_amendements (avant / après, delta, motif, auteur) + audit AMEND_OM ; "
+                             "notification « trop-perçu » à l'agent financier si reliquat < 0."],
+    ],
+    largeurs=[0.8, 2.8, 13.2],
+)
+
+h2("4.7 Sauvegarde et restauration de la base")
+tableau(
+    ["#", "Acteur", "Action", "Résultat"],
+    [
+        ["1", "Serveur (cron)", "db:backup --compress chaque jour à 02:00 (rétention 30 jours).", "backups/backup_AAAA-MM-JJ_HHMMSS.sql.gz"],
+        ["2", "SUPER_ADMIN", "Télécharge une sauvegarde (GET /api/admin/backups/:name/download).", "Copie hors serveur"],
+        ["3", "SUPER_ADMIN", "Restaure : POST /api/admin/backups/:name/restaurer avec { confirmation: <nom du fichier> }.", "422 si le nom recopié diffère"],
+        ["4", "Système", "db:restore prend d'abord une sauvegarde de sécurité de l'état courant, décompresse (.gz) en PHP puis rejoue le dump avec le client mysql (DB_RESTORE_BINARY).", "Base remplacée ; opération réversible"],
+        ["5", "Système", "Audit BACKUP_RESTORE écrit APRÈS la restauration (dans la base restaurée).", "Traçabilité"],
+    ],
+    largeurs=[0.8, 2.8, 8.8, 4.4],
+)
+
 # =========================================================================
 # 5. RÈGLES MÉTIER
 # =========================================================================
 h1("5. Règles métier")
 
 h2("5.1 Calcul du per diem")
-para("Montant total = taux journalier (catégorie × zone × type de prise en charge) × nombre de jours.", bold=True)
+para("Montant total = Σ (taux journalier (catégorie × zone × type) × nombre de jours) + transport.", bold=True)
 bullet("Nombre de jours : décompte inclusif des dates ; règle des 12 h (période ≥ 12 h = jour entier ; retour 0-12 h = rien).")
 bullet("Avance = round(montant total × partAvance/100), 70 % par défaut ; Reliquat = montant total − avance. "
        "La part de l'avance est paramétrable (SUPER_ADMIN) et s'applique aux OM retranscrits ensuite.")
-bullet("Exonération (prise en charge par un tiers) : tous les montants à 0, aucun versement créé.")
+bullet("Exonération (prise en charge par un tiers) : tous les montants à 0 (transport compris), aucun versement créé.")
+bullet("Sans aucun jour facturé (hors exonération) : per diem nul mais le transport reste dû.")
 bullet("4 zones : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II, EXT_ZONE_III (II et III ont des taux identiques).")
 bullet("Contrainte type ↔ zone : repas (un/deux) ⇒ INTERIEUR uniquement ; hébergement (logé/nourri) ⇒ EXTÉRIEUR uniquement.")
 
@@ -574,10 +687,20 @@ tableau(
         ["Téléphone/opérateur", "Issus du référentiel agent ; cohérence numéro ↔ opérateur.", "API"],
         ["Payable si tranche VALIDE", "Un versement n'est payable que si l'état de SA tranche est validé par le DG.", "Paiement"],
         ["Confirmation d'un lot GENERE", "Seul un lot généré se confirme ; un lot en erreur est régénéré d'abord.", "Paiement"],
-        ["Idempotence paiement", "Un versement CONFIRME n'est jamais réinclus.", "Paiement"],
+        ["Idempotence paiement", "Un versement CONFIRME, ou porté par un lot CONFIRME, n'est jamais réinclus.", "Paiement"],
+        ["Un agent par mission", "ordres.*.agent_id distinct à la retranscription (1 OM = 1 bénéficiaire).", "API"],
+        ["OM rejeté", "Versements EN_ATTENTE → ANNULE ; jamais repris par la validation de l'état.", "API"],
+        ["Amendement", "Refusé tant qu'un versement de l'OM est GENERE (cf. §4.6).", "API"],
     ],
     largeurs=[3.6, 9.6, 3.6],
 )
+
+h2("5.4 Montants des états de paiement")
+bullet("État des AVANCES : montant_total = Σ avances des OM retenus (hors REJETE / ANNULE).")
+bullet("État des RELIQUATS : montant_total = Σ des reliquats POSITIFS — le montant réellement décaissé par les "
+       "fichiers. Les reliquats négatifs (trop-perçus) restent visibles sur leur ligne et sont totalisés à part "
+       "sur le PDF (« trop-perçus hors total, à recouvrer par retenue sur salaire »).")
+bullet("Le tableau lignes est figé au récapitulatif ; le scellé HMAC (clé APP_KEY) couvre les montants signés et la tranche.")
 
 # =========================================================================
 # 6. SÉCURITÉ ET GESTION DES ACCÈS
@@ -620,7 +743,17 @@ tableau(
     ],
     largeurs=[4.8] + [1.55] * 7,
 )
-para("Permissions réservées au SUPER_ADMIN : superadmins.gerer, parametres.gerer.", italic=True, color=GRIS)
+para("Permissions réservées au SUPER_ADMIN : superadmins.gerer, parametres.gerer, roles.gerer.", italic=True, color=GRIS)
+h3("6.2.1 RBAC flexible (matrice éditable à chaud)")
+bullet("Niveau 1 — profil : table role_permissions (PermissionRepository, en cache, purgée à l'écriture) ; "
+       "repli sur config/profils.php ; réinitialisable au défaut.")
+bullet("Niveau 2 — utilisateur : table user_permissions (accords / retraits) ; effectif = base ∪ accordées − retirées.")
+bullet("Niveau 3 — rôles personnalisés : table roles (les 8 profils système ne sont ni renommables ni supprimables).")
+bullet("Garde-fous serveur : SUPER_ADMIN non éditable, clés réservées refusées, séparation ordonnateur / payeur "
+       "(om.approuver ≠ paiements.generer/confirmer) contrôlée sur le profil ET sur l'effectif de chaque membre du "
+       "profil édité ou réinitialisé (comptes fautifs nommés dans le 422). Écriture : roles.gerer ; lecture : "
+       "utilisateurs.gerer. Audit ROLE_PERM_UPDATE / ROLE_PERM_RESET / USER_PERM_UPDATE / ROLE_CREATE / "
+       "ROLE_RENAME / ROLE_DELETE.")
 
 h2("6.3 Mesures de sécurité applicatives")
 bullet("Authentification : tokens Laravel Sanctum (Bearer) ; révocation immédiate des sessions à la désactivation, suppression, changement de rôle ou réinitialisation de mot de passe.")
@@ -632,6 +765,10 @@ bullet("Injection de formule neutralisée dans les exports tableurs ; garde anti
 bullet("Secret SMTP chiffré au repos et jamais réaffiché en clair (masque ********).")
 bullet("Super admin protégé : il existe toujours ≥ 1 SUPER_ADMIN actif ; le dernier ne peut être supprimé, désactivé ni rétrogradé.")
 bullet("Injection SQL : prévenue par l'ORM Eloquent (requêtes préparées).")
+bullet("Toute route /api/* non authentifiée répond 401 JSON, même sans en-tête Accept (aucune redirection vers une page de login).")
+bullet("Téléchargements (sauvegardes, exports) : basename + extension imposée, anti-traversée de répertoire ; "
+       "restauration conditionnée à la recopie du nom du fichier.")
+bullet("Pagination bornée (per_page 5-100) sur les listes.")
 
 h2("6.4 Audit et traçabilité")
 para("Les actions sensibles sont enregistrées dans audit_logs :")
@@ -639,10 +776,12 @@ tableau(
     ["Champ", "Description"],
     [
         ["user_id", "Auteur de l'action (null pour un événement système)."],
-        ["action", "Type d'action : LOGIN ; IMPORT_OM / VERIFY_OM / VALIDATE_OM / VISA_DAF_OM / APPROVE_DG_OM / REJECT_OM ; "
+        ["action", "Type d'action : LOGIN, PWD_CHANGE, PWD_RESET ; IMPORT_OM / VALIDATE_OM / REJECT_OM / AMEND_OM ; "
                    "RECAP_ETAT / NUMERO_ETAT / CONTROL_ETAT / VISA_DAF_ETAT / APPROVE_DG_ETAT / REJECT_ETAT ; "
-                   "GENERATE_LOT / CONFIRM_LOT / ERROR_LOT ; CREATE/UPDATE/DELETE_BAREME ; *_USER."],
-        ["entite / entite_id", "Entité concernée (session, ordre_mission, etat_paiement, lot_paiement, bareme, user) et son id."],
+                   "GENERATE_LOT / CONFIRM_LOT / ERROR_LOT / RECOUVRER_VERSEMENT ; CREATE/UPDATE/DELETE_BAREME ; "
+                   "CREATE/UPDATE/DELETE/ACTIVATE/DEACTIVATE/CHANGE_ROLE/RESET_PASSWORD_USER ; ROLE_* / USER_PERM_UPDATE ; "
+                   "BACKUP_RESTORE. (VERIFY_OM / VISA_DAF_OM / APPROVE_DG_OM : codes historiques, conservés au journal.)"],
+        ["entite / entite_id", "Entité concernée (session, ordre_mission, etat_paiement, lot_paiement, versement, bareme, user, role, backup) et son id."],
         ["donnees", "Contexte de l'action (JSON) : montants, tranche, ancien/nouveau taux, etc."],
         ["ip_address", "Adresse IP d'origine de la requête."],
         ["created_at", "Horodatage précis (table sans updated_at)."],
@@ -684,8 +823,10 @@ tableau(
         ["GET", "/api/agents", "Liste filtrée (search, catégorie, opérateur, actif)"],
         ["POST", "/api/agents | /import", "Création / import (personnel.gerer)"],
         ["POST", "/api/missions", "Retranscription : mission + N OM (om.retranscrire)"],
-        ["GET", "/api/missions", "Liste des missions avec l'avancement de leur état (om.consulter)"],
-        ["GET", "/api/ordres | /ordres/:id", "Liste filtrée / détail d'un OM"],
+        ["GET", "/api/missions", "Liste des missions avec l'avancement de leurs deux états (om.consulter ; per_page ≤ 100, défaut 20)"],
+        ["GET", "/api/ordres | /ordres/:id", "Liste filtrée (opérateur = celui du versement) / détail d'un OM"],
+        ["POST", "/api/ordres/:id/valider | /rejeter", "Circuit par OM, missions sans état (om.valider / om.rejeter ; rejet : versements → ANNULE)"],
+        ["POST", "/api/ordres/:id/amender", "Amendement { nb_jours? | lignes?, motif } (om.retranscrire)"],
         ["GET", "/api/ordres/:id/pdf | /pdf/download | /pdf/brouillon", "PDF officiel / brouillon de l'OM"],
         ["GET", "/api/ordres/:id/historique", "Journal d'audit de l'OM"],
     ],
@@ -696,7 +837,7 @@ h3("7.3.1 État de paiement (circuit de validation)")
 tableau(
     ["Méthode", "URL", "Description"],
     [
-        ["GET", "/api/etats", "File de travail : états filtrables par statut et tranche (om.consulter)"],
+        ["GET", "/api/etats", "File de travail : états filtrables par statut et tranche (om.consulter ; per_page ≤ 100)"],
         ["GET", "/api/missions/:id/etat", "États de la mission par tranche : { avance, reliquat } (null si aucun)"],
         ["POST", "/api/missions/:id/etat/recapituler", "Crée / rafraîchit l'état d'une tranche en BROUILLON — body { tranche? } ; reliquat : 422 si avances non validées (om.retranscrire)"],
         ["GET", "/api/missions/:id/etat/brouillon | /telecharger", "PDF de la tranche (?tranche=) — filigrané tant que non validé"],
@@ -721,8 +862,12 @@ tableau(
         ["POST", "/api/paiements/lots/generer", ".txt MTN / .xlsx Moov ; petit lot direct, gros lot 202 + tracking_id"],
         ["GET", "/api/paiements/lots/:lot/download", "Re-téléchargement du fichier"],
         ["POST", "/api/paiements/lots/:lot/confirmer", "Lot GENERE + versements → CONFIRME"],
-        ["POST", "/api/paiements/lots/:lot/erreur", "Lot → ERREUR (régénération autorisée)"],
+        ["POST", "/api/paiements/lots/:lot/erreur", "Lot → ERREUR ; versements → EN_ATTENTE, coordonnées agent rafraîchies"],
+        ["GET", "/api/paiements/lots/job/:trackingId", "Suivi d'une génération asynchrone (EN_COURS / TERMINE + lot_id / ERREUR)"],
         ["GET", "/api/paiements/statuts | /historique", "Synthèse / historique confirmés"],
+        ["GET", "/api/paiements/regularisations", "Trop-perçus A_RECOUVRER / RECOUVRE, paginés (paiements.consulter)"],
+        ["GET", "/api/paiements/regularisations/:v/document", "PDF « document de retenue sur salaire »"],
+        ["POST", "/api/paiements/regularisations/:v/recouvrer", "A_RECOUVRER → RECOUVRE (paiements.confirmer)"],
     ],
     largeurs=[2.0, 7.8, 7.0],
 )
@@ -731,13 +876,17 @@ h2("7.5 Barème, rapports, audit & administration")
 tableau(
     ["Méthode", "URL", "Description"],
     [
-        ["GET / PUT", "/api/baremes[/:id]", "Lecture (tous) / modification (baremes.modifier) ; édition II ↔ III synchronisée"],
+        ["GET / PUT", "/api/baremes[/:id]", "Lecture (baremes.consulter) / modification (baremes.modifier) ; édition II ↔ III synchronisée"],
         ["GET", "/api/admin/parametres/part-avance", "Part de l'avance (lecture publique, tout authentifié)"],
-        ["GET", "/api/rapports/{mensuel|agents|operateurs|zones|imputations}", "États (rapports.consulter)"],
-        ["GET / POST", "/api/rapports/export | export-async", "Export xlsx/pdf (immédiat ou en file)"],
+        ["GET", "/api/admin/parametres/annee-fiscale", "Exercice courant (lecture publique)"],
+        ["GET", "/api/rapports/{mensuel|agents|operateurs|zones|imputations|trop-percus}", "États (rapports.consulter)"],
+        ["GET / POST", "/api/rapports/export | export-async | export/job/:id", "Export xlsx/pdf (immédiat ou en file) ; nom de fichier unique"],
+        ["GET / POST", "/api/notifications | /lues | /:id/lu", "Notifications de l'utilisateur connecté"],
         ["GET", "/api/audit[/:id]", "Journal d'activité (audit.consulter)"],
-        ["—", "/api/admin/users...", "Gestion des comptes (utilisateurs.gerer)"],
-        ["—", "/api/admin/{settings|backups}", "Paramètres & sauvegardes (parametres.gerer)"],
+        ["—", "/api/admin/users...", "Gestion des comptes (utilisateurs.gerer) ; overrides /users/:id/permissions (roles.gerer)"],
+        ["—", "/api/admin/roles...", "Matrice et rôles personnalisés (lecture utilisateurs.gerer, écriture roles.gerer)"],
+        ["—", "/api/admin/settings", "Paramètres système (parametres.gerer)"],
+        ["GET / POST / DELETE", "/api/admin/backups[/:name][/download|/restaurer]", "Sauvegardes : liste, création, téléchargement, restauration (confirmation), suppression (parametres.gerer)"],
     ],
     largeurs=[2.4, 8.0, 6.4],
 )
@@ -748,7 +897,7 @@ tableau(
     [
         ["200 / 201 / 204", "Succès / créé / sans contenu", "GET-PUT / POST création / suppression"],
         ["202 Accepted", "Traitement asynchrone", "Génération de gros lot / export (tracking_id)"],
-        ["401 / 403", "Non authentifié / interdit", "Token absent ou expiré / permission insuffisante"],
+        ["401 / 403", "Non authentifié / interdit", "Token absent ou expiré (toujours en JSON sur /api/*) / permission insuffisante"],
         ["404", "Introuvable", "Ressource inexistante"],
         ["422", "Erreur de validation", "Champ requis manquant, données invalides"],
         ["423 Locked", "Changement de mot de passe requis", "Compte en must_change_password"],
@@ -764,7 +913,9 @@ tableau(
 h1("8. Intégrations Mobile Money (formats de fichiers)")
 para("L'application produit des fichiers à déposer manuellement sur les plateformes opérateurs. Le numéro "
      "est normalisé au format international (229 + numéro national à 10 chiffres) ; le libellé est en "
-     "majuscules. Un lot = 1 mission × 1 tranche × 1 opérateur.")
+     "majuscules. Un lot = 1 mission × 1 tranche × 1 opérateur (× 1 séquence).")
+bullet("Stockage : storage/app/paiements/{mission_id}/{slug-objet}_{TRANCHE}[_COMPL{n}].{txt|xlsx} — un dossier "
+       "par mission, le nom remis à la plateforme ne change pas.")
 
 h2("8.1 MTN Bénin — fichier .txt")
 bullet("Texte ASCII, séparateur VIRGULE, fins de ligne CRLF (\\r\\n), saut de ligne final.")
@@ -807,6 +958,8 @@ tableau(
         ["CACHE_STORE / SESSION_DRIVER / QUEUE_CONNECTION", "« database » pour fonctionner sans Redis"],
         ["SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD", "Super admin initial (mot de passe OBLIGATOIRE en production)"],
         ["MAIL_MAILER / MAIL_HOST / MAIL_FROM_ADDRESS", "Configuration SMTP"],
+        ["APP_KEY", "Chiffrement et scellés HMAC des états — ne jamais régénérer en production"],
+        ["DB_DUMP_BINARY / DB_RESTORE_BINARY", "Binaires mysqldump / mysql utilisés par db:backup / db:restore"],
         ["SANCTUM_STATEFUL_DOMAINS", "Domaines SPA autorisés"],
     ],
     largeurs=[7.2, 9.6],
@@ -822,7 +975,9 @@ code("# Backend (Laravel)\n"
      "php artisan migrate --seed\n"
      "php artisan storage:link\n"
      "php artisan config:cache && php artisan route:cache\n"
-     "php artisan queue:work --tries=3   # générations asynchrones (lots, états)\n\n"
+     "php artisan queue:work --queue=paiements,etats,default --tries=3   # générations asynchrones\n"
+     "php artisan schedule:run           # cron chaque minute : db:backup 02:00, purge des tokens\n"
+     "php artisan db:restore <fichier>   # restauration (sauvegarde de sécurité préalable)\n\n"
      "# Frontend (Vue)\n"
      "cd frontend && npm install && npm run build\n\n"
      "# Docker (alternative dev)\n"
@@ -830,8 +985,35 @@ code("# Backend (Laravel)\n"
 
 h2("9.4 Comptes de démonstration (local uniquement)")
 para("En environnement local/testing, le seeder crée un compte par profil (mot de passe « password ») : "
-     "superadmin@, admin@, gestion@, finance@, controle@, lecteur@anatt.bj. Ces comptes ne sont JAMAIS "
+     "superadmin@, admin@, gestion@, finance@, controle@, daf@, dg@, lecteur@anatt.bj. Ces comptes ne sont JAMAIS "
      "créés en production.", italic=True, color=GRIS)
+
+h2("9.5 Mise à jour d'une instance (version 1.3)")
+bullet("Migration à jouer : 2026_10_22_090000_add_sequence_to_lots_paiement (colonne sequence, nouvelle clé "
+       "unique créée avant la suppression de l'ancienne — compatible MySQL / clé étrangère).")
+bullet("Procédure sans SSH : DEPLOY-CPANEL.md et docs/runbook-mise-a-jour-cron.md (PHP 8.4 obligatoire).")
+bullet("Tester une restauration (db:restore) sur un environnement de recette MySQL avant la production.")
+
+# =========================================================================
+# 10. QUALITÉ ET TESTS
+# =========================================================================
+h1("10. Qualité et tests")
+tableau(
+    ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
+    [
+        ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "≈ 130 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes", "552 tests au total"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "113 tests / 26 fichiers"],
+        ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
+        ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
+    ],
+    largeurs=[3.2, 4.2, 6.6, 2.8],
+)
+bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permission) et navigation.spec.ts "
+       "(menu ↔ routes ↔ API cohérents).")
+bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
+       "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
+bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")
 
 # =========================================================================
 # ANNEXE — BARÈME
@@ -870,12 +1052,15 @@ tableau(["Terme", "Définition"],
          ["Mission", "Événement regroupant N ordres de mission."],
          ["CAV", "Conducteur de véhicule administratif, payé selon sa propre catégorie."],
          ["Per diem", "Indemnité journalière de mission (taux × nb jours)."],
-         ["Avance / Reliquat", "Tranches du per diem : 70 % puis 30 %."],
-         ["État de paiement", "Document récapitulatif d'une mission (1 par mission) portant le circuit et les signatures."],
+         ["Avance / Reliquat", "Tranches du per diem : 70 % puis le reste par défaut (part paramétrable)."],
+         ["État de paiement", "Document récapitulatif d'une TRANCHE de mission (avances, puis reliquats) portant le circuit et les signatures."],
+         ["Amendement (avenant)", "Ajustement des jours facturés d'un OM après paiement de l'avance ; seul le reliquat bouge."],
+         ["Trop-perçu", "Reliquat négatif après amendement ; récupéré par retenue sur salaire (A_RECOUVRER → RECOUVRE)."],
          ["DAF", "Directeur de l'Administration et des Finances : 2e signature (visa « Vu »)."],
          ["DG", "Directeur Général : 3e et dernière signature ; sa validation ouvre le paiement."],
          ["Versement", "Une tranche (AVANCE/RELIQUAT) d'un OM pour un opérateur."],
          ["Lot de paiement", "1 mission × 1 tranche × 1 opérateur = 1 fichier généré."],
+         ["Lot complémentaire", "Lot de séquence ≥ 2, pour les versements devenus payables après la confirmation d'un lot."],
          ["MSISDN", "Numéro au format international (229 + numéro national)."],
          ["Exonération", "Prise en charge par un tiers : aucun frais alloué."],
          ["RBAC", "Contrôle d'accès par rôle/permission (Sanctum + Gates)."],
@@ -889,7 +1074,7 @@ fin = doc.add_paragraph(); fin.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = fin.add_run("Document élaboré par la Direction des Systèmes d'Information — ANaTT")
 r.font.size = Pt(9); r.font.color.rgb = GRIS
 fin2 = doc.add_paragraph(); fin2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = fin2.add_run("© 2026 ANaTT — Agence Nationale des Transports Terrestres — Bénin")
+r = fin2.add_run(f"© {date.today().year} ANaTT — Agence Nationale des Transports Terrestres — Bénin")
 r.font.size = Pt(9); r.font.color.rgb = GRIS
 
 doc.save(SORTIE)
