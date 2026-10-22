@@ -125,5 +125,8 @@ export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     return error.response?.data?.message || 'Une erreur est survenue.'
   }
+  // Erreur levée par l'application elle-même (ex. assertValidBlobResponse, qui
+  // y recopie le message du serveur) : son message est déjà destiné à l'usager.
+  if (error instanceof Error && error.message) return error.message
   return 'Une erreur inattendue est survenue.'
 }

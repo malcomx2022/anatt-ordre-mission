@@ -7,6 +7,14 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 
+it('répond 401 en JSON à une requête API non authentifiée, même sans en-tête Accept', function () {
+    // Sans Accept: application/json, Laravel redirigeait vers une route « login »
+    // inexistante et l'API renvoyait une page HTML 500.
+    $this->get('/api/auth/me')
+        ->assertUnauthorized()
+        ->assertJsonPath('message', 'Non authentifie.');
+});
+
 it('authentifie un utilisateur avec identifiants valides', function () {
     $user = User::factory()->admin()->create(['password' => bcrypt('secret123')]);
 

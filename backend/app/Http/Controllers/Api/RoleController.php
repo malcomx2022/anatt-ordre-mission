@@ -7,6 +7,7 @@ use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRolePermissionsRequest;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\UserPermissionService;
 use App\Support\PermissionRepository;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,10 @@ use Illuminate\Validation\ValidationException;
  */
 class RoleController extends Controller
 {
-    public function __construct(private readonly PermissionRepository $repo) {}
+    public function __construct(
+        private readonly PermissionRepository $repo,
+        private readonly UserPermissionService $permissionsUtilisateur,
+    ) {}
 
     /** Matrice complète + catalogue des clés, pour l'écran d'administration. */
     public function index(): JsonResponse
@@ -121,6 +125,7 @@ class RoleController extends Controller
         $permissions = array_values(array_unique($request->validated()['permissions']));
         $this->assurerAttribuables($permissions);
         $this->assurerSeparationDesTaches($permissions);
+        $this->assurerSeparationPourLesMembres($role, $permissions);
 
         $avant = $this->repo->pour($role);
         $apres = $this->repo->remplacer($role, $permissions);
@@ -142,6 +147,7 @@ class RoleController extends Controller
     {
         $role = strtoupper($role);
         $this->assurerProfilEditable($role);
+        $this->assurerSeparationPourLesMembres($role, $this->repo->parDefaut($role));
 
         $avant = $this->repo->pour($role);
         $apres = $this->repo->reinitialiser($role);
@@ -208,16 +214,46 @@ class RoleController extends Controller
      */
     private function assurerSeparationDesTaches(array $permissions): void
     {
-        $valide = in_array(Permissions::OM_APPROUVER, $permissions, true);
-        $execute = array_intersect(
-            [Permissions::PAIEMENTS_GENERER, Permissions::PAIEMENTS_CONFIRMER],
-            $permissions
-        ) !== [];
-
-        if ($valide && $execute) {
+        if (self::cumuleOrdonnateurEtPayeur($permissions)) {
             throw ValidationException::withMessages([
                 'permissions' => ['Séparation ordonnateur/payeur : un profil qui valide l’état (om.approuver) ne peut pas aussi générer ou confirmer les paiements.'],
             ]);
         }
+    }
+
+    /**
+     * Même règle sur l'EFFECTIF de chaque membre du profil : des droits accordés
+     * à titre individuel (user_permissions) combinés à la nouvelle matrice du
+     * profil ne doivent pas reconstituer un ordonnateur-payeur.
+     *
+     * @param  string[]  $permissions  permissions du profil après l'édition
+     */
+    private function assurerSeparationPourLesMembres(string $role, array $permissions): void
+    {
+        $fautifs = User::where('role', $role)
+            ->with('permissionOverrides')
+            ->get()
+            ->filter(function (User $user) use ($permissions) {
+                $o = $this->permissionsUtilisateur->overrides($user);
+
+                return self::cumuleOrdonnateurEtPayeur(
+                    UserPermissionService::combiner($permissions, $o['granted'], $o['revoked'])
+                );
+            });
+
+        if ($fautifs->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'permissions' => ['Séparation ordonnateur/payeur : avec cette matrice, '
+                    .$fautifs->pluck('name')->implode(', ')
+                    .' cumulerai(en)t la validation de l’état et le paiement via des droits individuels. Retirez-les d’abord.'],
+            ]);
+        }
+    }
+
+    /** @param  string[]  $permissions */
+    private static function cumuleOrdonnateurEtPayeur(array $permissions): bool
+    {
+        return in_array(Permissions::OM_APPROUVER, $permissions, true)
+            && array_intersect([Permissions::PAIEMENTS_GENERER, Permissions::PAIEMENTS_CONFIRMER], $permissions) !== [];
     }
 }

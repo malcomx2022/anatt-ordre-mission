@@ -10,7 +10,7 @@ import { etatsService } from '@/services/etats'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { useAuth } from '@/composables/useAuth'
-import { partAvance } from '@/composables/usePartAvance'
+import { usePartAvance } from '@/composables/usePartAvance'
 import { normaliserNumeroEtat, numeroEtat } from '@/utils/etats'
 import type { EtatPaiement, EtatsMission, TrancheEtat } from '@/types'
 
@@ -50,8 +50,9 @@ const etatGeneralDisponible = computed(
 
 const libelleTranche = computed(() => (trancheActive.value === 'AVANCE' ? 'des avances' : 'des reliquats'))
 
-const avancePourcentage = partAvance()
-const reliquatPourcentage = 100 - avancePourcentage
+// Part d'avance RÉACTIVE : se met à jour dès que la valeur serveur arrive.
+const { partAvance: avancePourcentage } = usePartAvance()
+const reliquatPourcentage = computed(() => 100 - avancePourcentage.value)
 
 // Chaque bouton n'apparaît qu'à l'acteur concerné et au statut correspondant.
 // Un état REJETÉ se refait : le récapitulatif le ramène en BROUILLON (le backend

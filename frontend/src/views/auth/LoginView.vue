@@ -15,6 +15,8 @@ const remember = ref(false)
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMsg = ref('')
+/** Année du footer : calculée, jamais figée en dur. */
+const anneeCourante = new Date().getFullYear()
 
 async function handleLogin() {
   loading.value = true
@@ -126,7 +128,9 @@ async function handleLogin() {
         </form>
       </div>
 
-      <p class="text-center text-anatt-200 text-xs mt-6">© 2026 ANaTT - Agence Nationale des Transports Terrestres - Benin</p>
+      <!-- Barre tricolore obligatoire avant chaque footer (design system ANaTT). -->
+      <div class="flag-bar mt-6 rounded-full"></div>
+      <p class="text-center text-anatt-200 text-xs mt-3">© {{ anneeCourante }} ANaTT - Agence Nationale des Transports Terrestres - Benin</p>
     </div>
   </div>
 </template>

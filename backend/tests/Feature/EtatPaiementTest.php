@@ -174,6 +174,22 @@ it('laisse les OM à leur statut SEMO jusqu’à la validation finale', function
     expect($statuts())->toBe(['VALIDE']);
 });
 
+it('ne rend pas payable un OM rejeté avant le récapitulatif', function () {
+    // Rejet par le circuit par OM, avant tout état : l'OM sort du récapitulatif.
+    $this->om2->update(['statut' => 'REJETE', 'commentaire_rejet' => 'Pièce justificative manquante.']);
+    Versement::factory()->create(['ordre_mission_id' => $this->om2->id, 'type' => 'AVANCE', 'montant' => 94500, 'statut' => 'EN_ATTENTE']);
+
+    $etat = conduire($this, 'VALIDE');
+
+    expect($etat->nb_beneficiaires)->toBe(1)
+        ->and($this->om1->fresh()->statut)->toBe('VALIDE')
+        // La validation de l'état ne doit pas « repêcher » l'OM rejeté…
+        ->and($this->om2->fresh()->statut)->toBe('REJETE')
+        ->and($this->om2->fresh()->avance_engagee)->toBeNull()
+        // … ni l'ouvrir au fichier de paiement.
+        ->and(Versement::eligiblesLot($this->mission->id, 'AVANCE', 'MTN')->where('ordre_mission_id', $this->om2->id)->exists())->toBeFalse();
+});
+
 it('contraint l’ordre des étapes', function () {
     $etat = conduire($this, 'BROUILLON');
 

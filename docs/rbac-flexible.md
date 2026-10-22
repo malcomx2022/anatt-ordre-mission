@@ -160,6 +160,9 @@ l'effectif (profil + overrides) dès la connexion/rafraîchissement suivant.
 4. **Clé inconnue** — refusé (validation) — 422.
 5. **Séparation ordonnateur/payeur** sur l'**effectif** — un utilisateur avec
    `om.approuver` ne peut cumuler `paiements.generer` / `paiements.confirmer` — 422.
+   La règle vaut aussi dans l'autre sens : une édition (ou réinitialisation) de la
+   matrice d'un **profil** est refusée si elle ferait d'un de ses membres, compte tenu
+   de ses droits individuels, un ordonnateur-payeur — 422 (membres nommés).
 
 Chaque édition est **auditée** : `USER_PERM_UPDATE` (accords, retraits, avant/après).
 

@@ -40,7 +40,9 @@
 >
 > **Livré (Phase 4)** : intégrité de l'amendement avec l'état des reliquats.
 > Colonnes `etats_paiement.montant_total` / `montant_reliquat` passées en **entiers
-> signés** (un état des reliquats en BROUILLON peut totaliser un trop-perçu négatif).
+> signés**. *Révisé en octobre 2026* : l'état des reliquats porte désormais le
+> montant **payable** (Σ des reliquats positifs) — un trop-perçu n'abaisse plus le
+> total signé ; le PDF le mentionne à part, hors total (cf. `docs/revue-projet-2026-10.md`).
 > L'observer resynchronise automatiquement l'état BROUILLON/REJETE des reliquats
 > sur les montants amendés ; l'état des AVANCES validé reste **scellé** (HMAC) et
 > intact (avance figée). Garde d'amendement affinée : un état des reliquats en
@@ -161,6 +163,10 @@ Body: { nb_jours? , lignes? , motif }
   - refus si un trop-perçu de l'OM est déjà **`RECOUVRE`** (retenue RH soldée) : ré-amender
     rouvrirait un versement clos en ignorant le montant déjà retenu → avenant formel, hors
     périmètre v1. Un trop-perçu encore `A_RECOUVRER` (rien retenu) reste amendable ;
+  - refus tant qu'un versement de l'OM est **`GENERE`** (fichier en attente de dépôt) :
+    confirmer le lot, ou le passer en `ERREUR` — ses versements redeviennent `EN_ATTENTE` ;
+  - circuit par OM (mission sans état) : une avance déjà **`CONFIRME`** est engagée à
+    l'amendement (`avance_engagee`), seul le reliquat absorbe l'écart ;
   - autorisé si l'état est en `BROUILLON` (le récapitulatif se rafraîchit) ou si les
     avances sont `VALIDE` (l'avance se fige, seul le reliquat bouge).
 

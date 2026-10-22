@@ -30,6 +30,7 @@ export interface LotPaiement {
   mission?: Mission
   tranche: TrancheVersement
   operateur: Operateur
+  sequence?: number            // 1 = lot initial, 2.. = lot complémentaire (après confirmation)
   statut: StatutLot
   nom_fichier?: string | null
   nb_lignes: number

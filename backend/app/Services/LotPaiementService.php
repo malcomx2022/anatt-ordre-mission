@@ -138,7 +138,26 @@ class LotPaiementService
             ]);
         }
 
-        $lot->update(['statut' => 'ERREUR']);
+        DB::transaction(function () use ($lot) {
+            $lot->update(['statut' => 'ERREUR']);
+
+            // Le dépôt a échoué : rien n'a été payé. Les versements du lot redeviennent
+            // EN_ATTENTE (amendables, mis à jour par le référentiel agent) et reprennent
+            // les coordonnées COURANTES de l'agent — un numéro corrigé après l'échec
+            // part ainsi dans le fichier régénéré.
+            Versement::with('ordreMission.agent')
+                ->where('lot_id', $lot->id)
+                ->where('statut', 'GENERE')
+                ->get()
+                ->each(function (Versement $v) {
+                    $agent = $v->ordreMission?->agent;
+                    $v->update([
+                        'statut' => 'EN_ATTENTE',
+                        'telephone' => $agent->telephone ?? $v->telephone,
+                        'operateur' => $agent->operateur ?? $v->operateur,
+                    ]);
+                });
+        });
 
         AuditService::log($user, 'ERROR_LOT', 'lot_paiement', $lot->id, [
             'tranche' => $lot->tranche,

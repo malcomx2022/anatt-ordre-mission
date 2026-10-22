@@ -12,7 +12,7 @@ import { ordresService } from '@/services/ordres'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
-import { partAvance } from '@/composables/usePartAvance'
+import { usePartAvance } from '@/composables/usePartAvance'
 import { numeroEtat } from '@/utils/etats'
 import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
@@ -21,12 +21,15 @@ const route = useRoute()
 const toast = useToast()
 const { can } = useAuth()
 const id = Number(route.params.id)
-const avancePct = partAvance()
-const reliquatPct = 100 - avancePct
+// Part d'avance RÉACTIVE : se met à jour dès que la valeur serveur arrive.
+const { partAvance: avancePct } = usePartAvance()
+const reliquatPct = computed(() => 100 - avancePct.value)
 
 const ordre = ref<OrdreMission | null>(null)
 const loading = ref(true)
 const action = ref(false)
+/** Message serveur en cas d'échec du chargement (404, 403…) : la page ne reste pas blanche. */
+const erreur = ref<string | null>(null)
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
@@ -78,6 +81,54 @@ async function soumettreAmend() {
  */
 const etat = computed(() => ordre.value?.mission?.etat_paiement ?? null)
 
+// ── Circuit de repli PAR OM (missions SANS aucun état de paiement) ──
+// Reprise de données / correction ponctuelle : IMPORTE → VALIDE en une étape, ou
+// rejet motivé. Exclusif du circuit par état : le backend refuse (422) dès qu'un
+// état existe (MissionService::exigerAbsenceDEtat). `etat_paiement` vaut null
+// (relation chargée, sans état) — l'état des reliquats n'existe jamais sans
+// celui des avances, donc null = mission sans aucun état.
+const missionSansEtat = computed(() => !!ordre.value?.mission && ordre.value.mission.etat_paiement === null)
+const circuitParOm = computed(() => missionSansEtat.value && ordre.value?.statut === 'IMPORTE')
+const peutValiderOm = computed(() => circuitParOm.value && can('om.valider'))
+const peutRejeterOm = computed(() => circuitParOm.value && can('om.rejeter'))
+
+const showRejet = ref(false)
+const motifRejet = ref('')
+const MOTIF_MIN = 10
+
+async function validerOm() {
+  action.value = true
+  try {
+    await ordresService.valider(id)
+    toast.success('Ordre de mission validé.')
+    await load()
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
+
+function ouvrirRejet() {
+  motifRejet.value = ''
+  showRejet.value = true
+}
+
+async function soumettreRejet() {
+  if (motifRejet.value.trim().length < MOTIF_MIN) return
+  action.value = true
+  try {
+    await ordresService.rejeter(id, motifRejet.value.trim())
+    showRejet.value = false
+    toast.success('Ordre de mission rejeté.')
+    await load()
+  } catch (e) {
+    toast.error(getErrorMessage(e))
+  } finally {
+    action.value = false
+  }
+}
+
 // Le brouillon de l'OM (son document individuel) reste téléchargeable tant que
 // la mission n'est pas définitivement validée.
 const peutTelechargerBrouillon = computed(
@@ -97,8 +148,13 @@ async function telechargerBrouillon() {
 
 async function load() {
   loading.value = true
+  erreur.value = null
   try {
     ordre.value = await ordresService.get(id)
+  } catch (e) {
+    // On garde le message serveur (ex. « Ordre de mission introuvable. »).
+    ordre.value = null
+    erreur.value = getErrorMessage(e)
   } finally {
     loading.value = false
   }
@@ -115,6 +171,23 @@ onMounted(load)
 
     <p v-if="loading" class="text-center text-gray-400 font-body py-10">Chargement…</p>
 
+    <AppCard v-else-if="erreur" class="max-w-xl mx-auto text-center">
+      <div role="alert" class="space-y-3 py-4">
+        <svg class="w-10 h-10 mx-auto text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <h2 class="font-display font-bold text-gray-800">Ordre de mission indisponible</h2>
+        <p class="text-sm text-gray-500 font-body" data-test="erreur-chargement">{{ erreur }}</p>
+        <div class="flex justify-center gap-3 pt-2">
+          <AppButton variant="outline" @click="load">Réessayer</AppButton>
+          <router-link to="/ordres" class="px-5 py-2.5 rounded-xl bg-anatt-500 text-white font-display font-bold text-sm hover:bg-anatt-600 transition-all duration-200">Retour aux ordres</router-link>
+        </div>
+      </div>
+    </AppCard>
+
     <div v-else-if="ordre" class="space-y-6">
       <!-- En-tête -->
       <AppCard>
@@ -126,6 +199,26 @@ onMounted(load)
             <span v-if="reliquatNegatif" class="px-3 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-600">Trop-perçu</span>
           </div>
           <div class="flex items-center gap-3">
+            <AppButton v-if="peutRejeterOm" variant="danger" :loading="action" @click="ouvrirRejet">
+              <span class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m15 9-6 6" />
+                  <path d="m9 9 6 6" />
+                </svg>
+                Rejeter
+              </span>
+            </AppButton>
+            <AppButton v-if="peutValiderOm" :loading="action" @click="validerOm">
+              <span class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Valider
+              </span>
+            </AppButton>
             <AppButton v-if="peutAmender" variant="outline" @click="ouvrirAmend">
               <span class="inline-flex items-center gap-2">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -176,6 +269,10 @@ onMounted(load)
               <strong>validation du Directeur Général</strong> portent sur l’état de la
               mission, ce qui valide d’un coup tous ses ordres de mission.
               <span v-if="etat?.numero"> — {{ numeroEtat(etat.numero) }}</span>
+            </p>
+            <p v-if="peutValiderOm || peutRejeterOm" class="text-xs text-gold-600 font-body mt-2">
+              Mission sans état de paiement : la validation ordre par ordre reste possible (voie de repli,
+              exclusive du circuit par état).
             </p>
           </div>
           <router-link
@@ -272,6 +369,34 @@ onMounted(load)
         </ul>
       </AppCard>
     </div>
+
+    <!-- Modale de rejet (circuit de repli par OM) -->
+    <AppModal :show="showRejet" title="Rejeter l’ordre de mission" @close="showRejet = false">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500 font-body">
+          Le rejet est définitif pour cet ordre de mission et sera tracé au journal d’audit.
+        </p>
+        <div>
+          <label class="block text-sm font-display font-medium text-gray-700 mb-1">Motif du rejet (≥ {{ MOTIF_MIN }} caractères)</label>
+          <textarea
+            v-model="motifRejet" rows="3" data-test="motif-rejet"
+            placeholder="Justification du rejet…"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-body
+                   focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+          />
+          <p class="text-[11px] text-gray-400 font-body mt-1">{{ motifRejet.trim().length }} / {{ MOTIF_MIN }} caractères minimum</p>
+        </div>
+      </div>
+      <template #footer>
+        <button class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-display font-medium text-gray-700 hover:bg-gray-50" @click="showRejet = false">Annuler</button>
+        <AppButton
+          variant="danger"
+          :loading="action"
+          :disabled="motifRejet.trim().length < MOTIF_MIN"
+          @click="soumettreRejet"
+        >Confirmer le rejet</AppButton>
+      </template>
+    </AppModal>
 
     <!-- Modale d'amendement -->
     <AppModal :show="showAmend" title="Amender l’ordre de mission" @close="showAmend = false">

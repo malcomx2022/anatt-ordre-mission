@@ -102,7 +102,10 @@ async function telecharger(lot: LotPaiement) {
             <tr v-else-if="!lots.length"><td colspan="8" class="px-5 py-10 text-center text-gray-400 font-body">Aucun lot généré.</td></tr>
             <tr v-for="lot in lots" :key="lot.id" class="hover:bg-anatt-50/30 transition-colors">
               <td class="px-5 py-3 font-body">{{ lot.mission?.objet ?? '—' }} <span class="text-gray-400 text-xs">{{ lot.mission?.destination }}</span></td>
-              <td class="px-5 py-3 font-display">{{ lot.tranche }}</td>
+              <td class="px-5 py-3 font-display">
+                {{ lot.tranche }}
+                <span v-if="(lot.sequence ?? 1) > 1" class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600">complémentaire n° {{ lot.sequence }}</span>
+              </td>
               <td class="px-5 py-3"><OperateurBadge :operateur="lot.operateur" /></td>
               <td class="px-5 py-3">{{ lot.nb_lignes }}</td>
               <td class="px-5 py-3 font-display font-semibold">{{ fmt(lot.montant_total) }}</td>

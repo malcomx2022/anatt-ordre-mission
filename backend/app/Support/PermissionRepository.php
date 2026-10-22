@@ -102,6 +102,17 @@ class PermissionRepository
     }
 
     /**
+     * Permissions par défaut (config) d'un profil, sans rien écrire : permet de
+     * contrôler une réinitialisation AVANT de l'appliquer.
+     *
+     * @return string[]
+     */
+    public function parDefaut(string $profil): array
+    {
+        return $this->defaut($profil);
+    }
+
+    /**
      * Profils actuellement personnalisés (au moins une ligne en base).
      *
      * @return string[]

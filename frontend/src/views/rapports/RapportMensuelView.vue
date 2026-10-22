@@ -4,8 +4,9 @@ import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import { rapportsService } from '@/services/rapports'
 import type { RapportMensuel } from '@/types'
+import { moisLocal } from '@/utils/benin'
 
-const mois = ref(new Date().toISOString().slice(0, 7))
+const mois = ref(moisLocal())
 const loading = ref(true)
 const rapport = ref<RapportMensuel | null>(null)
 
@@ -16,7 +17,7 @@ const moisOptions = computed(() => {
   const now = new Date()
   for (let i = 0; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const val = d.toISOString().slice(0, 7)
+    const val = moisLocal(d)
     const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
     opts.push({ value: val, label: label.charAt(0).toUpperCase() + label.slice(1) })
   }

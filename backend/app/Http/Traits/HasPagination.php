@@ -12,9 +12,10 @@ trait HasPagination
 
     protected int $maxPerPage = 100;
 
-    protected function getPerPage(Request $request): int
+    /** Taille de page bornée [min, max] ; `$defaut` remplace le défaut de l'écran. */
+    protected function getPerPage(Request $request, ?int $defaut = null): int
     {
-        $perPage = $request->integer('per_page', $this->defaultPerPage);
+        $perPage = $request->integer('per_page', $defaut ?? $this->defaultPerPage);
 
         return max($this->minPerPage, min($this->maxPerPage, $perPage));
     }

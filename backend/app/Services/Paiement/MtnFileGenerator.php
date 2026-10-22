@@ -68,8 +68,10 @@ class MtnFileGenerator extends FileGenerator
         // CRLF entre lignes + saut de ligne final.
         $contenu = implode("\r\n", array_merge([$entete], $details))."\r\n";
 
-        $nomFichier = $this->nomFichier($theme, $tranche, 'txt');
-        $chemin = "paiements/{$nomFichier}";
+        $nomFichier = $this->nomFichier($theme, $tranche, 'txt', $this->sequence);
+        // Un dossier par mission : deux missions de même objet produisent le même
+        // nom de fichier, qui ne doit pas écraser le fichier de l'autre lot.
+        $chemin = "paiements/{$mission->id}/{$nomFichier}";
         Storage::disk('local')->put($chemin, $contenu);
 
         return [

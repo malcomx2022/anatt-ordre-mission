@@ -9,7 +9,61 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Corrigé (revue d'octobre 2026, troisième passe)
+
+- **Pagination de `/api/missions` et `/api/etats`** : `per_page` est désormais plafonné à 100,
+  avec une valeur par défaut de 20.
+- **Filtre `operateur` de `/api/ordres`** : il porte sur l'opérateur du versement (celui du
+  paiement), et non plus sur l'opérateur actuel de l'agent.
+- **Exports de rapports** : un suffixe aléatoire est ajouté au nom du fichier, si bien que deux
+  exports lancés dans la même seconde ne s'écrasent plus.
+- **Calcul du per diem** : un OM sans jour facturé garde son transport. Seule une prise en
+  charge par un tiers ramène tous les montants à 0.
+
+### Modifié
+
+- **Revue d'octobre 2026, seconde passe — points restants traités** (détail :
+  `docs/revue-projet-2026-10.md` §4).
+  - **État des reliquats** : il est signé au montant **payable**, c'est-à-dire la somme des
+    reliquats positifs. Les trop-perçus sont mentionnés à part sur le PDF.
+  - **Lots complémentaires** : nouvelle colonne `lots_paiement.sequence`, avec une migration.
+    Un lot confirmé n'est jamais réécrit. Un versement devenu payable ensuite part dans un lot
+    de séquence suivante.
+  - **Lot en `ERREUR`** : ses versements reviennent à `EN_ATTENTE`, avec les coordonnées
+    actuelles de l'agent.
+  - **Amendement** : il est refusé tant qu'un fichier contenant l'OM attend son dépôt, et
+    les états sont verrouillés pendant l'opération.
+  - **OM rejeté** : ses versements passent à `ANNULE`.
+  - **Mission** : un même agent ne peut y figurer qu'une fois.
+  - **Séparation ordonnateur/payeur** : elle est désormais contrôlée sur l'effectif de
+    chaque membre d'un profil.
+  - **Sauvegardes** : ajout du téléchargement et de la restauration, avec une sauvegarde
+    de sécurité préalable (commande `db:restore`).
+  - **Frontend** :
+    - suivi des gros lots générés en asynchrone ;
+    - part d'avance qui ne reste plus figée à 70 % ;
+    - boutons Valider et Rejeter pour le circuit par OM ;
+    - messages d'erreur sur la fiche OM et l'aperçu PDF au lieu d'une page blanche ;
+    - compte à rebours sur la page de maintenance ;
+    - corrections du design system (`flag-bar` sur la connexion, icônes SVG).
+  - **Tests** : la suite Pest s'exécute sans `.env` (`APP_KEY` de test). Le binaire
+    Chromium de Playwright peut être fourni par variable d'environnement.
+
 ### Corrigé
+
+- **Revue complète d'octobre 2026 — huit défauts corrigés** (détail et points
+  restants : `docs/revue-projet-2026-10.md`). Bloquants reproduits sur l'API réelle :
+  un OM **rejeté** avant le récapitulatif redevenait `VALIDE` et **payable** à la
+  validation de l'état des avances (`EtatPaiementService::propager` exclut `REJETE`) ;
+  deux missions de **même objet** partageaient le même fichier de paiement, si bien que
+  le re-téléchargement d'un lot servait celui de l'autre (un dossier par mission,
+  `paiements/{mission_id}/`) ; sur le circuit par OM, un amendement après paiement de
+  l'avance recalculait 70/30 en ignorant l'avance décaissée (l'avance `GENERE`/`CONFIRME`
+  est désormais engagée). Également : 401 JSON au lieu d'une page 500 sur `/api/*` sans
+  en-tête `Accept` ; téléversement des paraphes (le FormData partait sérialisé en JSON) ;
+  mois courant calculé en UTC (décalé d'un mois au Bénin dans les rapports) ; catégorie
+  suggérée fausse quand l'indice est vidé ; historique OM-08 muet (champs et codes
+  d'action obsolètes).
 
 - **Déploiement : la version de PHP annoncée rendait l'API inutilisable**
   `DEPLOY-CPANEL.md` §4 demandait de sélectionner « PHP 8.2 ou 8.3 » dans cPanel.

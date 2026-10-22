@@ -9,6 +9,7 @@ import {
 import type { ChartData, ChartOptions } from 'chart.js'
 import { rapportsService } from '@/services/rapports'
 import type { RapportMensuel } from '@/types'
+import { moisLocal } from '@/utils/benin'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
@@ -43,7 +44,7 @@ const chartOptions: ChartOptions<'bar'> = {
 
 onMounted(async () => {
   try {
-    synthese.value = await rapportsService.mensuel(new Date().toISOString().slice(0, 7))
+    synthese.value = await rapportsService.mensuel(moisLocal())
   } finally {
     loading.value = false
   }

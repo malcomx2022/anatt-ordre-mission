@@ -32,6 +32,9 @@ abstract class FileGenerator
     /** Opérateur traité par le générateur ('MTN' | 'MOOV'). */
     abstract protected function operateur(): string;
 
+    /** Séquence du lot en cours de génération (1 = initial, 2.. = complémentaire). */
+    protected int $sequence = 1;
+
     /**
      * Refuse de produire un fichier de paiement tant que l'état DE LA TRANCHE
      * visée n'est pas définitivement validé par le Directeur Général.
@@ -86,32 +89,36 @@ abstract class FileGenerator
         return DB::transaction(function () use ($missionId, $tranche, $user) {
             $mission = Mission::findOrFail($missionId);
 
+            // Dernier lot de la clé (mission, tranche, opérateur).
             $lot = LotPaiement::where('mission_id', $missionId)
                 ->where('tranche', $tranche)
                 ->where('operateur', $this->operateur())
+                ->orderByDesc('sequence')
                 ->lockForUpdate()
                 ->first();
 
-            if ($lot && $lot->statut === 'CONFIRME') {
-                throw ValidationException::withMessages([
-                    'lot' => ['Ce lot est déjà confirmé : régénération interdite (anti-double-paiement).'],
-                ]);
-            }
-
             $this->exigerEtatValide($mission, $tranche);
 
+            // Idempotence : les versements CONFIRME sont exclus du périmètre.
             $versements = Versement::eligiblesLot($missionId, $tranche, $this->operateur())->get();
 
             if ($versements->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'lot' => ['Aucun versement éligible (non confirmé) pour ce lot.'],
+                    'lot' => [$lot?->statut === 'CONFIRME'
+                        ? 'Ce lot est déjà confirmé et aucun nouveau versement n\'est payable : régénération interdite (anti-double-paiement).'
+                        : 'Aucun versement éligible (non confirmé) pour ce lot.'],
                 ]);
             }
+
+            // Un lot CONFIRME n'est jamais réécrit : les versements devenus payables
+            // depuis partent dans un lot COMPLÉMENTAIRE (séquence suivante). Un lot
+            // GENERE ou ERREUR, lui, est régénéré sur place.
+            $this->sequence = $lot === null ? 1 : ($lot->statut === 'CONFIRME' ? $lot->sequence + 1 : $lot->sequence);
 
             $meta = $this->construireFichier($mission, $tranche, $versements);
 
             $lot = LotPaiement::updateOrCreate(
-                ['mission_id' => $missionId, 'tranche' => $tranche, 'operateur' => $this->operateur()],
+                ['mission_id' => $missionId, 'tranche' => $tranche, 'operateur' => $this->operateur(), 'sequence' => $this->sequence],
                 [
                     'statut' => 'GENERE',
                     'nom_fichier' => $meta['chemin'],
@@ -131,6 +138,7 @@ abstract class FileGenerator
                 'mission' => $mission->destination,
                 'tranche' => $tranche,
                 'operateur' => $this->operateur(),
+                'sequence' => $this->sequence,
                 'nb_lignes' => $meta['nb_lignes'],
                 'montant_total' => $meta['montant_total'],
                 'fichier' => $meta['chemin'],

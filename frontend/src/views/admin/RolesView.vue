@@ -282,7 +282,7 @@ onMounted(charger)
                       :checked="coche(r, perm.cle)"
                       @change="basculer(r, perm.cle)"
                     />
-                    <span v-else-if="coche(r, perm.cle)" class="text-anatt-500 font-bold">✓</span>
+                    <span v-else-if="coche(r, perm.cle)" class="text-anatt-500" role="img" aria-label="Accordée"><svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span>
                     <span v-else class="text-gray-200">—</span>
                   </td>
                 </tr>

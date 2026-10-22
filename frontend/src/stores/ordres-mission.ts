@@ -2,11 +2,14 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { baremesService } from '@/services/baremes'
 import { missionsService } from '@/services/missions'
-import { partAvance } from '@/composables/usePartAvance'
+import { usePartAvance } from '@/composables/usePartAvance'
 import type {
   Mission, MissionContexte, BeneficiaireForm, MissionFormData,
   Bareme, ZoneCode, Categorie, TypePriseEnCharge,
 } from '@/types'
+
+/** Part de l'avance (réactive) : les calculs se rafraîchissent dès la valeur serveur reçue. */
+const { partAvance: partAvanceRef } = usePartAvance()
 
 function contexteVierge(): MissionContexte {
   return {
@@ -119,7 +122,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     }
 
     const total = perDiem + transport
-    const avance = Math.round(total * partAvance() / 100)   // paramétrable
+    const avance = Math.round(total * partAvanceRef.value / 100)   // paramétrable (réactif)
     return { ok: true, taux: tauxAffiche, nb_jours: nbJours, per_diem: perDiem, transport, total, avance, reliquat: total - avance }
   }
 

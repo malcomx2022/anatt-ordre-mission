@@ -3,6 +3,7 @@
 use App\Models\AuditLog;
 use App\Models\RolePermission;
 use App\Models\User;
+use App\Models\UserPermission;
 use App\Support\PermissionRepository;
 use App\Support\Permissions;
 
@@ -107,6 +108,21 @@ it('refuse d’attribuer une clé réservée au super administrateur', function 
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrorFor('permissions');
+});
+
+it('refuse une matrice qui ferait d’un membre du profil un ordonnateur-payeur', function () {
+    // Un contrôleur a reçu, à titre individuel, la confirmation des paiements.
+    $controleur = User::factory()->controleur()->create(['name' => 'Paul AGBO']);
+    UserPermission::create(['user_id' => $controleur->id, 'permission' => 'paiements.confirmer', 'granted' => true]);
+
+    $this->actingAs(User::factory()->superAdmin()->create())
+        ->putJson('/api/admin/roles/CONTROLEUR/permissions', [
+            'permissions' => ['om.consulter', 'om.valider', 'om.approuver'],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('permissions');
+
+    expect($controleur->fresh()->can('om.approuver'))->toBeFalse();
 });
 
 it('refuse une clé de permission inconnue', function () {

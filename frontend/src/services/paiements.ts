@@ -7,6 +7,32 @@ export interface LotSelection {
   operateur: Operateur
 }
 
+/** Réponse 202 d'une génération basculée en file Redis (gros lot). */
+export interface GenerationAsync {
+  async: true
+  tracking_id: string
+  nb_lignes: number
+  message?: string
+}
+
+/**
+ * État d'une génération asynchrone (cf. GenererLotPaiementJob) :
+ * INTROUVABLE tant que le worker n'a pas pris la tâche (ou cache expiré),
+ * EN_COURS pendant le traitement, TERMINE (lot_id + fichier) ou ERREUR (message).
+ */
+export interface StatutJobLot {
+  statut: 'EN_COURS' | 'TERMINE' | 'ERREUR' | 'INTROUVABLE'
+  lot_id?: number
+  fichier?: string
+  message?: string
+}
+
+/** Lit un corps JSON reçu en Blob (requête faite en `responseType: 'blob'`). */
+async function lireJsonBlob<T>(data: unknown): Promise<T> {
+  const texte = data instanceof Blob ? await data.text() : typeof data === 'string' ? data : JSON.stringify(data)
+  return JSON.parse(texte) as T
+}
+
 export const paiementsService = {
   async lots(params: Record<string, unknown> = {}): Promise<Page<LotPaiement>> {
     const { data } = await api.get('/api/paiements/lots', { params })
@@ -18,14 +44,39 @@ export const paiementsService = {
     return unwrap<LotPreview>(data)
   },
 
-  /** Génère (ou régénère) le fichier et déclenche son téléchargement (.txt / .xlsx). */
-  async generer(sel: LotSelection): Promise<void> {
+  /**
+   * Génère (ou régénère) le fichier et déclenche son téléchargement (.txt / .xlsx).
+   *
+   * Petit lot : le fichier arrive directement → téléchargé, renvoie `null`.
+   * Gros lot (> seuil `paiement.async_seuil`) : l'API répond 202 avec un JSON
+   * `{ async, tracking_id, nb_lignes, message }` — renvoyé tel quel pour que
+   * l'écran suive la génération (`statutJob`) puis télécharge (`telechargerLot`).
+   */
+  async generer(sel: LotSelection): Promise<GenerationAsync | null> {
     const res = await api.post('/api/paiements/lots/generer', sel, { responseType: 'blob' })
+    if (res.status === 202) {
+      return lireJsonBlob<GenerationAsync>(res.data)
+    }
     await assertValidBlobResponse(res)
     const nom = filenameFromDisposition(
       res.headers['content-disposition'],
       `${sel.operateur}_${sel.tranche}.${sel.operateur === 'MTN' ? 'txt' : 'xlsx'}`,
     )
+    saveBlob(res.data as Blob, nom)
+    return null
+  },
+
+  /** Suivi d'une génération asynchrone (cache serveur `lot_job:{trackingId}`). */
+  async statutJob(trackingId: string): Promise<StatutJobLot> {
+    const { data } = await api.get(`/api/paiements/lots/job/${encodeURIComponent(trackingId)}`)
+    return unwrap<StatutJobLot>(data)
+  },
+
+  /** Télécharge le fichier d'un lot par son identifiant (fin de génération asynchrone). */
+  async telechargerLot(lotId: number, nomParDefaut = 'lot'): Promise<void> {
+    const res = await api.get(`/api/paiements/lots/${lotId}/download`, { responseType: 'blob' })
+    await assertValidBlobResponse(res)
+    const nom = filenameFromDisposition(res.headers['content-disposition'], nomParDefaut)
     saveBlob(res.data as Blob, nom)
   },
 
@@ -40,10 +91,7 @@ export const paiementsService = {
   },
 
   async telecharger(lot: LotPaiement): Promise<void> {
-    const res = await api.get(`/api/paiements/lots/${lot.id}/download`, { responseType: 'blob' })
-    await assertValidBlobResponse(res)
-    const nom = filenameFromDisposition(res.headers['content-disposition'], lot.nom_fichier ?? 'lot')
-    saveBlob(res.data as Blob, nom)
+    await paiementsService.telechargerLot(lot.id, lot.nom_fichier ?? 'lot')
   },
 
   async statuts(): Promise<Array<{ operateur: string; statut: string; total: number; montant_total: number }>> {

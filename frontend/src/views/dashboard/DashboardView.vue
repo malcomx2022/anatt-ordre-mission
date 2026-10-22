@@ -13,6 +13,7 @@ import type { ChartData, ChartOptions } from 'chart.js'
 import { rapportsService } from '@/services/rapports'
 import { ordresService } from '@/services/ordres'
 import type { RapportMensuel, OrdreMission } from '@/types'
+import { moisLocal } from '@/utils/benin'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
@@ -25,7 +26,7 @@ const fmt = (v: number) => Number(v).toLocaleString('fr-FR')
 
 onMounted(async () => {
   try {
-    const mois = new Date().toISOString().slice(0, 7)
+    const mois = moisLocal()
     const [r, o] = await Promise.all([
       rapportsService.mensuel(mois),
       // actifs : exclut les OM rejetés/annulés — KPI de volume + activité récente.

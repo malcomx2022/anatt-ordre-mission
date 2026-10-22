@@ -102,3 +102,42 @@ it('exclut un OM non validé : ni prévisualisé ni payable', function () {
     expect(LotPaiement::count())->toBe(0);
     expect(Versement::find($this->versement->id)->statut)->toBe('EN_ATTENTE');
 });
+
+it('ouvre un lot complémentaire pour un versement devenu payable après confirmation', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
+    $initial = LotPaiement::first();
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$initial->id}/confirmer")->assertOk();
+
+    // Un second bénéficiaire devient payable APRÈS la confirmation du lot.
+    $agent = Agent::factory()->mtn()->create(['nom' => 'AGBO']);
+    $om = OrdreMission::factory()->statut('VALIDE')->create(['mission_id' => $this->mission->id, 'agent_id' => $agent->id]);
+    $tardif = Versement::factory()->create([
+        'ordre_mission_id' => $om->id, 'type' => 'AVANCE', 'operateur' => 'MTN',
+        'telephone' => $agent->telephone, 'montant' => 30000, 'statut' => 'EN_ATTENTE',
+    ]);
+
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
+
+    $compl = LotPaiement::where('sequence', 2)->firstOrFail();
+    expect(LotPaiement::find($initial->id)->statut)->toBe('CONFIRME')   // jamais réécrit
+        ->and($compl->nb_lignes)->toBe(1)
+        ->and($compl->montant_total)->toBe(30000)
+        ->and(basename($compl->nom_fichier))->toEndWith('_AVANCE_COMPL2.txt')
+        ->and($tardif->fresh()->lot_id)->toBe($compl->id)
+        ->and($this->versement->fresh()->lot_id)->toBe($initial->id);   // pas réinclus
+});
+
+it('remet les versements d’un lot en erreur EN_ATTENTE avec le numéro corrigé de l’agent', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+    $lot = LotPaiement::first();
+
+    // Le dépôt échoue sur un mauvais numéro : on corrige l'agent.
+    $this->om->agent->update(['telephone' => '0197000001']);
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$lot->id}/erreur")->assertOk();
+
+    $v = $this->versement->fresh();
+    expect($v->statut)->toBe('EN_ATTENTE')->and($v->telephone)->toBe('0197000001');
+
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
+    expect(Storage::disk('local')->get(LotPaiement::first()->nom_fichier))->toContain('2290197000001');
+});

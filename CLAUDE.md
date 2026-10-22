@@ -53,9 +53,12 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
 - **Référence SEMO** = clé naturelle **UNIQUE** (anti-doublon).
 - **Paiements** : GÉNÉRATION de fichiers — un fichier = **1 mission × 1 tranche [`AVANCE` | `RELIQUAT`] × 1 opérateur**.
   - MTN → `.txt` ; Moov → `.xlsx`.
-  - Statuts versement : `EN_ATTENTE` / `GENERE` / `CONFIRME` / `ANNULE`.
+  - Statuts versement : `EN_ATTENTE` / `GENERE` / `CONFIRME` / `ANNULE` (versements d'un OM **rejeté**, exclus des fichiers).
   - Confirmation **manuelle** après dépôt réussi. Régénération possible tant que **non confirmé**.
-  - **Idempotence** : un versement `CONFIRME` n'est **jamais** réinclus dans un nouveau fichier (anti-double-paiement).
+    Un lot passé en **`ERREUR`** (dépôt échoué) remet ses versements `EN_ATTENTE` avec les coordonnées **courantes** de l'agent.
+  - **Idempotence** : un versement `CONFIRME` (ou porté par un lot `CONFIRME`) n'est **jamais** réinclus dans un nouveau fichier (anti-double-paiement).
+  - **Lot complémentaire** : un lot `CONFIRME` n'est jamais réécrit ; un versement devenu payable après coup part dans
+    un lot de **séquence** suivante (`sequence` 2, 3… ; fichier `…_COMPL{n}`). Fichiers rangés par mission : `paiements/{mission_id}/`.
 - **États de paiement PAR TRANCHE** — une mission porte **DEUX états**, chacun avec son circuit complet
   (récapitulatif → `BROUILLON` → `CONTROLE` → `VISA_DAF` → `VALIDE` ; rejet motivé possible à chaque étape) :
   1. **État des AVANCES** (Σ avances des OM) : sa validation finale par le DG fait passer les OM à `VALIDE`
@@ -80,6 +83,11 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     (`CONTROLE`/`VISA_DAF` → rejet guidé), si l'état des reliquats est **validé**, ou si un trop-perçu de l'OM
     a déjà été **`RECOUVRE`** (retenue soldée → avenant formel, hors périmètre). Un trop-perçu encore
     `A_RECOUVRER` reste amendable (rien n'a été retenu).
+  - **Garde supplémentaire** : amendement refusé tant qu'un versement de l'OM est `GENERE` (fichier en attente de dépôt :
+    confirmer le lot ou le passer en `ERREUR`). Sur le circuit par OM (mission sans état), une avance déjà `CONFIRME`
+    est engagée à l'amendement (`avance_engagee`), comme si l'état des avances l'avait figée.
+  - **État des reliquats = montant PAYABLE** : Σ des reliquats **positifs**. Les trop-perçus ne diminuent pas le total signé ;
+    le PDF les mentionne à part (« trop-perçus hors total, à recouvrer par retenue sur salaire »).
   - **Trop-perçu** (reliquat négatif) : le versement bascule en **`A_RECOUVRER`**, sort du périmètre payable
     (`scopeEligiblesLot` exclut les montants ≤ 0 et les statuts `A_RECOUVRER`/`RECOUVRE`) et rejoint l'écran
     **Régularisations**. La récupération est une **retenue sur salaire hors application** : l'app produit un
@@ -526,7 +534,7 @@ extend: {
 | ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
 | ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
 | ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP, templates notifications |
-| ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration |
+| ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration (confirmation par recopie du nom ; sauvegarde de sécurité préalable) |
 
 ### Pages SYSTÈME (4 écrans)
 
@@ -659,7 +667,7 @@ interface OmAmendement {
 }
 ```
 
-### LotPaiement (1 mission × 1 tranche × 1 opérateur)
+### LotPaiement (1 mission × 1 tranche × 1 opérateur × 1 séquence)
 
 ```typescript
 interface LotPaiement {
@@ -667,6 +675,7 @@ interface LotPaiement {
   mission_id: number
   tranche: 'AVANCE' | 'RELIQUAT'
   operateur: 'MTN' | 'MOOV'
+  sequence: number             // 1 = lot initial ; 2.. = lot complémentaire (après confirmation). Unicité (mission, tranche, opérateur, sequence)
   statut: 'GENERE' | 'CONFIRME' | 'ERREUR'
   nom_fichier?: string         // .txt (MTN) / .xlsx (Moov)
   nb_lignes: number
@@ -712,6 +721,10 @@ POST   /api/auth/mot-de-passe/email
 POST   /api/auth/mot-de-passe/reset
 GET    /api/auth/me                 → User connecté (UserResource)
 GET    /api/auth/me/permissions     → Liste des permissions effectives (pilote l'UI)
+POST   /api/auth/mot-de-passe/changer → Changement de mot de passe (lève le verrou 423 « mot de passe à changer »)
+GET    /api/notifications           → Notifications de l'utilisateur connecté
+POST   /api/notifications/lues      → Tout marquer lu
+POST   /api/notifications/:id/lu    → Marquer une notification lue
 ```
 > Le login renvoie `{ token, user, permissions[] }` et met à jour `derniere_connexion`.
 
@@ -752,7 +765,8 @@ DELETE /api/admin/roles/:role                  → Supprime un rôle personnalis
 > est une chaîne libre ; les codes valides viennent de `PermissionRepository::codes()`.
 > Écriture réservée au SUPER_ADMIN (`roles.gerer`, non attribuable) ; lecture `utilisateurs.gerer`.
 > Garde-fous serveur (tous niveaux) : SUPER_ADMIN non éditable, clés réservées refusées,
-> séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`), code de rôle
+> séparation ordonnateur/payeur (`om.approuver` ≠ `paiements.generer/confirmer`, contrôlée aussi sur
+> l'effectif de chaque membre d'un profil édité), code de rôle
 > unique et non-système, suppression bloquée si des utilisateurs y sont rattachés. Audité
 > (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET` / `USER_PERM_UPDATE` / `ROLE_CREATE` / `ROLE_RENAME` /
 > `ROLE_DELETE`). Détail : `docs/rbac-flexible.md`.
@@ -763,6 +777,15 @@ GET    /api/admin/settings                    → Réglages (SUPER_ADMIN : param
 PUT    /api/admin/settings                    → Écrit une liste blanche de clés (dont partAvance, entier 0-100)
 GET    /api/admin/parametres/part-avance      → { data: <int> } Part de l'avance (LECTURE PUBLIQUE, tout authentifié)
 GET    /api/admin/parametres/annee-fiscale    → { data: { annee, mois_debut, libelle } } Exercice courant (LECTURE PUBLIQUE)
+GET    /api/admin/signatures                  → Signataires du circuit (nom, fonction ; l'image n'est jamais renvoyée) (parametres.gerer)
+POST   /api/admin/signatures/:poste           → Téléverse le paraphe d'un poste (controleur|daf|dg), multipart (parametres.gerer)
+DELETE /api/admin/signatures/:poste           → Retire le paraphe (parametres.gerer)
+GET    /api/admin/backups                     → Sauvegardes .sql/.sql.gz (parametres.gerer)
+POST   /api/admin/backups                     → Crée une sauvegarde (artisan db:backup)
+GET    /api/admin/backups/:name/download      → Télécharge une sauvegarde
+POST   /api/admin/backups/:name/restaurer     → Restaure (artisan db:restore) — body { confirmation: <nom du fichier> } ;
+                                                sauvegarde de sécurité de l'état courant prise juste avant ; audit BACKUP_RESTORE
+DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 ```
 > `partAvance` (défaut 70) définit la répartition avance/reliquat : `avance = round(montant × partAvance/100)`,
 > le reliquat absorbe l'arrondi. Écriture réservée au SUPER_ADMIN via `/settings` ; **lecture par la route
@@ -788,7 +811,8 @@ PUT    /api/agents/:id              → Modifier agent
 DELETE /api/agents/:id              → Désactiver agent
 POST   /api/agents/import           → Import Excel/CSV (rapport d'erreurs ligne à ligne, rollback)
 ```
-> Écriture/import : rôle `gestionnaire_om`. Lecture : tout authentifié.
+> Écriture/import : rôle `gestionnaire_om` (`personnel.gerer`). Lecture : `personnel.consulter` (le profil `LECTEUR` ne l'a pas).
+> Un même agent ne figure qu'une fois par mission (`ordres.*.agent_id` distinct).
 
 ### Missions & Ordres de Mission
 ```
@@ -799,11 +823,12 @@ POST   /api/missions                → Retranscription : crée la mission + N O
 GET    /api/ordres                  → Liste filtrée (statut, zone, agent_id, operateur, dates, search)
 GET    /api/ordres/:id              → Détail OM (mission, agent, versements)
 POST   /api/ordres/:id/valider      → IMPORTE → VALIDE (rôle controleur : om.valider)
-POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars ; rôle controleur : om.valider)
+POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars ; om.rejeter) — versements EN_ATTENTE → ANNULE
 POST   /api/ordres/:id/amender      → Amende les jours facturés (avenant). Body: { nb_jours? , lignes? , motif }
                                        Avance figée → seul le reliquat bouge (peut devenir négatif). Rôle gestionnaire_om : om.retranscrire
 GET    /api/ordres/:id/pdf          → Génère le PDF de l'OM → { url, fichier }
 GET    /api/ordres/:id/pdf/download → Télécharge le PDF
+GET    /api/ordres/:id/pdf/brouillon → PDF filigrané « brouillon » de l'OM
 GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
 ```
 > Les OM ne sont ni créés ni modifiés individuellement (retranscrits via /missions). Pas de PUT/DELETE.
@@ -819,6 +844,7 @@ POST   /api/missions/:id/etat/recapituler → Établit/rafraîchit l'état d'une
                                             RELIQUAT : 422 tant que l'état des avances n'est pas VALIDE
 GET    /api/missions/:id/etat/brouillon   → PDF filigrané de la tranche (?tranche=, défaut AVANCE)
 GET    /api/missions/:id/etat/telecharger → PDF de la tranche (?tranche=) — filigrané tant que non validé
+GET    /api/missions/:id/etat/final       → État général consolidé (avances + reliquats) — 422 tant que les DEUX tranches ne sont pas VALIDE
 GET    /api/etats                         → File de travail (filtres: statut, tranche, search)
 PUT    /api/etats/:id/numero              → Numéro de registre (unique ; figé à la validation finale)
 POST   /api/etats/:id/controler           → BROUILLON → CONTROLE (om.valider)
@@ -838,7 +864,7 @@ POST   /api/paiements/lots/generer          → Génère le fichier (.txt MTN / 
                                               petit lot : téléchargement direct ; gros lot : 202 + tracking_id (file Redis)
 GET    /api/paiements/lots/:lot/download    → Re-télécharge le fichier du lot
 POST   /api/paiements/lots/:lot/confirmer   → Lot + versements → CONFIRME, horodatés
-POST   /api/paiements/lots/:lot/erreur      → Lot → ERREUR (autorise régénération)
+POST   /api/paiements/lots/:lot/erreur      → Lot → ERREUR (autorise régénération) ; versements → EN_ATTENTE, coordonnées agent rafraîchies
 GET    /api/paiements/lots/job/:trackingId  → Suivi d'une génération asynchrone
 GET    /api/paiements/statuts               → Synthèse versements par opérateur/statut
 GET    /api/paiements/historique            → Versements CONFIRMÉS filtrables (date_paiement)
@@ -852,7 +878,7 @@ POST   /api/paiements/regularisations/:versement/recouvrer → A_RECOUVRER → R
 
 ### Barème (per diem)
 ```
-GET    /api/baremes                 → Liste du barème (lecture pour tous)
+GET    /api/baremes                 → Liste du barème (baremes.consulter — le profil LECTEUR ne l'a pas)
 GET    /api/baremes/:id             → Détail
 POST   /api/baremes                 → Créer (rôle admin ; contrainte type↔zone + unicité)
 PUT    /api/baremes/:id             → Modifier le taux journalier
@@ -871,6 +897,7 @@ GET    /api/rapports/trop-percus    → synthèse des trop-perçus (régularisat
 GET    /api/rapports/export         → ?dimension&format=xlsx|pdf&date_debut&date_fin → { fichier, url }
 GET    /api/rapports/export/download → ?fichier=... → téléchargement
 POST   /api/rapports/export-async   → Production en file Redis → { tracking_id }
+GET    /api/rapports/export/job/:id  → Suivi d'un export asynchrone
 ```
 
 ### Audit

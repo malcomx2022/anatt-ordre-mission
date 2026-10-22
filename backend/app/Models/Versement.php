@@ -20,7 +20,7 @@ class Versement extends Model
         'montant',
         'operateur',     // MTN | MOOV
         'telephone',
-        'statut',        // EN_ATTENTE | GENERE | CONFIRME | ANNULE
+        'statut',        // EN_ATTENTE | GENERE | CONFIRME | ANNULE | A_RECOUVRER | RECOUVRE
         'date_paiement',
     ];
 
@@ -59,11 +59,16 @@ class Versement extends Model
         return $query
             ->where('type', $tranche)
             ->where('operateur', $operateur)
-            // Ni déjà payé, ni en régularisation (trop-perçu).
-            ->whereNotIn('statut', ['CONFIRME', 'A_RECOUVRER', 'RECOUVRE'])
+            // Ni déjà payé, ni annulé (OM rejeté), ni en régularisation (trop-perçu).
+            ->whereNotIn('statut', ['CONFIRME', 'ANNULE', 'A_RECOUVRER', 'RECOUVRE'])
             // Un montant nul ou négatif (reliquat de trop-perçu après amendement)
             // ne part jamais dans un fichier : il relève d'une régularisation.
             ->where('montant', '>', 0)
+            // Seconde barrière anti-double-paiement : un versement déjà porté par un
+            // lot CONFIRME ne repart jamais, même dans un lot complémentaire.
+            ->where(fn (Builder $q) => $q
+                ->whereNull('lot_id')
+                ->orWhereHas('lot', fn (Builder $l) => $l->where('statut', '!=', 'CONFIRME')))
             ->whereHas('ordreMission', fn (Builder $q) => $q
                 ->where('mission_id', $missionId)
                 ->where('statut', 'VALIDE')

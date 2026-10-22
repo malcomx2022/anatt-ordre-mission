@@ -10,6 +10,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -139,7 +140,9 @@ class RapportService
 
         [$entetes, $lignes, $titre] = $this->tabulaire($dimension, $filtres);
 
-        $fichier = "rapports/etat_{$dimension}_".now()->format('Ymd_His').".{$format}";
+        // Suffixe aléatoire : deux exports de la même dimension dans la même
+        // seconde ne doivent pas s'écraser (l'un servirait le fichier de l'autre).
+        $fichier = "rapports/etat_{$dimension}_".now()->format('Ymd_His').'_'.Str::lower(Str::random(6)).".{$format}";
 
         if ($format === 'pdf') {
             $pdf = Pdf::loadView('pdf.etat', [

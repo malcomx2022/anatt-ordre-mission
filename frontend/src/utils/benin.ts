@@ -37,15 +37,28 @@ export function operateurCoherent(tel: string | null | undefined, operateur: Ope
  * Concordance ANaTT : INDICE_SUP_800 ≥ 800 / ≥ 372000 ; INDICE_400_799 400-799 / 186000-372000 ; INDICE_INF_400 sinon.
  */
 export function categorieDeduite(indice?: number | null, salaireBrut?: number | null): Categorie | null {
-  if (indice != null) {
+  // Un champ `v-model.number` vidé vaut '' (et non null) : il ne compte pas.
+  if (estNombre(indice)) {
     if (indice >= 800) return 'INDICE_SUP_800'
     if (indice >= 400) return 'INDICE_400_799'
     return 'INDICE_INF_400'
   }
-  if (salaireBrut != null) {
+  if (estNombre(salaireBrut)) {
     if (salaireBrut >= 372000) return 'INDICE_SUP_800'
     if (salaireBrut >= 186000) return 'INDICE_400_799'
     return 'INDICE_INF_400'
   }
   return null
+}
+
+function estNombre(v: unknown): v is number {
+  return typeof v === 'number' && !Number.isNaN(v)
+}
+
+/**
+ * Mois « AAAA-MM » à l'heure LOCALE (Bénin, UTC+1). `toISOString()` convertit
+ * en UTC : minuit le 1er du mois y devient le dernier jour du mois précédent.
+ */
+export function moisLocal(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }

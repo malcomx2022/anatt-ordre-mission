@@ -36,7 +36,11 @@ export async function chargerPartAvance(): Promise<number>
     const v = data.data
     return appliquer(typeof v === 'number' ? v : DEFAUT)
   }).catch(() => {
-    return appliquer(DEFAUT)
+    // Échec (423 mot de passe à changer, 401, réseau…) : on affiche le défaut
+    // SANS le mettre en cache, pour retenter au prochain appel (sinon 70 %
+    // resterait figé toute la session alors que le réglage serveur diffère).
+    partAvanceRef.value = DEFAUT
+    return DEFAUT
   }).finally(() => {
     promesse = null
   })

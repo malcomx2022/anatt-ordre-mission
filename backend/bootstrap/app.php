@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -25,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => Authorize::class,
         ]);
 
+        // Pas de page de login côté API (SPA séparée) : aucune redirection d'un
+        // invité sur /api/*, l'exception est rendue en 401 JSON plus bas.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
+
         // Headers de securite pour les reponses API
         $middleware->append(SecurityHeaders::class);
     })
@@ -38,8 +43,10 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        // Toute route /api/* répond en JSON, même sans en-tête Accept : sinon
+        // Laravel tente de rediriger vers une route « login » inexistante (500).
         $exceptions->renderable(function (AuthenticationException $e, $request) {
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => 'Non authentifie.',
                 ], 401);

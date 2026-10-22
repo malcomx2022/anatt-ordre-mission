@@ -41,7 +41,7 @@ class EtatPaiementController extends Controller
                         ->orWhere('destination', 'like', $like));
             }))
             ->orderByDesc('id')
-            ->paginate((int) $request->integer('per_page', 20));
+            ->paginate($this->getPerPage($request, 20));
 
         return response()->json([
             'data' => collect($etats->items())->map(fn (EtatPaiement $e) => $this->presenter($e)),

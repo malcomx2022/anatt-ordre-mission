@@ -77,10 +77,12 @@ class MoovFileGenerator extends FileGenerator
 
         $nbLignes = $ligne - 2;
 
-        $nomFichier = $this->nomFichier($theme, $tranche, 'xlsx');
-        $chemin = "paiements/{$nomFichier}";
+        $nomFichier = $this->nomFichier($theme, $tranche, 'xlsx', $this->sequence);
+        // Un dossier par mission : deux missions de même objet produisent le même
+        // nom de fichier, qui ne doit pas écraser le fichier de l'autre lot.
+        $chemin = "paiements/{$mission->id}/{$nomFichier}";
 
-        Storage::disk('local')->makeDirectory('paiements');
+        Storage::disk('local')->makeDirectory("paiements/{$mission->id}");
         $writer = new Xlsx($spreadsheet);
         $writer->save(Storage::disk('local')->path($chemin));
         $spreadsheet->disconnectWorksheets();

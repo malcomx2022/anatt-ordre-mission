@@ -153,14 +153,22 @@ class MissionService
     {
         $this->exigerAbsenceDEtat($ordre, 'rejeter');
 
-        $ordre = $this->transition(
-            $ordre,
-            Workflow::statutsRejetables(),
-            'REJETE',
-            $user,
-            'REJECT_OM',
-            ['commentaire_rejet' => $motif],
-        );
+        $ordre = DB::transaction(function () use ($ordre, $motif, $user) {
+            $ordre = $this->transition(
+                $ordre,
+                Workflow::statutsRejetables(),
+                'REJETE',
+                $user,
+                'REJECT_OM',
+                ['commentaire_rejet' => $motif],
+            );
+
+            // Un OM rejeté ne sera jamais payé : ses versements non payés sont
+            // ANNULÉS, ce qui les sort définitivement du périmètre des fichiers.
+            $ordre->versements()->where('statut', 'EN_ATTENTE')->update(['statut' => 'ANNULE']);
+
+            return $ordre->fresh(['agent', 'mission', 'versements']);
+        });
         $this->notifications->omRejete($ordre);
 
         return $ordre;
@@ -190,6 +198,23 @@ class MissionService
                 ]);
             }
             $this->exigerAmendementPossible($ordre);
+
+            // Circuit par OM (mission sans état) : l'avance n'est jamais figée par
+            // la validation d'un état. Dès qu'elle est payée (CONFIRME — un lot
+            // GENERE est refusé par la garde ci-dessus), on l'engage ici pour que
+            // seul le reliquat absorbe l'écart — sinon un recalcul 70/30 ignorerait
+            // l'avance déjà décaissée (sur-paiement sans trop-perçu détecté).
+            if ($ordre->avance_engagee === null) {
+                $avanceSortie = $ordre->versements()
+                    ->where('type', 'AVANCE')
+                    ->where('statut', 'CONFIRME')
+                    ->value('montant');
+
+                if ($avanceSortie !== null) {
+                    $ordre->avance_engagee = (int) $avanceSortie;
+                    $ordre->save();
+                }
+            }
 
             $exonere = (bool) ($ordre->mission?->prise_en_charge_tiers);
 
@@ -306,7 +331,18 @@ class MissionService
             ]);
         }
 
-        $etats = EtatPaiement::where('mission_id', $ordre->mission_id)->get()->keyBy('tranche');
+        // Un fichier contenant cet OM attend son dépôt (lot GENERE) : le montant
+        // déposé ne doit pas diverger de l'OM. On confirme le lot, ou on le passe
+        // en ERREUR (ses versements redeviennent EN_ATTENTE), avant d'amender.
+        if ($ordre->versements()->where('statut', 'GENERE')->exists()) {
+            throw ValidationException::withMessages([
+                'versement' => ['Un fichier de paiement contenant cet ordre de mission est en attente de dépôt : confirmez le lot ou passez-le en erreur avant d\'amender.'],
+            ]);
+        }
+
+        // Verrou : un contrôle concurrent ne doit pas signer l'état entre cette
+        // garde et la resynchronisation des montants qui suit l'amendement.
+        $etats = EtatPaiement::where('mission_id', $ordre->mission_id)->lockForUpdate()->get()->keyBy('tranche');
 
         $avance = $etats->get(EtatPaiement::TRANCHE_AVANCE);
         if ($avance && in_array($avance->statut, ['CONTROLE', 'VISA_DAF'], true)) {

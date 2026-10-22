@@ -21,6 +21,8 @@
         <!-- La suite complète (PDF DomPDF + XLSX) dépasse les 128 Mo par défaut de PHP ; aligné sur la CI. -->
         <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
+        <!-- Clé de TEST uniquement : la suite s'exécute sans .env (chiffrement, scellés HMAC). -->
+        <env name="APP_KEY" value="base64:Y0ZfwqizvPWjNZxl7rBjrUcArREnG2lt4Mq/Zq0d8vk="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
