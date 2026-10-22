@@ -78,6 +78,23 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   `sequence`, la liste des lots ne pouvait donc pas distinguer un lot complémentaire. Repéré en
   rejouant le scénario de démo sur l'API ; test ajouté (`PaiementTest`).
 
+#### Corrigé (files d'attente)
+
+- **Échec d'une génération asynchrone de lot** : `GenererLotPaiementJob::failed()` passait en
+  `ERREUR` tous les lots non confirmés de la clé par une mise à jour directe, sans toucher leurs
+  versements. Un lot déjà généré se retrouvait en `ERREUR` avec des versements `GENERE` : OM non
+  amendable, coordonnées non rafraîchies, aucune trace d'audit. L'échec passe désormais par
+  `LotPaiementService::marquerErreur` (versements `EN_ATTENTE`, coordonnées courantes de l'agent,
+  audit `ERROR_LOT`) ; un lot `CONFIRME` n'est jamais touché. Deux tests dans `AsyncGenerationTest`.
+- **Tâche Cron `queue:work` du mutualisé** (`DEPLOY-CPANEL.md` §9) : lancée sans `--queue`, elle
+  ne traitait que la file `default` ; en `QUEUE_CONNECTION=database`, les gros lots (`paiements`) et
+  les exports (`etats`) n'étaient jamais exécutés. La ligne nomme désormais les trois files.
+- **`backend/docs/queues.md`** réécrit : trois modes (`sync` par défaut en production, `database`,
+  `redis`) et leurs différences de reprise, job `SendNotification`, `GenererEtatJob` distingué du
+  circuit des états de paiement, règles de génération identiques au mode direct (lot complémentaire),
+  comportement à l'échec, sondage du SPA (2 s, 30 sondages « introuvable »), cache partagé exigé,
+  `queue:restart` après déploiement, rejeu des jobs échoués.
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.

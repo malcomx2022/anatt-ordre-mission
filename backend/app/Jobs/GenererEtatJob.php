@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
- * Production asynchrone d'un état/rapport (export xlsx/pdf) sur la file Redis « etats ».
+ * Production asynchrone d'un état/rapport (export xlsx/pdf) sur la file « etats ».
  * 3 tentatives, backoff progressif. Suivi via le cache (trackingId).
  */
 class GenererEtatJob implements ShouldQueue

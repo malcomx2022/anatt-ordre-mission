@@ -213,9 +213,12 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 # Sauvegarde quotidienne à 02h00
 0 2 * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan db:backup --compress
 
-# (si QUEUE_CONNECTION=database) traiter la file chaque minute
-* * * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan queue:work --stop-when-empty
+# (si QUEUE_CONNECTION=database) traiter les TROIS files chaque minute — sans --queue,
+# seule « default » est traitée et les gros lots ne sont jamais générés
+* * * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan queue:work --queue=paiements,etats,default --tries=3 --stop-when-empty
 ```
+
+> Files d'attente, modes `sync`/`database`/`redis` et comportement en cas d'échec : `backend/docs/queues.md`.
 
 > `db:backup` appelle `mysqldump` via `exec()`. Certains mutualisés désactivent `exec` ou
 > n'exposent pas `mysqldump` : renseignez alors `DB_DUMP_BINARY` dans le `.env`, et si la
