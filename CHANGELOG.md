@@ -9,6 +9,23 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation (AGENTS.md)
+
+- **`AGENTS.md`** mis à jour pour les sessions d'agents.
+  - **Deux erreurs corrigées** :
+    - la route publique de la part d'avance est `/api/admin/parametres/part-avance`, et non
+      `/api/parametres/...` ;
+    - le partage avance/reliquat est paramétrable, il n'est pas codé en dur à 70/30.
+  - **Ajouts** :
+    - prérequis PHP 8.4, tests sans `.env`, variable pour Chromium ;
+    - `lint:check` plutôt que `lint`, et la règle « prouver qu'un test échoue sans le correctif » ;
+    - pièges de l'API : 401 JSON, `FormData` en multipart, `getPerPage`, `moisLocal`, séparation
+      des rôles par membre ;
+    - paiements : stockage par mission, séquence et lots complémentaires, barrières
+      d'éligibilité, lot en erreur, état des reliquats payable, OM rejeté ;
+    - amendements, sauvegardes et restauration, comptes de démo ;
+    - documents à régénérer après une évolution fonctionnelle.
+
 ### Documentation (CLAUDE.md)
 
 - **`CLAUDE.md`** remis au niveau du code :
