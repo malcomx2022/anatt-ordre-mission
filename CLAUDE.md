@@ -161,7 +161,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (553 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (558 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 
 ### DevOps
 - Développement : WAMP + `start-dev.ps1` / `stop-dev.ps1` (API, worker, Vite)

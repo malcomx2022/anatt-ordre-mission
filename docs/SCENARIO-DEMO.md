@@ -8,8 +8,8 @@
 > saisis à la main. Dernière vérification : **22 octobre 2026**, scénario complet
 > rejoué sur l'API (version issue de la revue d'octobre 2026). Compléments du même jour,
 > sans effet sur les montants ni les fichiers : séparation des tâches détaillée, document
-> à montrer pour la validation, restauration (purge de la matrice des permissions,
-> réglages hors sauvegarde).
+> à montrer pour la validation, signatures de l'état reprises sur le PDF de l'OM,
+> restauration (purge de la matrice des permissions, réglages hors sauvegarde).
 
 ---
 
@@ -108,10 +108,9 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 
 > 📄 **Quel document montrer ?** Le document signé est le **PDF de l'état de paiement**
 > (bouton **« Télécharger l'état »** sur l'écran de l'état) : il porte les trois signatures,
-> le numéro et les paraphes.
-> Le PDF de **l'OM** garde ses cases de signature « en attente » sur ce circuit — les
-> signatures vivent sur l'état, pas sur l'OM. Ne pas ouvrir le PDF de l'OM pour montrer
-> la validation.
+> le numéro et les paraphes. Le PDF de **chaque OM** reprend ces mêmes signatures (même
+> code de vérification) — pratique pour montrer qu'un bénéficiaire est couvert, mais le
+> document de référence reste l'état.
 
 > ⚠️ **Préalable obligatoire** : un versement n'est éligible à un fichier que si
 > l'état **de sa tranche** est **VALIDÉ** par le DG. Tant que l'état des avances
