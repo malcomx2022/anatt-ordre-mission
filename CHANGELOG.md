@@ -133,6 +133,17 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 
 #### Documentation — déploiement
 
+- **`docs/checklist-post-deploiement.md`** complétée pour la 1.3 :
+  - API : cohérence de la file d'attente (`QUEUE_CONNECTION` et tâche `queue:work`) et contrôle
+    de la sauvegarde planifiée du lendemain ;
+  - parcours de fumée étendu à 11 routes (régularisations, matrice des permissions, sauvegardes,
+    maintenance) ;
+  - contrôles 1.3 sans création de données : part d'avance lue par un profil non administrateur,
+    montant des états de reliquats déjà validés inchangé, rangement des fichiers par mission ;
+  - nouveaux contrôles **sur l'instance de recette uniquement** : restauration, lot en erreur,
+    lot complémentaire, gros lot, garde d'amendement ;
+  - filet de sécurité : comptes de démo absents, mot de passe du super administrateur initial
+    changé, dump pris avant la mise à jour.
 - **`DEPLOY-CPANEL.md`** :
   - nouveau §9.1 *Restaurer une sauvegarde* : prérequis `exec()`, `mysqldump` et `mysql`, et
     restauration par tâche Cron pour les grosses bases ;
