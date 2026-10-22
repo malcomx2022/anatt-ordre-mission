@@ -222,6 +222,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — checklist post-déploiement (compléments)
+
+- **`docs/checklist-post-deploiement.md`** :
+  - réglages conservés : `settings.json` présent et valeurs inchangées (hors sauvegardes de
+    la base) ;
+  - document signé à vérifier = PDF de l'état ; les cases « en attente » du PDF de l'OM sont
+    attendues ;
+  - recette : la restauration rétablit la matrice des permissions sans purge manuelle du
+    cache (correctif `db:restore`), et ne touche pas aux réglages.
+
 #### Documentation — scénario de démo (compléments)
 
 - **`docs/SCENARIO-DEMO.md`** (montants et fichiers inchangés) :
