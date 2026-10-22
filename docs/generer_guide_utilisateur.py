@@ -242,6 +242,10 @@ tableau(
          "automatique avant restauration.", "13.3"],
         ["Droits d'accès", "La séparation ordonnateur / payeur est aussi vérifiée pour chaque membre d'un "
          "profil modifié.", "2.2"],
+        ["PDF de l'OM", "Il reprend les signatures de l'état des avances qui couvre l'OM (même code de "
+         "vérification que l'état), au fur et à mesure du circuit.", "6.2"],
+        ["Restauration", "Les droits d'accès sauvegardés reprennent effet immédiatement ; les réglages de "
+         "« Paramètres » et les paraphes ne font pas partie de la sauvegarde.", "13.3"],
     ],
     largeurs=[3.6, 11.0, 2.2],
 )
@@ -480,6 +484,10 @@ bullet("La fiche détaillée affiche la mission, le bénéficiaire, les montants
 bullet("La fiche renvoie vers l'état de paiement de la mission : c'est là que se fait la validation, "
        "pas sur l'OM lui-même.")
 bullet("Téléchargement du brouillon de l'OM et consultation de son journal d'audit.")
+bullet("Le PDF de l'OM reprend les signatures de l'état des avances de sa mission, au fur et à mesure "
+       "du circuit (contrôle, puis visa DAF, puis validation DG), avec le même code de vérification que "
+       "l'état. Un OM rejeté n'en porte aucune, et un brouillon jamais. Le document de référence reste "
+       "l'état de paiement.")
 
 para("La validation des ordres de mission ne se fait pas un par un : elle se joue sur l'état de paiement "
      "de la mission (chapitre 7).")
@@ -552,8 +560,9 @@ bullet("Le numéro de l'état est saisi manuellement, suivant le registre de l'a
        "avant la validation finale du DG, puis figé.")
 bullet("À chaque étape, la signature du titulaire (nom, prénoms, fonction et paraphe scanné) est apposée "
        "sur le document, avec un code de vérification.")
-bullet("Validation de l'état des AVANCES : elle arrête l'état, fait passer tous les OM de la mission au "
-       "statut VALIDE et ouvre les fichiers d'avance.")
+bullet("Validation de l'état des AVANCES : elle arrête l'état, fait passer les OM de la mission au "
+       "statut VALIDE (un OM rejeté auparavant reste rejeté), fige l'avance de chacun et ouvre les "
+       "fichiers d'avance.")
 bullet("Validation de l'état des RELIQUATS : elle ouvre les fichiers de reliquat (les OM sont déjà VALIDE).")
 encadre("Rejet possible à chaque étape",
         "Le contrôleur, le DAF ou le DG peuvent rejeter l'état avec un motif (≥ 10 caractères). Le rejet "
@@ -718,7 +727,8 @@ bullet("Paramètres : configuration générale de l'application, dont la part de
        "à la répartition avance / reliquat (70 % par défaut).")
 bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste dynamique) et mois de début "
        "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
-       "différent produit un exercice à cheval, libellé « 2026-2027 ».")
+       "différent produit un exercice à cheval, libellé « 2026-2027 ». À ce jour, ce réglage n'agit ni sur "
+       "les montants, ni sur les rapports, ni sur les documents, qui se filtrent par dates.")
 bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair.")
 bullet("Sauvegardes : création, téléchargement, restauration et suppression des sauvegardes de la "
        "base de données (voir chapitre 13.3).")
@@ -738,6 +748,13 @@ encadre("Une restauration se défait",
         "la liste. Toutes les données saisies après la date de la sauvegarde restaurée sont perdues : "
         "prévenez les utilisateurs et choisissez un moment sans activité. L'opération est tracée au "
         "journal d'audit.")
+bullet("Après une restauration, la matrice des droits d'accès de la sauvegarde s'applique immédiatement, "
+       "sans autre manipulation.")
+encadre("Ce que la sauvegarde ne contient pas",
+        "La sauvegarde porte sur la base de données. Les réglages de l'écran « Paramètres » (part de "
+        "l'avance, exercice, messagerie), les paraphes de l'écran « Signatures » et les fichiers produits "
+        "(PDF, fichiers de paiement) sont conservés sur le serveur, hors de la base : une restauration ne "
+        "les modifie pas. Leur copie relève de l'hébergement (dossier « storage » du serveur).")
 
 # =========================================================================
 # ANNEXES

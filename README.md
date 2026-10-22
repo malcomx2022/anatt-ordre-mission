@@ -87,7 +87,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - **Validation** : chaque mission porte **deux états de paiement** — l'état des **avances**, puis celui des
   **reliquats** — qui passent chacun le circuit **contrôleur → visa DAF → validation DG**. Un versement n'est
   payable que si l'état **de sa tranche** est validé. L'état des reliquats est signé au montant **payable**
-  (somme des reliquats positifs). Les missions sans état (reprise de données) se valident OM par OM.
+  (somme des reliquats positifs). Les trois signataires doivent être trois personnes distinctes. Le PDF de
+  chaque OM reprend les signatures de l'état des avances qui le couvre (même code de vérification) ; le
+  document de référence reste l'état. Les missions sans état (reprise de données) se valident OM par OM.
 - **Paiement** = génération d'un fichier (**1 mission × 1 tranche × 1 opérateur**) : MTN → `.txt`, Moov → `.xlsx`.
   Cycle : `EN_ATTENTE → GENERE → CONFIRME` (confirmation **manuelle** après dépôt). Régénération tant que non confirmé ;
   un lot passé en **erreur** remet ses versements en attente avec le numéro **actuel** de l'agent.
@@ -124,6 +126,10 @@ npm run dev                     # http://localhost:5173  (terminal C)
   fichier) ou `php artisan db:restore <fichier> --force`. Une **sauvegarde de sécurité** de l'état courant
   est prise avant d'écraser la base. Requiert `mysqldump` et `mysql` (`DB_DUMP_BINARY` /
   `DB_RESTORE_BINARY` dans le `.env`). À tester sur une base de recette avant d'en avoir besoin.
+  La matrice des permissions de la sauvegarde s'applique dès la requête suivante (cache purgé).
+- **Hors sauvegarde de la base** : `storage/app/settings.json` (part d'avance, exercice, SMTP…), les paraphes
+  des signataires et les fichiers produits (PDF, fichiers de paiement) vivent sur le disque. Les conserver
+  en sauvegardant `storage/` ; ne jamais écraser ce dossier lors d'une mise à jour.
 - **Mise à jour d'une instance** : voir [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) (§ *Mise à jour*, *Notes de
   version 1.3*) et le runbook [`docs/runbook-mise-a-jour-cron.md`](docs/runbook-mise-a-jour-cron.md).
 
@@ -184,5 +190,5 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
 | `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Droits d'accès et parcours par profil |
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
-| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs) |
+| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI |
