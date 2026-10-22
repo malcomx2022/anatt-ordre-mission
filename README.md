@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4+** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (552 tests, 65 fichiers) · Vitest · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (552 tests, 65 fichiers) · Vitest (113 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -84,9 +84,19 @@ npm run dev                     # http://localhost:5173  (terminal C)
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
   Répartition : **avance 70 %** / **reliquat 30 %** (part de l'avance **paramétrable** par le SUPER_ADMIN, 70 % par défaut ; le reliquat absorbe l'arrondi). Exonération si prise en charge par un tiers.
 - **Une mission** regroupe **N ordres de mission** (1 OM = 1 bénéficiaire). Le **CAV** (conducteur) est payé selon **sa** catégorie.
+- **Validation** : chaque mission porte **deux états de paiement** — l'état des **avances**, puis celui des
+  **reliquats** — qui passent chacun le circuit **contrôleur → visa DAF → validation DG**. Un versement n'est
+  payable que si l'état **de sa tranche** est validé. L'état des reliquats est signé au montant **payable**
+  (somme des reliquats positifs). Les missions sans état (reprise de données) se valident OM par OM.
 - **Paiement** = génération d'un fichier (**1 mission × 1 tranche × 1 opérateur**) : MTN → `.txt`, Moov → `.xlsx`.
   Cycle : `EN_ATTENTE → GENERE → CONFIRME` (confirmation **manuelle** après dépôt). Régénération tant que non confirmé ;
-  **idempotence** : un versement confirmé n'est jamais réinclus. Un OM dont tous les versements sont confirmés passe à **SOLDE**.
+  un lot passé en **erreur** remet ses versements en attente avec le numéro **actuel** de l'agent.
+  **Idempotence** : un versement confirmé n'est jamais réinclus ; un lot confirmé n'est jamais réécrit — un
+  versement devenu payable après coup part dans un **lot complémentaire** (`…_COMPL2`). Un OM dont tous les
+  versements sont confirmés passe à **SOLDE** ; un OM **rejeté** voit ses versements **annulés**.
+- **Amendement (avenant)** : après paiement de l'avance, les jours facturés d'un OM peuvent changer ; l'avance
+  est figée et seul le **reliquat** absorbe l'écart. Un reliquat négatif est un **trop-perçu**, récupéré par
+  retenue sur salaire (écran *Régularisations*, document de retenue PDF) — jamais par Mobile Money.
 
 ---
 
@@ -94,12 +104,28 @@ npm run dev                     # http://localhost:5173  (terminal C)
 
 - Les **fichiers de paiement** générés (`.txt` MTN / `.xlsx` Moov) contiennent des données à
   caractère personnel (nom, téléphone, montant). Ils sont écrits sur le disque **`local`**
-  (`storage/app/private/paiements`), **hors racine web**, et ne sont servis que via les endpoints
+  (`storage/app/private/paiements/{mission_id}/`, un dossier par mission), **hors racine web**, et ne sont servis que via les endpoints
   de téléchargement **authentifiés** (`permission:paiements.*`). Ils ne sont **pas chiffrés** au repos :
   prévoyez un contrôle d'accès disque et une politique de purge/rétention côté exploitation.
 - Accès par **permission** (Sanctum + middleware `permission:{clé}`), `Gate::before` pour le SUPER_ADMIN.
-- **Anti-double-paiement** : un versement `CONFIRME` n'est jamais réinclus (idempotence),
-  et l'intégrité des états signés est scellée par **HMAC** (montants + tranche).
+- **Anti-double-paiement** : un versement `CONFIRME` — ou porté par un lot confirmé — n'est jamais
+  réinclus (idempotence), et l'intégrité des états signés est scellée par **HMAC** (montants + tranche).
+- **Séparation ordonnateur / payeur** : un profil ou un utilisateur qui valide l'état (`om.approuver`) ne
+  peut pas générer ni confirmer les paiements ; la règle est aussi vérifiée pour chaque membre d'un profil
+  modifié dans la matrice des permissions.
+
+---
+
+## Exploitation
+
+- **Sauvegardes** : `php artisan db:backup --compress` (planifiée chaque jour à 02:00 via
+  `php artisan schedule:run`, rétention 30 jours, dans `storage/app/backups/`).
+- **Restauration** : écran *Administration › Sauvegardes* (SUPER_ADMIN, confirmation par recopie du nom du
+  fichier) ou `php artisan db:restore <fichier> --force`. Une **sauvegarde de sécurité** de l'état courant
+  est prise avant d'écraser la base. Requiert `mysqldump` et `mysql` (`DB_DUMP_BINARY` /
+  `DB_RESTORE_BINARY` dans le `.env`). À tester sur une base de recette avant d'en avoir besoin.
+- **Mise à jour d'une instance** : voir [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) (§ *Mise à jour*, *Notes de
+  version 1.3*) et le runbook [`docs/runbook-mise-a-jour-cron.md`](docs/runbook-mise-a-jour-cron.md).
 
 ---
 
@@ -138,10 +164,25 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 
 > Le CI exécute ces mêmes vérifications à chaque PR : un job **Lint** (Pint + ESLint/oxlint, en mode
 > vérification), les suites Pest et Vitest, le build et le parcours Playwright.
+>
+> La suite Pest s'exécute **sans `.env`** (`phpunit.xml` fournit une `APP_KEY` de test). Pour Playwright
+> avec un Chromium déjà installé d'une autre version : `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/chromium`.
 
 ---
 
 ## Documentation
 
-- `CLAUDE.md` — modèles de données, endpoints API, règles métier, design system.
-- `backend/docs/queues.md` — files Redis/DB, worker, suivi de progression.
+| Document | Contenu |
+|---|---|
+| `CLAUDE.md` | Modèles de données, endpoints API, règles métier, design system |
+| `CHANGELOG.md` | Historique des modifications |
+| `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.3) — générée par `docs/generer_documentation_technique.py` |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov, variantes) |
+| `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
+| `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
+| `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
+| `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Droits d'accès et parcours par profil |
+| `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
+| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs) |
+| `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI |
