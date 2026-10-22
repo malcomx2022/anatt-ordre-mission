@@ -125,6 +125,11 @@ it('ouvre un lot complémentaire pour un versement devenu payable après confirm
         ->and(basename($compl->nom_fichier))->toEndWith('_AVANCE_COMPL2.txt')
         ->and($tardif->fresh()->lot_id)->toBe($compl->id)
         ->and($this->versement->fresh()->lot_id)->toBe($initial->id);   // pas réinclus
+
+    // L'API expose la séquence : l'écran des lots signale le lot complémentaire.
+    $this->actingAs($this->finance)->getJson('/api/paiements/lots?mission_id='.$this->mission->id)
+        ->assertJsonFragment(['id' => $compl->id, 'sequence' => 2])
+        ->assertJsonFragment(['id' => $initial->id, 'sequence' => 1]);
 });
 
 it('remet les versements d’un lot en erreur EN_ATTENTE avec le numéro corrigé de l’agent', function () {
