@@ -5,7 +5,8 @@
 >
 > Les montants et les fichiers ci-dessous sont **réels** : ils ont été produits
 > par le code de l'application (calcul du per diem + générateurs MTN/Moov), pas
-> saisis à la main.
+> saisis à la main. Dernière vérification : **22 octobre 2026**, scénario complet
+> rejoué sur l'API (version issue de la revue d'octobre 2026).
 
 ---
 
@@ -61,6 +62,9 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
 2. **Bénéficiaires** : ajouter les 4 ; cocher **« Répartition détaillée par type de
    repas »** → 1 j *un repas* + 6 j *journée complète*. Pour **ATCHA**, saisir
    **Transport = 10 000**.
+   Un même agent ne peut figurer **qu'une fois** dans la mission : l'ajouter deux
+   fois est refusé (« Le même agent figure deux fois dans la mission : un OM par
+   bénéficiaire. »).
 3. **Récapitulatif** : le per diem s'affiche en temps réel (avance **70 %** /
    reliquat **30 %** — part de l'avance **paramétrable** par le SUPER_ADMIN,
    70 % par défaut), puis **Enregistrer**.
@@ -103,7 +107,9 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 `Paiements → MTN` (`/paiements/mtn`) → mission = *Dossiers de passation de marchés*
 · tranche = **AVANCE** → **Générer**.
 
-**Fichier réel produit** — `dossiers-de-passation-de-marches_AVANCE.txt` :
+**Fichier réel produit** — `dossiers-de-passation-de-marches_AVANCE.txt`
+(rangé côté serveur dans le dossier de **sa** mission : deux missions de même objet
+ne s'écrasent plus) :
 
 ```
 HDR,SARALY,2,406000
@@ -138,7 +144,10 @@ Après dépôt réussi sur les plateformes MTN / Moov → **Confirmer le lot**.
 Les versements passent à **CONFIRME** et ne seront **jamais réinclus** dans un
 nouveau fichier (protection anti-double-paiement). Seul un lot au statut **GÉNÉRÉ**
 se confirme : un lot marqué « en erreur » doit d'abord être **régénéré**.
-Régénération possible tant que le lot n'est pas confirmé.
+Régénération possible tant que le lot n'est pas confirmé (voir la variante 8.1).
+
+> 💡 **Gros lot** : au-delà de 50 bénéficiaires, la génération part en arrière-plan ;
+> l'écran affiche une barre de progression puis télécharge le fichier tout seul.
 
 ### Bonus — le reliquat (30 %)
 Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** :
@@ -178,7 +187,9 @@ Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** 
 2. **Fidélité à l'état de paiement officiel** : répartition multi-repas + montant
    de transport, avance **70 %** / reliquat **30 %**.
 3. **Un fichier = 1 mission × 1 tranche × 1 opérateur**, au format exact attendu
-   par chaque plateforme, avec garde **anti-double-paiement** à la confirmation.
+   par chaque plateforme, avec garde **anti-double-paiement** à la confirmation :
+   un lot confirmé n'est jamais réécrit, un retardataire part dans un **lot
+   complémentaire** (variante 8.2).
 
 ---
 
@@ -210,6 +221,10 @@ Total     Avance (70 %)   Reliquat (30 %)
 L'état des **avances** de la mission est **VALIDÉ** (circuit contrôle → DAF → DG) :
 l'avance **189 000** est décaissée et **figée** (`avance_engagee`). Désormais,
 `reliquat = montant_total − 189 000`.
+
+> ⚠️ **Avant d'amender** : l'avance doit être **confirmée**. Tant qu'un fichier
+> contenant l'OM attend son dépôt (lot **GÉNÉRÉ**), l'amendement est refusé :
+> confirmer le lot, ou le passer en erreur, puis amender.
 
 ### CAS A — rallonge (mission prolongée de 2 jours)  ·  compte `gestion@`
 
@@ -248,12 +263,18 @@ Nouveau total   Avance (figée)   Reliquat
   cliquer **« Marquer recouvré »** → statut **RECOUVRE** (le document repasse alors
   la mention « Recouvré le … »).
 
+- **État des reliquats** : il porte le montant **réellement payé** (somme des
+  reliquats **positifs**). Pour ce bénéficiaire seul, il est donc arrêté à **0** —
+  rien à décaisser — et le PDF mentionne à part « trop-perçus hors total, à
+  recouvrer par retenue sur salaire : **54 000 FCFA** ». Le montant signé est
+  toujours égal à ce que les fichiers verseront.
+
 > 🔒 **Intégrité** : l'état des **avances validé reste scellé** (HMAC) et
 > **inchangé** après l'amendement (l'avance est figée). Un état des **reliquats**
-> encore en `BROUILLON` reflète automatiquement le nouveau montant (même négatif) ;
-> un état des reliquats **en cours de signature** doit être **rejeté** avant
-> d'amender (rejet guidé). Cf. `docs/circuits-validation.md` §6 et
-> `docs/amendement-om.md`.
+> encore en `BROUILLON` se met à jour automatiquement (montant payable, trop-perçu
+> sur la ligne du bénéficiaire) ; un état des reliquats **en cours de signature**
+> doit être **rejeté** avant d'amender (rejet guidé). Cf.
+> `docs/circuits-validation.md` §6 et `docs/amendement-om.md`.
 
 ### Le message à faire passer
 
@@ -261,6 +282,76 @@ L'application **ne re-décaisse pas** l'avance et **ne rembourse pas** toute seu
 elle **retranscrit** l'avenant, **réajuste le reliquat** et **trace** le trop-perçu
 pour que la RH applique la retenue — cohérent avec la règle d'or (ni décaissement,
 ni retenue automatiques).
+
+---
+
+## 8. Variantes de paiement — erreur de dépôt et lot complémentaire
+
+> Fichiers ci-dessous **réels**, produits en rejouant le scénario §3 sur l'API.
+
+### 8.1 Le dépôt échoue sur un mauvais numéro  ·  `gestion@` puis `finance@`
+
+Le fichier MTN de l'étape D est refusé par la plateforme : le numéro d'**ATCHA**
+est erroné.
+
+1. `gestion@` — corriger la fiche d'ATCHA : **01 91 23 45 67** (toujours MTN).
+2. `finance@` — `Paiements → MTN`, même mission et tranche → **« Marquer en erreur »**. Les
+   versements du lot redeviennent **EN_ATTENTE** et reprennent le numéro
+   **actuel** de l'agent.
+3. **Générer** à nouveau → le fichier repart avec le bon numéro :
+
+```
+HDR,SARALY,2,406000
+1,MSISDN,2290197984877,199500,SOUMANOU DJARA SABIROU DOSSIERS DE PASSATION DE MARCHES
+2,MSISDN,2290191234567,206500,ATCHA GABRIEL DOSSIERS DE PASSATION DE MARCHES
+```
+
+4. Déposer, puis **Confirmer** : le lot MTN AVANCE est **CONFIRMÉ**.
+
+### 8.2 Un bénéficiaire change d'opérateur → lot complémentaire  ·  `gestion@` puis `finance@`
+
+Avant le paiement Moov, **ABLESSOU** signale qu'il est passé chez MTN
+(**01 90 11 22 33**).
+
+1. `gestion@` — mettre à jour sa fiche (numéro + opérateur **MTN**). Ses
+   versements encore en attente suivent automatiquement le référentiel.
+2. `finance@` — `Paiements → MTN`, même mission, tranche **AVANCE** → **Générer**.
+   Le lot MTN déjà confirmé n'est **pas réécrit** : un **lot complémentaire** est
+   créé, avec le seul nouveau bénéficiaire.
+
+**Fichier réel** — `dossiers-de-passation-de-marches_AVANCE_COMPL2.txt` :
+
+```
+HDR,SARALY,1,199500
+1,MSISDN,2290190112233,199500,ABLESSOU SACRE COEUR DOSSIERS DE PASSATION DE MARCHES
+```
+
+Dans la liste des lots, il porte le badge **« complémentaire n° 2 »** :
+
+| Séquence | Statut | Lignes | Montant | Fichier |
+|---|---|---|---|---|
+| 1 | CONFIRMÉ | 2 | 406 000 | `…_AVANCE.txt` |
+| 2 | GÉNÉRÉ | 1 | 199 500 | `…_AVANCE_COMPL2.txt` |
+
+3. Le fichier **Moov** AVANCE ne contient plus que **MONHOUNVEDO** (1 ligne,
+   **199 500**).
+
+> Le message : SOUMANOU et ATCHA, déjà payés, ne sont **jamais** réinclus ;
+> ABLESSOU est payé **une seule fois**, sur le bon opérateur.
+
+### 8.3 (Option) Mission sans état de paiement — reprise de données
+
+Pour une mission ancienne sans état de paiement, la fiche d'un OM **IMPORTE**
+propose **« Valider »** (`controle@`) et **« Rejeter »** (motif ≥ 10 caractères).
+Un OM rejeté voit ses versements **ANNULÉS** : il n'apparaîtra dans aucun fichier.
+Dès qu'un état existe pour la mission, ces boutons disparaissent.
+
+### 8.4 (Option) Sauvegarde et restauration  ·  `superadmin@`
+
+`Administration → Sauvegardes` : **Nouvelle sauvegarde**, puis icône
+**Télécharger**. Pour **Restaurer**, recopier le nom exact du fichier : l'application
+crée d'abord une **sauvegarde de sécurité** de l'état courant (opération
+réversible). À ne montrer que sur une base de démonstration.
 
 ---
 

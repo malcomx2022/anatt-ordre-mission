@@ -15,6 +15,8 @@ class LotPaiementResource extends JsonResource
             'mission' => new MissionResource($this->whenLoaded('mission')),
             'tranche' => $this->tranche,
             'operateur' => $this->operateur,
+            // 1 = lot initial, 2.. = lot complémentaire (après confirmation du précédent).
+            'sequence' => $this->sequence,
             'statut' => $this->statut,
             'nom_fichier' => $this->nom_fichier ? basename($this->nom_fichier) : null,
             'nb_lignes' => $this->nb_lignes,

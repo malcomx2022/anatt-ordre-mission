@@ -9,6 +9,27 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Corrigé (scénario de démo)
+
+- **Le badge « complémentaire n° N » ne s'affichait jamais** : `LotPaiementResource` n'exposait pas
+  `sequence`, la liste des lots ne pouvait donc pas distinguer un lot complémentaire. Repéré en
+  rejouant le scénario de démo sur l'API ; test ajouté (`PaiementTest`).
+
+### Documentation (scénario de démo)
+
+- **`docs/SCENARIO-DEMO.md`** rejoué sur l'API le 22/10/2026 : montants et fichiers inchangés pour le
+  parcours principal. Ajouts :
+  - le refus d'un agent en double dans une mission ;
+  - les gros lots générés en arrière-plan ;
+  - la garde « lot en attente de dépôt » avant tout amendement ;
+  - l'état des reliquats au montant payable, avec le trop-perçu affiché hors total.
+
+  Nouveau **§8** avec des fichiers réels :
+  - lot en erreur, puis régénération avec le numéro corrigé ;
+  - changement d'opérateur suivi d'un **lot complémentaire** (`…_COMPL2.txt`) ;
+  - mission sans état (Valider / Rejeter) ;
+  - sauvegarde et restauration.
+
 ### Documentation
 
 - **Documentation technique 1.3** (`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`, régénérée
