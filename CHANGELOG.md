@@ -213,6 +213,17 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     nulle part et contredisaient la règle d'or.
   - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
 
+#### Documentation — rapport de revue
+
+- **`docs/revue-projet-2026-10.md`** mis à jour en fin de revue :
+  - résultats « première passe » et « fin de revue » côte à côte (Pest 535 → 552, Vitest 99 → 113,
+    scénario de démo, CI) ;
+  - couverture par module recomptée (`pest --list-tests`) ; 18 vues sur 50 testées, composant
+    `PaiementGeneration` désormais couvert ;
+  - défaut n° 9 (`sequence` absent de `LotPaiementResource`) ajouté ;
+  - nouvelles sections : documentation remise à niveau (§5), PR fusionnées, actions d'exploitation
+    et dette restante (§6).
+
 #### Documentation — AGENTS.md
 
 - **`AGENTS.md`** mis à jour pour les sessions d'agents.

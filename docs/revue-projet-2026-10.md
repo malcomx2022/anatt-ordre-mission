@@ -8,18 +8,25 @@ Revue du dépôt à l'état `92fc7ef` (fusion de la PR #124), suivie de trois ca
 
 Environnement de test : PHP 8.4.27, Node 22, Chromium.
 
+> **État au 22/10/2026, fin de revue.** Les correctifs ont été livrés en trois passes, puis la
+> documentation a été remise à niveau. Tout est fusionné sur `main` (PR #125 à #131, cf. §6). Les
+> chiffres « fin de revue » ci-dessous sont mesurés sur `main` après la dernière fusion.
+
 ## 1. Résultats
 
-| Campagne | Outil | Résultat |
-|----------|-------|----------|
-| Unitaires backend | Pest `tests/Unit` | 127 / 127 |
-| Intégrité backend | Pest `tests/Feature` | 408 / 408 (après correctifs, dont 4 nouveaux tests) |
-| Style backend | Pint `--test` | conforme |
-| Unitaires frontend | Vitest | 99 / 99, 23 fichiers (dont 3 nouveaux fichiers) |
-| Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur |
-| Build frontend | `vite build` | OK |
-| Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 |
-| Recette API réelle | script HTTP, 76 vérifications | 76 / 76 (après correctifs) |
+| Campagne | Outil | Première passe | Fin de revue |
+|----------|-------|----------------|--------------|
+| Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 |
+| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 |
+| Total backend | Pest (65 fichiers) | 535 | **552 / 552** |
+| Style backend | Pint `--test` | conforme | conforme |
+| Unitaires frontend | Vitest | 99 / 99, 23 fichiers | **113 / 113, 26 fichiers** |
+| Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur |
+| Build frontend | `vite build` | OK | OK |
+| Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 | 3 / 3 |
+| Recette API réelle | script HTTP, 76 vérifications | 76 / 76 (après correctifs) | 76 / 76 |
+| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) |
+| CI GitHub Actions | Lint, Pest, Vitest + type-check, Playwright, build | — | 5 / 5 (constaté sur les PR #130 et #131) |
 
 La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 
@@ -41,24 +48,30 @@ La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 |--------|--------|---------------------------|-------|
 | Auth & sécurité | AUTH-01..03, SYS-04 | AuthTest, RoleMiddlewareTest, RoutesPermissionsTest, SeparationTachesTest | 31 |
 | Personnel (agents) | PERS-01..06 | AgentTest, AgentFiltreActif, AgentStats, ImportModeleAgents, CategorieIndiceTransition, Unit/Categorie | 48 |
-| Ordres de mission | OM-01..08 | MissionTest, MissionsIndex, OrdreIndexActifs, Pagination, PdfTest, WorkflowSocle, FicheOmEtat, Unit/MissionService | 58 |
-| Barème & calcul per diem | TAUX-01..02 | BaremeTest, BaremeJumeau, AuditBareme, PartAvance, Unit/BaremeOfficiel, CalculIndemnite, MontantEnLettres | 119 |
+| Ordres de mission | OM-01..08 | MissionTest, MissionsIndex, OrdreIndexActifs, Pagination, PdfTest, WorkflowSocle, FicheOmEtat, Unit/MissionService | 62 |
+| Barème & calcul per diem | TAUX-01..02 | BaremeTest, BaremeJumeau, AuditBareme, PartAvance, Unit/BaremeOfficiel, CalculIndemnite, MontantEnLettres | 121 |
 | États de paiement (circuit) | états | EtatPaiement, CircuitValidation, CoherenceCircuits, EtatAutoSync, EtatBrouillonZero, EtatFinal, EtatIntegriteDocument, EtatSansEtat, SignatureParametres | 78 |
-| Amendement & régularisations | fiche OM, Régularisations | AmendementOm, AmendementIntegriteEtat, AvanceEngagee, Regularisation, Solde | 35 |
-| Paiements MTN / Moov | PAY-01..06 | PaiementTest, Paiement/AsyncGeneration, BarriereEtat, FileGenerator, PaiementHistorique, PaiementStatuts | 32 |
-| Rapports | RAP-01..04 | RapportDateBorne, RapportImputation, RapportMensuelPipeline, RapportTropPercus, RapportsEtatsFiltres | 12 |
+| Amendement & régularisations | fiche OM, Régularisations | AmendementOm, AmendementIntegriteEtat, AvanceEngagee, Regularisation, Solde | 37 |
+| Paiements MTN / Moov | PAY-01..06 | PaiementTest, Paiement/AsyncGeneration, BarriereEtat, FileGenerator, PaiementHistorique, PaiementStatuts | 34 |
+| Rapports | RAP-01..04 | RapportDateBorne, RapportImputation, RapportMensuelPipeline, RapportTropPercus, RapportsEtatsFiltres | 13 |
 | Audit | AUD-01..02 | AuditDateBorne, AuditLogin | 4 |
-| Administration & RBAC flexible | ADM-01..06 | UserManagement, UserPermission, UserStats, RolePermission, RolePersonnalise, SettingsController, AnneeFiscale, BackupController | 90 |
+| Administration & RBAC flexible | ADM-01..06 | UserManagement, UserPermission, UserStats, RolePermission, RolePersonnalise, SettingsController, AnneeFiscale, BackupController | 96 |
 | Notifications | barre du haut | Notification, NotificationFeed | 10 |
 | Seeders & recette | — | ComptesCircuitSeeder, DemoCircuitSeeder, RecetteE2E | 18 |
-| **Total** | | | **535** |
+| **Total** | | | **552** (535 en première passe) |
 
-Côté frontend, 16 vues sur 50 sont montées par au moins un test Vitest. Les écrans critiques **sans** test unitaire sont :
+Comptes établis par `pest --list-tests` sur `main` en fin de revue.
+
+Côté frontend, 18 vues sur 50 sont montées par au moins un test Vitest (16 en première passe), et le
+composant `PaiementGeneration` — qui porte la génération MTN/Moov et le suivi des gros lots — est
+désormais testé (`paiements-async.spec.ts`). Les écrans critiques encore **sans** test unitaire sont :
 
 - `MissionCreateView`, qui fait l'aperçu du per diem ;
 - `EtatDetailView`, qui porte le circuit de signature ;
-- `PaiementMtnView` et `PaiementMoovView` ;
 - `SignaturesView` et `RolesView`.
+
+Ils restent couverts côté serveur (calcul, circuit, signatures, matrice) ; c'est une dette de tests
+frontend, pas un défaut connu.
 
 ## 3. Défauts corrigés dans cette revue
 
@@ -74,6 +87,7 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 6 | Majeur | Le mois courant était calculé en UTC. Au Bénin (UTC+1), l'option « Octobre » portait la valeur `2026-09` dans le rapport mensuel, le tableau de bord et le tableau analytique. | `moisLocal()` dans `utils/benin.ts`. |
 | 7 | Majeur | Agent : effacer l'indice (`''`) faisait suggérer « Indice < 400 » quel que soit le salaire. | `categorieDeduite` ignore les valeurs non numériques. |
 | 8 | Majeur | L'historique OM (OM-08) affichait `OM-<id>`, des codes d'action bruts et aucun détail : la vue lisait `numero`, `details` et des codes obsolètes. | La vue lit `reference_semo`, la colonne `donnees` et les codes `IMPORT_OM`, `VALIDATE_OM`, `REJECT_OM`, `AMEND_OM`. |
+| 9 | Mineur | *(trouvé au rejeu du scénario de démo, après la seconde passe)* Le badge « complémentaire n° N » ne s'affichait jamais : `LotPaiementResource` n'exposait pas `sequence`. | Champ `sequence` ajouté à la ressource, test dans `PaiementTest`. |
 
 ## 4. Points restants — tous traités (seconde passe)
 
@@ -140,3 +154,55 @@ Chaque point est couvert par un test, sauf mention contraire.
 | Transport perdu quand un OM passe à 0 jour | Seule l'exonération annule tout. Sans jour facturé, le per diem vaut 0 mais le transport reste dû. |
 
 Chaque point a un test qui échoue sans le correctif et passe avec. Pest : 552 / 552. La recette sur l'API réelle donne 76 / 76.
+
+## 5. Documentation remise à niveau
+
+Chaque document a été confronté au code (routes, services, migrations, configuration) avant
+modification ; les montants et fichiers du scénario de démo sont ceux produits par l'API.
+
+| Document | Contenu mis à jour | PR |
+|----------|--------------------|----|
+| `docs/Guide-Utilisateur-ANaTT.docx` (1.4) | Chapitre « Nouveautés de la version 1.4 », sauvegardes et restauration, annexes ; régénéré par `generer_guide_utilisateur.py` | #126 |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` (1.3) | Évolutions 1.3, entités, workflows amendement et sauvegarde, chapitre « Qualité et tests » ; régénérée par `generer_documentation_technique.py` | #126 |
+| `docs/SCENARIO-DEMO.md` | Rejoué sur l'API ; nouveau §8 (lot en erreur, lot complémentaire, mission sans état, sauvegarde/restauration) | #127 |
+| `DEPLOY-CPANEL.md` | §9.1 restauration, *Notes de version 1.3*, dépannage | #128 |
+| `README.md` | Concepts 1.3, section Exploitation, index de la documentation | #128 |
+| `CLAUDE.md` | Stack, structure, API, règles, commandes et variables remises au niveau du code | #129 |
+| `AGENTS.md` | Deux erreurs corrigées, pièges de la revue | #130 |
+| `CHANGELOG.md` | Section « Non publié » regroupée sous « Version 1.3 » | #130 |
+| `docs/checklist-post-deploiement.md` | Contrôles 1.3, parcours de fumée à 11 routes, contrôles réservés à la recette | #131 |
+| `docs/runbook-mise-a-jour-cron.md` | Encadrés 1.3, tâches Cron permanentes, retour arrière (`down()` de la migration 1.3) | #131 |
+| `UPLOAD-VENDOR.md` | Étape « faut-il renvoyer `vendor/` ? », PHP 8.4 en local, `--prefer-dist`, extraction sans résidu | #131 |
+
+## 6. Livraison et suites à donner
+
+### PR fusionnées sur `main`
+
+| PR | Objet |
+|----|-------|
+| #125 | Correctifs : première passe (§3), seconde passe (§4) et troisième passe (points mineurs) |
+| #126 | Guide utilisateur 1.4 et documentation technique 1.3 |
+| #127 | Scénario de démo rejoué + correctif `sequence` (§3 n° 9) |
+| #128 | Manuel de déploiement, checklist (contrôles 1.3), README |
+| #129 | `CLAUDE.md` |
+| #130 | `AGENTS.md` et `CHANGELOG.md` |
+| #131 | Checklist post-déploiement, runbook Cron, `UPLOAD-VENDOR.md` |
+
+### À faire côté exploitation
+
+1. **Mettre à jour l'instance en ligne** en suivant `docs/runbook-mise-a-jour-cron.md` : une seule
+   migration (`2026_10_22_090000_add_sequence_to_lots_paiement`), `vendor/` inchangé, SPA à
+   redéployer. Contrôler ensuite avec `docs/checklist-post-deploiement.md`.
+2. **Éprouver la restauration sur une base MySQL de recette** : `db:restore` n'est exercé qu'en
+   simulation dans la CI (§4, *Fonctionnalités annoncées*). Les contrôles qui créent des données
+   (lot en erreur, lot complémentaire, gros lot) se font aussi en recette.
+3. **Contrôler les fichiers de paiement antérieurs à la 1.3** : avant le correctif n° 2, deux
+   missions de même objet partageaient un nom de fichier. Vérifier le contenu d'un tel fichier avant
+   de le redéposer (*Notes de version 1.3* de `DEPLOY-CPANEL.md`).
+
+### Dette restante (hors périmètre de la revue)
+
+- Tests frontend des écrans `MissionCreateView`, `EtatDetailView`, `SignaturesView` et `RolesView` (§2).
+- Points « non testés » du §4 (minuteurs, page de maintenance, garde de route au rechargement,
+  verrou `lockForUpdate` sous MySQL) : corrigés, mais sans test automatisé.
+- Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md` à remesurer sur le poste de build.
