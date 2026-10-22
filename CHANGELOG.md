@@ -9,6 +9,22 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation
+
+- **Guide utilisateur 1.4** (`docs/Guide-Utilisateur-ANaTT.docx`, régénéré par
+  `docs/generer_guide_utilisateur.py`) : nouveau chapitre « Nouveautés de la version 1.4 » et
+  mise à jour des chapitres concernés.
+  - Retranscription : un agent par mission ; filtre opérateur ; Valider / Rejeter pour les missions sans état.
+  - Amendement : refus tant qu'un lot est en attente de dépôt.
+  - État des reliquats : montant payable, trop-perçus mentionnés hors total.
+  - Per diem : le transport est conservé sans jour facturé.
+  - Paiements : gros lots avec progression, lot en erreur, lots complémentaires.
+  - Barème et droits d'accès.
+  - Nouvelle section 13.3 « Sauvegardes et restauration ».
+  - Annexes : statut `ANNULE`, séquence des lots.
+  - Mise en page : les étapes numérotées repartent à 1 dans chaque procédure, et les largeurs
+    de colonnes sont respectées aussi sous LibreOffice.
+
 ### Corrigé (revue d'octobre 2026, troisième passe)
 
 - **Pagination de `/api/missions` et `/api/etats`** : `per_page` est désormais plafonné à 100,

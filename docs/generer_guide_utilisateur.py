@@ -11,6 +11,7 @@ Le contenu reflète l'implémentation réelle de l'application (rôles, workflow
 barème, statuts). À régénérer après toute évolution fonctionnelle majeure.
 """
 import os
+from datetime import date
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -77,9 +78,20 @@ def flag_bar():
         cell.width = Cm(5.6)
 
 
-def h1(t): doc.add_heading(t, level=1)
-def h2(t): doc.add_heading(t, level=2)
-def h3(t): doc.add_heading(t, level=3)
+# Numérotation des étapes : chaque titre ouvre une nouvelle procédure, dont les
+# étapes repartent à 1 (sinon « List Number » continue sur tout le document).
+_liste_etapes = None
+
+
+def _titre(t, niveau):
+    global _liste_etapes
+    _liste_etapes = None
+    doc.add_heading(t, level=niveau)
+
+
+def h1(t): _titre(t, 1)
+def h2(t): _titre(t, 2)
+def h3(t): _titre(t, 3)
 
 
 def para(t, bold=False, italic=False, color=None):
@@ -97,7 +109,19 @@ def bullet(t):
 
 
 def etape(t):
-    doc.add_paragraph(t, style="List Number")
+    global _liste_etapes
+    p = doc.add_paragraph(t, style="List Number")
+    if _liste_etapes is None:
+        # Nouvelle instance de la liste numérotée du style, redémarrée à 1.
+        numbering = doc.part.numbering_part.element
+        num_style = doc.styles["List Number"].element.pPr.numPr.numId.val
+        abstrait = numbering.num_having_numId(num_style).abstractNumId.val
+        num = numbering.add_num(abstrait)
+        num.add_lvlOverride(ilvl=0).add_startOverride(1)
+        _liste_etapes = num.numId
+    numPr = p._p.get_or_add_pPr().get_or_add_numPr()
+    numPr.get_or_add_ilvl().val = 0
+    numPr.get_or_add_numId().val = _liste_etapes
 
 
 def encadre(titre, t):
@@ -130,6 +154,11 @@ def tableau(entetes, lignes, largeurs=None):
         for j, val in enumerate(ligne):
             set_cell_text(cells[j], str(val), size=10)
     if largeurs:
+        # Largeurs fixes : sur les cellules (Word) ET sur la grille du tableau,
+        # que LibreOffice lit seule — sinon les colonnes y restent égales.
+        t.autofit = False
+        for j, w in enumerate(largeurs):
+            t.columns[j].width = Cm(w)
         for row in t.rows:
             for j, w in enumerate(largeurs):
                 row.cells[j].width = Cm(w)
@@ -174,7 +203,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(6):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.3.0  •  Septembre 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.4.0  •  Octobre 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document destiné aux utilisateurs de l'application"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -184,6 +213,38 @@ doc.add_page_break()
 # =========================================================================
 h1("Sommaire")
 toc()
+doc.add_page_break()
+
+# =========================================================================
+# NOUVEAUTÉS
+# =========================================================================
+h1("Nouveautés de la version 1.4 (octobre 2026)")
+para("Cette version renforce la sûreté des paiements et complète plusieurs écrans. Les changements "
+     "visibles pour les utilisateurs sont résumés ci-dessous, avec le chapitre où ils sont détaillés.")
+tableau(
+    ["Domaine", "Ce qui change", "Chapitre"],
+    [
+        ["État des reliquats", "Il est signé au montant réellement payé (somme des reliquats positifs). "
+         "Les trop-perçus figurent à part sur le PDF, hors total.", "7.3"],
+        ["Lots complémentaires", "Un versement devenu payable après la confirmation d'un lot part dans un "
+         "nouveau lot « complémentaire » ; le lot confirmé n'est jamais réécrit.", "9.3"],
+        ["Lot en erreur", "Les versements d'un lot signalé en erreur redeviennent en attente et reprennent le "
+         "numéro actuel de l'agent : corrigez la fiche agent, puis régénérez.", "9.3"],
+        ["Gros lots", "La génération en arrière-plan affiche sa progression et télécharge le fichier "
+         "automatiquement à la fin.", "9.1"],
+        ["Amendement", "Refusé tant qu'un fichier contenant l'OM attend son dépôt.", "6.3"],
+        ["OM sans état de paiement", "Boutons « Valider » et « Rejeter » sur la fiche de l'OM (reprise de "
+         "données). Un OM rejeté voit ses versements annulés.", "6.2"],
+        ["Retranscription", "Un même agent ne peut figurer qu'une fois dans une mission.", "6.1"],
+        ["Per diem", "Sans jour facturé, le transport reste dû (seule l'exonération met tout à 0).", "8"],
+        ["Liste des OM", "Le filtre « opérateur » porte sur l'opérateur du paiement.", "6.2"],
+        ["Sauvegardes", "Téléchargement et restauration d'une sauvegarde, avec sauvegarde de sécurité "
+         "automatique avant restauration.", "13.3"],
+        ["Droits d'accès", "La séparation ordonnateur / payeur est aussi vérifiée pour chaque membre d'un "
+         "profil modifié.", "2.2"],
+    ],
+    largeurs=[3.6, 11.0, 2.2],
+)
 doc.add_page_break()
 
 # =========================================================================
@@ -228,7 +289,8 @@ bullet("CAV (conducteur de véhicule administratif) : bénéficiaire à part ent
 bullet("Per diem : indemnité journalière, répartie en AVANCE (70 % par défaut) et RELIQUAT (le reste). "
        "La part de l'avance est paramétrable par le SUPER_ADMIN.")
 bullet("Versement : une tranche (AVANCE ou RELIQUAT) d'un OM, pour un opérateur donné.")
-bullet("Lot de paiement : 1 mission × 1 tranche × 1 opérateur = 1 fichier généré.")
+bullet("Lot de paiement : 1 mission × 1 tranche × 1 opérateur = 1 fichier généré. Un lot "
+       "« complémentaire » peut s'y ajouter pour les versements devenus payables après sa confirmation.")
 bullet("Amendement (avenant) : ajustement des jours facturés d'un OM après paiement de l'avance ; "
        "l'avance est figée et seul le reliquat absorbe l'écart (voir chapitre 6.3).")
 bullet("Trop-perçu (régularisation) : reliquat devenu négatif après un amendement à la baisse ; il est "
@@ -310,8 +372,9 @@ encadre("Garde-fous",
         "Le SUPER_ADMIN garde toujours l'accès total et n'est pas modifiable. Certaines clés sensibles "
         "(gestion des super admins, des paramètres, de la matrice elle-même) lui restent exclusives. Enfin, "
         "la séparation ordonnateur / payeur est vérifiée à chaque modification : un profil ou un compte qui "
-        "valide l'état (DG) ne peut pas aussi générer ou confirmer les paiements. Toute modification est "
-        "tracée au journal d'audit.")
+        "valide l'état (DG) ne peut pas aussi générer ou confirmer les paiements. Cette règle est vérifiée "
+        "pour chaque membre d'un profil modifié, droits individuels compris : la modification est refusée "
+        "et les comptes concernés sont nommés. Toute modification est tracée au journal d'audit.")
 para("Les nouveaux droits d'un utilisateur prennent effet à sa connexion (ou à son prochain "
      "rafraîchissement). La lecture de la matrice est ouverte à l'ADMIN ; sa modification est réservée "
      "au SUPER_ADMIN.")
@@ -402,6 +465,7 @@ bullet("Transport (facultatif) : renseignez un montant de transport ; il s'ajout
 bullet("Le per diem (per diem + transport = total, puis avance / reliquat) se calcule en temps réel "
        "pour chaque bénéficiaire.")
 bullet("Les doublons de référence SEMO sont détectés immédiatement.")
+bullet("Un même agent ne peut figurer qu'une fois dans une mission : un OM par bénéficiaire.")
 h3("Étape 3 — Récapitulatif")
 bullet("Vérifiez les totaux (avance / reliquat) puis enregistrez.")
 para("À l'enregistrement, chaque OM est créé au statut IMPORTE, accompagné de ses versements AVANCE et "
@@ -409,15 +473,22 @@ para("À l'enregistrement, chaque OM est créé au statut IMPORTE, accompagné d
      "de paiement de la mission.")
 
 h2("6.2 Consulter un ordre de mission")
-bullet("Liste filtrable par statut, zone, opérateur, agent, dates ; recherche par référence SEMO.")
+bullet("Liste filtrable par statut, zone, opérateur, agent, dates ; recherche par référence SEMO. "
+       "Le filtre « opérateur » porte sur l'opérateur du paiement (celui des versements), même si l'agent "
+       "a changé d'opérateur depuis.")
 bullet("La fiche détaillée affiche la mission, le bénéficiaire, les montants et les versements.")
 bullet("La fiche renvoie vers l'état de paiement de la mission : c'est là que se fait la validation, "
        "pas sur l'OM lui-même.")
 bullet("Téléchargement du brouillon de l'OM et consultation de son journal d'audit.")
 
 para("La validation des ordres de mission ne se fait pas un par un : elle se joue sur l'état de paiement "
-     "de la mission (chapitre 7). Le présent chapitre s'arrête donc à la retranscription et à la "
-     "consultation.")
+     "de la mission (chapitre 7).")
+encadre("Exception : mission sans état de paiement (reprise de données)",
+        "Pour une mission dont aucun état de paiement n'a été établi, la fiche d'un OM au statut IMPORTE "
+        "propose les boutons « Valider » (CONTROLEUR) et « Rejeter » (motif d'au moins 10 caractères). "
+        "Dès qu'un état existe pour la mission, ces boutons disparaissent : la validation passe alors "
+        "obligatoirement par l'état. Un OM rejeté voit ses versements en attente ANNULÉS : il ne sera "
+        "jamais payé.")
 
 h2("6.3 Amender un ordre de mission (avenant)")
 para("Il arrive qu'une mission soit rallongée ou écourtée après le paiement de l'avance. L'application "
@@ -436,6 +507,10 @@ bullet("Chaque amendement est historisé (jours et montants avant / après, éca
 bullet("L'amendement est refusé si l'OM est rejeté ou annulé, si un état de tranche est en cours de "
        "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, ou si un trop-perçu "
        "de l'OM a déjà été recouvré.")
+bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM attend son dépôt (lot GÉNÉRÉ) : "
+       "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
+bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "
+       "l'amendement, exactement comme après la validation d'un état des avances.")
 
 # =========================================================================
 # 7. ÉTAT DE PAIEMENT (CIRCUIT DE VALIDATION)
@@ -490,6 +565,11 @@ para("Une fois un état VALIDÉ, son PDF définitif est téléchargeable : sans 
      "signatures (DAF puis Directeur Général) et le total de la tranche arrêté en toutes lettres. Il est "
      "édité au format paysage.")
 bullet("Il existe donc deux documents définitifs : l'état des avances et l'état des reliquats.")
+encadre("L'état des reliquats porte le montant réellement payé",
+        "Le total de l'état des reliquats est la somme des reliquats POSITIFS : c'est exactement ce que les "
+        "fichiers de paiement verseront. Un trop-perçu (reliquat négatif après amendement) ne diminue pas ce "
+        "total ; il apparaît sur la ligne du bénéficiaire et dans une mention distincte « trop-perçus hors "
+        "total, à recouvrer par retenue sur salaire » (voir chapitre 9.5).")
 bullet("Une fois les DEUX états validés, un « état général » consolidé est disponible : il réunit, par "
        "bénéficiaire, l'avance et le reliquat, avec le total général de la mission arrêté en toutes lettres. "
        "C'est le document de clôture de la mission.")
@@ -512,11 +592,13 @@ para("Per diem = somme, pour chaque type de prise en charge, de (taux journalier
 bullet("Nombre de jours : décompte inclusif des dates (règle des 12 h : une période ≥ 12 h compte pour un jour entier).")
 bullet("Répartition détaillée : un même bénéficiaire peut cumuler plusieurs types (ex. 1 jour « un repas » "
        "à 15 000 + 6 jours « journée complète » à 45 000 = 285 000), comme sur l'état de paiement officiel.")
-bullet("Transport : montant facultatif ajouté au total avant la répartition avance / reliquat.")
+bullet("Transport : montant facultatif ajouté au total avant la répartition avance / reliquat. Il reste "
+       "dû même si aucun jour n'est facturé (per diem à 0).")
 bullet("Avance = arrondi de (montant total × part de l'avance). La part est de 70 % par défaut et se "
        "règle dans les Paramètres (SUPER_ADMIN) ; elle s'applique aux OM retranscrits ensuite.")
 bullet("Reliquat = montant total − avance (30 % par défaut ; le reliquat absorbe l'arrondi).")
-bullet("Exonération (prise en charge par un tiers) : tous les montants sont à 0, aucun versement n'est créé.")
+bullet("Exonération (prise en charge par un tiers) : tous les montants sont à 0, transport compris, et "
+       "aucun versement n'est créé.")
 para("Les 4 zones sont : INTERIEUR, EXT_ZONE_I, EXT_ZONE_II et EXT_ZONE_III (les zones II et III ont des "
      "taux identiques). Les types « repas » (un repas, deux repas) ne s'appliquent qu'à l'intérieur ; les "
      "types d'hébergement (logé/nourri…) ne s'appliquent qu'à l'extérieur.")
@@ -537,8 +619,10 @@ etape("Ouvrez « Paiements MTN » ou « Paiements Moov ».")
 etape("Sélectionnez la mission, la tranche (AVANCE ou RELIQUAT) et l'opérateur.")
 etape("Cliquez sur « Prévisualiser » : la liste des bénéficiaires éligibles s'affiche.")
 etape("Cliquez sur « Générer » : le fichier (.txt pour MTN, .xlsx pour Moov) est téléchargé. Le lot passe au statut GÉNÉRÉ.")
-para("Pour un volume important, la génération se fait en arrière-plan ; un suivi vous informe lorsque le "
-     "fichier est prêt.")
+para("Pour un volume important (plus de 50 bénéficiaires), la génération se fait en arrière-plan : une "
+     "barre de progression s'affiche et le fichier se télécharge automatiquement dès qu'il est prêt. "
+     "Restez sur l'écran pendant le traitement ; le lot reste ensuite re-téléchargeable depuis la liste "
+     "des lots.")
 
 h2("9.2 Déposer puis confirmer")
 etape("Déposez le fichier généré sur la plateforme de l'opérateur (hors application).")
@@ -547,9 +631,18 @@ etape("Le lot et ses versements passent au statut CONFIRMÉ et sont horodatés. 
 
 h2("9.3 Régénérer ou signaler une erreur")
 bullet("Tant qu'un lot n'est pas confirmé, vous pouvez le régénérer.")
-bullet("En cas de problème de dépôt, marquez le lot « en erreur » : cela réautorise une nouvelle génération.")
+bullet("En cas de problème de dépôt, marquez le lot « en erreur » : cela réautorise une nouvelle génération. "
+       "Ses versements redeviennent EN ATTENTE et reprennent le téléphone et l'opérateur ACTUELS de "
+       "l'agent : si le dépôt a échoué à cause d'un mauvais numéro, corrigez la fiche de l'agent, puis "
+       "régénérez.")
 bullet("Seul un lot au statut GÉNÉRÉ peut être confirmé : un lot en erreur doit d'abord être régénéré "
        "(on ne confirme jamais un fichier invalidé), et un lot confirmé est définitif.")
+encadre("Lots complémentaires",
+        "Un lot confirmé n'est jamais réécrit. Si un versement devient payable après coup (OM validé plus "
+        "tard, agent passé d'un opérateur à l'autre, reliquat redevenu positif…), une nouvelle génération "
+        "crée un lot COMPLÉMENTAIRE qui ne contient que ces nouveaux bénéficiaires. Il est signalé par un "
+        "badge « complémentaire n° 2, 3… » dans la liste des lots et son fichier porte le suffixe "
+        "« _COMPL2 », « _COMPL3 »… Il se dépose et se confirme comme un lot ordinaire.")
 
 h2("9.4 Suivi des paiements")
 bullet("« Statuts » : synthèse des versements par opérateur et par statut.")
@@ -572,7 +665,7 @@ para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montant
 # 10. BARÈME
 # =========================================================================
 h1("10. Barème per diem")
-bullet("Consultation : accessible à tous les profils internes (« Barème — consulter »).")
+bullet("Consultation : profils disposant de « Barème — consulter » (tous sauf le LECTEUR, par défaut).")
 bullet("Modification des taux : réservée à l'ADMIN (« Barème — modifier »).")
 para("Le détail complet des taux figure en Annexe B.")
 
@@ -627,7 +720,24 @@ bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste
        "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
        "différent produit un exercice à cheval, libellé « 2026-2027 ».")
 bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair.")
-bullet("Sauvegardes : création et gestion des sauvegardes de la base de données.")
+bullet("Sauvegardes : création, téléchargement, restauration et suppression des sauvegardes de la "
+       "base de données (voir chapitre 13.3).")
+
+h2("13.3 Sauvegardes et restauration")
+para("Réservé au SUPER_ADMIN, écran « Sauvegardes ». Une sauvegarde automatique est faite chaque nuit "
+     "(02:00) par le serveur ; le bouton « Nouvelle sauvegarde » en crée une immédiatement.")
+bullet("Télécharger : survolez une sauvegarde et cliquez sur l'icône de téléchargement pour en garder "
+       "une copie hors du serveur.")
+h3("Restaurer une sauvegarde")
+etape("Survolez la sauvegarde voulue et cliquez sur l'icône « Restaurer ».")
+etape("Lisez l'avertissement : la base actuelle sera entièrement remplacée.")
+etape("Recopiez exactement le nom du fichier pour confirmer, puis cliquez sur « Restaurer ».")
+encadre("Une restauration se défait",
+        "Juste avant d'écraser la base, l'application crée automatiquement une sauvegarde de l'état "
+        "courant. En cas d'erreur, il suffit de restaurer cette sauvegarde de sécurité, la plus récente de "
+        "la liste. Toutes les données saisies après la date de la sauvegarde restaurée sont perdues : "
+        "prévenez les utilisateurs et choisissez un moment sans activité. L'opération est tracée au "
+        "journal d'audit.")
 
 # =========================================================================
 # ANNEXES
@@ -647,7 +757,7 @@ tableau(["Statut", "Signification"],
         [["IMPORTE", "Retranscrit depuis SEMO ; statut conservé jusqu'à la validation de l'état des avances."],
          ["VERIFIE / VISA_DAF", "Étapes intermédiaires du circuit par OM (validation directe, activée en option)."],
          ["VALIDE", "L'état des avances de sa mission a été validé par le DG — payable."],
-         ["REJETE", "Rejeté individuellement (reprise de données ; motif requis)."],
+         ["REJETE", "Rejeté individuellement (reprise de données ; motif requis) ; ses versements sont annulés."],
          ["SOLDE", "Tous les versements de l'OM ont été confirmés (ou OM exonéré)."]],
         largeurs=[4.0, 12.8])
 h2("Versement")
@@ -655,14 +765,17 @@ tableau(["Statut", "Signification"],
         [["EN_ATTENTE", "Créé, pas encore inclus dans un fichier."],
          ["GENERE", "Inclus dans un fichier généré, non confirmé."],
          ["CONFIRME", "Paiement confirmé après dépôt."],
+         ["ANNULE", "Versement d'un OM rejeté : ne sera jamais payé."],
          ["A_RECOUVRER", "Trop-perçu (reliquat négatif après amendement) : à récupérer par retenue sur salaire."],
          ["RECOUVRE", "Trop-perçu régularisé : la retenue sur salaire a été constatée."]],
         largeurs=[4.0, 12.8])
 h2("Lot de paiement")
+para("Un lot porte aussi un numéro de séquence : 1 pour le lot initial, 2, 3… pour les lots "
+     "complémentaires créés après la confirmation du précédent.", italic=True, color=GRIS)
 tableau(["Statut", "Signification"],
         [["GENERE", "Fichier généré, régénérable."],
          ["CONFIRME", "Paiement confirmé — définitif."],
-         ["ERREUR", "Signalé en erreur — régénération autorisée."]],
+         ["ERREUR", "Signalé en erreur — versements remis en attente, régénération autorisée."]],
         largeurs=[4.0, 12.8])
 
 doc.add_page_break()
@@ -699,6 +812,7 @@ tableau(["Terme", "Définition"],
          ["Per diem", "Indemnité journalière de mission."],
          ["Avance / Reliquat", "Tranches du per diem : 70 % puis le reste par défaut (part paramétrable)."],
          ["Lot", "1 mission × 1 tranche × 1 opérateur = 1 fichier de paiement."],
+         ["Lot complémentaire", "Nouveau lot pour les versements devenus payables après la confirmation d'un lot."],
          ["MSISDN", "Numéro de téléphone au format international (229 + numéro)."],
          ["Exonération", "Prise en charge par un tiers : aucun frais alloué."],
          ["Amendement (avenant)", "Ajustement des jours facturés d'un OM après paiement de l'avance ; seul le reliquat bouge."],
@@ -709,7 +823,7 @@ tableau(["Terme", "Définition"],
 doc.add_paragraph()
 flag_bar()
 fin = doc.add_paragraph(); fin.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = fin.add_run("© 2026 ANaTT — Agence Nationale des Transports Terrestres — Bénin")
+r = fin.add_run(f"© {date.today().year} ANaTT — Agence Nationale des Transports Terrestres — Bénin")
 r.font.size = Pt(9); r.font.color.rgb = GRIS
 
 doc.save(SORTIE)
