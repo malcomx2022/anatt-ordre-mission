@@ -133,6 +133,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 
 #### Documentation — déploiement
 
+- **`UPLOAD-VENDOR.md`** :
+  - nouvelle étape 0 « Faut-il renvoyer `vendor/` ? » (comparer `composer.lock`) ; rien à renvoyer
+    pour la 1.3 ;
+  - PHP 8.4 exigé en local aussi (sous 8.3, `composer install` refuse le lock) et sur le site
+    (`platform_check.php`) ;
+  - `--prefer-dist` et contrôle de l'absence de dossiers `.git` dans `vendor/` (un repli sur des
+    clones git le fait passer de 180 Mo à plus de 600 Mo, mesuré) ;
+  - extraction sans résidu : ancien `vendor/` renommé en `vendor_old/` (retour arrière), puis
+    `bootstrap/cache/packages.php` et `services.php` vidés systématiquement ;
+  - dépannage : version PHP du site, retour arrière.
 - **`docs/runbook-mise-a-jour-cron.md`** adapté à la mise à jour vers la 1.3 :
   - encadrés « 1.3 » : migration attendue, `vendor/` inchangé, contrôle du 401 JSON, lots
     re-téléchargeables et écran Sauvegardes ;
