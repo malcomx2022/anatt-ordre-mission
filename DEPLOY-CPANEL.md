@@ -231,7 +231,15 @@ restauration passe par `artisan db:restore`, qui :
    la restauration est annulée et la base n'est pas touchée) ;
 2. décompresse le `.sql.gz` en PHP, puis rejoue le dump avec le client `mysql`
    (`DB_RESTORE_BINARY`, via `exec()`) ;
-3. trace l'opération au journal d'audit (`BACKUP_RESTORE`).
+3. purge la matrice des permissions mise en cache (sans expiration) : les droits d'accès de la
+   sauvegarde s'appliquent dès la requête suivante, sans vider le cache à la main ;
+4. trace l'opération au journal d'audit (`BACKUP_RESTORE`).
+
+> **Ce qu'une restauration ne touche pas** : le dump ne contient que la base. Les réglages de
+> l'écran *Paramètres* (`storage/app/settings.json` : part d'avance, exercice, SMTP…), les paraphes
+> de l'écran *Signatures* et les fichiers produits (PDF, fichiers de paiement) restent dans
+> `anatt-api/storage/`. Sauvegardez ce dossier à part (Gestionnaire de fichiers → *Compresser*), et
+> restaurez-le en même temps que la base si vous revenez à un état antérieur.
 
 Elle a donc les **mêmes prérequis** que la sauvegarde (`exec()` autorisé, `mysqldump` **et**
 `mysql` accessibles). Sur un mutualisé, une restauration lancée depuis l'écran tourne dans la
@@ -267,6 +275,10 @@ simplement pas les nouveaux champs.
 2. **SPA** : Gestionnaire de fichiers cPanel > `public_html` > tout sélectionner > **Compresser**
    en `public_html_AAAA-MM-JJ.zip`, puis téléchargez-le.
 3. **`.env`** : téléchargez `anatt-api/.env` (il ne sera pas écrasé, mais il est irremplaçable).
+4. **Réglages et paraphes** : téléchargez `anatt-api/storage/app/settings.json` et le dossier des
+   paraphes (`anatt-api/storage/app/private/signatures/`). Ils ne sont **pas** dans le dump de la base ;
+   s'ils venaient à disparaître (dossier `storage/` écrasé par erreur), ce sont eux qui restaurent la
+   part d'avance, l'exercice, la messagerie et les signatures.
 
 ### B. Savoir CE QUI manque à la base en ligne (préalable à tout)
 
@@ -465,6 +477,8 @@ Ce qui change pour la mise à jour d'une instance en 1.2 (revue d'octobre 2026) 
 | **Fichiers de paiement** | Les **nouveaux** fichiers sont rangés dans `storage/app/private/paiements/{mission_id}/`. Les anciens lots gardent leur chemin enregistré et restent re-téléchargeables : **ne rien déplacer**. ⚠️ Avant la 1.3, deux missions de **même objet** partageaient le même nom de fichier : le fichier de la plus ancienne a pu être écrasé par celui de l'autre. Contrôlez le contenu d'un tel fichier avant de le redéposer. |
 | **SPA** | À redéployer (§ F) : suivi des gros lots, lots complémentaires, boutons Valider / Rejeter du circuit par OM, page de maintenance, restauration des sauvegardes. |
 | **Comportement** | L'état des reliquats est désormais signé au montant **payable** : un état des reliquats déjà **validé** garde son montant scellé ; seuls les récapitulatifs établis ou rafraîchis après la mise à jour suivent la nouvelle règle. |
+| **PDF de l'OM** | Il reprend les signatures de l'état des avances qui couvre l'OM (même code de vérification). Code seul (`app/`), **aucune migration**. Pour un OM couvert par un état, le nom du PDF en cache intègre désormais le statut de l'état : il est régénéré au prochain téléchargement, l'ancien fichier n'est plus servi. Les fichiers de `storage/app/private/ordres/` sont un simple cache et peuvent être supprimés sans risque. |
+| **Restauration** | `db:restore` purge la matrice des permissions : plus besoin de vider `storage/framework/cache/data/` après une restauration. |
 
 ### G. Vérification
 
@@ -514,6 +528,8 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 | 500 sur l'API **après** une migration réussie | caches applicatifs encore compilés sur l'ancien code | Purgez (§ Mise à jour, E) |
 | Le SPA affiche encore l'ancienne version | bundle en cache navigateur/CDN | <kbd>Ctrl</kbd>+<kbd>F5</kbd>, navigation privée, purge LiteSpeed/Cloudflare ; vérifiez les hachages dans l'onglet Réseau |
 | Import phpMyAdmin interrompu (« Maximum execution time ») | dump trop volumineux | Export **gzip**, ou dépôt FTP dans `/home/anatt/` + « Importer depuis le serveur », ou découpage table par table |
+| Droits d'accès anciens **après un import phpMyAdmin** | la matrice des permissions est en cache sans expiration ; un import hors application ne la purge pas (seul `db:restore` le fait) | Videz `anatt-api/storage/framework/cache/data/` (§ Mise à jour, E) |
+| Réglages perdus (part d'avance revenue à 70 %, SMTP vide) après une mise à jour | `storage/` écrasé : `settings.json` n'est pas dans la base | Restaurez `storage/app/settings.json` depuis la copie faite au § Mise à jour, A.4 |
 
 ---
 
@@ -536,5 +552,5 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 | `backend/vendor/` (zippé) | `anatt-api/` | **Seulement** si `composer.lock` a changé |
 | `frontend/dist/` (sans `runtime-config.js`) | `public_html/` | **Après** la migration ; supprimer l'ancien `assets/` d'abord |
 | — | `anatt-api/.env` | **Ne pas toucher** |
-| — | `anatt-api/storage/` | **Ne pas toucher** (PDF et sauvegardes générés) |
+| — | `anatt-api/storage/` | **Ne pas toucher** (PDF, fichiers de paiement, sauvegardes, `settings.json`, paraphes) |
 | — | `public_html/runtime-config.js` | **Ne pas toucher** (porte l'`apiUrl` de prod) |

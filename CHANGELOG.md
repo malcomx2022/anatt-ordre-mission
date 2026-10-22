@@ -222,6 +222,19 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — déploiement (compléments)
+
+- **`DEPLOY-CPANEL.md`** :
+  - §9.1 : la restauration purge la matrice des permissions ; encadré « Ce qu'une restauration ne
+    touche pas » (`settings.json`, paraphes, fichiers produits dans `storage/`) ;
+  - mise à jour, A.4 : sauvegarder `settings.json` et le dossier des paraphes avant l'opération ;
+  - notes de version 1.3 : PDF de l'OM signé par l'état (code seul, aucune migration, cache des PDF
+    d'OM régénéré) ; plus de purge manuelle du cache après `db:restore` ;
+  - dépannage : droits d'accès anciens après un import phpMyAdmin (purge du cache), réglages
+    perdus après écrasement de `storage/` ;
+  - récapitulatif des artefacts : contenu de `storage/` détaillé.
+- **`docs/runbook-mise-a-jour-cron.md`** : étape 1 alignée (réglages et paraphes).
+
 #### Documentation — README (compléments)
 
 - **`README.md`** : concepts métier — trois signataires distincts, PDF de l'OM signé par l'état ;
