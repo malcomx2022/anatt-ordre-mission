@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\PermissionRepository;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -80,6 +81,10 @@ class DatabaseRestore extends Command
 
             return self::FAILURE;
         }
+
+        // La matrice des permissions est en cache sans expiration : sans purge,
+        // les droits d'avant la restauration resteraient en vigueur.
+        app(PermissionRepository::class)->vider();
 
         $this->info("Base restaurée depuis {$fichier}.");
         Log::warning('Database restored', ['file' => $fichier]);
