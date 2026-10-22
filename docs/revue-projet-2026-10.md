@@ -88,6 +88,7 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 7 | Majeur | Agent : effacer l'indice (`''`) faisait suggérer « Indice < 400 » quel que soit le salaire. | `categorieDeduite` ignore les valeurs non numériques. |
 | 8 | Majeur | L'historique OM (OM-08) affichait `OM-<id>`, des codes d'action bruts et aucun détail : la vue lisait `numero`, `details` et des codes obsolètes. | La vue lit `reference_semo`, la colonne `donnees` et les codes `IMPORT_OM`, `VALIDATE_OM`, `REJECT_OM`, `AMEND_OM`. |
 | 9 | Mineur | *(trouvé au rejeu du scénario de démo, après la seconde passe)* Le badge « complémentaire n° N » ne s'affichait jamais : `LotPaiementResource` n'exposait pas `sequence`. | Champ `sequence` ajouté à la ressource, test dans `PaiementTest`. |
+| 10 | Majeur | *(trouvé après la revue, en mettant à jour `docs/rbac-flexible.md`)* `db:restore` ne purgeait pas la matrice des permissions, en cache sans expiration : les droits d'avant la restauration restaient appliqués. | `DatabaseRestore` appelle `PermissionRepository::vider()` après une restauration réussie ; test dans `BackupControllerTest` (Pest : 553 tests). |
 
 ## 4. Points restants — tous traités (seconde passe)
 

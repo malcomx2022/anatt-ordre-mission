@@ -213,6 +213,64 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     nulle part et contredisaient la règle d'or.
   - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
 
+#### Corrigé — restauration et permissions
+
+- **`db:restore` laissait l'ancienne matrice des permissions en vigueur** : la matrice RBAC est
+  en cache sans expiration (`rbac.matrice`) et la restauration remplaçait `role_permissions`
+  sans la purger. Les droits d'avant la restauration restaient appliqués jusqu'à une purge
+  manuelle du cache. La commande purge désormais la matrice après une restauration réussie
+  (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
+  ajouté (`BackupControllerTest`), rouge sans le correctif.
+
+#### Documentation — année fiscale
+
+- **`docs/annee-fiscale.md`** :
+  - nouvelle section **« Où l'exercice est utilisé »** : constat vérifié dans le code — en
+    dehors de l'écran Paramètres et de sa route publique, **aucun écran ni traitement ne lit
+    l'exercice** (rapports, exports, états et PDF filtrent par dates). Le document annonçait
+    une lecture « pour toute l'UI » ;
+  - validation située dans `SettingsController`, fichiers et tests listés ;
+  - section **Exploitation** : clés dans `settings.json` (hors sauvegardes de la base) ; une
+    année enregistrée depuis l'écran devient explicite et ne bascule plus seule.
+
+#### Documentation — part d'avance paramétrable
+
+- **`docs/parametrage-part-avance.md`** :
+  - comportement complété : transport compris dans le total, exonération, cache serveur de
+    60 s, interaction avec l'amendement (part neutralisée une fois l'avance engagée), valeurs
+    extrêmes 0 % et 100 % ;
+  - durcissements frontend de la revue d'octobre 2026 (pas de cache sur échec, relecture
+    après le changement de mot de passe imposé, lectures réactives) ;
+  - validation située dans `SettingsController` (et non `routes/api.php`), lecteurs de la
+    valeur, tests backend et frontend complétés ;
+  - nouvelle section **Exploitation** : `settings.json` n'est pas dans les sauvegardes de la
+    base, à conserver avec `storage/`.
+
+#### Documentation — RBAC flexible
+
+- **`docs/rbac-flexible.md`** :
+  - niveau 1 : séparation ordonnateur/payeur vérifiée sur l'effectif de chaque membre, à
+    l'édition comme à la réinitialisation (`parDefaut`) ;
+  - cache de la matrice : sans expiration, purgé à l'écriture et après `db:restore` ; note
+    d'exploitation pour une modification de `role_permissions` hors application ;
+  - composants complétés (`parDefaut`, `vider`) et nouvelle section **Tests**.
+
+#### Documentation — amendement d'un OM
+
+- **`docs/amendement-om.md`** aligné sur la 1.3 :
+  - encadré « Révisé (revue d'octobre 2026) » : avance engagée à l'amendement sur le circuit
+    par OM, garde « fichier en attente de dépôt », verrou `lockForUpdate`, état des reliquats
+    au montant payable ;
+  - §3 : tableau du moment de l'amendement complété (mission sans état, états des reliquats
+    `BROUILLON` / en signature / `VALIDE`) ; « 70/30 » remplacé par la part d'avance ;
+  - §4 : textes au présent (colonnes signées et filtre `montant > 0` livrés, colonnes réelles
+    de `om_amendements`) ; §4.5 corrigé — un état des reliquats validé **refuse**
+    l'amendement, il n'est pas « invalidé » ;
+  - §5 : écarts signalés (pas de contrôle dans les générateurs, rapports sans distinction
+    initial / ajusté) ; §7 : décisions de cadrage notées comme **tranchées**, avec leur
+    réponse ;
+  - références et tests complétés.
+
 #### Documentation — circuits de validation
 
 - **`docs/circuits-validation.md`** aligné sur la 1.3 :

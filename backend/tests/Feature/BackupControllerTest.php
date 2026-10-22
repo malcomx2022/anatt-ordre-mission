@@ -2,7 +2,9 @@
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\PermissionRepository;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 
 /*
  * Sauvegardes de la base (BackupController) : listing dérivé, suppression avec
@@ -133,3 +135,26 @@ it('refuse la restauration à un administrateur (réservée au super admin)', fu
 it('db:restore refuse un fichier absent sans toucher à la base', function () {
     $this->artisan('db:restore', ['fichier' => 'absent.sql', '--force' => true])->assertFailed();
 });
+
+it('db:restore purge la matrice des permissions mise en cache', function () {
+    // Client « mysql » factice : consomme le dump et réussit. La matrice RBAC est
+    // en cache sans expiration : sans purge, les droits d'avant la restauration
+    // resteraient en vigueur alors que role_permissions vient d'être remplacée.
+    $client = tempnam(sys_get_temp_dir(), 'anatt_mysql_');
+    file_put_contents($client, "#!/bin/sh\ncat > /dev/null\n");
+    chmod($client, 0755);
+    config(['database.restore_binary' => $client]);
+
+    @mkdir($this->dir, 0775, true);
+    file_put_contents($this->dir.'/backup_2026-10-01_020000.sql', "SELECT 1;\n");
+
+    app(PermissionRepository::class)->matrice();
+    expect(Cache::has('rbac.matrice'))->toBeTrue();
+
+    $this->artisan('db:restore', [
+        'fichier' => 'backup_2026-10-01_020000.sql', '--force' => true, '--sans-sauvegarde' => true,
+    ])->assertSuccessful();
+
+    expect(Cache::has('rbac.matrice'))->toBeFalse();
+    @unlink($client);
+})->skip(PHP_OS_FAMILY === 'Windows', 'client factice en shell POSIX');
