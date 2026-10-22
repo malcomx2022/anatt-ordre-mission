@@ -213,6 +213,24 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     nulle part et contredisaient la règle d'or.
   - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
 
+#### Corrigé — restauration et permissions
+
+- **`db:restore` laissait l'ancienne matrice des permissions en vigueur** : la matrice RBAC est
+  en cache sans expiration (`rbac.matrice`) et la restauration remplaçait `role_permissions`
+  sans la purger. Les droits d'avant la restauration restaient appliqués jusqu'à une purge
+  manuelle du cache. La commande purge désormais la matrice après une restauration réussie
+  (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
+  ajouté (`BackupControllerTest`), rouge sans le correctif.
+
+#### Documentation — RBAC flexible
+
+- **`docs/rbac-flexible.md`** :
+  - niveau 1 : séparation ordonnateur/payeur vérifiée sur l'effectif de chaque membre, à
+    l'édition comme à la réinitialisation (`parDefaut`) ;
+  - cache de la matrice : sans expiration, purgé à l'écriture et après `db:restore` ; note
+    d'exploitation pour une modification de `role_permissions` hors application ;
+  - composants complétés (`parDefaut`, `vider`) et nouvelle section **Tests**.
+
 #### Documentation — amendement d'un OM
 
 - **`docs/amendement-om.md`** aligné sur la 1.3 :

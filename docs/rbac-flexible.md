@@ -42,15 +42,22 @@ fonctionnelle.
 |---|---|
 | `database/migrations/..._create_role_permissions_table.php` | table `(role, permission)`, unique |
 | `App\Models\RolePermission` | modèle de la ligne |
-| `App\Support\PermissionRepository` | résolution + cache + écriture (`matrice`, `pour`, `remplacer`, `reinitialiser`, `personnalises`) |
+| `App\Support\PermissionRepository` | résolution + cache + écriture (`matrice`, `pour`, `remplacer`, `reinitialiser`, `parDefaut`, `personnalises`, `vider`) |
 | `App\Support\Permissions::pour()` | délègue au repository |
 | `App\Http\Controllers\Api\RoleController` | `index` / `update` / `reset` |
 | `App\Http\Requests\UpdateRolePermissionsRequest` | validation de forme (clés connues) |
 | `views/admin/RolesView.vue` | matrice éditable (cases à cocher) |
 | `services/roles.ts` | client API |
 
-La matrice est **mise en cache** (`rbac.matrice`) : une lecture BDD par cycle,
-**purgée à chaque écriture** (`remplacer` / `reinitialiser`).
+La matrice est **mise en cache sans expiration** (`rbac.matrice`, `Cache::rememberForever`) :
+une lecture BDD, puis **purge à chaque écriture** (`remplacer` / `reinitialiser` / rôles
+personnalisés) et après une **restauration de sauvegarde** (`db:restore`), qui remplace
+`role_permissions` sous l'application.
+
+> **Exploitation.** Toute modification de `role_permissions` **hors de l'application**
+> (import SQL dans phpMyAdmin, réimport d'un dump) laisse l'ancienne matrice en cache :
+> purger le cache ensuite (`php artisan cache:clear`, ou vider
+> `storage/framework/cache/data/` sur un hébergement sans terminal — cf. `DEPLOY-CPANEL.md`).
 
 ## API
 
@@ -79,6 +86,11 @@ La matrice est **mise en cache** (`rbac.matrice`) : une lecture BDD par cycle,
 4. **Séparation ordonnateur / payeur** — un profil portant `om.approuver`
    (validation de l'état) ne peut cumuler `paiements.generer` / `paiements.confirmer`
    (exécution du décaissement). Règle de contrôle interne ANaTT (422).
+   Elle est vérifiée aussi sur l'**effectif de chaque membre** du profil (droits
+   individuels du niveau 2 compris), à l'édition **comme à la réinitialisation** : la
+   matrice par défaut est contrôlée avant d'être appliquée (`PermissionRepository::parDefaut`).
+   Le 422 nomme les comptes en cause (`RoleController::assurerSeparationPourLesMembres`,
+   ajouté par la revue d'octobre 2026).
 5. **Profil inconnu** — 404.
 
 Chaque édition est **auditée** : `ROLE_PERM_UPDATE` / `ROLE_PERM_RESET`
@@ -91,7 +103,7 @@ Les droits de l'utilisateur courant proviennent du serveur au **login** et via
 concernés voient leurs droits ajustés **à la connexion / au rafraîchissement
 suivant**. Le cache serveur est purgé immédiatement à l'écriture.
 
-## Défaut vs mirroir front
+## Défaut vs miroir front
 
 `frontend/src/utils/permissions.ts` (`ROLE_PERMISSIONS`) reste le **catalogue des
 clés et la baseline par défaut** utilisée par les tests de cohérence
@@ -273,3 +285,17 @@ utilisateur existant. Aucun nouvel endpoint : `PUT /api/admin/users/:id { role }
 
 Immédiate côté base ; l'utilisateur concerné, ses tokens révoqués, récupère ses
 nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
+
+---
+
+# Tests
+
+| Sujet | Fichier |
+|---|---|
+| Matrice éditable, réinitialisation, clés réservées, séparation (profil et membres) | `tests/Feature/RolePermissionTest.php` |
+| Overrides par utilisateur | `tests/Feature/UserPermissionTest.php` |
+| Rôles personnalisés | `tests/Feature/RolePersonnaliseTest.php` |
+| Séparation des tâches dans le circuit | `tests/Feature/SeparationTachesTest.php` |
+| Aucune route API sans permission | `tests/Feature/RoutesPermissionsTest.php` |
+| Purge de la matrice après `db:restore` | `tests/Feature/BackupControllerTest.php` |
+| Cohérence menu ↔ routes ↔ API | `frontend/src/__tests__/navigation.spec.ts` |
