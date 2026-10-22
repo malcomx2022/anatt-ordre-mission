@@ -40,6 +40,9 @@
 - [ ] **SPA** — Gestionnaire de fichiers > `public_html` > tout sélectionner > **Compresser**
       en `public_html_AAAA-MM-JJ.zip` > télécharger.
 - [ ] **`.env`** — télécharger `anatt-api/.env` (il ne sera pas écrasé, mais il est irremplaçable).
+- [ ] **Réglages et paraphes** — télécharger `anatt-api/storage/app/settings.json` et
+      `anatt-api/storage/app/private/signatures/` : ils ne sont pas dans le dump de la base
+      (`DEPLOY-CPANEL.md` § *Mise à jour*, A.4).
 - [ ] **Relever les tâches Cron permanentes** (cPanel > Cron Jobs) : sauvegarde quotidienne
       `db:backup` à 02:00 et, si `QUEUE_CONNECTION=database`, `queue:work` chaque minute. Elles
       **restent en place** pendant toute l'opération ; seules les tâches temporaires de ce runbook

@@ -222,6 +222,32 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — AGENTS.md (compléments)
+
+- **`AGENTS.md`** : cache `rememberForever` de la matrice (appeler `PermissionRepository::vider()`
+  après toute écriture de `role_permissions`) ; signatures du PDF de l'OM reprises de l'état et clé de
+  cache à maintenir ; test de `db:restore` avec client `mysql` factice ; contenu hors dump ; ~560 tests.
+
+#### Documentation — CLAUDE.md (compléments)
+
+- **`CLAUDE.md`** : part d'avance paramétrable rappelée dans les règles métier ; séparation des
+  tâches telle que codée ; PDF de l'OM signé par l'état (priorité, exclusions, clé de cache) ;
+  cache de la matrice sans expiration, purgé par `db:restore` ; exercice non consommé à ce jour ;
+  ce qui reste hors sauvegarde de la base.
+
+#### Documentation — déploiement (compléments)
+
+- **`DEPLOY-CPANEL.md`** :
+  - §9.1 : la restauration purge la matrice des permissions ; encadré « Ce qu'une restauration ne
+    touche pas » (`settings.json`, paraphes, fichiers produits dans `storage/`) ;
+  - mise à jour, A.4 : sauvegarder `settings.json` et le dossier des paraphes avant l'opération ;
+  - notes de version 1.3 : PDF de l'OM signé par l'état (code seul, aucune migration, cache des PDF
+    d'OM régénéré) ; plus de purge manuelle du cache après `db:restore` ;
+  - dépannage : droits d'accès anciens après un import phpMyAdmin (purge du cache), réglages
+    perdus après écrasement de `storage/` ;
+  - récapitulatif des artefacts : contenu de `storage/` détaillé.
+- **`docs/runbook-mise-a-jour-cron.md`** : étape 1 alignée (réglages et paraphes).
+
 #### Documentation — README (compléments)
 
 - **`README.md`** : concepts métier — trois signataires distincts, PDF de l'OM signé par l'état ;
