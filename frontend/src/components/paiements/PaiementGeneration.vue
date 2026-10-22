@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppAlert from '@/components/shared/AppAlert.vue'
@@ -7,16 +7,17 @@ import AppCombobox from '@/components/shared/AppCombobox.vue'
 import OperateurBadge from '@/components/paiements/OperateurBadge.vue'
 import PaiementStatusBadge from '@/components/paiements/PaiementStatusBadge.vue'
 import { missionsService } from '@/services/missions'
-import { paiementsService } from '@/services/paiements'
+import { paiementsService, type GenerationAsync, type StatutJobLot } from '@/services/paiements'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
-import { partAvance } from '@/composables/usePartAvance'
+import { usePartAvance } from '@/composables/usePartAvance'
 import type { LotPaiement, LotPreview, Operateur, TrancheVersement } from '@/types'
 
 const props = defineProps<{ operateurInitial?: Operateur }>()
 const toast = useToast()
-const avancePct = partAvance()
-const reliquatPct = 100 - avancePct
+// Part d'avance RÉACTIVE : se met à jour dès que la valeur serveur arrive.
+const { partAvance: avancePct } = usePartAvance()
+const reliquatPct = computed(() => 100 - avancePct.value)
 
 const missionId = ref<number | null>(null)
 const tranche = ref<TrancheVersement>('AVANCE')
@@ -30,7 +31,9 @@ const action = ref(false)
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 const extension = computed(() => (operateur.value === 'MTN' ? '.txt' : '.xlsx'))
 const confirme = computed(() => lot.value?.statut === 'CONFIRME')
-const peutGenerer = computed(() => !!apercu.value && apercu.value.nb_lignes > 0 && !confirme.value)
+const peutGenerer = computed(
+  () => !!apercu.value && apercu.value.nb_lignes > 0 && !confirme.value && !suivi.value,
+)
 
 // Sélecteur de mission : recherche serveur débouncée (plus de chargement de
 // TOUS les ordres pour dériver la liste — la liste grandit sans limite).
@@ -53,12 +56,103 @@ async function rafraichir() {
 
 watch([missionId, tranche, operateur], rafraichir)
 
+// ── Génération asynchrone des gros lots (> seuil serveur) ──
+// L'API répond 202 + tracking_id : on sonde GET /paiements/lots/job/{id} jusqu'à
+// TERMINE (puis téléchargement du lot) ou ERREUR. Le sondage est arrêté au
+// démontage de l'écran.
+const INTERVALLE_SONDAGE_MS = 2000
+/** Tolérance tant que le worker n'a pas pris la tâche (cache encore vide). */
+const MAX_SONDAGES_INTROUVABLE = 30
+
+interface SuiviGeneration {
+  trackingId: string
+  nbLignes: number
+  statut: StatutJobLot['statut']
+  nomParDefaut: string
+  libelle: string
+}
+
+const suivi = ref<SuiviGeneration | null>(null)
+let minuteur: ReturnType<typeof setInterval> | null = null
+let sondageEnVol = false
+let sondagesIntrouvables = 0
+
+const libelleSuivi = computed(() => {
+  switch (suivi.value?.statut) {
+    case 'EN_COURS': return 'Génération du fichier en cours…'
+    default: return 'Génération en file d’attente…'
+  }
+})
+
+function arreterSuivi() {
+  if (minuteur) {
+    clearInterval(minuteur)
+    minuteur = null
+  }
+}
+
+function terminerSuivi() {
+  arreterSuivi()
+  suivi.value = null
+}
+
+function demarrerSuivi(reponse: GenerationAsync, nomParDefaut: string, libelle: string) {
+  arreterSuivi()
+  sondagesIntrouvables = 0
+  suivi.value = { trackingId: reponse.tracking_id, nbLignes: reponse.nb_lignes, statut: 'INTROUVABLE', nomParDefaut, libelle }
+  minuteur = setInterval(() => { void sonder() }, INTERVALLE_SONDAGE_MS)
+}
+
+async function sonder() {
+  const courant = suivi.value
+  if (!courant || sondageEnVol) return
+  sondageEnVol = true
+  try {
+    const etat = await paiementsService.statutJob(courant.trackingId)
+    // Écran démonté ou suivi remplacé pendant la requête : on ignore la réponse.
+    if (suivi.value !== courant) return
+    courant.statut = etat.statut
+
+    if (etat.statut === 'TERMINE') {
+      terminerSuivi()
+      if (etat.lot_id) {
+        await paiementsService.telechargerLot(etat.lot_id, etat.fichier ?? courant.nomParDefaut)
+      }
+      toast.success(`${courant.libelle} généré et téléchargé.`)
+      await rafraichir()
+    } else if (etat.statut === 'ERREUR') {
+      terminerSuivi()
+      toast.error(etat.message || 'La génération du fichier a échoué. Régénération possible.')
+      await rafraichir()
+    } else if (etat.statut === 'INTROUVABLE' && ++sondagesIntrouvables >= MAX_SONDAGES_INTROUVABLE) {
+      terminerSuivi()
+      toast.error('Génération introuvable : la file de traitement ne répond pas. Réessayez plus tard.')
+      await rafraichir()
+    }
+  } catch (e) {
+    terminerSuivi()
+    toast.error(getErrorMessage(e))
+  } finally {
+    sondageEnVol = false
+  }
+}
+
+onBeforeUnmount(terminerSuivi)
+
 async function generer() {
   if (!missionId.value) return
   action.value = true
+  const libelle = `Fichier ${operateur.value} ${extension.value}`
+  const nomParDefaut = `${operateur.value}_${tranche.value}${extension.value}`
   try {
-    await paiementsService.generer({ mission_id: missionId.value, tranche: tranche.value, operateur: operateur.value })
-    toast.success(`Fichier ${operateur.value} ${extension.value} généré et téléchargé.`)
+    const asynchrone = await paiementsService.generer({ mission_id: missionId.value, tranche: tranche.value, operateur: operateur.value })
+    if (asynchrone) {
+      // Gros lot : pas une erreur — la génération continue en arrière-plan.
+      toast.show(asynchrone.message ?? `Gros lot (${asynchrone.nb_lignes} lignes) : génération lancée en arrière-plan.`, 'info')
+      demarrerSuivi(asynchrone, nomParDefaut, libelle)
+      return
+    }
+    toast.success(`${libelle} généré et téléchargé.`)
     await rafraichir()
   } catch (e) {
     toast.error(getErrorMessage(e))
@@ -135,6 +229,24 @@ async function marquerErreur() {
         <PaiementStatusBadge :statut="lot.statut" />
         <span v-if="lot.nom_fichier" class="text-xs">· {{ lot.nom_fichier }}</span>
         <span v-if="confirme && lot.confirme_le" class="text-xs">· confirmé le {{ new Date(lot.confirme_le).toLocaleString('fr-FR') }}</span>
+      </div>
+    </AppAlert>
+
+    <!-- Suivi d'une génération asynchrone (gros lot) -->
+    <AppAlert v-if="suivi" type="info">
+      <div class="space-y-2" role="status" aria-live="polite">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          <span class="font-display font-semibold">{{ libelleSuivi }}</span>
+          <span class="text-xs">· {{ suivi.nbLignes }} ligne(s) · le téléchargement démarrera automatiquement</span>
+        </div>
+        <div class="h-1.5 w-full rounded-full bg-blue-100 overflow-hidden">
+          <div class="h-full rounded-full bg-blue-500 transition-all duration-500"
+               :class="suivi.statut === 'EN_COURS' ? 'w-2/3 animate-pulse' : 'w-1/4'"></div>
+        </div>
       </div>
     </AppAlert>
 

@@ -1,7 +1,96 @@
 <script setup lang="ts">
-function reload() {
-  window.location.reload()
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
+import { useApi } from '@/composables/useApi'
+
+/*
+ * Compte à rebours de maintenance (SYS-03).
+ * - `?fin=<ISO 8601>` (optionnel) : heure de fin annoncée, affichée en HH:MM:SS.
+ * - Dans tous les cas, une nouvelle vérification automatique de l'API a lieu
+ *   toutes les INTERVALLE_S secondes ; dès qu'elle répond (hors 5xx), on revient
+ *   à la page demandée (`?redirect=`) ou à l'accueil.
+ */
+const INTERVALLE_S = 30
+
+const route = useRoute()
+const router = useRouter()
+
+const secondes = ref(INTERVALLE_S)
+const verification = ref(false)
+const maintenant = ref(Date.now())
+let minuteur: ReturnType<typeof setInterval> | null = null
+
+const fin = computed<number | null>(() => {
+  const brut = route.query.fin
+  if (typeof brut !== 'string' || !brut) return null
+  const t = Date.parse(brut)
+  return Number.isNaN(t) ? null : t
+})
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** Temps restant avant la fin annoncée (null si pas d'heure de fin ou déjà passée). */
+const restantFin = computed<string | null>(() => {
+  if (fin.value == null) return null
+  const reste = Math.max(0, Math.floor((fin.value - maintenant.value) / 1000))
+  if (reste === 0) return null
+  return `${pad(Math.floor(reste / 3600))}:${pad(Math.floor((reste % 3600) / 60))}:${pad(reste % 60)}`
+})
+
+/** L'API répond-elle ? (toute réponse hors 5xx, même 401, signifie « disponible »). */
+async function apiDisponible(): Promise<boolean> {
+  try {
+    const res = await axios.get('/api/auth/me', {
+      baseURL: useApi().defaults.baseURL,
+      headers: { Accept: 'application/json' },
+      timeout: 5000,
+      validateStatus: () => true,
+    })
+    return res.status < 500
+  } catch {
+    return false
+  }
 }
+
+async function verifier() {
+  if (verification.value) return
+  verification.value = true
+  try {
+    if (await apiDisponible()) {
+      arreter()
+      const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
+      await router.replace(redirect)
+      return
+    }
+    secondes.value = INTERVALLE_S
+  } finally {
+    verification.value = false
+  }
+}
+
+function tic() {
+  maintenant.value = Date.now()
+  if (verification.value) return
+  if (secondes.value > 1) {
+    secondes.value--
+  } else {
+    secondes.value = 0
+    void verifier()
+  }
+}
+
+function arreter() {
+  if (minuteur) {
+    clearInterval(minuteur)
+    minuteur = null
+  }
+}
+
+onMounted(() => {
+  minuteur = setInterval(tic, 1000)
+})
+onBeforeUnmount(arreter)
 </script>
 
 <template>
@@ -51,11 +140,24 @@ function reload() {
         </div>
 
         <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Maintenance en cours</h1>
-        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Notre bus est au garage pour une revision ! Le systeme est temporairement indisponible pour amelioration. Merci de reessayer dans quelques instants.</p>
+        <p class="text-gray-500 font-body mb-6 max-w-sm mx-auto">Notre bus est au garage pour une revision ! Le systeme est temporairement indisponible pour amelioration. Merci de reessayer dans quelques instants.</p>
+
+        <!-- Compte à rebours -->
+        <div class="mb-8 space-y-2" role="status" aria-live="polite">
+          <div v-if="restantFin" class="font-display text-4xl font-extrabold tabular-nums" data-test="countdown-fin"
+               style="background:linear-gradient(135deg,#1D9E4F,#D4A843);-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+            {{ restantFin }}
+          </div>
+          <p v-if="restantFin" class="text-xs text-gray-400 font-body">Fin de maintenance estimée</p>
+          <p class="text-sm text-gray-500 font-body" data-test="countdown-retry">
+            <template v-if="verification">Vérification de la disponibilité…</template>
+            <template v-else>Nouvelle vérification automatique dans <strong class="font-display text-anatt-600 tabular-nums">{{ secondes }} s</strong></template>
+          </p>
+        </div>
 
         <!-- Actions -->
         <div class="flex flex-col items-center gap-3">
-          <button @click="reload" class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 w-full max-w-xs flex items-center justify-center gap-2">
+          <button :disabled="verification" @click="verifier" class="px-6 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 w-full max-w-xs flex items-center justify-center gap-2 disabled:opacity-60">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
             Verifier la disponibilite
           </button>

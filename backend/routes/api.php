@@ -222,6 +222,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
             // Sauvegardes de la base de données.
             Route::get('backups', [BackupController::class, 'index']);
             Route::post('backups', [BackupController::class, 'store']);
+            Route::get('backups/{name}/download', [BackupController::class, 'download']);
+            Route::post('backups/{name}/restaurer', [BackupController::class, 'restaurer']);
             Route::delete('backups/{name}', [BackupController::class, 'destroy']);
         });
 

@@ -102,6 +102,13 @@ it('refuse une référence SEMO en doublon', function () {
     ]))->assertStatus(422)->assertJsonValidationErrors(['ordres.0.reference_semo']);
 });
 
+it('refuse le même agent deux fois dans une mission (un OM par bénéficiaire)', function () {
+    $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
+        ['reference_semo' => 'SEMO-A1', 'agent_id' => $this->dada->id, 'role' => 'PARTICIPANT', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
+        ['reference_semo' => 'SEMO-A2', 'agent_id' => $this->dada->id, 'role' => 'CAV', 'type_prise_en_charge' => 'JOURNEE_COMPLETE'],
+    ]))->assertStatus(422)->assertJsonValidationErrors(['ordres.1.agent_id']);
+});
+
 it('refuse un type incompatible avec la zone', function () {
     // LOGE_SEUL (hébergement) interdit en INTERIEUR.
     $this->actingAs($this->gestion)->postJson('/api/missions', missionPayload([
@@ -144,6 +151,17 @@ it('rejette un OM avec motif', function () {
     $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/rejeter", [
         'motif' => 'Document non conforme au dossier',
     ])->assertOk()->assertJsonPath('data.statut', 'REJETE');
+});
+
+it('annule les versements d’un OM rejeté', function () {
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+    $v = Versement::factory()->create(['ordre_mission_id' => $om->id, 'type' => 'AVANCE', 'statut' => 'EN_ATTENTE']);
+
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/rejeter", [
+        'motif' => 'Document non conforme au dossier',
+    ])->assertOk();
+
+    expect($v->fresh()->statut)->toBe('ANNULE');
 });
 
 it('refuse un rejet sans motif suffisant', function () {

@@ -9,6 +9,35 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Modifié
+
+- **Revue d'octobre 2026, seconde passe — points restants traités** (détail :
+  `docs/revue-projet-2026-10.md` §4).
+  - **État des reliquats** : il est signé au montant **payable**, c'est-à-dire la somme des
+    reliquats positifs. Les trop-perçus sont mentionnés à part sur le PDF.
+  - **Lots complémentaires** : nouvelle colonne `lots_paiement.sequence`, avec une migration.
+    Un lot confirmé n'est jamais réécrit. Un versement devenu payable ensuite part dans un lot
+    de séquence suivante.
+  - **Lot en `ERREUR`** : ses versements reviennent à `EN_ATTENTE`, avec les coordonnées
+    actuelles de l'agent.
+  - **Amendement** : il est refusé tant qu'un fichier contenant l'OM attend son dépôt, et
+    les états sont verrouillés pendant l'opération.
+  - **OM rejeté** : ses versements passent à `ANNULE`.
+  - **Mission** : un même agent ne peut y figurer qu'une fois.
+  - **Séparation ordonnateur/payeur** : elle est désormais contrôlée sur l'effectif de
+    chaque membre d'un profil.
+  - **Sauvegardes** : ajout du téléchargement et de la restauration, avec une sauvegarde
+    de sécurité préalable (commande `db:restore`).
+  - **Frontend** :
+    - suivi des gros lots générés en asynchrone ;
+    - part d'avance qui ne reste plus figée à 70 % ;
+    - boutons Valider et Rejeter pour le circuit par OM ;
+    - messages d'erreur sur la fiche OM et l'aperçu PDF au lieu d'une page blanche ;
+    - compte à rebours sur la page de maintenance ;
+    - corrections du design system (`flag-bar` sur la connexion, icônes SVG).
+  - **Tests** : la suite Pest s'exécute sans `.env` (`APP_KEY` de test). Le binaire
+    Chromium de Playwright peut être fourni par variable d'environnement.
+
 ### Corrigé
 
 - **Revue complète d'octobre 2026 — huit défauts corrigés** (détail et points

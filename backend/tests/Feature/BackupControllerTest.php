@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\User;
+use Illuminate\Support\Facades\Artisan;
 
 /*
  * Sauvegardes de la base (BackupController) : listing dérivé, suppression avec
@@ -83,4 +85,51 @@ it('refuse de supprimer un fichier qui n’est pas une sauvegarde', function () 
 
     // Le fichier hors périmètre n'est jamais touché.
     expect(file_exists($this->dir.'/.env'))->toBeTrue();
+});
+
+it('télécharge une sauvegarde existante, jamais un autre fichier', function () {
+    @mkdir($this->dir, 0775, true);
+    file_put_contents($this->dir.'/backup_2026-10-01_020000.sql', '-- dump');
+
+    $this->actingAs($this->su)->get('/api/admin/backups/backup_2026-10-01_020000.sql/download')
+        ->assertOk()
+        ->assertDownload('backup_2026-10-01_020000.sql');
+
+    $this->actingAs($this->su)->getJson('/api/admin/backups/.env/download')->assertStatus(422);
+    $this->actingAs($this->su)->getJson('/api/admin/backups/absent.sql/download')->assertNotFound();
+});
+
+it('exige de recopier le nom du fichier avant de restaurer', function () {
+    @mkdir($this->dir, 0775, true);
+    file_put_contents($this->dir.'/backup_2026-10-01_020000.sql', '-- dump');
+    Artisan::shouldReceive('call')->never();
+
+    $this->actingAs($this->su)->postJson('/api/admin/backups/backup_2026-10-01_020000.sql/restaurer', ['confirmation' => 'oui'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('confirmation');
+});
+
+it('restaure via db:restore et journalise l’opération', function () {
+    @mkdir($this->dir, 0775, true);
+    file_put_contents($this->dir.'/backup_2026-10-01_020000.sql', '-- dump');
+    Artisan::shouldReceive('call')->once()
+        ->with('db:restore', ['fichier' => 'backup_2026-10-01_020000.sql', '--force' => true])
+        ->andReturn(0);
+    Artisan::shouldReceive('output')->andReturn('Base restaurée.');
+
+    $this->actingAs($this->su)->postJson('/api/admin/backups/backup_2026-10-01_020000.sql/restaurer', [
+        'confirmation' => 'backup_2026-10-01_020000.sql',
+    ])->assertOk();
+
+    expect(AuditLog::where('action', 'BACKUP_RESTORE')->exists())->toBeTrue();
+});
+
+it('refuse la restauration à un administrateur (réservée au super admin)', function () {
+    $this->actingAs(User::factory()->admin()->create())
+        ->postJson('/api/admin/backups/x.sql/restaurer', ['confirmation' => 'x.sql'])
+        ->assertForbidden();
+});
+
+it('db:restore refuse un fichier absent sans toucher à la base', function () {
+    $this->artisan('db:restore', ['fichier' => 'absent.sql', '--force' => true])->assertFailed();
 });

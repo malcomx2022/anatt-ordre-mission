@@ -64,7 +64,8 @@ class StoreMissionRequest extends FormRequest
             // Au moins un bénéficiaire (participant ou CAV).
             'ordres' => 'required|array|min:1',
             'ordres.*.reference_semo' => 'required|string|max:255|distinct|unique:ordre_missions,reference_semo',
-            'ordres.*.agent_id' => 'required|integer|exists:agents,id',
+            // 1 OM = 1 bénéficiaire : un même agent ne figure qu'une fois par mission.
+            'ordres.*.agent_id' => 'required|integer|distinct|exists:agents,id',
             'ordres.*.role' => 'required|in:PARTICIPANT,CAV',
             'ordres.*.categorie' => 'nullable|'.CategorieIndice::regleIn(),
             // Requis uniquement en mode simple : en répartition détaillée, ce sont
@@ -130,6 +131,7 @@ class StoreMissionRequest extends FormRequest
         return [
             'ordres.*.reference_semo.unique' => 'La référence SEMO :input existe déjà (doublon interdit).',
             'ordres.*.reference_semo.distinct' => 'La référence SEMO :input est répétée dans la requête.',
+            'ordres.*.agent_id.distinct' => 'Le même agent figure deux fois dans la mission : un OM par bénéficiaire.',
         ];
     }
 }

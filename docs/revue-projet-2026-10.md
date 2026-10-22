@@ -75,52 +75,64 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 7 | Majeur | Agent : effacer l'indice (`''`) faisait suggérer « Indice < 400 » quel que soit le salaire. | `categorieDeduite` ignore les valeurs non numériques. |
 | 8 | Majeur | L'historique OM (OM-08) affichait `OM-<id>`, des codes d'action bruts et aucun détail : la vue lisait `numero`, `details` et des codes obsolètes. | La vue lit `reference_semo`, la colonne `donnees` et les codes `IMPORT_OM`, `VALIDATE_OM`, `REJECT_OM`, `AMEND_OM`. |
 
-## 4. Points restants (non corrigés)
+## 4. Points restants — tous traités (seconde passe)
 
-**C** = confirmé sur l'API réelle. **L** = vérifié à la lecture du code.
+Chaque point est couvert par un test, sauf mention contraire.
 
-### À arbitrer (règle métier)
+### Règles métier tranchées
 
-- **État des reliquats signé au montant net (C).** `montantsTranche` additionne les reliquats négatifs. Exemple observé : l'état est signé à **−11 500 FCFA**, alors que le fichier paie le seul reliquat positif. Il faut décider si l'état porte le montant payable (Σ > 0) et les trop-perçus en colonne distincte. Ce choix touche le PDF et le scellé HMAC.
-- **Lot complémentaire (L).** Il n'existe qu'un lot par mission × tranche × opérateur, et un lot `CONFIRME` ne se régénère pas. Un versement devenu éligible plus tard ne peut donc plus jamais être payé. Exemples : changement d'opérateur, OM validé tardivement dans le circuit par OM.
+| Point | Décision appliquée |
+|-------|--------------------|
+| État des reliquats signé au montant net (ex. −11 500 FCFA) | L'état porte le montant **payable** (Σ des reliquats positifs). Les trop-perçus n'abaissent plus le total ; le PDF les affiche à part, « hors total, à recouvrer par retenue sur salaire ». Vérifié sur l'API réelle : signé 27 000 = décaissé 27 000. |
+| Pas de lot complémentaire | Colonne `lots_paiement.sequence` (migration `2026_10_22_090000`, clé unique mission × tranche × opérateur × séquence). Un lot `CONFIRME` n'est jamais réécrit ; un versement devenu payable après coup part dans le lot suivant (`…_COMPL2.txt`). Seconde barrière : un versement porté par un lot `CONFIRME` n'est jamais réinclus. |
 
 ### Intégrité des paiements
 
-- **(L)** Amender un OM dont un versement est `GENERE` réécrit le montant d'une avance non engagée, ou décale `ordre.reliquat` par rapport au versement. `marquerErreur` laisse les versements en `GENERE` : la garde à ajouter doit en tenir compte.
-- **(L)** Un changement de téléphone ou d'opérateur d'un agent n'est propagé qu'aux versements `EN_ATTENTE`. Après un lot passé en `ERREUR`, la régénération reprend l'ancien numéro.
-- **(L)** La séparation ordonnateur/payeur n'est contrôlée que sur le profil. Un utilisateur ayant reçu `paiements.confirmer` à titre individuel cumule les deux droits si son profil reçoit ensuite `om.approuver`.
-- **(L)** L'amendement lit les états sans `lockForUpdate`. Il peut entrer en concurrence avec un `controler` simultané.
-- **(L)** `StoreMissionRequest` : il manque `distinct` sur `ordres.*.agent_id`, donc le même agent peut être retranscrit deux fois dans une mission.
+| Point | Correctif |
+|-------|-----------|
+| Amendement d'un OM dont un versement est `GENERE` | Refusé (422) : il faut confirmer le lot ou le passer en `ERREUR`. |
+| Numéro corrigé non repris à la régénération | Passer un lot en `ERREUR` remet ses versements `EN_ATTENTE` avec le téléphone et l'opérateur **courants** de l'agent. |
+| Ordonnateur-payeur via des droits individuels | L'édition et la réinitialisation d'un profil contrôlent l'effectif de **chaque membre** et nomment les comptes en cause. |
+| Amendement concurrent d'un contrôle | États lus avec `lockForUpdate` dans la transaction de l'amendement (non testable sous SQLite). |
+| Même agent deux fois dans une mission | `ordres.*.agent_id` est `distinct`. |
+| Statut `ANNULE` jamais produit | Rejeter un OM annule ses versements `EN_ATTENTE`, et `ANNULE` est exclu des fichiers. |
 
 ### Frontend
 
-- **(L)** Lot de plus de 50 lignes : la réponse 202 avec `tracking_id` s'affiche comme une erreur. Le suivi `GET /paiements/lots/job/:id` n'est jamais appelé.
-- **(L)** `usePartAvance` met 70 en cache si l'appel échoue (423 au premier login). Toute la session affiche alors 70/30 même si `partAvance` vaut autre chose.
-- **(L)** Le circuit par OM (`ordresService.valider` / `rejeter`) n'a aucun bouton sur la fiche OM-03.
-- **(L)** `MissionDetailView` et `MissionPdfView` : un 404 laisse la page vide, sans message.
-- **(L)** Le minuteur de recherche de `PaiementRegularisationView` n'est pas annulé au démontage.
-- **(L)** Règles du design system :
-  - le pied de page de `LoginView` n'a pas de `flag-bar` et son « © 2026 » est figé ;
-  - un glyphe « ✓ » remplace l'icône SVG dans `RolesView` et `UserPermissionsView`.
-- **(L)** `MaintenanceView` n'a pas le compte à rebours annoncé (SYS-03).
+| Point | Correctif |
+|-------|-----------|
+| Lot > 50 lignes affiché en erreur | Réponse 202 détectée, suivi `GET /lots/job/:id` toutes les 2 s avec barre de progression, téléchargement à la fin, arrêt du suivi au démontage. |
+| Part d'avance figée à 70 % | Pas de mise en cache en cas d'échec ; rechargement à la sortie du changement de mot de passe imposé ; lectures réactives dans les vues. |
+| Pas d'interface pour le circuit par OM | Boutons Valider (`om.valider`) et Rejeter (`om.rejeter`, motif ≥ 10) sur la fiche, pour un OM `IMPORTE` d'une mission sans état. |
+| Page blanche sur un 404 | Carte d'erreur avec le message serveur et un bouton « Réessayer » (fiche OM et aperçu PDF). |
+| Minuteur non annulé | Annulé au démontage (non testé). |
+| Design system | `flag-bar` et année dynamique sur la page de connexion ; icône SVG `check` à la place du glyphe « ✓ » (non testé). |
+| Page de maintenance | Compte à rebours (`?fin=`) et revérification automatique de l'API toutes les 30 s (non testé). |
+| Garde de route au rechargement | Repasse par la redirection vers le changement de mot de passe imposé (non testé). |
+| Message serveur perdu | `getErrorMessage` conserve le message d'une `Error` levée par l'application. |
+| Lots complémentaires | Badge « complémentaire n° N » dans la liste des lots. |
 
-### Fonctionnalités annoncées absentes
+### Fonctionnalités annoncées
 
-- **ADM-06** : la restauration d'une sauvegarde n'existe pas. Seuls la création, le téléchargement et la suppression sont disponibles.
-- Le statut versement `ANNULE` est documenté mais n'est jamais produit.
+- **ADM-06** : téléchargement (`GET /admin/backups/:name/download`) et **restauration** (`POST /admin/backups/:name/restaurer`), réservés au SUPER_ADMIN.
+  - La confirmation se fait en recopiant le nom du fichier.
+  - La commande `db:restore` prend une sauvegarde de sécurité de l'état courant avant d'écraser la base ; un `.gz` est décompressé en PHP.
+  - L'opération est auditée (`BACKUP_RESTORE`) et l'écran a une modale de confirmation.
+  - Limite : l'exécution réelle du client `mysql` n'est pas testée (pas de serveur MySQL en CI) ; elle est simulée dans les tests.
 
-### Documentation (CLAUDE.md §7)
+### Documentation et exploitation des tests
 
-- « Agents / Barème : lecture tout authentifié » est faux : `LECTEUR` n'a ni `personnel.consulter` ni `baremes.consulter`, ce qui est conforme au tableau des profils.
-- `POST /ordres/:id/rejeter` exige `om.rejeter`, pas `om.valider`.
-- Routes existantes non documentées :
-  - `missions/:id/etat/final` ;
-  - `ordres/:id/pdf/brouillon` ;
-  - `rapports/export/job/:id` ;
-  - `admin/signatures*`, `admin/backups*` ;
-  - `auth/mot-de-passe/changer`, `notifications*`.
+- `CLAUDE.md` §7 corrigé :
+  - droits de lecture de `LECTEUR` ;
+  - `om.rejeter` ;
+  - routes manquantes ajoutées : état général, brouillon d'OM, suivi d'export, signatures, sauvegardes, changement de mot de passe, notifications.
+- `docs/amendement-om.md` et `docs/rbac-flexible.md` sont alignés sur ces changements.
+- `phpunit.xml` porte une `APP_KEY` de test : la suite passe sans `.env`. Il reste des avertissements de phpdotenv, sans effet ; le code de sortie est 0.
+- `playwright.config.ts` accepte `PLAYWRIGHT_CHROMIUM_EXECUTABLE`.
 
-### Exploitation des tests
+### Hors périmètre de cette revue (relevés, non traités)
 
-- La suite Pest exige un `.env` avec `APP_KEY` : sans lui, 5 tests échouent (`MissingAppKeyException`). Il faut lancer `cp .env.example .env && php artisan key:generate` avant `php artisan test`.
-- Le Chromium préinstallé ne correspond pas à la version attendue par `@playwright/test`. En local, passer `launchOptions.executablePath`.
+- Plafond de `per_page` absent sur `/etats` et `/missions`.
+- Filtre `operateur` de `/ordres` appliqué à l'agent plutôt qu'au versement.
+- Nom des exports de rapports horodaté à la seconde.
+- Transport mis à 0 quand un OM est amendé à 0 jour.

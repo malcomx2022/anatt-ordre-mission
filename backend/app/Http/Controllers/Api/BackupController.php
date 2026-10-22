@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Sauvegardes de la base de données (SUPER_ADMIN, permission parametres.gerer).
  *
  * Les fichiers vivent sur le disque local (storage/app/backups). La création
- * délègue à la commande artisan `db:backup` ; aucune restauration automatique
- * n'est exposée par l'API.
+ * délègue à la commande artisan `db:backup`, la restauration à `db:restore`
+ * (qui sauvegarde d'abord l'état courant : l'opération reste réversible).
  */
 class BackupController extends Controller
 {
@@ -60,6 +64,68 @@ class BackupController extends Controller
         }
 
         return response()->json(['message' => 'Sauvegarde creee.', 'details' => $sortie]);
+    }
+
+    /** Télécharge une sauvegarde (copie hors serveur). */
+    public function download(string $name): BinaryFileResponse
+    {
+        return response()->download($this->cheminExistant($name));
+    }
+
+    /**
+     * Restaure la base depuis une sauvegarde. Opération destructrice : le corps
+     * doit recopier le nom du fichier (`confirmation`), et `db:restore` prend
+     * une sauvegarde de sécurité de l'état courant avant d'écraser la base.
+     */
+    public function restaurer(Request $request, string $name): JsonResponse
+    {
+        $chemin = $this->cheminExistant($name);
+        $fichier = basename($chemin);
+
+        $request->validate(['confirmation' => 'required|string|in:'.$fichier], [
+            'confirmation.in' => 'Recopiez exactement le nom du fichier pour confirmer la restauration.',
+        ]);
+
+        $code = Artisan::call('db:restore', ['fichier' => $fichier, '--force' => true]);
+        $sortie = trim(Artisan::output());
+
+        if ($code !== 0) {
+            return response()->json(['message' => 'Échec de la restauration.', 'details' => $sortie], 500);
+        }
+
+        // Journalisé APRÈS la restauration : une écriture antérieure aurait été
+        // écrasée avec le reste de la base.
+        // L'auteur peut ne pas exister dans la base restaurée : on ne référence
+        // alors aucun utilisateur (clé étrangère), son nom reste dans les données.
+        AuditService::log(
+            User::find($request->user()->id),
+            'BACKUP_RESTORE',
+            'backup',
+            null,
+            ['fichier' => $fichier, 'par' => $request->user()->name],
+        );
+
+        return response()->json(['message' => 'Base restaurée. Une sauvegarde de l’état précédent a été créée.', 'details' => $sortie]);
+    }
+
+    /**
+     * Chemin d'une sauvegarde existante : `basename` (pas de traversée de
+     * répertoire) et extension .sql / .sql.gz exigée.
+     */
+    private function cheminExistant(string $name): string
+    {
+        $fichier = basename($name);
+
+        abort_unless(
+            str_ends_with($fichier, '.sql') || str_ends_with($fichier, '.sql.gz'),
+            422,
+            'Nom de sauvegarde invalide (extension .sql ou .sql.gz attendue).',
+        );
+
+        $chemin = $this->repertoire().'/'.$fichier;
+        abort_unless(is_file($chemin), 404, 'Sauvegarde introuvable.');
+
+        return $chemin;
     }
 
     /**

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
@@ -87,6 +87,9 @@ watch(recherche, () => {
     load()
   }, 300)
 })
+
+// Écran quitté pendant la frappe : pas de rechargement fantôme après démontage.
+onBeforeUnmount(() => clearTimeout(rechercheTimer))
 
 onMounted(load)
 </script>

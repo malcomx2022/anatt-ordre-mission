@@ -1,32 +1,42 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { ordresService } from '@/services/ordres'
 import { useToast } from '@/composables/useToast'
-import { partAvance } from '@/composables/usePartAvance'
+import { getErrorMessage } from '@/composables/useApi'
+import { usePartAvance } from '@/composables/usePartAvance'
 import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
 
 const route = useRoute()
 const toast = useToast()
 const id = Number(route.params.id)
-const avancePct = partAvance()
-const reliquatPct = 100 - avancePct
+// Part d'avance RÉACTIVE : se met à jour dès que la valeur serveur arrive.
+const { partAvance: avancePct } = usePartAvance()
+const reliquatPct = computed(() => 100 - avancePct.value)
 const ordre = ref<OrdreMission | null>(null)
 const loading = ref(true)
 const downloading = ref(false)
+/** Message serveur en cas d'échec du chargement (404, 403…) : la page ne reste pas blanche. */
+const erreur = ref<string | null>(null)
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 
-onMounted(async () => {
+async function load() {
+  loading.value = true
+  erreur.value = null
   try {
     ordre.value = await ordresService.get(id)
+  } catch (e) {
+    ordre.value = null
+    erreur.value = getErrorMessage(e)
   } finally {
     loading.value = false
   }
-})
+}
+onMounted(load)
 
 function imprimer() {
   window.print()
@@ -36,8 +46,9 @@ async function telechargerPdf() {
   downloading.value = true
   try {
     await ordresService.telechargerPdf(id)
-  } catch {
-    toast.error('Téléchargement du PDF impossible.')
+  } catch (e) {
+    // Message serveur (le corps d'erreur blob est relu par l'intercepteur useApi).
+    toast.error(getErrorMessage(e))
   } finally {
     downloading.value = false
   }
@@ -48,11 +59,30 @@ async function telechargerPdf() {
   <AppLayout title="Aperçu de l'ordre de mission" :subtitle="ordre ? ordre.reference_semo : ''">
     <template #header-actions>
       <router-link :to="`/ordres/${id}`" class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50">← Fiche</router-link>
-      <AppButton variant="outline" @click="imprimer">Imprimer</AppButton>
-      <AppButton :loading="downloading" @click="telechargerPdf">Télécharger PDF</AppButton>
+      <template v-if="ordre">
+        <AppButton variant="outline" @click="imprimer">Imprimer</AppButton>
+        <AppButton :loading="downloading" @click="telechargerPdf">Télécharger PDF</AppButton>
+      </template>
     </template>
 
     <p v-if="loading" class="text-center text-gray-400 font-body py-10">Chargement…</p>
+
+    <AppCard v-else-if="erreur" class="max-w-xl mx-auto text-center">
+      <div role="alert" class="space-y-3 py-4">
+        <svg class="w-10 h-10 mx-auto text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <h2 class="font-display font-bold text-gray-800">Aperçu indisponible</h2>
+        <p class="text-sm text-gray-500 font-body" data-test="erreur-chargement">{{ erreur }}</p>
+        <div class="flex justify-center gap-3 pt-2">
+          <AppButton variant="outline" @click="load">Réessayer</AppButton>
+          <router-link to="/ordres" class="px-5 py-2.5 rounded-xl bg-anatt-500 text-white font-display font-bold text-sm hover:bg-anatt-600 transition-all duration-200">Retour aux ordres</router-link>
+        </div>
+      </div>
+    </AppCard>
 
     <AppCard v-else-if="ordre" class="max-w-3xl mx-auto print:shadow-none">
       <div class="flex items-center justify-between border-b-2 border-anatt-500 pb-4 mb-4">

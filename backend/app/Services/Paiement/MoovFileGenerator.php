@@ -77,7 +77,7 @@ class MoovFileGenerator extends FileGenerator
 
         $nbLignes = $ligne - 2;
 
-        $nomFichier = $this->nomFichier($theme, $tranche, 'xlsx');
+        $nomFichier = $this->nomFichier($theme, $tranche, 'xlsx', $this->sequence);
         // Un dossier par mission : deux missions de même objet produisent le même
         // nom de fichier, qui ne doit pas écraser le fichier de l'autre lot.
         $chemin = "paiements/{$mission->id}/{$nomFichier}";

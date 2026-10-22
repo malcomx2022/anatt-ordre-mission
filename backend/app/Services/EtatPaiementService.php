@@ -128,13 +128,19 @@ class EtatPaiementService
      * Instantané financier d'une tranche : `montant_total` porte la somme de la
      * tranche (avances OU reliquats), la colonne de l'autre tranche est à zéro.
      *
+     * Le total des reliquats est le montant PAYABLE : un reliquat négatif
+     * (trop-perçu après amendement) ne part jamais dans un fichier de paiement
+     * (cf. Versement::scopeEligiblesLot) — il est récupéré par retenue sur
+     * salaire. Le compter ici ferait signer un montant différent de celui
+     * décaissé ; il figure à part sur le document (« trop-perçus »).
+     *
      * @param  Collection<int,OrdreMission>  $ordres
      * @return array{montant_total:int, montant_avance:int, montant_reliquat:int}
      */
     private function montantsTranche($ordres, string $tranche): array
     {
         $avance = (int) $ordres->sum('avance');
-        $reliquat = (int) $ordres->sum('reliquat');
+        $reliquat = (int) $ordres->sum(fn (OrdreMission $om) => max(0, (int) $om->reliquat));
 
         return $tranche === EtatPaiement::TRANCHE_AVANCE
             ? ['montant_total' => $avance, 'montant_avance' => $avance, 'montant_reliquat' => 0]

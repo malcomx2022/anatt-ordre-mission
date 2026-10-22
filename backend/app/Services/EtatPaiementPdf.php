@@ -254,6 +254,12 @@ class EtatPaiementPdf
             'total_reliquat' => $estAvance ? '-' : $fmt($etat->montant_total),
             // Mention d'arrêt sur le total de la tranche (avances OU reliquats).
             'mention_arret' => MontantEnLettres::mention($etat->montant_total),
+            // Reliquats négatifs : hors total (non décaissés), à recouvrer par
+            // retenue sur salaire — affichés pour que le signataire les voie.
+            'trop_percus' => $estAvance ? 0 : (int) array_sum(array_map(
+                fn (array $l) => max(0, -(int) ($l['reliquat_brut'] ?? 0)),
+                $lignes,
+            )),
             'date_generation' => now()->format('d/m/Y'),
             // Signatures : jamais rendues sur un brouillon, même si l'état en porte.
             'visa_daf' => $brouillon ? null : $this->signature($etat->visa_daf_nom, $etat->visa_daf_fonction, $etat->visa_daf_le, $etat->signature_daf_hash, $etat->signature_daf_image, 'daf'),

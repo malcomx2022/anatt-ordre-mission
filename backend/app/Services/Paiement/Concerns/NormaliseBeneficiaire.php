@@ -35,11 +35,15 @@ trait NormaliseBeneficiaire
         return $texte;
     }
 
-    /** Slug ASCII pour le nom de fichier : "{THEME}_{TRANCHE}.{ext}". */
-    protected function nomFichier(string $theme, string $tranche, string $extension): string
+    /**
+     * Slug ASCII pour le nom de fichier : "{THEME}_{TRANCHE}.{ext}", suffixé
+     * "_COMPL{n}" pour un lot complémentaire (séquence ≥ 2).
+     */
+    protected function nomFichier(string $theme, string $tranche, string $extension, int $sequence = 1): string
     {
         $slug = Str::slug($theme) ?: 'mission';
+        $suffixe = $sequence > 1 ? "_COMPL{$sequence}" : '';
 
-        return "{$slug}_{$tranche}.{$extension}";
+        return "{$slug}_{$tranche}{$suffixe}.{$extension}";
     }
 }

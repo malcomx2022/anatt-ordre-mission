@@ -132,6 +132,14 @@
         </tbody>
     </table>
 
+    @if(! empty($trop_percus))
+        {{-- Les reliquats négatifs ne sont pas décaissés : ils sont exclus du total. --}}
+        <div class="arret">
+            Trop-perçus hors total, à recouvrer par retenue sur salaire :
+            <strong>{{ number_format($trop_percus, 0, ',', ' ') }} FCFA</strong>.
+        </div>
+    @endif
+
     {{-- Mention d'arrêt sur le total de la tranche (avances OU reliquats). --}}
     <div class="arret">
         Arrêté le présent état de paiement {{ $libelle_tranche ?? '' }} à la somme de : <strong>{{ $mention_arret }}</strong>.

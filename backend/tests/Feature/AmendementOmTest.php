@@ -67,6 +67,16 @@ it('amende avant engagement : recalcule avance ET reliquat', function () {
 
 // ── Après engagement : avance figée, reliquat variable ──
 
+it('refuse l’amendement tant qu’un fichier contenant l’OM attend son dépôt', function () {
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'AVANCE')->update(['statut' => 'GENERE']);
+
+    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Rallonge de la mission de deux jours.'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('versement');
+
+    expect(montantVersement($this->om->id, 'AVANCE'))->toBe(189000);
+});
+
 it('circuit par OM : une avance déjà payée est engagée à l’amendement, le reliquat absorbe l’écart', function () {
     // Mission sans état (repli par OM) : avance_engagee n'a jamais été posée,
     // mais l'avance de 189 000 est déjà confirmée sur la plateforme.

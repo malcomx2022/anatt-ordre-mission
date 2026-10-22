@@ -49,6 +49,11 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        // Poste où un Chromium est déjà installé, d'une autre version que celle
+        // attendue par @playwright/test : PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/chromium
+        ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+          ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } }
+          : {}),
       },
     },
     {

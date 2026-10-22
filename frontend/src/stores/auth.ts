@@ -31,7 +31,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('auth_token', jeton)
       // Pré-charge le pourcentage d'avance paramétrable dès la session ouverte
       // (idempotent) : les écrans le liront sans latence ni retour à 70 %.
-      void chargerPartAvance()
+      // Pas pendant un changement de mot de passe imposé : l'API répond 423.
+      if (!mustChangePassword.value) void chargerPartAvance()
     } finally {
       loading.value = false
     }
@@ -44,10 +45,15 @@ export const useAuthStore = defineStore('auth', () => {
         authService.me(),
         authService.mePermissions(),
       ])
+      const devaitChanger = mustChangePassword.value
       user.value = utilisateur
       permissions.value = perms ?? []
-      // Session restaurée (rechargement) : recharge aussi le pourcentage d'avance.
-      void chargerPartAvance()
+      // Sortie d'un changement de mot de passe imposé : on repart d'un cache
+      // vierge pour relire la vraie valeur serveur (et non le défaut 70 %).
+      if (devaitChanger && !mustChangePassword.value) reinitialiserPartAvance()
+      // Session restaurée (rechargement) : recharge aussi le pourcentage d'avance
+      // (sauf mot de passe à changer : l'API répondrait 423).
+      if (!mustChangePassword.value) void chargerPartAvance()
     } catch {
       await logout()
     }

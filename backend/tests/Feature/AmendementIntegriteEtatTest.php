@@ -6,6 +6,7 @@ use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Services\EtatPaiementPdf;
 use App\Services\EtatPaiementService;
 use App\Services\MissionService;
 
@@ -71,7 +72,7 @@ function amender(object $t, array $data): void
     app(MissionService::class)->amender($t->om->fresh(), $data, $t->gestionnaire);
 }
 
-it('reflète l’amendement (total négatif signé) sur l’état des reliquats en BROUILLON', function () {
+it('reflète l’amendement sur l’état des reliquats en BROUILLON, au montant payable', function () {
     validerAvances($this);
     $reliquat = reliquatBrouillon($this);
     expect($reliquat->montant_reliquat)->toBe(81000)->and($reliquat->montant_total)->toBe(81000);
@@ -79,10 +80,14 @@ it('reflète l’amendement (total négatif signé) sur l’état des reliquats 
     // Forte réduction : reliquat = 135 000 − 189 000 = −54 000 (trop-perçu).
     amender($this, ['nb_jours' => 3, 'motif' => 'Forte réduction de la durée de mission.']);
 
+    // L'état porte le montant PAYABLE : un trop-perçu n'est pas décaissé (il est
+    // retenu sur salaire), il ne diminue ni n'inverse le total signé.
     $reliquat->refresh();
-    expect($reliquat->montant_reliquat)->toBe(-54000)
-        ->and($reliquat->montant_total)->toBe(-54000)
+    expect($reliquat->montant_reliquat)->toBe(0)
+        ->and($reliquat->montant_total)->toBe(0)
         ->and($reliquat->statut)->toBe('BROUILLON');
+    // La ligne du bénéficiaire garde la trace du trop-perçu.
+    expect(collect($reliquat->lignes)->firstWhere('numero', $this->om->reference_semo)['reliquat_brut'])->toBe(-54000);
 });
 
 it('laisse l’état des AVANCES validé scellé et inchangé après un amendement', function () {
@@ -128,4 +133,15 @@ it('rétablit un état des reliquats rejeté sur les montants amendés', functio
     expect($reetabli->statut)->toBe('BROUILLON')
         ->and($reetabli->montant_reliquat)->toBe(171000)
         ->and($reetabli->montant_total)->toBe(171000);
+});
+
+it('affiche les trop-perçus à part sur le document de l’état des reliquats', function () {
+    validerAvances($this);
+    amender($this, ['nb_jours' => 3, 'motif' => 'Forte réduction de la durée de mission.']);
+    $reliquat = reliquatBrouillon($this);
+
+    $donnees = app(EtatPaiementPdf::class)->donnees($reliquat->fresh(), true);
+
+    expect($donnees['trop_percus'])->toBe(54000)
+        ->and($donnees['total_reliquat'])->toBe('-');   // rien à décaisser (montant 0)
 });

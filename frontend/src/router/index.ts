@@ -356,15 +356,16 @@ router.beforeEach(async (to) => {
     if (auth.token) {
       try {
         await auth.fetchUser()
-        if (auth.isAuthenticated) {
-          await chargerPartAvance()
-          return checkPermission()
-        }
       } catch {
         // token invalid
       }
     }
-    return { name: 'login', query: { redirect: to.fullPath } }
+    // Session restaurée (rechargement) : on poursuit vers les mêmes contrôles
+    // que la navigation ordinaire — dont le changement de mot de passe imposé,
+    // qui ne doit pas être court-circuité par un retour direct à checkPermission().
+    if (!auth.isAuthenticated) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
   }
 
   // Redirect to dashboard if guest route and authenticated
@@ -380,7 +381,8 @@ router.beforeEach(async (to) => {
 
   // Pourcentage d'avance chargé avant tout écran authentifié : garantit que les
   // instantanés synchrones partAvance() des vues lisent la bonne valeur. Idempotent.
-  if (auth.isAuthenticated) {
+  // Pas pendant un changement de mot de passe imposé (l'API répondrait 423).
+  if (auth.isAuthenticated && !auth.mustChangePassword) {
     await chargerPartAvance()
   }
 

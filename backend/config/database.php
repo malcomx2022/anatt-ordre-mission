@@ -24,6 +24,8 @@ return [
     | complet s'il n'est pas dans le PATH (ex. WAMP : C:\wamp64\bin\mysql\mysqlX.Y\bin\mysqldump.exe).
     */
     'dump_binary' => env('DB_DUMP_BINARY', 'mysqldump'),
+    // Client mysql utilisé par db:restore (restauration d'une sauvegarde).
+    'restore_binary' => env('DB_RESTORE_BINARY', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
