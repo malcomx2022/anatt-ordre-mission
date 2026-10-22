@@ -130,9 +130,13 @@ Chaque point est couvert par un test, sauf mention contraire.
 - `phpunit.xml` porte une `APP_KEY` de test : la suite passe sans `.env`. Il reste des avertissements de phpdotenv, sans effet ; le code de sortie est 0.
 - `playwright.config.ts` accepte `PLAYWRIGHT_CHROMIUM_EXECUTABLE`.
 
-### Hors périmètre de cette revue (relevés, non traités)
+### Points mineurs hors rapport — traités (troisième passe)
 
-- Plafond de `per_page` absent sur `/etats` et `/missions`.
-- Filtre `operateur` de `/ordres` appliqué à l'agent plutôt qu'au versement.
-- Nom des exports de rapports horodaté à la seconde.
-- Transport mis à 0 quand un OM est amendé à 0 jour.
+| Point | Correctif |
+|-------|-----------|
+| Pas de plafond de `per_page` sur `/etats` et `/missions` | Taille de page bornée entre 5 et 100 par `getPerPage`. Le défaut de ces deux écrans reste 20. |
+| Le filtre `operateur` de `/ordres` portait sur l'agent | Il porte sur l'opérateur du versement, celui du paiement. Un OM sans versement (exonéré) se rabat sur l'opérateur de l'agent. |
+| Deux exports lancés dans la même seconde s'écrasaient | Le nom de fichier reçoit un suffixe aléatoire. |
+| Transport perdu quand un OM passe à 0 jour | Seule l'exonération annule tout. Sans jour facturé, le per diem vaut 0 mais le transport reste dû. |
+
+Chaque point a un test qui échoue sans le correctif et passe avec. Pest : 552 / 552. La recette sur l'API réelle donne 76 / 76.

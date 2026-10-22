@@ -89,7 +89,9 @@ class CalculIndemniteService
             fn ($l) => (int) ($l['nb_jours'] ?? 0) > 0,
         ));
 
-        if ($exonere || empty($lignes)) {
+        // Seule l'exonération (prise en charge par un tiers) annule tout. Sans
+        // aucun jour, le per diem est nul mais un transport engagé reste dû.
+        if ($exonere) {
             return [
                 'lignes' => [],
                 'type_principal' => $lignes[0]['type'] ?? null,

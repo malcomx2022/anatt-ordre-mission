@@ -3,6 +3,7 @@
 use App\Models\Agent;
 use App\Models\OrdreMission;
 use App\Models\User;
+use App\Models\Versement;
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
@@ -76,4 +77,25 @@ it('pagine les ordres de mission', function () {
     expect($response->json('data'))->toHaveCount(5);
     expect($response->json('meta.total'))->toBe(8);
     expect($response->json('meta.last_page'))->toBe(2);
+});
+
+it('plafonne aussi per_page sur les missions et les états de paiement', function () {
+    $controleur = User::factory()->controleur()->create();
+
+    expect($this->actingAs($controleur)->getJson('/api/missions?per_page=100000')->json('meta.per_page'))->toBe(100)
+        ->and($this->actingAs($controleur)->getJson('/api/etats?per_page=100000')->json('meta.per_page'))->toBe(100)
+        // Le défaut de ces deux écrans reste 20.
+        ->and($this->actingAs($controleur)->getJson('/api/missions')->json('meta.per_page'))->toBe(20);
+});
+
+it('filtre les ordres sur l’opérateur du versement, pas celui de l’agent', function () {
+    // Agent passé de MOOV à MTN APRÈS génération : son versement reste MOOV.
+    $agent = Agent::factory()->mtn()->create();
+    $om = OrdreMission::factory()->create(['agent_id' => $agent->id]);
+    Versement::factory()->create(['ordre_mission_id' => $om->id, 'operateur' => 'MOOV']);
+
+    $ids = fn (string $op) => collect($this->actingAs($this->admin)->getJson("/api/ordres?operateur={$op}")->json('data'))->pluck('id');
+
+    expect($ids('MOOV'))->toContain($om->id)
+        ->and($ids('MTN'))->not->toContain($om->id);
 });

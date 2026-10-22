@@ -161,3 +161,25 @@ it('ignore la part paramétrable une fois l’avance engagée', function () {
 
     definirPartAvance(null);
 });
+
+it('conserve le transport quand aucun jour n’est facturé (sans exonération)', function () {
+    // Avant : zéro jour ⇒ tout à 0 et « exonéré », transport engagé perdu.
+    $r = $this->service->calculerDetaille('INDICE_SUP_800', 'INTERIEUR', [
+        ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 0],
+    ], exonere: false, montantTransport: 10000);
+
+    expect($r['per_diem'])->toBe(0)
+        ->and($r['nb_jours'])->toBe(0)
+        ->and($r['montant_transport'])->toBe(10000)
+        ->and($r['montant_total'])->toBe(10000)
+        ->and($r['avance'])->toBe(7000)
+        ->and($r['exonere'])->toBeFalse();
+});
+
+it('annule aussi le transport en cas d’exonération', function () {
+    $r = $this->service->calculerDetaille('INDICE_SUP_800', 'INTERIEUR', [
+        ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 3],
+    ], exonere: true, montantTransport: 10000);
+
+    expect($r['montant_total'])->toBe(0)->and($r['exonere'])->toBeTrue();
+});

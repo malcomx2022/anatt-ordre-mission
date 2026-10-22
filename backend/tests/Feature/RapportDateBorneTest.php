@@ -2,7 +2,9 @@
 
 use App\Models\User;
 use App\Models\Versement;
+use App\Services\RapportService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /*
  * Borne « date_fin » des rapports : date_paiement est un TIMESTAMP, donc un
@@ -41,4 +43,16 @@ it('exclut un versement confirmé après la borne de fin', function () {
         ->getJson('/api/rapports/agents?date_debut=2026-01-01&date_fin=2026-01-31')
         ->assertOk()
         ->assertJsonCount(0, 'data');
+});
+
+it('donne un nom distinct à deux exports lancés dans la même seconde', function () {
+    Storage::fake('local');
+    Carbon::setTestNow('2026-10-22 10:00:00');
+    $service = app(RapportService::class);
+
+    $a = $service->exporter(['dimension' => 'agent', 'format' => 'xlsx']);
+    $b = $service->exporter(['dimension' => 'agent', 'format' => 'xlsx']);
+
+    expect($a['fichier'])->not->toBe($b['fichier']);
+    Carbon::setTestNow();
 });

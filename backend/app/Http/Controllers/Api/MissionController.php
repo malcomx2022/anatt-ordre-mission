@@ -43,8 +43,15 @@ class MissionController extends Controller
             $query->where('agent_id', $agentId);
         }
 
+        // Opérateur de PAIEMENT : celui figé sur les versements (un agent passé
+        // d'un opérateur à l'autre garde ses versements déjà générés sur l'ancien).
+        // Un OM sans versement (exonéré) retombe sur l'opérateur de l'agent.
         if ($operateur = $request->get('operateur')) {
-            $query->whereHas('agent', fn ($q) => $q->where('operateur', $operateur));
+            $query->where(fn ($q) => $q
+                ->whereHas('versements', fn ($v) => $v->where('operateur', $operateur))
+                ->orWhere(fn ($sansVersement) => $sansVersement
+                    ->whereDoesntHave('versements')
+                    ->whereHas('agent', fn ($a) => $a->where('operateur', $operateur))));
         }
 
         if ($dateDebut = $request->get('date_debut')) {
@@ -101,7 +108,7 @@ class MissionController extends Controller
             ->when($request->filled('etat') && $request->input('etat') !== 'sans_etat',
                 fn ($q) => $q->whereHas('etatsPaiement', fn ($e) => $e->where('statut', $request->string('etat'))))
             ->orderByDesc('id')
-            ->paginate((int) $request->integer('per_page', 20));
+            ->paginate($this->getPerPage($request, 20));
 
         return response()->json([
             'data' => collect($missions->items())->map(fn (Mission $m) => [

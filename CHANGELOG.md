@@ -9,6 +9,17 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Corrigé (revue d'octobre 2026, troisième passe)
+
+- **Pagination de `/api/missions` et `/api/etats`** : `per_page` est désormais plafonné à 100,
+  avec une valeur par défaut de 20.
+- **Filtre `operateur` de `/api/ordres`** : il porte sur l'opérateur du versement (celui du
+  paiement), et non plus sur l'opérateur actuel de l'agent.
+- **Exports de rapports** : un suffixe aléatoire est ajouté au nom du fichier, si bien que deux
+  exports lancés dans la même seconde ne s'écrasent plus.
+- **Calcul du per diem** : un OM sans jour facturé garde son transport. Seule une prise en
+  charge par un tiers ramène tous les montants à 0.
+
 ### Modifié
 
 - **Revue d'octobre 2026, seconde passe — points restants traités** (détail :
