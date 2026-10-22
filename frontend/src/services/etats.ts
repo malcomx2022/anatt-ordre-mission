@@ -118,7 +118,11 @@ export const signaturesService = {
   async televerser(poste: PosteSignataire, fichier: File): Promise<SignatairesParametres> {
     const form = new FormData()
     form.append('signature', fichier)
-    const { data } = await api.post(`/api/admin/signatures/${poste}`, form)
+    const { data } = await api.post(`/api/admin/signatures/${poste}`, form, {
+      // Sans cet en-tête, l'en-tête JSON par défaut de l'instance ferait
+      // sérialiser le FormData par axios (le fichier deviendrait `{}`).
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     return unwrap<SignatairesParametres>(data)
   },
 

@@ -191,6 +191,23 @@ class MissionService
             }
             $this->exigerAmendementPossible($ordre);
 
+            // Circuit par OM (mission sans état) : l'avance n'est jamais figée par
+            // la validation d'un état. Dès qu'elle est partie dans un fichier
+            // (GENERE) ou payée (CONFIRME), on l'engage ici pour que seul le
+            // reliquat absorbe l'écart — sinon un recalcul 70/30 ignorerait
+            // l'avance déjà décaissée (sur-paiement sans trop-perçu détecté).
+            if ($ordre->avance_engagee === null) {
+                $avanceSortie = $ordre->versements()
+                    ->where('type', 'AVANCE')
+                    ->whereIn('statut', ['GENERE', 'CONFIRME'])
+                    ->value('montant');
+
+                if ($avanceSortie !== null) {
+                    $ordre->avance_engagee = (int) $avanceSortie;
+                    $ordre->save();
+                }
+            }
+
             $exonere = (bool) ($ordre->mission?->prise_en_charge_tiers);
 
             // Nouvelles lignes : détaillées si fournies, sinon le type courant de

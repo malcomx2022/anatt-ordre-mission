@@ -11,6 +11,20 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ### Corrigé
 
+- **Revue complète d'octobre 2026 — huit défauts corrigés** (détail et points
+  restants : `docs/revue-projet-2026-10.md`). Bloquants reproduits sur l'API réelle :
+  un OM **rejeté** avant le récapitulatif redevenait `VALIDE` et **payable** à la
+  validation de l'état des avances (`EtatPaiementService::propager` exclut `REJETE`) ;
+  deux missions de **même objet** partageaient le même fichier de paiement, si bien que
+  le re-téléchargement d'un lot servait celui de l'autre (un dossier par mission,
+  `paiements/{mission_id}/`) ; sur le circuit par OM, un amendement après paiement de
+  l'avance recalculait 70/30 en ignorant l'avance décaissée (l'avance `GENERE`/`CONFIRME`
+  est désormais engagée). Également : 401 JSON au lieu d'une page 500 sur `/api/*` sans
+  en-tête `Accept` ; téléversement des paraphes (le FormData partait sérialisé en JSON) ;
+  mois courant calculé en UTC (décalé d'un mois au Bénin dans les rapports) ; catégorie
+  suggérée fausse quand l'indice est vidé ; historique OM-08 muet (champs et codes
+  d'action obsolètes).
+
 - **Déploiement : la version de PHP annoncée rendait l'API inutilisable**
   `DEPLOY-CPANEL.md` §4 demandait de sélectionner « PHP 8.2 ou 8.3 » dans cPanel.
   Or `composer.lock` épingle six paquets de production qui exigent **PHP ≥ 8.4** :

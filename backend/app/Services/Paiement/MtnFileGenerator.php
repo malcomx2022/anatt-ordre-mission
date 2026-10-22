@@ -69,7 +69,9 @@ class MtnFileGenerator extends FileGenerator
         $contenu = implode("\r\n", array_merge([$entete], $details))."\r\n";
 
         $nomFichier = $this->nomFichier($theme, $tranche, 'txt');
-        $chemin = "paiements/{$nomFichier}";
+        // Un dossier par mission : deux missions de même objet produisent le même
+        // nom de fichier, qui ne doit pas écraser le fichier de l'autre lot.
+        $chemin = "paiements/{$mission->id}/{$nomFichier}";
         Storage::disk('local')->put($chemin, $contenu);
 
         return [

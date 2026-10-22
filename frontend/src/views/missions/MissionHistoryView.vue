@@ -29,7 +29,7 @@ onMounted(async () => {
       api.get(`/api/ordres/${route.params.id}`),
     ])
 
-    missionNumero.value = missionRes.data.data?.numero || `OM-${route.params.id}`
+    missionNumero.value = missionRes.data.data?.reference_semo || `OM-${route.params.id}`
 
     const logs = historiqueRes.data.data || []
     events.value = logs.map((log: {
@@ -37,14 +37,14 @@ onMounted(async () => {
       user?: { name?: string; role?: string } | null
       created_at: string
       ip_address?: string | null
-      details?: unknown
+      donnees?: unknown
     }) => ({
       action: formatAction(log.action),
       user: log.user?.name || '--',
       role: log.user?.role || '--',
       date: formatDate(log.created_at),
       ip: log.ip_address || '--',
-      details: formatDetails(log.action, log.details),
+      details: formatDetails(log.donnees),
     }))
   } catch {
     // Geree par useApi
@@ -55,23 +55,22 @@ onMounted(async () => {
 
 function formatAction(action: string): string {
   const map: Record<string, string> = {
-    CREATE_ORDRE_MISSION: 'Creation de l\'ordre de mission',
-    SUBMIT_ORDRE_MISSION: 'Soumission pour validation',
-    VALIDATE_N1: 'Validation chef de service',
-    APPROVE_DG: 'Approbation Direction Generale',
-    REJECT_ORDRE_MISSION: 'Rejet de l\'ordre de mission',
-    GENERATE_PAYMENT: 'Generation du paiement',
-    UPDATE_ORDRE_MISSION: 'Modification de l\'ordre',
+    // Codes journalisés par MissionService (entité ordre_mission).
+    IMPORT_OM: 'Retranscription depuis SEMO',
+    VALIDATE_OM: 'Validation de l\'ordre de mission',
+    REJECT_OM: 'Rejet de l\'ordre de mission',
+    AMEND_OM: 'Amendement (avenant)',
   }
   return map[action] || action
 }
 
-function formatDetails(action: string, details: unknown): string {
+function formatDetails(details: unknown): string {
   if (!details) return ''
   if (typeof details === 'string') return details
-  const d = details as { statut?: string; numero?: string }
-  if (d.statut) return `Statut: ${d.statut}`
-  if (d.numero) return `Reference: ${d.numero}`
+  const d = details as { motif?: string; statut?: string; nb_jours?: number; delta?: number }
+  if (d.motif && d.nb_jours != null) return `${d.nb_jours} jour(s), écart ${d.delta ?? 0} FCFA — ${d.motif}`
+  if (d.motif) return d.motif
+  if (d.statut) return `Statut : ${d.statut}`
   return JSON.stringify(details)
 }
 

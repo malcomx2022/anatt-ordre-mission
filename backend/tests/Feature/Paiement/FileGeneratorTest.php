@@ -169,3 +169,22 @@ it('neutralise l’injection de formule dans le libellé (Moov .xlsx)', function
 
     expect($sheet->getCell('H2')->getValue())->toStartWith("'@SUM");
 });
+
+it('isole le fichier de chaque mission même quand deux missions portent le même objet', function () {
+    $jumelle = Mission::create([
+        'objet' => $this->mission->objet, 'destination' => 'Parakou', 'zone_code' => 'INTERIEUR',
+        'date_depart' => '2026-06-01', 'date_retour' => '2026-06-03', 'prise_en_charge_tiers' => false,
+    ]);
+    fabriquerVersement($this->mission, ['nom' => 'DADA', 'telephone' => '0167267455'], 'AVANCE', 45000);
+    fabriquerVersement($jumelle, ['nom' => 'AGBO', 'telephone' => '0196000001'], 'AVANCE', 30000);
+
+    $a = app(MtnFileGenerator::class)->generer($this->mission->id, 'AVANCE', $this->user);
+    $b = app(MtnFileGenerator::class)->generer($jumelle->id, 'AVANCE', $this->user);
+
+    // Même nom de fichier remis à la plateforme, mais deux chemins distincts :
+    // le re-téléchargement du lot A ne doit jamais servir le fichier du lot B.
+    expect(basename($a['chemin']))->toBe(basename($b['chemin']))
+        ->and($a['chemin'])->not->toBe($b['chemin'])
+        ->and(Storage::disk('local')->get($a['chemin']))->toContain('DADA')
+        ->and(Storage::disk('local')->get($a['chemin']))->not->toContain('AGBO');
+});

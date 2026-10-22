@@ -411,9 +411,11 @@ class EtatPaiementService
             return;
         }
 
-        // Un OM soldé ou annulé n'est jamais ramené en arrière.
+        // Un OM soldé ou annulé n'est jamais ramené en arrière ; un OM rejeté est
+        // absent du récapitulatif signé (cf. recapituler) : la validation de
+        // l'état ne doit pas le rendre payable.
         OrdreMission::where('mission_id', $etat->mission_id)
-            ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
+            ->whereNotIn('statut', ['SOLDE', 'ANNULE', 'REJETE'])
             ->update(['statut' => $statutOm]);
 
         // Fige l'AVANCE ENGAGÉE : à partir d'ici l'avance est décaissable et ne
@@ -423,7 +425,7 @@ class EtatPaiementService
         if ($statutOm === Workflow::STATUT_VALIDE) {
             OrdreMission::where('mission_id', $etat->mission_id)
                 ->whereNull('avance_engagee')
-                ->whereNotIn('statut', ['ANNULE'])
+                ->whereNotIn('statut', ['ANNULE', 'REJETE'])
                 ->update(['avance_engagee' => DB::raw('avance')]);
         }
 
