@@ -140,7 +140,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > **Cohérence menu ↔ routes ↔ API.** Chaque entrée du menu latéral
 > (`components/shared/navigation.ts`) porte la **même** clé que le `meta.permission`
 > de sa route (`router/index.ts`), qui porte elle-même la clé exigée par l'API.
-> Les trois niveaux sont verrouillés par des tests : `tests/Feature/RoutesPermissionsTest.php`
+> Les trois niveaux sont verrouillés par des tests (et `backend/docs/openapi.yaml` par `tests/Feature/OpenApiTest.php` : chaque route y est décrite avec sa permission) : `tests/Feature/RoutesPermissionsTest.php`
 > (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
 > (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
@@ -169,7 +169,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (560 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (564 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 
 ### DevOps
 - Développement : WAMP + `start-dev.ps1` / `stop-dev.ps1` (API, worker, Vite)

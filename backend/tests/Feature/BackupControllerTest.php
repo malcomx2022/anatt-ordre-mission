@@ -158,3 +158,19 @@ it('db:restore purge la matrice des permissions mise en cache', function () {
     expect(Cache::has('rbac.matrice'))->toBeFalse();
     @unlink($client);
 })->skip(PHP_OS_FAMILY === 'Windows', 'client factice en shell POSIX');
+
+it('liste les sauvegardes de la plus récente à la plus ancienne', function () {
+    if (! is_dir($this->dir)) {
+        mkdir($this->dir, 0755, true);
+    }
+    // Comparées comme chaînes « d/m/Y », ces dates se classaient à l'envers.
+    file_put_contents($this->dir.'/backup_octobre.sql', '-- dump');
+    touch($this->dir.'/backup_octobre.sql', strtotime('2026-10-22 10:00'));
+    file_put_contents($this->dir.'/backup_novembre.sql', '-- dump');
+    touch($this->dir.'/backup_novembre.sql', strtotime('2026-11-03 10:00'));
+
+    $noms = collect($this->actingAs($this->su)->getJson('/api/admin/backups')->assertOk()->json('data'))
+        ->pluck('name')->all();
+
+    expect($noms)->toBe(['backup_novembre.sql', 'backup_octobre.sql']);
+});
