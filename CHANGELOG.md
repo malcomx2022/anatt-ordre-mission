@@ -222,6 +222,12 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — AGENTS.md (compléments)
+
+- **`AGENTS.md`** : cache `rememberForever` de la matrice (appeler `PermissionRepository::vider()`
+  après toute écriture de `role_permissions`) ; signatures du PDF de l'OM reprises de l'état et clé de
+  cache à maintenir ; test de `db:restore` avec client `mysql` factice ; contenu hors dump ; ~560 tests.
+
 #### Documentation — CLAUDE.md (compléments)
 
 - **`CLAUDE.md`** : part d'avance paramétrable rappelée dans les règles métier ; séparation des

@@ -30,7 +30,7 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~550 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, ~560 tests)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
@@ -54,6 +54,7 @@ High-signal notes for OpenCode sessions in this repo.
 - The axios instance sends `Content-Type: application/json` by default: any `FormData` upload must pass `headers: { 'Content-Type': 'multipart/form-data' }` or axios serializes the file to `{}`.
 - Pagination: use `$this->getPerPage($request[, $default])` (bounded 5–100), never a raw `per_page`.
 - Dates in the SPA: build `YYYY-MM` with `moisLocal()` (`utils/benin.ts`), never `toISOString()` (UTC shifts the month in Benin, UTC+1).
+- The permission matrix is cached with `rememberForever` (`rbac.matrice`): any code path that writes `role_permissions` (or replaces the DB, like `db:restore`) must call `PermissionRepository::vider()`.
 - RBAC "ordonnateur/payeur" separation (`om.approuver` vs `paiements.generer|confirmer`) is enforced on profiles, on user overrides AND on every member's effective rights when a profile is edited or reset (`RoleController`).
 
 ## Payments/async gotchas
@@ -65,6 +66,7 @@ High-signal notes for OpenCode sessions in this repo.
 - Eligibility gate is `Versement::scopeEligiblesLot`: excludes CONFIRME, ANNULE, A_RECOUVRER, RECOUVRE, amounts ≤ 0, versements carried by a CONFIRME lot, and requires the OM VALIDE + the état OF ITS TRANCHE VALIDE. `FileGenerator::exigerEtatValide` is a second barrier — keep both.
 - Marking a lot ERREUR puts its versements back to EN_ATTENTE with the agent's CURRENT phone/operator.
 - A mission has TWO payment states (`etats_paiement`, one per tranche AVANCE/RELIQUAT), each with its own full validation circuit; reliquat état is refused until the avance état is VALIDÉ. A versement is eligible only when the état OF ITS TRANCHE is valid (missions without any état = legacy OM-level fallback, `/ordres/:id/valider|rejeter`).
+- The OM PDF takes its signature blocks from the OM itself first, else from the AVANCE état covering it (`PdfGenerator::etatSignataire`: OM listed in the état `lignes`, OM not REJETE/ANNULE, état not REJETE; never on a draft). The cache key includes the état status (`OM-{ref}-{statut}-ETAT-{statut_etat}.pdf`) — keep it in sync if you add state to the signatures, or stale PDFs get served.
 - The reliquat état is signed at the PAYABLE amount (sum of positive reliquats); trop-perçus (negative reliquats) are shown apart on the PDF, never subtracted from the signed total.
 - Validating the avance état propagates VALIDE to the mission's OM except SOLDE/ANNULE/REJETE; rejecting an OM sets its EN_ATTENTE versements to ANNULE.
 - The closing "état général" (avances + reliquats) is NOT an entity: `EtatPaiementPdf::telechargerFinal()` synthesizes it from the two sealed snapshots once BOTH tranches are VALIDE (422 otherwise) — no third circuit, no migration.
@@ -77,7 +79,8 @@ High-signal notes for OpenCode sessions in this repo.
 
 ## Backups
 - `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.
-- Tests mock `Artisan::call` for restore — the real `mysql` client is never exercised in CI.
+- Tests mock `Artisan::call` for the HTTP restore; `BackupControllerTest` also runs `db:restore` end-to-end with a fake POSIX `mysql` script (skipped on Windows). A real MySQL restore is never exercised in CI.
+- `db:restore` purges the cached permission matrix after success. The dump covers the DB only: `storage/app/settings.json` (partAvance, fiscal year, SMTP, signatories), paraphes (`storage/app/private/signatures/`) and generated files live on disk and are neither backed up nor restored.
 
 ## Seed/data expectations
 - `backend/database/seeders/DatabaseSeeder.php` seeds essentials always; demo data only in `local/testing`.
