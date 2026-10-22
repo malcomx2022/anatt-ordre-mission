@@ -133,6 +133,36 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 
 #### Documentation — déploiement
 
+- **`UPLOAD-VENDOR.md`** :
+  - nouvelle étape 0 « Faut-il renvoyer `vendor/` ? » (comparer `composer.lock`) ; rien à renvoyer
+    pour la 1.3 ;
+  - PHP 8.4 exigé en local aussi (sous 8.3, `composer install` refuse le lock) et sur le site
+    (`platform_check.php`) ;
+  - `--prefer-dist` et contrôle de l'absence de dossiers `.git` dans `vendor/` (un repli sur des
+    clones git le fait passer de 180 Mo à plus de 600 Mo, mesuré) ;
+  - extraction sans résidu : ancien `vendor/` renommé en `vendor_old/` (retour arrière), puis
+    `bootstrap/cache/packages.php` et `services.php` vidés systématiquement ;
+  - dépannage : version PHP du site, retour arrière.
+- **`docs/runbook-mise-a-jour-cron.md`** adapté à la mise à jour vers la 1.3 :
+  - encadrés « 1.3 » : migration attendue, `vendor/` inchangé, contrôle du 401 JSON, lots
+    re-téléchargeables et écran Sauvegardes ;
+  - prérequis : aucun lot en attente de dépôt avant l'opération ;
+  - tâches Cron permanentes (`db:backup`, `queue:work`) distinguées des tâches temporaires du
+    runbook ; elles restent en place et sont contrôlées au ménage ;
+  - retour arrière : le `down()` de `add_sequence_to_lots_paiement` échoue dès qu'un lot
+    complémentaire existe (revenir par le dump) ; fichiers écrits après la mise à jour à rapprocher
+    avant tout redépôt. Compte des migrations corrigé (33).
+- **`docs/checklist-post-deploiement.md`** complétée pour la 1.3 :
+  - API : cohérence de la file d'attente (`QUEUE_CONNECTION` et tâche `queue:work`) et contrôle
+    de la sauvegarde planifiée du lendemain ;
+  - parcours de fumée étendu à 11 routes (régularisations, matrice des permissions, sauvegardes,
+    maintenance) ;
+  - contrôles 1.3 sans création de données : part d'avance lue par un profil non administrateur,
+    montant des états de reliquats déjà validés inchangé, rangement des fichiers par mission ;
+  - nouveaux contrôles **sur l'instance de recette uniquement** : restauration, lot en erreur,
+    lot complémentaire, gros lot, garde d'amendement ;
+  - filet de sécurité : comptes de démo absents, mot de passe du super administrateur initial
+    changé, dump pris avant la mise à jour.
 - **`DEPLOY-CPANEL.md`** :
   - nouveau §9.1 *Restaurer une sauvegarde* : prérequis `exec()`, `mysqldump` et `mysql`, et
     restauration par tâche Cron pour les grosses bases ;

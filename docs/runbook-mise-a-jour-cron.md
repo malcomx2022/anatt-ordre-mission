@@ -7,6 +7,11 @@
 > **Contexte visé** : compte cPanel `anatt`, **pas d'accès SSH**, **tâches Cron disponibles**.
 > SPA sur `https://omsemo.anatt.bj` (`public_html/`), API sur `https://api-omsemo.anatt.bj`
 > (`/home/anatt/anatt-api/`, racine `anatt-api/public`).
+>
+> **Mise à jour vers la 1.3** (revue d'octobre 2026) : une seule migration
+> (`2026_10_22_090000_add_sequence_to_lots_paiement`), `vendor/` **inchangé**, SPA **à redéployer**.
+> Les encadrés « 1.3 » ci-dessous donnent ce qui est propre à cette version ; le détail est dans les
+> *Notes de version 1.3* de `DEPLOY-CPANEL.md`.
 
 ---
 
@@ -19,6 +24,11 @@
 - [ ] `vendor/` régénéré **seulement si `composer.lock` a changé** (`composer install --no-dev
       --optimize-autoloader`, puis envoi zippé — cf. [`UPLOAD-VENDOR.md`](../UPLOAD-VENDOR.md)).
 - [ ] Heure creuse choisie ; personne ne saisit d'OM pendant l'opération.
+- [ ] **Aucun fichier de paiement en attente de dépôt** : sur `/paiements`, tous les lots `GENERE`
+      sont soit déposés et confirmés, soit passés en erreur. Un lot généré pendant l'opération
+      serait perdu en cas de retour arrière (la base revient à l'étape 1, pas le fichier).
+
+> **1.3** : `composer.lock` n'a pas changé depuis la 1.2 → **ne pas** réenvoyer `vendor/`.
 
 ---
 
@@ -30,6 +40,14 @@
 - [ ] **SPA** — Gestionnaire de fichiers > `public_html` > tout sélectionner > **Compresser**
       en `public_html_AAAA-MM-JJ.zip` > télécharger.
 - [ ] **`.env`** — télécharger `anatt-api/.env` (il ne sera pas écrasé, mais il est irremplaçable).
+- [ ] **Relever les tâches Cron permanentes** (cPanel > Cron Jobs) : sauvegarde quotidienne
+      `db:backup` à 02:00 et, si `QUEUE_CONNECTION=database`, `queue:work` chaque minute. Elles
+      **restent en place** pendant toute l'opération ; seules les tâches temporaires de ce runbook
+      seront créées puis supprimées.
+
+> Le bouton « Nouvelle sauvegarde » de l'écran *Sauvegardes* (`db:backup`) complète le dump
+> phpMyAdmin mais ne le remplace pas : il dépend de `exec()` et de `mysqldump`, et son fichier reste
+> sur le serveur. Le dump phpMyAdmin téléchargé est la seule sauvegarde garantie hors serveur.
 
 ---
 
@@ -43,6 +61,9 @@ SELECT migration, batch FROM migrations ORDER BY id;
 
 - [ ] Comparer avec les noms de fichiers de `backend/database/migrations/` (sans `.php`).
 - [ ] Noter les manquants — c'est exactement ce que l'étape 5 doit jouer.
+
+> **1.3** : depuis une instance 1.2 à jour, seul `2026_10_22_090000_add_sequence_to_lots_paiement`
+> manque. Une base antérieure au 14/09 manque aussi `2026_09_14_090000_renommer_categories_ordre_en_indice`.
 
 ---
 
@@ -77,7 +98,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 | Chemin | Pourquoi |
 |---|---|
 | `anatt-api/.env` | Identifiants de base + `APP_KEY` |
-| `anatt-api/storage/` | PDF générés, sauvegardes, logs |
+| `anatt-api/storage/` | PDF générés, fichiers de paiement (`storage/app/private/paiements/`), sauvegardes (`storage/app/backups/`), logs |
 | `anatt-api/bootstrap/cache/` | À **vider** (étape 6), jamais à écraser |
 | `public_html/runtime-config.js` | Porte l'`apiUrl` de production |
 
@@ -91,8 +112,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 
 ## 5 · Migrer la base
 
-> **Une seule tâche Cron active à la fois.** Créez la suivante après avoir supprimé la précédente,
-> sinon deux tâches se disputent les fichiers de log.
+> **Une seule tâche Cron temporaire active à la fois.** Créez la suivante après avoir supprimé la
+> précédente, sinon deux tâches se disputent les fichiers de log. Les tâches permanentes relevées à
+> l'étape 1 (`db:backup`, `queue:work`) écrivent ailleurs et restent en place.
 
 ### 5a · Lister (ne modifie rien)
 
@@ -109,7 +131,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
 ```
 
-- [ ] `/home/anatt/migration-run.log` : chaque migration attendue affiche **`DONE`**.
+- [ ] `/home/anatt/migration-run.log` : chaque migration attendue affiche **`DONE`**
+      (**1.3** : `2026_10_22_090000_add_sequence_to_lots_paiement … DONE`, quelques secondes, aucune
+      donnée transformée — les lots existants prennent `sequence = 1`).
 - [ ] **Tâche supprimée** — sinon elle se rejoue toutes les cinq minutes et **écrase le log**.
 
 > `--force` remplace la confirmation interactive, impossible en Cron.
@@ -121,6 +145,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 
 - [ ] `https://api-omsemo.anatt.bj/up` → page de santé Laravel en **200**.
 - [ ] Un POST sur `/api/auth/login` répond en JSON.
+- [ ] **1.3** : `https://api-omsemo.anatt.bj/api/auth/me` ouvert dans le navigateur répond **401 en
+      JSON** (`{"message":"Non authentifie."}`). Une page 500 ici = l'ancien `bootstrap/app.php` est
+      encore en place (étape 4).
 
 > **500 partout** avec « Your Composer dependencies require a PHP version ">= 8.4.0" » → la
 > version PHP du **site** (pas celle du Cron) est trop basse : *Select PHP Version* → 8.4.
@@ -150,6 +177,10 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 - [ ] Connexion en Super Administrateur.
 - [ ] Tableau de bord : KPIs et graphiques chargés (preuve que le SPA atteint l'API en HTTPS).
 - [ ] `/ordres`, `/missions`, `/etats`, `/paiements` rendent leur écran, sans page blanche.
+- [ ] **1.3** : `/paiements` affiche les lots existants, toujours re-téléchargeables ;
+      `/admin/sauvegardes` propose **Télécharger** et **Restaurer**. Ne générez **aucun** fichier de
+      paiement et ne restaurez **rien** pour tester : ces contrôles-là se font en recette (section
+      *06 › Sur l'instance de recette uniquement* de la checklist).
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu
       (version 1.3 : voir la section *06* de la checklist et les *Notes de version 1.3* de
@@ -161,6 +192,8 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 ## 9 · Ménage
 
 - [ ] Toutes les tâches Cron temporaires supprimées (étapes 3, 5a, 5b).
+- [ ] Tâches Cron **permanentes** toujours présentes (`db:backup` 02:00, `queue:work` le cas
+      échéant) ; le lendemain, un nouveau fichier daté apparaît dans `anatt-api/storage/app/backups/`.
 - [ ] `/home/anatt/php-version.log`, `migration-status.log`, `migration-run.log` supprimés.
 - [ ] Sauvegardes de l'étape 1 archivées hors du serveur.
 
@@ -175,6 +208,12 @@ Si la recette échoue et que le correctif n'est pas immédiat :
    actuel sans intervention manuelle).
 3. **Code API** — réenvoyer le `anatt-api/` de la version précédente.
 
-> `migrate:rollback --step=1` existe (les 32 migrations implémentent toutes `down()`), mais
+> `migrate:rollback --step=1` existe (les 33 migrations implémentent toutes `down()`), mais
 > restaurer le dump reste plus sûr : un rollback ne rend pas les données qu'une migration a
 > transformées.
+>
+> **1.3** : le `down()` de `add_sequence_to_lots_paiement` recrée l'ancienne clé unique
+> (mission × tranche × opérateur). Il **échoue** dès qu'un lot complémentaire (`sequence` ≥ 2) existe
+> — raison de plus pour revenir par le dump. Les fichiers de paiement écrits après la mise à jour
+> (`storage/app/private/paiements/{mission_id}/`) restent sur le disque mais ne sont plus référencés
+> par la base restaurée : ne les redéposez pas sans les avoir rapprochés des lots.

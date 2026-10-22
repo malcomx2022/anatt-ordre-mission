@@ -7,7 +7,11 @@
 > - **SPA** : `https://omsemo.anatt.bj` (contenu de `frontend/dist/` dans `public_html/`)
 > - **API** : `https://api-omsemo.anatt.bj` (application Laravel dans `anatt-api/`, racine `anatt-api/public`)
 >
-> Référence détaillée : [`DEPLOY-CPANEL.md`](../DEPLOY-CPANEL.md).
+> Référence détaillée : [`DEPLOY-CPANEL.md`](../DEPLOY-CPANEL.md) — pour une **mise à jour** vers la 1.3,
+> lire d'abord ses *Notes de version 1.3* (migration, `vendor/` inchangé, SPA à redéployer).
+>
+> Sauf mention contraire, tout se vérifie **sans créer de données** en production : les contrôles
+> qui génèrent un lot ou restaurent une base se font sur une instance de **recette**.
 
 ---
 
@@ -24,6 +28,8 @@ Le back-end doit répondre **avant** tout test du SPA.
 - [ ] **Permissions** : `storage/` (récursif) et `bootstrap/cache/` en écriture (755/775) — sinon erreur 500 au premier appel.
 - [ ] **Caches applicatifs vidés** après changement de code ou de `.env` : `php artisan optimize:clear` (ou `config:clear` + `view:clear`).
 - [ ] **HTTPS (AutoSSL)** actif sur `api-omsemo.anatt.bj`.
+- [ ] **File d'attente cohérente** : avec `QUEUE_CONNECTION=sync` (défaut du gabarit de production), rien à faire. Avec `database`, la tâche Cron `queue:work --stop-when-empty` (chaque minute) est **active** — sinon les gros lots restent « en cours » indéfiniment (`DEPLOY-CPANEL.md` §9).
+- [ ] **Sauvegarde planifiée** : la tâche Cron `db:backup --compress` (02:00) existe ; le lendemain, un fichier daté apparaît dans `anatt-api/storage/app/backups/` (et `storage/logs/backup.log` ne contient pas d'erreur `mysqldump`/`exec`).
 
 > Sur mutualisé sans SSH, les commandes `artisan` passent par une **tâche Cron ponctuelle** (voie la plus
 > largement disponible) ou le **Terminal cPanel** s'il est activé, avec le chemin **explicite** de la
@@ -79,8 +85,15 @@ Connecté en Super Administrateur. Chaque route rend son écran, **sans page bla
 | `/ordres` | Table des OM, filtres statut / zone / opérateur |
 | `/paiements` | Liste des lots ; génération MTN/Moov accessible |
 | `/etats` | File de travail des états de paiement |
+| `/paiements/regularisations` | Liste des trop-perçus (vide sur une instance neuve), total à recouvrer |
+| `/admin/roles` | Matrice des permissions (8 profils système) |
+| `/admin/sauvegardes` | Liste des sauvegardes ; boutons Télécharger / Restaurer |
+| `/maintenance` | Page de maintenance avec compte à rebours (si une fin est programmée) |
 
-- [ ] Les 7 routes ci-dessus rendent leur écran, zéro page blanche.
+> `/missions/1/etat` suppose qu'une mission n° 1 existe ; sur une instance neuve, prendre l'identifiant
+> d'une mission réelle ou passer cette ligne.
+
+- [ ] Les 11 routes ci-dessus rendent leur écran, zéro page blanche.
 - [ ] Console navigateur sans erreur rouge sur ces pages.
 
 ---
@@ -101,13 +114,26 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Sauvegardes** (`/admin/sauvegardes`, SUPER_ADMIN) : « Nouvelle sauvegarde » réussit, puis l'icône **Télécharger** récupère le fichier. *(La restauration se teste sur une base de recette, jamais en production.)*
 - [ ] **Signatures** (`/admin/signatures`) : téléverser un paraphe réussit (il était envoyé vide avant la 1.3).
 - [ ] **Rapport mensuel** (`/rapports/mensuel`) : le mois proposé par défaut est bien le mois **en cours**.
+- [ ] **Part d'avance** : connecté avec un profil **non administrateur** (gestionnaire OM), `GET /api/admin/parametres/part-avance` répond `200` avec la valeur configurée (70 par défaut), et l'écran de retranscription affiche la répartition avec cette part — pas un 70 % figé.
+- [ ] **États de reliquats déjà validés** : leur montant scellé est **inchangé** après la mise à jour (la nouvelle règle « montant payable » ne s'applique qu'aux récapitulatifs établis ou rafraîchis ensuite).
+- [ ] **Fichiers de paiement** : à la **première génération réelle** après la mise à jour, le fichier apparaît dans `anatt-api/storage/app/private/paiements/{mission_id}/` (Gestionnaire de fichiers cPanel). Ne déplacer aucun ancien fichier.
+
+#### Sur l'instance de recette uniquement
+
+- [ ] **Restauration** : créer une sauvegarde, modifier une donnée, puis **Restaurer** depuis `/admin/sauvegardes` (recopie du nom du fichier) → la donnée revient, une sauvegarde de sécurité supplémentaire (l'état d'avant la restauration) apparaît dans la liste, et l'audit trace `BACKUP_RESTORE`. En cas d'échec : `DB_RESTORE_BINARY`, `exec()` et `DEPLOY-CPANEL.md` §9.1.
+- [ ] **Lot en erreur** : générer un lot, le passer en **Erreur** → ses versements reviennent « en attente » ; après correction du numéro de l'agent, la régénération reprend le **nouveau** numéro.
+- [ ] **Lot complémentaire** : après confirmation d'un lot, un versement devenu payable ensuite (par exemple un agent passé de Moov à MTN avant le paiement Moov, cf. `docs/SCENARIO-DEMO.md` §8) part dans un lot badgé **« complémentaire n° 2 »** (fichier `…_COMPL2`) ; le lot confirmé n'est pas réécrit.
+- [ ] **Gros lot** (plus de `PAIEMENT_ASYNC_SEUIL` bénéficiaires, 50 par défaut) : la génération affiche son suivi en cours, puis le fichier se télécharge automatiquement.
+- [ ] **Amendement** : refusé tant qu'un lot contenant l'OM est **généré** (en attente de dépôt) ; accepté une fois le lot confirmé ou passé en erreur.
 
 ---
 
 ## 07 · Filet de sécurité
 
 - [ ] Sauvegarde de l'ancien `public_html/` conservée avant l'upload (rollback possible).
-- [ ] Comptes de démonstration désactivés/supprimés en production (le mot de passe `password` n'existe qu'en local).
+- [ ] **Aucun compte de démonstration** en production (`admin@`, `gestion@`, `finance@`… `@anatt.bj`) : le seeder ne les crée qu'en `local`/`testing` ; s'il en existe (base importée depuis un poste de dev), les supprimer.
+- [ ] **Super administrateur initial** : son mot de passe (`SUPERADMIN_PASSWORD`) a été changé après la première connexion.
+- [ ] **Sauvegarde de sécurité** prise juste avant la mise à jour (dump phpMyAdmin avec `DROP TABLE`, `DEPLOY-CPANEL.md` § *Mise à jour*, A.1) et conservée hors du serveur.
 
 > Si la page blanche persiste après upload **et** purge de cache : relever la **console navigateur**
 > (erreurs rouges) sur `/missions/1/etat` et la réponse de `GET /api/missions/1/etat` — ce serait alors
