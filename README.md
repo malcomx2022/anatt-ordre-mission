@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4+** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (560 tests, 66 fichiers) · Vitest (113 tests) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (564 tests, 67 fichiers) · Vitest (113 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -157,7 +157,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 560 tests (66 fichiers)
+.\vendor\bin\pest                 # 564 tests (67 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
@@ -191,4 +191,4 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Droits d'accès et parcours par profil |
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
 | `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
-| `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI |
+| `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest`) |

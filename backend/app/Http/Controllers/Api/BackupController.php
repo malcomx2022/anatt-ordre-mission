@@ -33,7 +33,10 @@ class BackupController extends Controller
             return $this->success([]);
         }
 
+        // Tri sur l'horodatage du fichier, pas sur la date affichée : « d/m/Y »
+        // comparé comme une chaîne classerait le 22/10 avant le 03/11.
         $files = collect(scandir($dir))->filter(fn ($f) => str_ends_with($f, '.sql') || str_ends_with($f, '.sql.gz'))
+            ->sortByDesc(fn ($f) => filemtime("{$dir}/{$f}"))
             ->values()->map(function ($f) use ($dir) {
                 $path = "{$dir}/{$f}";
                 $size = filesize($path);
@@ -45,7 +48,7 @@ class BackupController extends Controller
                     'type' => str_contains($f, '_020000') ? 'Automatique' : 'Manuel',
                     'status' => 'Complet',
                 ];
-            })->sortByDesc('date')->values();
+            })->values();
 
         return $this->success($files);
     }

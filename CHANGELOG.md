@@ -95,6 +95,23 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   comportement à l'échec, sondage du SPA (2 s, 30 sondages « introuvable »), cache partagé exigé,
   `queue:restart` après déploiement, rejeu des jobs échoués.
 
+#### Documentation — description OpenAPI
+
+- **`backend/docs/openapi.yaml` réécrit** : l'ancienne description datait du modèle initial
+  (OM saisis à la main, soumission puis validation N1/DG, paiement direct, catégories A1-D) et ignorait
+  les missions, les états de paiement, les lots, les régularisations et l'administration (la moitié
+  de ses 15 chemins n'existait plus). Nouvelle spécification OpenAPI 3.0 sur les routes
+  réelles : authentification et verrou 423, limites de débit, enveloppes de réponse, schémas des
+  ressources (OM, mission, état de paiement, lot, versement, régularisation…), corps de requête
+  repris des Form Requests, permission de chaque opération (`x-permission`), règles métier
+  rappelées là où l'API les applique (gardes d'amendement, séparation des tâches, lots
+  complémentaires, 202 des gros lots). Validée par `openapi-spec-validator`.
+- **`tests/Feature/OpenApiTest.php`** : chaque route de l'API est décrite, aucune opération n'est
+  décrite sans route, la permission annoncée est celle du middleware, et chaque `$ref` est défini.
+- **Corrigé** : la liste des sauvegardes (`GET /api/admin/backups`) triait la date affichée
+  `d/m/Y` comme une chaîne (le 22/10 avant le 03/11) ; elle trie désormais sur l'horodatage du
+  fichier. Test dans `BackupControllerTest`.
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.

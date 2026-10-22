@@ -1,37 +1,79 @@
 openapi: 3.0.3
 info:
-  title: ANaTT - API Gestion des Ordres de Mission
+  title: ANaTT — API Gestion des Ordres de Mission
+  version: 1.3.0
   description: |
-    API RESTful pour la gestion des ordres de mission et paiements per diem.
-    Agence Nationale des Transports Terrestres - Republique du Benin.
-  version: 1.0.0
+    API de l'application de suivi des ordres de mission émis par **SEMO** et de
+    **génération des fichiers de paiement** Mobile Money (MTN `.txt`, Moov `.xlsx`).
+    Agence Nationale des Transports Terrestres — République du Bénin.
+
+    **Périmètre** : l'API ne crée pas les OM (SEMO les émet, on les retranscrit) et
+    ne réalise aucun paiement (fichiers déposés à la main sur les plateformes des
+    opérateurs, puis confirmés manuellement). Aucune API SEMO, aucune API opérateur.
+
+    **Authentification** : jeton Sanctum (`Authorization: Bearer <token>`) obtenu par
+    `POST /auth/login`. Toute route non publique répond **401 JSON** sans jeton, même
+    sans en-tête `Accept`.
+
+    **Autorisation** : par clé de permission (extension `x-permission` de chaque
+    opération ; absente = tout compte authentifié). Le `SUPER_ADMIN` passe toute
+    garde. Matrice rôle → permissions éditable à chaud (`docs/rbac-flexible.md`).
+
+    **Mot de passe à changer** : tant que `must_change_password` est vrai, toute route
+    authentifiée répond **423** (`code: PASSWORD_CHANGE_REQUIRED`), sauf `auth/logout`,
+    `auth/me`, `auth/me/permissions` et `auth/mot-de-passe/changer`.
+
+    **Limites de débit** (429) : `login` 5/min (IP et e-mail) sur les routes publiques
+    `auth/*` ; `api` 60/min par utilisateur ; `paiement` 5/min (génération, erreur,
+    confirmation, recouvrement) ; `export` 10/min (exports de rapports).
+
+    **Enveloppe** : réponse `{ data, message? }` ; listes paginées
+    `{ data[], links, meta }` (format Laravel) sauf mention contraire. `per_page`
+    est borné à 5-100 (défaut 15, ou 20 quand indiqué). Erreurs : `{ message, errors? }`.
+
+    Cette description est **verrouillée par un test** (`tests/Feature/OpenApiTest.php`) :
+    chaque route de `routes/api.php` y figure, avec la même permission, et
+    réciproquement.
   contact:
-    name: Equipe ANaTT
+    name: Équipe ANaTT
     email: support@anatt.bj
 
 servers:
   - url: http://localhost:8000/api
-    description: Developpement local
-  - url: https://missions.anatt.bj/api
-    description: Production
+    description: Développement local
+  - url: https://api-omsemo.anatt.bj/api
+    description: Production (cPanel)
+
+security:
+  - bearerAuth: []
 
 tags:
   - name: Auth
-    description: Authentification et gestion de session
+    description: Session, profil, mot de passe
+  - name: Notifications
+    description: Notifications in-app de l'utilisateur connecté
   - name: Agents
-    description: Gestion du personnel
+    description: Référentiel des bénéficiaires (téléphone et opérateur font foi)
+  - name: Missions
+    description: Retranscription d'une mission SEMO (1 mission + N OM)
   - name: Ordres
-    description: CRUD ordres de mission
-  - name: Validation
-    description: Workflow de validation (soumettre, valider, approuver, rejeter)
+    description: Ordres de mission (1 OM = 1 bénéficiaire), PDF, amendement
+  - name: Validation OM
+    description: Circuit par OM en une étape — repli des missions sans état de paiement
+  - name: États de paiement
+    description: Circuit canonique par tranche (avances puis reliquats) — contrôle, visa DAF, validation DG
   - name: Paiements
-    description: Generation fichiers paiement Moov/MTN et reconciliation
-  - name: Taux
-    description: Taux per diem par categorie et destination
+    description: Lots de paiement (génération des fichiers, confirmation), suivi, régularisations
+  - name: Barème
+    description: Barème officiel du per diem (catégorie × zone × type de prise en charge)
   - name: Rapports
-    description: Rapports mensuels, par agent, exports Excel
+    description: États alimentés par les versements confirmés, exports
   - name: Audit
-    description: Journal d'activite systeme
+    description: Journal d'activité
+  - name: Administration
+    description: Utilisateurs, matrice des permissions, rôles personnalisés
+  - name: Paramètres
+    description: Réglages système, signataires, sauvegardes
 
 components:
   securitySchemes:
@@ -40,113 +82,639 @@ components:
       scheme: bearer
       bearerFormat: Sanctum
 
+  parameters:
+    page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    perPage:
+      name: per_page
+      in: query
+      description: Borné à 5-100 (défaut 15).
+      schema: { type: integer, minimum: 5, maximum: 100, default: 15 }
+    perPage20:
+      name: per_page
+      in: query
+      description: Borné à 5-100 (défaut 20).
+      schema: { type: integer, minimum: 5, maximum: 100, default: 20 }
+    agent:
+      name: agent
+      in: path
+      required: true
+      schema: { type: integer }
+    ordre:
+      name: ordre
+      in: path
+      required: true
+      description: Identifiant de l'ordre de mission.
+      schema: { type: integer }
+    mission:
+      name: mission
+      in: path
+      required: true
+      schema: { type: integer }
+    etat:
+      name: etat
+      in: path
+      required: true
+      description: Identifiant de l'état de paiement.
+      schema: { type: integer }
+    lot:
+      name: lot
+      in: path
+      required: true
+      schema: { type: integer }
+    versement:
+      name: versement
+      in: path
+      required: true
+      schema: { type: integer }
+    bareme:
+      name: bareme
+      in: path
+      required: true
+      schema: { type: integer }
+    audit:
+      name: audit
+      in: path
+      required: true
+      schema: { type: integer }
+    user:
+      name: user
+      in: path
+      required: true
+      schema: { type: integer }
+    role:
+      name: role
+      in: path
+      required: true
+      description: Code du rôle (ex. `CONTROLEUR`, ou code d'un rôle personnalisé).
+      schema: { type: string }
+    notification:
+      name: notification
+      in: path
+      required: true
+      schema: { type: integer }
+    trackingId:
+      name: trackingId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    poste:
+      name: poste
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Poste' }
+    backupName:
+      name: name
+      in: path
+      required: true
+      description: Nom du fichier de sauvegarde (`.sql` ou `.sql.gz`, sans chemin).
+      schema: { type: string }
+    trancheQuery:
+      name: tranche
+      in: query
+      schema: { $ref: '#/components/schemas/Tranche' }
+      description: Défaut `AVANCE`.
+    dateDebut:
+      name: date_debut
+      in: query
+      schema: { type: string, format: date }
+    dateFin:
+      name: date_fin
+      in: query
+      schema: { type: string, format: date }
+
   schemas:
-    User:
+    # ── Énumérations ──
+    Categorie:
+      type: string
+      description: |
+        Catégorie d'indice reprise de SEMO. Les anciens codes `ORDRE_1/2/3` sont
+        acceptés en entrée (filtres, import) et traduits ; ils ne sont plus produits.
+      enum: [INDICE_SUP_800, INDICE_400_799, INDICE_INF_400]
+    Zone:
+      type: string
+      description: "`EXT_ZONE_II` et `EXT_ZONE_III` ont des taux identiques."
+      enum: [INTERIEUR, EXT_ZONE_I, EXT_ZONE_II, EXT_ZONE_III]
+    TypePriseEnCharge:
+      type: string
+      description: Repas ⇒ `INTERIEUR` ; hébergement (`LOGE_*`, `NOURRI_SEUL`) ⇒ extérieur.
+      enum: [UN_REPAS, DEUX_REPAS, JOURNEE_COMPLETE, LOGE_NOURRI, LOGE_SEUL, NOURRI_SEUL]
+    Operateur:
+      type: string
+      enum: [MTN, MOOV]
+    Tranche:
+      type: string
+      enum: [AVANCE, RELIQUAT]
+    StatutOm:
+      type: string
+      description: "`VERIFIE` / `VISA_DAF` : valeurs héritées, plus produites."
+      enum: [IMPORTE, VALIDE, REJETE, SOLDE, ANNULE, VERIFIE, VISA_DAF]
+    StatutVersement:
+      type: string
+      description: "`A_RECOUVRER` / `RECOUVRE` : trop-perçu (reliquat négatif), jamais un fichier Mobile Money."
+      enum: [EN_ATTENTE, GENERE, CONFIRME, ANNULE, A_RECOUVRER, RECOUVRE]
+    StatutLot:
+      type: string
+      enum: [GENERE, CONFIRME, ERREUR]
+    StatutEtat:
+      type: string
+      enum: [BROUILLON, CONTROLE, VISA_DAF, VALIDE, REJETE]
+    StatutJob:
+      type: string
+      description: "`INTROUVABLE` : suivi absent du cache (pas encore pris par un worker, ou expiré)."
+      enum: [EN_COURS, TERMINE, ERREUR, INTROUVABLE]
+    Poste:
+      type: string
+      enum: [controleur, daf, dg]
+    Permission:
+      type: string
+      enum:
+        - dashboard.consulter
+        - personnel.consulter
+        - personnel.gerer
+        - om.consulter
+        - om.retranscrire
+        - om.valider
+        - om.numeroter
+        - om.viser
+        - om.approuver
+        - om.rejeter
+        - paiements.consulter
+        - paiements.generer
+        - paiements.confirmer
+        - baremes.consulter
+        - baremes.modifier
+        - rapports.consulter
+        - audit.consulter
+        - utilisateurs.gerer
+        - superadmins.gerer
+        - parametres.gerer
+        - roles.gerer
+
+    # ── Enveloppes ──
+    Message:
       type: object
       properties:
-        id: { type: integer }
-        name: { type: string }
-        email: { type: string, format: email }
-        role: { type: string, enum: [AGENT, CHEF_SERVICE, DRH, DIRECTEUR, ADMIN] }
-
-    Agent:
-      type: object
-      properties:
-        id: { type: integer }
-        matricule: { type: string, example: ANT-001 }
-        nom: { type: string }
-        prenom: { type: string }
-        email: { type: string, format: email }
-        telephone: { type: string, example: "22997123456" }
-        numero_moov: { type: string, nullable: true }
-        numero_mtn: { type: string, nullable: true }
-        service: { type: string }
-        categorie: { type: string, enum: [A1, A2, B, C, D] }
-        actif: { type: boolean }
-
-    OrdreMission:
-      type: object
-      properties:
-        id: { type: integer }
-        numero: { type: string, example: OM-2026-0001 }
-        agent_id: { type: integer }
-        objet: { type: string }
-        destination: { type: string }
-        date_depart: { type: string, format: date }
-        date_retour: { type: string, format: date }
-        nb_jours: { type: integer }
-        montant_per_diem: { type: number }
-        statut: { type: string, enum: [BROUILLON, SOUMIS, VALIDE_N1, APPROUVE_DG, PAYE, REJETE] }
-        commentaire_rejet: { type: string, nullable: true }
-
-    Paiement:
-      type: object
-      properties:
-        id: { type: integer }
-        ordre_mission_id: { type: integer }
-        agent_id: { type: integer }
-        operateur: { type: string, enum: [MOOV, MTN] }
-        numero_destinataire: { type: string }
-        montant: { type: number }
-        statut: { type: string, enum: [EN_ATTENTE, INITIE, SUCCES, ECHEC] }
-        reference_transaction: { type: string, nullable: true }
-
-    TauxPerDiem:
-      type: object
-      properties:
-        id: { type: integer }
-        categorie: { type: string }
-        destination_type: { type: string, enum: [LOCALE, REGIONALE, INTERNATIONALE] }
-        montant_journalier: { type: number }
-        annee: { type: integer }
-        actif: { type: boolean }
-
+        data: { nullable: true, description: "Toujours présent (null si sans objet)." }
+        message: { type: string }
     Error:
       type: object
+      required: [message]
       properties:
         message: { type: string }
-        errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
-
-    Pagination:
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+    PaginationMeta:
       type: object
       properties:
         current_page: { type: integer }
         last_page: { type: integer }
         per_page: { type: integer }
         total: { type: integer }
+    Suivi:
+      type: object
+      properties:
+        statut: { $ref: '#/components/schemas/StatutJob' }
+        message: { type: string, description: "Présent si `ERREUR`." }
+    Accepte:
+      type: object
+      properties:
+        async: { type: boolean, example: "true" }
+        tracking_id: { type: string, format: uuid }
+        message: { type: string }
+
+    # ── Ressources ──
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, description: "Code de rôle (8 profils système ou rôle personnalisé)." }
+        role_libelle: { type: string }
+        telephone: { type: string, nullable: true }
+        actif: { type: boolean }
+        must_change_password: { type: boolean }
+        derniere_connexion: { type: string, format: date-time, nullable: true }
+        cree_par: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    Agent:
+      type: object
+      properties:
+        id: { type: integer }
+        nom: { type: string }
+        prenoms: { type: string }
+        nom_complet: { type: string }
+        matricule: { type: string }
+        ifu: { type: string, nullable: true }
+        grade: { type: string, nullable: true }
+        indice: { type: integer, nullable: true }
+        salaire_brut: { type: integer, nullable: true }
+        categorie: { $ref: '#/components/schemas/Categorie' }
+        telephone: { type: string, description: "National, 10 chiffres, débute par 01.", example: "0167267455" }
+        operateur: { $ref: '#/components/schemas/Operateur' }
+        actif: { type: boolean }
+        ordres_mission:
+          type: array
+          description: Chargé sur la fiche détail.
+          items: { $ref: '#/components/schemas/OrdreMission' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AgentInput:
+      type: object
+      properties:
+        nom: { type: string, maxLength: 255 }
+        prenoms: { type: string, maxLength: 255 }
+        matricule: { type: string, maxLength: 50, description: "Unique." }
+        ifu: { type: string, maxLength: 50, nullable: true }
+        grade: { type: string, maxLength: 255, nullable: true }
+        indice: { type: integer, minimum: 0, nullable: true }
+        salaire_brut: { type: integer, minimum: 0, nullable: true }
+        categorie: { $ref: '#/components/schemas/Categorie' }
+        telephone: { type: string, description: "Unique ; cohérent avec l'opérateur." }
+        operateur: { $ref: '#/components/schemas/Operateur' }
+        actif: { type: boolean }
+
+    Mission:
+      type: object
+      properties:
+        id: { type: integer }
+        objet: { type: string }
+        destination: { type: string }
+        zone_code: { $ref: '#/components/schemas/Zone' }
+        date_depart: { type: string, format: date }
+        date_retour: { type: string, format: date }
+        imputation_budgetaire: { type: string, nullable: true }
+        prise_en_charge_tiers: { type: boolean, description: "Vrai ⇒ exonération (aucun frais, aucun versement)." }
+        observations: { type: string, nullable: true }
+        ordres_mission:
+          type: array
+          items: { $ref: '#/components/schemas/OrdreMission' }
+        etat_paiement:
+          type: object
+          nullable: true
+          description: État des AVANCES (quand chargé).
+          properties:
+            id: { type: integer }
+            tranche: { $ref: '#/components/schemas/Tranche' }
+            statut: { $ref: '#/components/schemas/StatutEtat' }
+            numero: { type: string, nullable: true }
+            valide: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    MissionLigne:
+      type: object
+      description: Ligne de la liste des missions, avec l'avancement des deux états.
+      properties:
+        id: { type: integer }
+        objet: { type: string }
+        destination: { type: string }
+        zone_code: { $ref: '#/components/schemas/Zone' }
+        date_depart: { type: string, format: date }
+        date_retour: { type: string, format: date }
+        imputation_budgetaire: { type: string, nullable: true }
+        prise_en_charge_tiers: { type: boolean }
+        nb_ordres: { type: integer, description: "Hors OM rejetés/annulés." }
+        montant_total: { type: integer, description: "Hors OM rejetés/annulés." }
+        etat_statut: { allOf: [{ $ref: '#/components/schemas/StatutEtat' }], nullable: true, description: "État des avances ; null tant que le récapitulatif n'est pas établi." }
+        etat_numero: { type: string, nullable: true }
+        etat_reliquat_statut: { allOf: [{ $ref: '#/components/schemas/StatutEtat' }], nullable: true }
+        etat_reliquat_numero: { type: string, nullable: true }
+
+    LignePerDiem:
+      type: object
+      required: [type, nb_jours]
+      properties:
+        type: { $ref: '#/components/schemas/TypePriseEnCharge' }
+        nb_jours: { type: integer, minimum: 0 }
+
+    Signature:
+      type: object
+      nullable: true
+      description: Instantané du signataire ; null tant que l'étape n'est pas franchie.
+      properties:
+        nom: { type: string }
+        fonction: { type: string, nullable: true }
+        date: { type: string, format: date-time, nullable: true }
+        code: { type: string, nullable: true, description: "Code de vérification dérivé du scellé HMAC." }
+
+    OrdreMission:
+      type: object
+      properties:
+        id: { type: integer }
+        reference_semo: { type: string, description: "Clé naturelle unique (anti-doublon)." }
+        mission_id: { type: integer }
+        mission: { $ref: '#/components/schemas/Mission' }
+        agent_id: { type: integer }
+        agent: { $ref: '#/components/schemas/Agent' }
+        role: { type: string, enum: [PARTICIPANT, CAV], description: "Le CAV est payé selon SA catégorie." }
+        categorie: { $ref: '#/components/schemas/Categorie' }
+        zone_code: { $ref: '#/components/schemas/Zone' }
+        type_prise_en_charge: { $ref: '#/components/schemas/TypePriseEnCharge' }
+        nb_jours: { type: integer }
+        lignes_per_diem:
+          type: array
+          items: { $ref: '#/components/schemas/LignePerDiem' }
+        montant_transport: { type: integer }
+        montant_total: { type: integer, description: "FCFA." }
+        avance: { type: integer, description: "round(montant_total × partAvance / 100), 70 % par défaut." }
+        avance_engagee: { type: integer, nullable: true, description: "Figée à la validation de l'état des avances." }
+        reliquat: { type: integer, description: "Peut être NÉGATIF après amendement (trop-perçu)." }
+        statut: { $ref: '#/components/schemas/StatutOm' }
+        conducteur_a_bord: { type: string, nullable: true, description: "Mention logistique uniquement." }
+        reference_autorisation: { type: string, nullable: true }
+        moyen_transport: { type: string, nullable: true }
+        commentaire_rejet: { type: string, nullable: true }
+        versements:
+          type: array
+          items: { $ref: '#/components/schemas/Versement' }
+        amendements:
+          type: array
+          description: Chargé sur la fiche détail, du plus récent au plus ancien.
+          items: { $ref: '#/components/schemas/OmAmendement' }
+        verification: { $ref: '#/components/schemas/Signature' }
+        visa_daf: { $ref: '#/components/schemas/Signature' }
+        validation_dg: { $ref: '#/components/schemas/Signature' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    OmAmendement:
+      type: object
+      properties:
+        id: { type: integer }
+        nb_jours_avant: { type: integer }
+        nb_jours_apres: { type: integer }
+        montant_total_avant: { type: integer }
+        montant_total_apres: { type: integer }
+        delta_montant: { type: integer, description: "Signé." }
+        motif: { type: string }
+        amende_par_nom: { type: string }
+        amende_le: { type: string, format: date-time }
+
+    Versement:
+      type: object
+      properties:
+        id: { type: integer }
+        ordre_mission_id: { type: integer }
+        lot_id: { type: integer, nullable: true }
+        type: { $ref: '#/components/schemas/Tranche' }
+        montant: { type: integer, description: "Signé." }
+        operateur: { $ref: '#/components/schemas/Operateur' }
+        telephone: { type: string }
+        statut: { $ref: '#/components/schemas/StatutVersement' }
+        date_paiement: { type: string, format: date-time, nullable: true }
+        reference_semo: { type: string, description: "Quand l'OM est chargé (historique)." }
+        beneficiaire: { type: string }
+        mission:
+          type: object
+          properties:
+            objet: { type: string }
+            destination: { type: string }
+
+    EtatPaiement:
+      type: object
+      properties:
+        id: { type: integer }
+        mission_id: { type: integer }
+        tranche: { $ref: '#/components/schemas/Tranche' }
+        mission:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            objet: { type: string }
+            destination: { type: string }
+            date_depart: { type: string, format: date }
+            date_retour: { type: string, format: date }
+        numero: { type: string, nullable: true, description: "Registre papier, sans préfixe « N° »." }
+        statut: { $ref: '#/components/schemas/StatutEtat' }
+        nb_beneficiaires: { type: integer }
+        montant_total: { type: integer, description: "Total DE LA TRANCHE. Reliquats : Σ des reliquats positifs (montant payable)." }
+        montant_avance: { type: integer }
+        montant_reliquat: { type: integer }
+        montant_total_lettres: { type: string }
+        controle: { $ref: '#/components/schemas/Signature' }
+        visa_daf: { $ref: '#/components/schemas/Signature' }
+        validation_dg: { $ref: '#/components/schemas/Signature' }
+        commentaire_rejet: { type: string, nullable: true }
+        prochaine_etape: { type: string, nullable: true, enum: [CONTROLE, VISA_DAF, VALIDATION_DG, null] }
+        paiement_ouvert: { type: boolean, description: "Vrai quand l'état est VALIDE." }
+
+    LotPaiement:
+      type: object
+      properties:
+        id: { type: integer }
+        mission_id: { type: integer }
+        mission: { $ref: '#/components/schemas/Mission' }
+        tranche: { $ref: '#/components/schemas/Tranche' }
+        operateur: { $ref: '#/components/schemas/Operateur' }
+        sequence: { type: integer, description: "1 = lot initial ; 2.. = lot complémentaire (fichier `…_COMPL{n}`)." }
+        statut: { $ref: '#/components/schemas/StatutLot' }
+        nom_fichier: { type: string, nullable: true }
+        nb_lignes: { type: integer }
+        montant_total: { type: integer }
+        genere_le: { type: string, format: date-time, nullable: true }
+        genere_par: { type: integer, nullable: true }
+        confirme_le: { type: string, format: date-time, nullable: true }
+        confirme_par: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Apercu:
+      type: object
+      properties:
+        mission_id: { type: integer }
+        mission: { type: string }
+        tranche: { $ref: '#/components/schemas/Tranche' }
+        operateur: { $ref: '#/components/schemas/Operateur' }
+        nb_lignes: { type: integer }
+        total: { type: integer }
+        beneficiaires:
+          type: array
+          items:
+            type: object
+            properties:
+              versement_id: { type: integer }
+              reference_semo: { type: string }
+              beneficiaire: { type: string }
+              telephone: { type: string }
+              montant: { type: integer }
+
+    Regularisation:
+      type: object
+      properties:
+        versement_id: { type: integer }
+        ordre_mission_id: { type: integer, description: "Lien vers la fiche OM (pour amender)." }
+        reference_semo: { type: string }
+        beneficiaire: { type: string }
+        mission: { type: string }
+        operateur: { $ref: '#/components/schemas/Operateur' }
+        telephone: { type: string }
+        montant_a_recouvrer: { type: integer, description: "|reliquat|." }
+        statut: { type: string, enum: [A_RECOUVRER, RECOUVRE] }
+        date_regularisation: { type: string, format: date-time, nullable: true }
+
+    Bareme:
+      type: object
+      properties:
+        id: { type: integer }
+        categorie: { $ref: '#/components/schemas/Categorie' }
+        zone_code: { $ref: '#/components/schemas/Zone' }
+        type_prise_en_charge: { $ref: '#/components/schemas/TypePriseEnCharge' }
+        taux_journalier: { type: integer, description: "FCFA." }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AuditLog:
+      type: object
+      properties:
+        id: { type: integer }
+        action: { type: string, example: "VALIDATE_OM" }
+        entite: { type: string, example: "ordre_mission" }
+        entite_id: { type: integer, nullable: true }
+        donnees: { type: object, nullable: true }
+        ip_address: { type: string, nullable: true }
+        utilisateur:
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            email: { type: string }
+            role: { type: string }
+        created_at: { type: string, format: date-time }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string }
+        titre: { type: string }
+        message: { type: string }
+        lu: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    Signataire:
+      type: object
+      properties:
+        nom: { type: string }
+        prenoms: { type: string }
+        nom_complet: { type: string }
+        fonction: { type: string }
+        signature_enregistree: { type: boolean, description: "L'image elle-même n'est jamais renvoyée." }
+
+    Signataires:
+      type: object
+      properties:
+        controleur: { $ref: '#/components/schemas/Signataire' }
+        daf: { $ref: '#/components/schemas/Signataire' }
+        dg: { $ref: '#/components/schemas/Signataire' }
+
+    Sauvegarde:
+      type: object
+      properties:
+        name: { type: string, example: "backup_2026-10-22_020000.sql.gz" }
+        date: { type: string, example: 22/10/2026 02:00 }
+        size: { type: string, example: 1.2 MB }
+        type: { type: string, enum: [Automatique, Manuel] }
+        status: { type: string, example: "Complet" }
+
+    ResultatCommande:
+      type: object
+      properties:
+        message: { type: string }
+        details: { type: string, description: "Sortie de la commande artisan." }
+
+    Settings:
+      type: object
+      description: |
+        Réglages persistés dans `storage/app/settings.json` (hors sauvegarde de la base).
+        Écriture par liste blanche ; clés inconnues ignorées ; fusion avec l'existant.
+        `smtpPassword` est chiffré au repos et renvoyé masqué (`********`) ; envoyer
+        `""` ou `********` le laisse inchangé.
+      properties:
+        appName: { type: string }
+        appVersion: { type: string }
+        fiscalYear: { type: integer, minimum: 2000, maximum: 2100 }
+        fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
+        partAvance: { type: integer, minimum: 0, maximum: 100, description: "Doit être un entier JSON (pas une chaîne)." }
+        batchSize: { type: integer }
+        reconciliationDays: { type: integer }
+        sessionDuration: { type: integer }
+        maxLoginAttempts: { type: integer }
+        mtnEnabled: { type: boolean }
+        moovEnabled: { type: boolean }
+        forceHttps: { type: boolean }
+        logConnections: { type: boolean }
+        maintenanceMode: { type: boolean }
+        notifications: { type: object }
+        smtpHost: { type: string }
+        smtpPort: { type: integer }
+        smtpUser: { type: string }
+        smtpPassword: { type: string }
+        smtpEncryption: { type: string }
+        fromAddress: { type: string }
+        fromName: { type: string }
+        controleurNom: { type: string }
+        controleurPrenoms: { type: string }
+        controleurFonction: { type: string }
+        dafNom: { type: string }
+        dafPrenoms: { type: string }
+        dafFonction: { type: string }
+        dgNom: { type: string }
+        dgPrenoms: { type: string }
+        dgFonction: { type: string }
 
   responses:
+    Ok:
+      description: Succès
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
     Unauthorized:
-      description: Non authentifie
+      description: Non authentifié (JSON, jamais de redirection)
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
     Forbidden:
-      description: Acces refuse
+      description: Permission manquante
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
     NotFound:
       description: Ressource introuvable
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    ValidationError:
-      description: Donnees invalides
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Données invalides ou règle métier refusée
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
+    Pdf:
+      description: Document PDF
+      content:
+        application/pdf:
+          schema: { type: string, format: binary }
+    Fichier:
+      description: Fichier en téléchargement
+      content:
+        application/octet-stream:
+          schema: { type: string, format: binary }
 
 paths:
+  # ───────────────────────────── Auth ─────────────────────────────
   /auth/login:
     post:
       tags: [Auth]
-      summary: Connexion utilisateur
-      description: Authentifie un utilisateur et retourne un token Sanctum. Rate limit 5/min.
+      summary: Connexion
+      description: Message unique en cas d'échec (n'indique jamais si l'e-mail existe ou si le compte est désactivé). Met à jour `derniere_connexion`, audit `LOGIN`.
+      security: []
       requestBody:
         required: true
         content:
@@ -155,11 +723,11 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email: { type: string, format: email }
-                password: { type: string }
+                email: { type: string, format: email, example: "controle@anatt.bj" }
+                password: { type: string, format: password }
       responses:
         '200':
-          description: Connexion reussie
+          description: Jeton, utilisateur et permissions effectives
           content:
             application/json:
               schema:
@@ -170,315 +738,1983 @@ paths:
                     properties:
                       token: { type: string }
                       user: { $ref: '#/components/schemas/User' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+                      permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { description: "Trop de tentatives" }
 
   /auth/logout:
     post:
       tags: [Auth]
-      summary: Deconnexion
-      security: [{ bearerAuth: [] }]
+      summary: Déconnexion (révoque le jeton courant)
       responses:
-        '200':
-          description: Deconnexion reussie
+        '200': { $ref: '#/components/responses/Ok' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /auth/me:
     get:
       tags: [Auth]
-      summary: Profil utilisateur connecte
-      security: [{ bearerAuth: [] }]
+      summary: Utilisateur connecté
       responses:
         '200':
-          description: Profil utilisateur
+          description: Profil
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /auth/me/permissions:
+    get:
+      tags: [Auth]
+      summary: Permissions effectives (pilote l'UI)
+      description: "`base du profil ∪ accordées − retirées`, matrice à jour."
+      responses:
+        '200':
+          description: Liste des clés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/mot-de-passe/changer:
+    post:
+      tags: [Auth]
+      summary: Changer son mot de passe
+      description: Lève le verrou 423 ; révoque les autres sessions (garde le jeton courant) ; audit `PWD_CHANGE`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password: { type: string, format: password }
+                password: { type: string, format: password, description: "Différent de l'actuel." }
+                password_confirmation: { type: string, format: password }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /auth/mot-de-passe/email:
+    post:
+      tags: [Auth]
+      summary: Demander un lien de réinitialisation
+      description: Réponse identique que l'e-mail existe ou non (anti-énumération).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '429': { description: "Trop de tentatives" }
+
+  /auth/mot-de-passe/reset:
+    post:
+      tags: [Auth]
+      summary: Réinitialiser le mot de passe (lien reçu par e-mail)
+      description: Révoque tous les jetons ; lève `must_change_password` ; audit `PWD_RESET`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, email, password, password_confirmation]
+              properties:
+                token: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                password_confirmation: { type: string, format: password }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ───────────────────────────── Notifications ─────────────────────────────
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: 30 dernières notifications de l'utilisateur
+      responses:
+        '200':
+          description: Notifications et compteur de non-lues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+                  meta:
+                    type: object
+                    properties:
+                      non_lues: { type: integer }
+
+  /notifications/lues:
+    post:
+      tags: [Notifications]
+      summary: Tout marquer lu
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /notifications/{notification}/lu:
+    post:
+      tags: [Notifications]
+      summary: Marquer une notification lue
+      description: 404 si la notification appartient à un autre utilisateur.
+      parameters: [{ $ref: '#/components/parameters/notification' }]
+      responses:
+        '200':
+          description: Notification mise à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Notification' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────────── Agents ─────────────────────────────
   /agents:
     get:
       tags: [Agents]
-      summary: Liste des agents
-      security: [{ bearerAuth: [] }]
+      summary: Liste paginée des agents
+      x-permission: personnel.consulter
       parameters:
-        - name: search
-          in: query
-          schema: { type: string }
-        - name: categorie
-          in: query
-          schema: { type: string, enum: [A1, A2, B, C, D] }
-        - name: service
-          in: query
-          schema: { type: string }
-        - name: per_page
-          in: query
-          schema: { type: integer, default: 15, minimum: 5, maximum: 100 }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: categorie, in: query, schema: { $ref: '#/components/schemas/Categorie' } }
+        - { name: operateur, in: query, schema: { $ref: '#/components/schemas/Operateur' } }
+        - { name: actif, in: query, schema: { type: boolean } }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
       responses:
         '200':
-          description: Liste paginee
+          description: Page d'agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Agent' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Agents]
-      summary: Creer un agent (DRH)
-      security: [{ bearerAuth: [] }]
+      summary: Créer un agent
+      description: Catégorie déduite de l'indice ou du salaire si cohérente ; cohérence numéro ↔ opérateur contrôlée.
+      x-permission: personnel.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/AgentInput'
+                - required: [nom, prenoms, matricule, categorie, telephone, operateur]
+      responses:
+        '201':
+          description: Agent créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Agent' }
+                  message: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /agents/stats:
+    get:
+      tags: [Agents]
+      summary: Compteurs sur l'ensemble filtré
+      x-permission: personnel.consulter
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: categorie, in: query, schema: { $ref: '#/components/schemas/Categorie' } }
+        - { name: operateur, in: query, schema: { $ref: '#/components/schemas/Operateur' } }
+        - { name: actif, in: query, schema: { type: boolean } }
+      responses:
+        '200':
+          description: Compteurs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      actifs: { type: integer }
+                      inactifs: { type: integer }
+                      mtn: { type: integer }
+                      moov: { type: integer }
+
+  /agents/recherche:
+    get:
+      tags: [Agents]
+      summary: Autocomplétion (nom, matricule, IFU)
+      x-permission: personnel.consulter
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1 } }
+      responses:
+        '200':
+          description: Agents correspondants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Agent' } }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /agents/import:
+    post:
+      tags: [Agents]
+      summary: Import CSV / XLSX
+      description: Tout ou rien — une ligne en erreur annule l'import (422 avec rapport ligne à ligne).
+      x-permission: personnel.gerer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fichier]
+              properties:
+                fichier: { type: string, format: binary, description: "csv, txt ou xlsx." }
+      responses:
+        '200':
+          description: Import réussi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      importes: { type: integer }
+                      ignores: { type: integer }
+                      rollback: { type: boolean }
+                      erreurs: { type: array, items: {} }
+                  message: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /agents/{agent}:
+    parameters: [{ $ref: '#/components/parameters/agent' }]
+    get:
+      tags: [Agents]
+      summary: Fiche agent et ses ordres de mission
+      x-permission: personnel.consulter
+      responses:
+        '200':
+          description: Agent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Agent' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Agents]
+      summary: Modifier un agent
+      description: Les nouvelles coordonnées valent pour les versements à venir ; un lot passé en ERREUR reprend les coordonnées courantes.
+      x-permission: personnel.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AgentInput' }
+      responses:
+        '200':
+          description: Agent modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Agent' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+    delete:
+      tags: [Agents]
+      summary: Désactiver un agent (pas de suppression)
+      x-permission: personnel.gerer
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  # ───────────────────────────── Missions ─────────────────────────────
+  /missions:
+    get:
+      tags: [Missions]
+      summary: Missions et avancement des deux états
+      x-permission: om.consulter
+      parameters:
+        - { name: search, in: query, schema: { type: string }, description: "Objet, destination ou imputation." }
+        - name: etat
+          in: query
+          description: "`sans_etat` = récapitulatif à établir ; sinon un statut d'état, recherché sur l'une OU l'autre tranche."
+          schema:
+            type: string
+            enum: [sans_etat, BROUILLON, CONTROLE, VISA_DAF, VALIDE, REJETE]
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage20' }
+      responses:
+        '200':
+          description: Page de missions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/MissionLigne' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Missions]
+      summary: Retranscrire une mission SEMO (mission + N OM)
+      description: |
+        Crée la mission et un OM par bénéficiaire (statut `IMPORTE`), calcule le per diem
+        (barème × jours, règle des 12 h, transport) et les versements `EN_ATTENTE`
+        (avance `partAvance` %, reliquat). Exonération si `prise_en_charge_tiers`.
+        Téléphone et opérateur viennent du référentiel agent. Audit `IMPORT_OM`.
+      x-permission: om.retranscrire
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [matricule, nom, prenom, email, telephone, service, categorie]
+              required: [objet, destination, date_depart, date_retour, ordres]
               properties:
-                matricule: { type: string }
-                nom: { type: string }
-                prenom: { type: string }
-                email: { type: string, format: email }
-                telephone: { type: string }
-                numero_moov: { type: string }
-                numero_mtn: { type: string }
-                service: { type: string }
-                categorie: { type: string, enum: [A1, A2, B, C, D] }
+                objet: { type: string, maxLength: 255 }
+                destination: { type: string, maxLength: 255 }
+                zone_code: { allOf: [{ $ref: '#/components/schemas/Zone' }], description: "Déduite de la destination si absente." }
+                date_depart: { type: string, format: date }
+                date_retour: { type: string, format: date, description: "≥ date_depart." }
+                imputation_budgetaire: { type: string, maxLength: 255 }
+                prise_en_charge_tiers: { type: boolean }
+                observations: { type: string }
+                ordres:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [reference_semo, agent_id, role]
+                    properties:
+                      reference_semo: { type: string, description: "Unique en base et dans la requête." }
+                      agent_id: { type: integer, description: "Un agent ne figure qu'une fois par mission." }
+                      role: { type: string, enum: [PARTICIPANT, CAV] }
+                      categorie: { allOf: [{ $ref: '#/components/schemas/Categorie' }], description: "Celle de l'agent si absente." }
+                      type_prise_en_charge: { allOf: [{ $ref: '#/components/schemas/TypePriseEnCharge' }], description: "Requis sans `lignes`." }
+                      nb_jours: { type: integer, minimum: 1, description: "Calculé depuis les dates si absent." }
+                      lignes:
+                        type: array
+                        description: Répartition détaillée des jours par type (état ANaTT).
+                        items: { $ref: '#/components/schemas/LignePerDiem' }
+                      montant_transport: { type: integer, minimum: 0 }
+                      conducteur_a_bord: { type: string }
+                      reference_autorisation: { type: string }
+                      moyen_transport: { type: string }
       responses:
         '201':
-          description: Agent cree
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+          description: Mission et OM créés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Mission' }
+                  message: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
 
+  # ───────────────────────────── Ordres ─────────────────────────────
   /ordres:
     get:
       tags: [Ordres]
-      summary: Liste des ordres de mission
-      description: Les AGENT ne voient que leurs propres OM. Recherche full-text disponible.
-      security: [{ bearerAuth: [] }]
+      summary: Liste filtrée des OM
+      x-permission: om.consulter
       parameters:
-        - name: search
-          in: query
-          description: Recherche full-text (numero, objet, destination, agent)
-          schema: { type: string }
-        - name: statut
-          in: query
-          schema: { type: string, enum: [BROUILLON, SOUMIS, VALIDE_N1, APPROUVE_DG, PAYE, REJETE] }
-        - name: agent_id
-          in: query
-          schema: { type: integer }
-        - name: date_debut
-          in: query
-          schema: { type: string, format: date }
-        - name: date_fin
-          in: query
-          schema: { type: string, format: date }
-        - name: per_page
-          in: query
-          schema: { type: integer, default: 15 }
-      responses:
-        '200':
-          description: Liste paginee des ordres
-    post:
-      tags: [Ordres]
-      summary: Creer un ordre de mission
-      description: Le per diem est calcule automatiquement (nb_jours x taux). Statut initial BROUILLON.
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [agent_id, objet, destination, date_depart, date_retour, taux_id]
-              properties:
-                agent_id: { type: integer }
-                objet: { type: string }
-                destination: { type: string }
-                date_depart: { type: string, format: date }
-                date_retour: { type: string, format: date }
-                taux_id: { type: integer }
-      responses:
-        '201':
-          description: Ordre cree en BROUILLON
-        '422': { $ref: '#/components/responses/ValidationError' }
-
-  /ordres/{id}/soumettre:
-    post:
-      tags: [Validation]
-      summary: Soumettre un OM pour validation
-      description: Transition BROUILLON -> SOUMIS. Protege par verrou pessimiste.
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: OM soumis
-        '422':
-          description: Statut incorrect
-
-  /ordres/{id}/valider-n1:
-    post:
-      tags: [Validation]
-      summary: Validation chef de service (N+1)
-      description: Transition SOUMIS -> VALIDE_N1. Requiert role CHEF_SERVICE du meme service.
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: OM valide N1
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /ordres/{id}/approuver:
-    post:
-      tags: [Validation]
-      summary: Approbation Direction Generale
-      description: Transition VALIDE_N1 -> APPROUVE_DG. Requiert role DIRECTEUR.
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: OM approuve
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /ordres/{id}/rejeter:
-    post:
-      tags: [Validation]
-      summary: Rejeter un OM
-      description: Requiert role CHEF_SERVICE ou DIRECTEUR. Commentaire min 10 caracteres.
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [commentaire]
-              properties:
-                commentaire: { type: string, minLength: 10 }
-      responses:
-        '200':
-          description: OM rejete
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /paiements:
-    get:
-      tags: [Paiements]
-      summary: Liste des paiements
-      security: [{ bearerAuth: [] }]
-      parameters:
+        - { name: statut, in: query, schema: { $ref: '#/components/schemas/StatutOm' } }
+        - { name: zone, in: query, schema: { $ref: '#/components/schemas/Zone' } }
+        - { name: agent_id, in: query, schema: { type: integer } }
         - name: operateur
           in: query
-          schema: { type: string, enum: [MOOV, MTN] }
-        - name: statut
-          in: query
-          schema: { type: string, enum: [EN_ATTENTE, INITIE, SUCCES, ECHEC] }
+          description: Opérateur des VERSEMENTS (repli sur celui de l'agent pour un OM sans versement).
+          schema: { $ref: '#/components/schemas/Operateur' }
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: actifs, in: query, schema: { type: boolean }, description: "Exclut REJETE et ANNULE." }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
       responses:
         '200':
-          description: Liste paginee
+          description: Page d'OM
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/OrdreMission' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
 
-  /paiements/generer/moov:
+  /ordres/{ordre}:
+    get:
+      tags: [Ordres]
+      summary: Détail d'un OM (mission et état des avances, agent, versements, amendements)
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
+      responses:
+        '200':
+          description: OM
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OrdreMission' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /ordres/{ordre}/amender:
     post:
-      tags: [Paiements]
-      summary: Generer fichier virement Moov
-      description: Genere un fichier CSV au format Moov. Requiert role DRH. Rate limit 5/min.
-      security: [{ bearerAuth: [] }]
+      tags: [Ordres]
+      summary: Amender les jours facturés (avenant)
+      description: |
+        L'avance est figée (`avance_engagee`) ; seul le reliquat absorbe l'écart et peut
+        devenir négatif (trop-perçu → versement `A_RECOUVRER`). 422 si l'OM est
+        `REJETE`/`ANNULE`, si un état est en cours de signature, si l'état des reliquats
+        est validé, si un trop-perçu de l'OM est déjà `RECOUVRE`, ou si un versement de
+        l'OM est `GENERE`. Journal `om_amendements`, audit `AMEND_OM`.
+        Référence : `docs/amendement-om.md`.
+      x-permission: om.retranscrire
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [ordre_ids]
+              required: [motif]
               properties:
-                ordre_ids: { type: array, items: { type: integer } }
+                motif: { type: string, minLength: 10, maxLength: 1000 }
+                nb_jours: { type: integer, minimum: 1, description: "Requis sans `lignes`." }
+                lignes:
+                  type: array
+                  items: { $ref: '#/components/schemas/LignePerDiem' }
       responses:
         '200':
-          description: Fichier genere
-        '403': { $ref: '#/components/responses/Forbidden' }
+          description: OM amendé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OrdreMission' }
+                  message: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
 
-  /paiements/generer/mtn:
+  /ordres/{ordre}/historique:
+    get:
+      tags: [Ordres]
+      summary: Journal d'audit de l'OM
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
+      responses:
+        '200':
+          description: Entrées d'audit (modèle brut, utilisateur inclus)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { type: object } }
+
+  /ordres/{ordre}/pdf:
+    get:
+      tags: [Ordres]
+      summary: Générer le PDF de l'OM
+      description: |
+        Reprend les signatures de l'**état des avances** qui couvre l'OM (même instantané,
+        paraphe archivé, code de vérification) ; une signature portée par l'OM reste
+        prioritaire. OM `REJETE`/`ANNULE` ou état `REJETE` : aucune signature.
+        Mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf`.
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
+      responses:
+        '200':
+          description: Lien de téléchargement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      url: { type: string, example: "/api/ordres/12/pdf/download" }
+                      fichier: { type: string }
+
+  /ordres/{ordre}/pdf/download:
+    get:
+      tags: [Ordres]
+      summary: Télécharger le PDF de l'OM
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
+      responses:
+        '200': { $ref: '#/components/responses/Pdf' }
+
+  /ordres/{ordre}/pdf/brouillon:
+    get:
+      tags: [Ordres]
+      summary: PDF filigrané « brouillon » (toujours régénéré, sans signature)
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
+      responses:
+        '200': { $ref: '#/components/responses/Pdf' }
+
+  # ───────────────────────────── Validation OM (repli) ─────────────────────────────
+  /ordres/{ordre}/valider:
     post:
-      tags: [Paiements]
-      summary: Generer fichier virement MTN
-      description: Genere un fichier CSV au format MTN MoMo. Requiert role DRH.
-      security: [{ bearerAuth: [] }]
+      tags: [Validation OM]
+      summary: IMPORTE → VALIDE (circuit par OM)
+      description: Réservé aux missions SANS état de paiement (422 sinon — `MissionService::exigerAbsenceDEtat`). Référence `docs/circuits-validation.md`.
+      x-permission: om.valider
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commentaire: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: OM validé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OrdreMission' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /ordres/{ordre}/rejeter:
+    post:
+      tags: [Validation OM]
+      summary: IMPORTE → REJETE (motif obligatoire)
+      description: Réservé aux missions SANS état de paiement (422 sinon — sur le circuit par état, on rejette l'état). Les versements `EN_ATTENTE` passent `ANNULE` ; un OM rejeté ne redevient jamais `VALIDE`.
+      x-permission: om.rejeter
+      parameters: [{ $ref: '#/components/parameters/ordre' }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [ordre_ids]
+              required: [motif]
               properties:
-                ordre_ids: { type: array, items: { type: integer } }
+                motif: { type: string, minLength: 10 }
       responses:
         '200':
-          description: Fichier genere
+          description: OM rejeté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OrdreMission' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ───────────────────────────── États de paiement ─────────────────────────────
+  /missions/{mission}/etat:
+    get:
+      tags: [États de paiement]
+      summary: États de la mission, par tranche
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/mission' }]
+      responses:
+        '200':
+          description: "`data: null` tant qu'aucun récapitulatif n'est établi."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+                    properties:
+                      avance: { allOf: [{ $ref: '#/components/schemas/EtatPaiement' }], nullable: true }
+                      reliquat: { allOf: [{ $ref: '#/components/schemas/EtatPaiement' }], nullable: true }
+
+  /missions/{mission}/etat/recapituler:
+    post:
+      tags: [États de paiement]
+      summary: Établir / rafraîchir l'état d'une tranche en BROUILLON
+      description: "Fige le tableau `lignes`. `RELIQUAT` : 422 tant que l'état des avances n'est pas `VALIDE`."
+      x-permission: om.retranscrire
+      parameters: [{ $ref: '#/components/parameters/mission' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tranche: { allOf: [{ $ref: '#/components/schemas/Tranche' }], description: "Défaut AVANCE." }
+      responses:
+        '200':
+          description: État en brouillon
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/EtatPaiement' }
+                  message: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /missions/{mission}/etat/brouillon:
+    get:
+      tags: [États de paiement]
+      summary: PDF filigrané de la tranche
+      x-permission: om.consulter
+      parameters:
+        - { $ref: '#/components/parameters/mission' }
+        - { $ref: '#/components/parameters/trancheQuery' }
+      responses:
+        '200': { $ref: '#/components/responses/Pdf' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /missions/{mission}/etat/telecharger:
+    get:
+      tags: [États de paiement]
+      summary: PDF de la tranche (filigrané tant que non validé)
+      x-permission: om.consulter
+      parameters:
+        - { $ref: '#/components/parameters/mission' }
+        - { $ref: '#/components/parameters/trancheQuery' }
+      responses:
+        '200': { $ref: '#/components/responses/Pdf' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /missions/{mission}/etat/final:
+    get:
+      tags: [États de paiement]
+      summary: État général consolidé (avances + reliquats)
+      x-permission: om.consulter
+      parameters: [{ $ref: '#/components/parameters/mission' }]
+      responses:
+        '200': { $ref: '#/components/responses/Pdf' }
+        '422':
+          description: Les deux tranches ne sont pas encore VALIDE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /etats:
+    get:
+      tags: [États de paiement]
+      summary: File de travail des états
+      x-permission: om.consulter
+      parameters:
+        - { name: statut, in: query, schema: { $ref: '#/components/schemas/StatutEtat' } }
+        - { name: tranche, in: query, schema: { $ref: '#/components/schemas/Tranche' } }
+        - { name: search, in: query, schema: { type: string }, description: "Numéro, objet ou destination." }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage20' }
+      responses:
+        '200':
+          description: Page d'états
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/EtatPaiement' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+
+  /etats/{etat}/numero:
+    put:
+      tags: [États de paiement]
+      summary: Numéro de registre (unique ; figé à la validation finale)
+      x-permission: om.numeroter
+      parameters: [{ $ref: '#/components/parameters/etat' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [numero]
+              properties:
+                numero: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: État mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/EtatPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /etats/{etat}/controler:
+    post:
+      tags: [États de paiement]
+      summary: Étape 1 — BROUILLON → CONTROLE
+      description: Signe (instantané du signataire, paraphe archivé, scellé HMAC incluant la tranche).
+      x-permission: om.valider
+      parameters: [{ $ref: '#/components/parameters/etat' }]
+      responses:
+        '200':
+          description: État contrôlé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/EtatPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /etats/{etat}/viser:
+    post:
+      tags: [États de paiement]
+      summary: Étape 2 — CONTROLE → VISA_DAF
+      description: Séparation des tâches — 422 si le DAF a contrôlé cet état (vaut aussi pour le SUPER_ADMIN).
+      x-permission: om.viser
+      parameters: [{ $ref: '#/components/parameters/etat' }]
+      responses:
+        '200':
+          description: État visé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/EtatPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /etats/{etat}/approuver:
+    post:
+      tags: [États de paiement]
+      summary: Étape 3 — VISA_DAF → VALIDE (ouvre le paiement de la tranche)
+      description: |
+        Exige un numéro. Séparation des tâches : 422 si le DG a contrôlé ou visé l'état.
+        Avances : les OM passent `VALIDE` (jamais un OM `REJETE`) et l'avance est engagée
+        (`avance_engagee`) ; ouvre les fichiers avance. Reliquats : ouvre les fichiers reliquat.
+      x-permission: om.approuver
+      parameters: [{ $ref: '#/components/parameters/etat' }]
+      responses:
+        '200':
+          description: État validé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/EtatPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /etats/{etat}/rejeter:
+    post:
+      tags: [États de paiement]
+      summary: Rejet motivé (à toute étape)
+      description: Efface les signatures amont et purge les paraphes archivés.
+      x-permission: om.rejeter
+      parameters: [{ $ref: '#/components/parameters/etat' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string, minLength: 10 }
+      responses:
+        '200':
+          description: État rejeté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/EtatPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ───────────────────────────── Paiements ─────────────────────────────
+  /paiements/lots:
+    get:
+      tags: [Paiements]
+      summary: Liste des lots
+      x-permission: paiements.consulter
+      parameters:
+        - { name: mission_id, in: query, schema: { type: integer } }
+        - { name: tranche, in: query, schema: { $ref: '#/components/schemas/Tranche' } }
+        - { name: operateur, in: query, schema: { $ref: '#/components/schemas/Operateur' } }
+        - { name: statut, in: query, schema: { $ref: '#/components/schemas/StatutLot' } }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
+      responses:
+        '200':
+          description: Page de lots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/LotPaiement' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+
+  /paiements/lots/previsualiser:
+    get:
+      tags: [Paiements]
+      summary: Bénéficiaires éligibles d'un lot
+      description: Périmètre `Versement::scopeEligiblesLot` — état de la tranche VALIDE (ou OM VALIDE pour une mission sans état), montant > 0, jamais un versement CONFIRME ni porté par un lot CONFIRME.
+      x-permission: paiements.consulter
+      parameters:
+        - { name: mission_id, in: query, required: true, schema: { type: integer } }
+        - { name: tranche, in: query, required: true, schema: { $ref: '#/components/schemas/Tranche' } }
+        - { name: operateur, in: query, required: true, schema: { $ref: '#/components/schemas/Operateur' } }
+      responses:
+        '200':
+          description: Aperçu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Apercu' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /paiements/lots/generer:
+    post:
+      tags: [Paiements]
+      summary: Générer (ou régénérer) le fichier d'un lot
+      description: |
+        Un fichier = 1 mission × 1 tranche × 1 opérateur. MTN → `.txt`, Moov → `.xlsx`.
+        Un lot CONFIRME n'est jamais réécrit : les versements devenus payables partent dans
+        un lot complémentaire (`sequence` suivante). Au-delà de `PAIEMENT_ASYNC_SEUIL`
+        (défaut 50) bénéficiaires : 202 et génération en file (`docs/queues.md`).
+        422 si l'état de la tranche n'est pas VALIDE ou si aucun versement n'est éligible.
+        Audit `GENERATE_LOT`.
+      x-permission: paiements.generer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mission_id, tranche, operateur]
+              properties:
+                mission_id: { type: integer }
+                tranche: { $ref: '#/components/schemas/Tranche' }
+                operateur: { $ref: '#/components/schemas/Operateur' }
+      responses:
+        '200':
+          description: Petit lot — fichier en téléchargement direct
+          content:
+            text/plain:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '202':
+          description: Gros lot — génération en file
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Accepte'
+                  - type: object
+                    properties:
+                      nb_lignes: { type: integer }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { description: "Limite `paiement` (5/min)" }
+
+  /paiements/lots/job/{trackingId}:
+    get:
+      tags: [Paiements]
+      summary: Suivi d'une génération asynchrone
+      x-permission: paiements.consulter
+      parameters: [{ $ref: '#/components/parameters/trackingId' }]
+      responses:
+        '200':
+          description: État du job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/Suivi'
+                      - type: object
+                        properties:
+                          lot_id: { type: integer, description: "Si TERMINE." }
+                          fichier: { type: string, description: "Si TERMINE." }
+
+  /paiements/lots/{lot}/download:
+    get:
+      tags: [Paiements]
+      summary: Re-télécharger le fichier d'un lot
+      x-permission: paiements.consulter
+      parameters: [{ $ref: '#/components/parameters/lot' }]
+      responses:
+        '200': { $ref: '#/components/responses/Fichier' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /paiements/lots/{lot}/confirmer:
+    post:
+      tags: [Paiements]
+      summary: Confirmer le lot après dépôt réussi (manuel)
+      description: Lot et versements → CONFIRME, horodatés. Audit, notification.
+      x-permission: paiements.confirmer
+      parameters: [{ $ref: '#/components/parameters/lot' }]
+      responses:
+        '200':
+          description: Lot confirmé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/LotPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /paiements/lots/{lot}/erreur:
+    post:
+      tags: [Paiements]
+      summary: Marquer le lot en ERREUR (dépôt échoué)
+      description: Versements GENERE → EN_ATTENTE avec les coordonnées courantes de l'agent ; régénération possible. 422 sur un lot CONFIRME. Audit `ERROR_LOT`.
+      x-permission: paiements.generer
+      parameters: [{ $ref: '#/components/parameters/lot' }]
+      responses:
+        '200':
+          description: Lot en erreur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/LotPaiement' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /paiements/statuts:
+    get:
+      tags: [Paiements]
+      summary: Synthèse des versements par opérateur et statut
+      description: Hors régularisations (A_RECOUVRER / RECOUVRE).
+      x-permission: paiements.consulter
+      responses:
+        '200':
+          description: Agrégats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        operateur: { $ref: '#/components/schemas/Operateur' }
+                        statut: { $ref: '#/components/schemas/StatutVersement' }
+                        total: { type: integer }
+                        montant_total: { type: integer }
+
+  /paiements/historique:
+    get:
+      tags: [Paiements]
+      summary: Versements confirmés
+      x-permission: paiements.consulter
+      parameters:
+        - { name: periode, in: query, schema: { type: string, example: 2026-10 }, description: "Mois de `date_paiement`." }
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { name: date_fin, in: query, schema: { type: string, format: date }, description: "Incluse (bornée à la fin du jour)." }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
+      responses:
+        '200':
+          description: Page de versements ; `meta.total_montant` = total de la période
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Versement' } }
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/PaginationMeta'
+                      - type: object
+                        properties:
+                          total_montant: { type: integer }
+
+  /paiements/regularisations:
+    get:
+      tags: [Paiements]
+      summary: Trop-perçus (reliquats négatifs après amendement)
+      x-permission: paiements.consulter
+      parameters:
+        - { name: statut, in: query, schema: { type: string, enum: [A_RECOUVRER, RECOUVRE] } }
+        - { name: mission_id, in: query, schema: { type: integer } }
+        - { name: search, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
+      responses:
+        '200':
+          description: Paginateur « à plat » (champs de pagination à la racine) + total global à recouvrer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Regularisation' } }
+                  current_page: { type: integer }
+                  last_page: { type: integer }
+                  per_page: { type: integer }
+                  total: { type: integer }
+                  total_a_recouvrer: { type: integer }
+
+  /paiements/regularisations/{versement}/document:
+    get:
+      tags: [Paiements]
+      summary: Document de retenue sur salaire (PDF, à remettre à la RH)
+      x-permission: paiements.consulter
+      parameters: [{ $ref: '#/components/parameters/versement' }]
+      responses:
+        '200': { $ref: '#/components/responses/Pdf' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /paiements/regularisations/{versement}/recouvrer:
+    post:
+      tags: [Paiements]
+      summary: Constater le recouvrement (A_RECOUVRER → RECOUVRE)
+      description: Retenue appliquée par la RH, hors application. Un OM dont un trop-perçu est RECOUVRE n'est plus amendable.
+      x-permission: paiements.confirmer
+      parameters: [{ $ref: '#/components/parameters/versement' }]
+      responses:
+        '200':
+          description: Régularisation recouvrée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      versement_id: { type: integer }
+                      statut: { type: string, enum: [RECOUVRE] }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ───────────────────────────── Barème ─────────────────────────────
+  /baremes:
+    get:
+      tags: [Barème]
+      summary: Barème du per diem
+      x-permission: baremes.consulter
+      parameters:
+        - { name: categorie, in: query, schema: { $ref: '#/components/schemas/Categorie' } }
+        - { name: zone_code, in: query, schema: { $ref: '#/components/schemas/Zone' } }
+        - { name: type_prise_en_charge, in: query, schema: { $ref: '#/components/schemas/TypePriseEnCharge' } }
+      responses:
+        '200':
+          description: Taux (non paginé)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Bareme' } }
+    post:
+      tags: [Barème]
+      summary: Créer un taux
+      description: Contrainte type ↔ zone et unicité (catégorie, zone, type). Audit `CREATE_BAREME`.
+      x-permission: baremes.modifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [categorie, zone_code, type_prise_en_charge, taux_journalier]
+              properties:
+                categorie: { $ref: '#/components/schemas/Categorie' }
+                zone_code: { $ref: '#/components/schemas/Zone' }
+                type_prise_en_charge: { $ref: '#/components/schemas/TypePriseEnCharge' }
+                taux_journalier: { type: integer, minimum: 0 }
+      responses:
+        '201':
+          description: Taux créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Bareme' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /baremes/{bareme}:
+    parameters: [{ $ref: '#/components/parameters/bareme' }]
+    get:
+      tags: [Barème]
+      summary: Détail d'un taux
+      x-permission: baremes.consulter
+      responses:
+        '200':
+          description: Taux
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Bareme' }
+    put:
+      tags: [Barème]
+      summary: Modifier le taux journalier
+      description: Ne recalcule pas les OM déjà retranscrits. Audit `UPDATE_BAREME` (ancien → nouveau).
+      x-permission: baremes.modifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [taux_journalier]
+              properties:
+                taux_journalier: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Taux modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Bareme' }
+    delete:
+      tags: [Barème]
+      summary: Supprimer un taux
+      x-permission: baremes.modifier
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
 
   /taux:
     get:
-      tags: [Taux]
-      summary: Liste des taux per diem actifs
-      security: [{ bearerAuth: [] }]
+      tags: [Barème]
+      summary: Alias rétro-compatible de GET /baremes
+      deprecated: true
+      x-permission: baremes.consulter
       responses:
         '200':
-          description: Liste des taux
+          description: Identique à GET /baremes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Bareme' } }
+
+  # ───────────────────────────── Rapports ─────────────────────────────
+  /rapports/mensuel:
+    get:
+      tags: [Rapports]
+      summary: Synthèse d'un mois (versements confirmés)
+      x-permission: rapports.consulter
+      parameters:
+        - { name: mois, in: query, schema: { type: string, example: 2026-10 }, description: "Défaut le mois courant." }
+      responses:
+        '200':
+          description: Synthèse, par opérateur, par tranche, par statut
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      mois: { type: string }
+                      periode: { type: object, properties: { debut: { type: string, format: date }, fin: { type: string, format: date } } }
+                      synthese: { type: object, properties: { nb_versements: { type: integer }, montant_total: { type: integer } } }
+                      par_operateur: { type: array, items: { type: object } }
+                      par_tranche: { type: array, items: { type: object } }
+                      par_statut: { type: array, items: { type: object } }
+
+  /rapports/agents:
+    get:
+      tags: [Rapports]
+      summary: État par agent
+      x-permission: rapports.consulter
+      parameters:
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /rapports/operateurs:
+    get:
+      tags: [Rapports]
+      summary: État par opérateur
+      x-permission: rapports.consulter
+      parameters:
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /rapports/zones:
+    get:
+      tags: [Rapports]
+      summary: État par zone
+      x-permission: rapports.consulter
+      parameters:
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /rapports/imputations:
+    get:
+      tags: [Rapports]
+      summary: État par imputation budgétaire
+      x-permission: rapports.consulter
+      parameters:
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+
+  /rapports/trop-percus:
+    get:
+      tags: [Rapports]
+      summary: Synthèse des trop-perçus (à recouvrer vs recouvrés, montants absolus)
+      x-permission: rapports.consulter
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
 
   /rapports/export:
     get:
       tags: [Rapports]
-      summary: Generer un export Excel
-      description: Requiert role CHEF_SERVICE, DRH ou DIRECTEUR. Rate limit 10/min.
-      security: [{ bearerAuth: [] }]
+      summary: Produire un export (dans la requête)
+      x-permission: rapports.consulter
       parameters:
-        - name: type
-          in: query
-          schema: { type: string, enum: [missions, paiements, agents, complet], default: complet }
-        - name: format
-          in: query
-          schema: { type: string, enum: [xlsx, csv], default: xlsx }
-        - name: date_debut
-          in: query
-          schema: { type: string, format: date }
-        - name: date_fin
-          in: query
-          schema: { type: string, format: date }
+        - { name: dimension, in: query, schema: { type: string, enum: [agent, operateur, zone, imputation] } }
+        - { name: format, in: query, schema: { type: string, enum: [xlsx, pdf] } }
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
       responses:
         '200':
-          description: URL de telechargement du fichier genere
+          description: Fichier produit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      fichier: { type: string }
+                      url: { type: string, example: "/api/rapports/export/download?fichier=..." }
+                      dimension: { type: string }
+                      format: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { description: "Limite `export` (10/min)" }
 
+  /rapports/export/download:
+    get:
+      tags: [Rapports]
+      summary: Télécharger un export produit
+      x-permission: rapports.consulter
+      parameters:
+        - { name: fichier, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { $ref: '#/components/responses/Fichier' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /rapports/export-async:
+    post:
+      tags: [Rapports]
+      summary: Produire un export en file
+      description: Job `GenererEtatJob` sur la file `etats` (`docs/queues.md`).
+      x-permission: rapports.consulter
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dimension: { type: string, enum: [agent, operateur, zone, imputation] }
+                format: { type: string, enum: [xlsx, pdf] }
+                date_debut: { type: string, format: date }
+                date_fin: { type: string, format: date }
+      responses:
+        '202':
+          description: Export lancé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Accepte' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { description: "Limite `export` (10/min)" }
+
+  /rapports/export/job/{trackingId}:
+    get:
+      tags: [Rapports]
+      summary: Suivi d'un export asynchrone
+      x-permission: rapports.consulter
+      parameters: [{ $ref: '#/components/parameters/trackingId' }]
+      responses:
+        '200':
+          description: État du job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/Suivi'
+                      - type: object
+                        properties:
+                          fichier: { type: string, description: "Si TERMINE." }
+                          url: { type: string, description: "Si TERMINE." }
+
+  # ───────────────────────────── Audit ─────────────────────────────
   /audit:
     get:
       tags: [Audit]
-      summary: Journal d'audit
-      description: Requiert role DIRECTEUR ou ADMIN.
-      security: [{ bearerAuth: [] }]
+      summary: Journal d'activité
+      description: Vocabulaire des actions en vigueur au moment de l'action (jamais réécrit).
+      x-permission: audit.consulter
       parameters:
-        - name: action
-          in: query
-          schema: { type: string }
-        - name: user_id
-          in: query
-          schema: { type: integer }
-        - name: date_debut
-          in: query
-          schema: { type: string, format: date }
-        - name: date_fin
-          in: query
-          schema: { type: string, format: date }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: entite, in: query, schema: { type: string } }
+        - { name: user_id, in: query, schema: { type: integer } }
+        - { $ref: '#/components/parameters/dateDebut' }
+        - { $ref: '#/components/parameters/dateFin' }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
       responses:
         '200':
-          description: Journal pagine
+          description: Page d'entrées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/AuditLog' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+
+  /audit/{audit}:
+    get:
+      tags: [Audit]
+      summary: Détail d'une action (qui, quoi, quand, IP)
+      x-permission: audit.consulter
+      parameters: [{ $ref: '#/components/parameters/audit' }]
+      responses:
+        '200':
+          description: Entrée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AuditLog' }
+
+  # ───────────────────────────── Administration ─────────────────────────────
+  /admin/users:
+    get:
+      tags: [Administration]
+      summary: Utilisateurs
+      x-permission: utilisateurs.gerer
+      parameters:
+        - { name: search, in: query, schema: { type: string }, description: "Nom ou e-mail." }
+        - { name: role, in: query, schema: { type: string } }
+        - { name: actif, in: query, schema: { type: boolean } }
+        - { $ref: '#/components/parameters/page' }
+        - { $ref: '#/components/parameters/perPage' }
+      responses:
+        '200':
+          description: Page d'utilisateurs + répartition sur l'ensemble filtré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/User' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+                  stats:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      super_admins: { type: integer }
+                      admins: { type: integer }
+                      autres: { type: integer }
+    post:
+      tags: [Administration]
+      summary: Créer un utilisateur
+      description: "Créer un SUPER_ADMIN exige `superadmins.gerer`. `cree_par` renseigné d'office. Audit."
+      x-permission: utilisateurs.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name: { type: string, maxLength: 255 }
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                telephone: { type: string, maxLength: 30 }
+                role: { type: string, description: "Code valide (`PermissionRepository::codes()`)." }
+                actif: { type: boolean }
+      responses:
+        '201':
+          description: Utilisateur créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/users/{user}:
+    parameters: [{ $ref: '#/components/parameters/user' }]
+    put:
+      tags: [Administration]
+      summary: Modifier un utilisateur
+      description: |
+        Toucher un SUPER_ADMIN exige `superadmins.gerer`. 422 pour rétrograder ou désactiver le
+        dernier SUPER_ADMIN actif, ou pour un changement de rôle qui créerait le cumul
+        ordonnateur/payeur avec ses overrides. Un changement de rôle révoque ses sessions.
+      x-permission: utilisateurs.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                telephone: { type: string, nullable: true }
+                role: { type: string }
+                actif: { type: boolean }
+      responses:
+        '200':
+          description: Utilisateur modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+    delete:
+      tags: [Administration]
+      summary: Supprimer un utilisateur
+      description: 422 sur le dernier SUPER_ADMIN actif ou sur soi-même.
+      x-permission: utilisateurs.gerer
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/users/{user}/statut:
+    post:
+      tags: [Administration]
+      summary: Activer / désactiver
+      description: 422 pour désactiver le dernier SUPER_ADMIN actif ou son propre compte.
+      x-permission: utilisateurs.gerer
+      parameters: [{ $ref: '#/components/parameters/user' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actif]
+              properties:
+                actif: { type: boolean }
+      responses:
+        '200':
+          description: Statut modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/users/{user}/reset-password:
+    post:
+      tags: [Administration]
+      summary: Réinitialiser le mot de passe (temporaire)
+      description: Pose `must_change_password` (verrou 423 jusqu'au changement) et révoque les sessions.
+      x-permission: utilisateurs.gerer
+      parameters: [{ $ref: '#/components/parameters/user' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password: { type: string, format: password, description: "Généré si absent." }
+      responses:
+        '200':
+          description: Mot de passe temporaire
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      password: { type: string }
+
+  /admin/users/{user}/permissions:
+    parameters: [{ $ref: '#/components/parameters/user' }]
+    get:
+      tags: [Administration]
+      summary: Overrides d'un utilisateur (RBAC niveau 2)
+      x-permission: utilisateurs.gerer
+      responses:
+        '200':
+          description: Base, accords, retraits, effectif
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user_id: { type: integer }
+                      role: { type: string }
+                      super_admin: { type: boolean }
+                      base: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      granted: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      revoked: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      effectives: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      non_assignables: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+    put:
+      tags: [Administration]
+      summary: Remplacer les overrides d'un utilisateur
+      description: |
+        422 : utilisateur SUPER_ADMIN, clé à la fois accordée et retirée, clé réservée,
+        cumul ordonnateur/payeur (`om.approuver` avec `paiements.generer`/`confirmer`).
+        Audit `USER_PERM_UPDATE`.
+      x-permission: roles.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [granted, revoked]
+              properties:
+                granted: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                revoked: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+      responses:
+        '200':
+          description: Overrides enregistrés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user_id: { type: integer }
+                      granted: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      revoked: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      effectives: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/roles:
+    get:
+      tags: [Administration]
+      summary: Matrice effective et catalogue des clés
+      x-permission: utilisateurs.gerer
+      responses:
+        '200':
+          description: Profils, clés, matrice
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      profils:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            cle: { type: string }
+                            libelle: { type: string }
+                            systeme: { type: boolean }
+                            verrouille: { type: boolean, description: "SUPER_ADMIN." }
+                            personnalise: { type: boolean, description: "Profil édité : ses lignes `role_permissions` font foi (réinitialisable au défaut)." }
+                            nb_utilisateurs: { type: integer }
+                      permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      matrice:
+                        type: object
+                        additionalProperties: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+                      non_assignables: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+    post:
+      tags: [Administration]
+      summary: Créer un rôle personnalisé (RBAC niveau 3)
+      description: Code unique et non système. Mêmes garde-fous que l'édition de la matrice. Audit `ROLE_CREATE`.
+      x-permission: roles.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, libelle]
+              properties:
+                code: { type: string, maxLength: 50, pattern: '^[A-Z][A-Z0-9_]*$' }
+                libelle: { type: string, maxLength: 100 }
+                permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+      responses:
+        '201':
+          description: Rôle créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      code: { type: string }
+                      libelle: { type: string }
+                      permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/roles/{role}:
+    parameters: [{ $ref: '#/components/parameters/role' }]
+    put:
+      tags: [Administration]
+      summary: Renommer un rôle personnalisé
+      description: 422 sur un profil système. Audit `ROLE_RENAME`.
+      x-permission: roles.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [libelle]
+              properties:
+                libelle: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: Rôle renommé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object, properties: { code: { type: string }, libelle: { type: string } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+    delete:
+      tags: [Administration]
+      summary: Supprimer un rôle personnalisé
+      description: 422 sur un profil système ou si des utilisateurs y sont rattachés. Audit `ROLE_DELETE`.
+      x-permission: roles.gerer
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/roles/{role}/permissions:
+    parameters: [{ $ref: '#/components/parameters/role' }]
+    put:
+      tags: [Administration]
+      summary: Remplacer les permissions d'un profil
+      description: |
+        422 : SUPER_ADMIN (non éditable), clé réservée, cumul ordonnateur/payeur — contrôlé
+        aussi sur l'effectif de chaque membre (overrides compris). Purge le cache de la
+        matrice. Audit `ROLE_PERM_UPDATE`.
+      x-permission: roles.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permissions]
+              properties:
+                permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+      responses:
+        '200':
+          description: Permissions du profil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      role: { type: string }
+                      permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+    delete:
+      tags: [Administration]
+      summary: Réinitialiser le profil au défaut (`config/profils.php`)
+      description: Audit `ROLE_PERM_RESET`.
+      x-permission: roles.gerer
+      responses:
+        '200':
+          description: Permissions par défaut
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      role: { type: string }
+                      permissions: { type: array, items: { $ref: '#/components/schemas/Permission' } }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ───────────────────────────── Paramètres ─────────────────────────────
+  /admin/parametres/part-avance:
+    get:
+      tags: [Paramètres]
+      summary: Part de l'avance en % (lecture, tout authentifié)
+      description: "Défaut 70. Écriture via `PUT /admin/settings` (`partAvance`)."
+      responses:
+        '200':
+          description: Pourcentage
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: integer, example: 70 }
+
+  /admin/parametres/annee-fiscale:
+    get:
+      tags: [Paramètres]
+      summary: Exercice courant (lecture, tout authentifié)
+      description: Aucun écran ni traitement ne consomme encore l'exercice (`docs/annee-fiscale.md`).
+      responses:
+        '200':
+          description: Exercice
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      annee: { type: integer, example: 2026 }
+                      mois_debut: { type: integer, example: 1 }
+                      libelle: { type: string, example: "2026", description: "« 2026-2027 » pour un exercice à cheval." }
+
+  /admin/settings:
+    get:
+      tags: [Paramètres]
+      summary: Réglages système (secret SMTP masqué)
+      x-permission: parametres.gerer
+      responses:
+        '200':
+          description: Réglages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Settings' }
+    put:
+      tags: [Paramètres]
+      summary: Écrire des réglages (liste blanche, fusion)
+      x-permission: parametres.gerer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Settings' }
+      responses:
+        '200':
+          description: Réglages enregistrés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Settings' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/signatures:
+    get:
+      tags: [Paramètres]
+      summary: Signataires du circuit (contrôleur, DAF, DG)
+      x-permission: parametres.gerer
+      responses:
+        '200':
+          description: Identités et présence d'un paraphe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Signataires' }
+
+  /admin/signatures/{poste}:
+    parameters: [{ $ref: '#/components/parameters/poste' }]
+    post:
+      tags: [Paramètres]
+      summary: Téléverser le paraphe d'un poste
+      description: Type déterminé par le contenu réel du fichier. Stocké dans `storage/app/private/signatures/` (hors sauvegarde de la base).
+      x-permission: parametres.gerer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [signature]
+              properties:
+                signature: { type: string, format: binary, description: "PNG ou JPEG, 500 Ko max." }
+      responses:
+        '200':
+          description: Signataires à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Signataires' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+    delete:
+      tags: [Paramètres]
+      summary: Retirer le paraphe d'un poste
+      x-permission: parametres.gerer
+      responses:
+        '200':
+          description: Signataires à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Signataires' }
+
+  /admin/backups:
+    get:
+      tags: [Paramètres]
+      summary: Sauvegardes (.sql / .sql.gz), les plus récentes d'abord
+      x-permission: parametres.gerer
+      responses:
+        '200':
+          description: Sauvegardes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Sauvegarde' } }
+    post:
+      tags: [Paramètres]
+      summary: Créer une sauvegarde compressée (`db:backup --compress`)
+      description: Base de données seulement — ni `settings.json`, ni paraphes, ni fichiers produits.
+      x-permission: parametres.gerer
+      responses:
+        '200':
+          description: Sauvegarde créée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultatCommande' }
+        '500':
+          description: Échec (`mysqldump`, `exec`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultatCommande' }
+
+  /admin/backups/{name}:
+    delete:
+      tags: [Paramètres]
+      summary: Supprimer une sauvegarde
+      description: Idempotent — un fichier déjà absent répond 200.
+      x-permission: parametres.gerer
+      parameters: [{ $ref: '#/components/parameters/backupName' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/backups/{name}/download:
+    get:
+      tags: [Paramètres]
+      summary: Télécharger une sauvegarde
+      x-permission: parametres.gerer
+      parameters: [{ $ref: '#/components/parameters/backupName' }]
+      responses:
+        '200': { $ref: '#/components/responses/Fichier' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/backups/{name}/restaurer:
+    post:
+      tags: [Paramètres]
+      summary: Restaurer une sauvegarde (`db:restore --force`)
+      description: |
+        Destructeur : le corps recopie exactement le nom du fichier. Une sauvegarde de
+        sécurité de l'état courant est prise juste avant ; la matrice des permissions en
+        cache est purgée. Audit `BACKUP_RESTORE`.
+      x-permission: parametres.gerer
+      parameters: [{ $ref: '#/components/parameters/backupName' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation: { type: string, description: "Nom exact du fichier." }
+      responses:
+        '200':
+          description: Base restaurée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultatCommande' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '500':
+          description: Échec de la restauration
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultatCommande' }
