@@ -151,7 +151,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 - [ ] Tableau de bord : KPIs et graphiques chargés (preuve que le SPA atteint l'API en HTTPS).
 - [ ] `/ordres`, `/missions`, `/etats`, `/paiements` rendent leur écran, sans page blanche.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
-- [ ] La fonctionnalité livrée par cette version se comporte comme attendu.
+- [ ] La fonctionnalité livrée par cette version se comporte comme attendu
+      (version 1.3 : voir la section *06* de la checklist et les *Notes de version 1.3* de
+      `DEPLOY-CPANEL.md`).
 - [ ] Checklist complète : [`checklist-post-deploiement.md`](checklist-post-deploiement.md).
 
 ---
