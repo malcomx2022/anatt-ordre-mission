@@ -222,6 +222,18 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — guide utilisateur (compléments)
+
+- **Guide utilisateur** (`docs/Guide-Utilisateur-ANaTT.docx`, régénéré par
+  `docs/generer_guide_utilisateur.py`) :
+  - tableau des nouveautés : PDF de l'OM signé par l'état, restauration des droits d'accès ;
+  - §6.2 : le PDF de l'OM reprend les signatures de l'état des avances (même code de
+    vérification), jamais pour un OM rejeté ni sur un brouillon ;
+  - §7.2 : un OM rejeté reste rejeté à la validation de l'état des avances ; l'avance est figée ;
+  - §13 : l'exercice n'a pas encore d'effet sur les montants, rapports ou documents ;
+  - §13.3 : droits d'accès rétablis dès la restauration ; encadré « Ce que la sauvegarde ne
+    contient pas » (réglages, paraphes, fichiers produits).
+
 #### Modifié — signatures sur le PDF de l'OM
 
 - **Le PDF d'un OM reprend les signatures de l'état des avances.** Sur le circuit par état,
