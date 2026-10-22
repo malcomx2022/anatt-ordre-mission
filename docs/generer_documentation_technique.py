@@ -236,6 +236,8 @@ tableau(
         ["Per diem", "Sans jour facturé, le transport reste dû ; seule l'exonération annule tout.", "§5.1"],
         ["Frontend", "Suivi des gros lots (202), part d'avance réactive, Valider / Rejeter du circuit par OM, gestion des erreurs, téléversement des paraphes en multipart.", "§3"],
         ["Plateforme", "Laravel 12 / PHP 8.4 (imposé par composer.lock) ; suites de tests exécutables sans .env.", "§2.2, §10"],
+        ["PDF de l'OM", "Reprend les signatures de l'état des avances qui couvre l'OM (instantané, paraphe archivé, même code de vérification) ; clé de cache incluant le statut de l'état.", "§4.4"],
+        ["Restauration", "db:restore purge la matrice des permissions mise en cache (rememberForever) ; settings.json et fichiers du disque local hors sauvegarde.", "§4.7, §6.2.1"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -598,10 +600,17 @@ tableau(
     [
         ["1", "Utilisateur", "Ouvre la fiche d'un OM et clique « Aperçu/Télécharger PDF ».", "GET /api/ordres/:id/pdf"],
         ["2", "Système", "Génère le PDF via DomPDF (en-tête officiel ANaTT mutualisé, données OM, montants).", "PDF produit côté serveur"],
-        ["3", "Utilisateur", "Visualise ou télécharge le document.", "Fichier PDF imprimable"],
+        ["3", "Système", "Blocs de signature : signature portée par l'OM (circuit par OM, données héritées) en priorité, sinon celle de l'état des AVANCES qui couvre l'OM (PdfGenerator::etatSignataire).", "Mêmes nom, fonction, paraphe archivé et code de vérification que l'état"],
+        ["4", "Utilisateur", "Visualise ou télécharge le document.", "Fichier PDF imprimable"],
     ],
     largeurs=[0.8, 2.6, 8.6, 4.8],
 )
+bullet("Couverture par l'état : l'OM doit figurer dans le tableau lignes figé au récapitulatif "
+       "(numero = reference_semo) ; un OM REJETE / ANNULE ou un état REJETE ne fournit aucune signature, "
+       "et un brouillon n'en montre jamais.")
+bullet("Cache : ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf — le statut de l'état entre dans la clé, "
+       "pour qu'une signature apposée sur l'état régénère le PDF d'un OM resté au même statut. "
+       "Tests : OmPdfSignaturesEtatTest.")
 
 h2("4.5 Import en masse des agents (Excel / CSV)")
 tableau(
@@ -642,10 +651,14 @@ tableau(
         ["2", "SUPER_ADMIN", "Télécharge une sauvegarde (GET /api/admin/backups/:name/download).", "Copie hors serveur"],
         ["3", "SUPER_ADMIN", "Restaure : POST /api/admin/backups/:name/restaurer avec { confirmation: <nom du fichier> }.", "422 si le nom recopié diffère"],
         ["4", "Système", "db:restore prend d'abord une sauvegarde de sécurité de l'état courant, décompresse (.gz) en PHP puis rejoue le dump avec le client mysql (DB_RESTORE_BINARY).", "Base remplacée ; opération réversible"],
-        ["5", "Système", "Audit BACKUP_RESTORE écrit APRÈS la restauration (dans la base restaurée).", "Traçabilité"],
+        ["5", "Système", "Purge la matrice des permissions mise en cache (PermissionRepository::vider) : role_permissions vient d'être remplacée.", "Droits de la sauvegarde effectifs dès la requête suivante"],
+        ["6", "Système", "Audit BACKUP_RESTORE écrit APRÈS la restauration (dans la base restaurée).", "Traçabilité"],
     ],
     largeurs=[0.8, 2.8, 8.8, 4.4],
 )
+bullet("Hors périmètre du dump : storage/app/settings.json (part d'avance, exercice, SMTP…), paraphes des "
+       "signataires et fichiers produits (PDF, fichiers de paiement) sur le disque local. Une restauration ne "
+       "les modifie pas ; leur sauvegarde relève de la copie de storage/.")
 
 # =========================================================================
 # 5. RÈGLES MÉTIER
@@ -745,8 +758,9 @@ tableau(
 )
 para("Permissions réservées au SUPER_ADMIN : superadmins.gerer, parametres.gerer, roles.gerer.", italic=True, color=GRIS)
 h3("6.2.1 RBAC flexible (matrice éditable à chaud)")
-bullet("Niveau 1 — profil : table role_permissions (PermissionRepository, en cache, purgée à l'écriture) ; "
-       "repli sur config/profils.php ; réinitialisable au défaut.")
+bullet("Niveau 1 — profil : table role_permissions (PermissionRepository, en cache sans expiration, purgée à "
+       "l'écriture et après db:restore) ; repli sur config/profils.php ; réinitialisable au défaut. Toute "
+       "modification de role_permissions hors application impose une purge du cache.")
 bullet("Niveau 2 — utilisateur : table user_permissions (accords / retraits) ; effectif = base ∪ accordées − retirées.")
 bullet("Niveau 3 — rôles personnalisés : table roles (les 8 profils système ne sont ni renommables ni supprimables).")
 bullet("Garde-fous serveur : SUPER_ADMIN non éditable, clés réservées refusées, séparation ordonnateur / payeur "
@@ -878,7 +892,7 @@ tableau(
     [
         ["GET / PUT", "/api/baremes[/:id]", "Lecture (baremes.consulter) / modification (baremes.modifier) ; édition II ↔ III synchronisée"],
         ["GET", "/api/admin/parametres/part-avance", "Part de l'avance (lecture publique, tout authentifié)"],
-        ["GET", "/api/admin/parametres/annee-fiscale", "Exercice courant (lecture publique)"],
+        ["GET", "/api/admin/parametres/annee-fiscale", "Exercice courant (lecture publique) — exposé mais consommé par aucun écran ni rapport à ce jour (cf. docs/annee-fiscale.md)"],
         ["GET", "/api/rapports/{mensuel|agents|operateurs|zones|imputations|trop-percus}", "États (rapports.consulter)"],
         ["GET / POST", "/api/rapports/export | export-async | export/job/:id", "Export xlsx/pdf (immédiat ou en file) ; nom de fichier unique"],
         ["GET / POST", "/api/notifications | /lues | /:id/lu", "Notifications de l'utilisateur connecté"],
@@ -1002,7 +1016,7 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "≈ 130 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes", "552 tests au total"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "558 tests au total (66 fichiers)"],
         ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "113 tests / 26 fichiers"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],

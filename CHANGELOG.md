@@ -222,6 +222,19 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — documentation technique (compléments)
+
+- **Documentation technique** (`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`, régénérée par
+  `docs/generer_documentation_technique.py`) :
+  - évolutions 1.3 : PDF de l'OM signé par l'état, purge de la matrice après `db:restore` ;
+  - §4.4 : blocs de signature (priorité OM, sinon état des avances), couverture par le tableau
+    `lignes`, clé de cache incluant le statut de l'état ;
+  - §4.7 : purge de la matrice à la restauration ; `settings.json`, paraphes et fichiers produits
+    hors du dump ;
+  - §6.2.1 : cache de la matrice sans expiration, purgé à l'écriture et après `db:restore` ;
+  - §7 : l'exercice est exposé mais encore consommé par aucun écran ;
+  - §10 : 558 tests Pest (66 fichiers).
+
 #### Documentation — guide utilisateur (compléments)
 
 - **Guide utilisateur** (`docs/Guide-Utilisateur-ANaTT.docx`, régénéré par
