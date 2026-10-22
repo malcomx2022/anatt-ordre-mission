@@ -9,6 +9,30 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation (CLAUDE.md)
+
+- **`CLAUDE.md`** remis au niveau du code :
+  - **§2 Stack** : Vite 8, Pinia 3, Vue Router 5, Vitest 4 et Playwright, Sanctum 4, Pest 3.
+    Redis est facultatif. Le DevOps réel est WAMP, cPanel et GitHub Actions ; il n'y a pas de
+    Docker dans le dépôt.
+  - **§3 Structure** réécrite d'après l'arborescence réelle : contrôleurs, services, Support,
+    commandes `db:backup` et `db:restore`, tests, e2e, documentation et maquettes HTML. Les
+    fichiers inexistants ont été retirés : `docker-compose.yml`, `manuel-utilisateur.docx`,
+    `specs-techniques.pdf`.
+  - **§7** :
+    - 401 JSON sur `/api/*` ;
+    - pagination bornée de `/missions` et `/etats` ;
+    - filtre opérateur de `/ordres` ;
+    - `sequence` des lots.
+  - **§8** : calcul avec la part d'avance paramétrable, le transport (y compris sans jour
+    facturé) et `avance_engagee`. Nouvelles règles « un agent par mission », « OM rejeté » et
+    « lot complémentaire ».
+  - **§10** : commandes à jour (lint, e2e, worker, `db:backup`, `db:restore`, `start-dev.ps1`).
+  - **§12** : ajout de `DB_DUMP_BINARY`, `DB_RESTORE_BINARY`, `MTN_COMPTE` et
+    `PAIEMENT_ASYNC_SEUIL`. Les variables d'API Mobile Money sont retirées : elles ne sont lues
+    nulle part et contredisaient la règle d'or.
+  - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
+
 ### Documentation (README)
 
 - **`README.md`** :
