@@ -16,6 +16,8 @@
 | Étapes | récap → `CONTROLE` → `VISA_DAF` → `VALIDE` (par tranche) | `IMPORTE` → `VALIDE` (**une seule étape**) |
 | Effet sur les OM | la validation finale du DG **propage** `VALIDE` aux N OM | fait passer **l'OM** à `VALIDE` |
 | Quand | mission **avec** état de paiement (cas normal) | mission **sans** état (reprise de données, correction ponctuelle) |
+| Interface | écrans *États de paiement* (récapitulatif, signatures, numéro) | boutons **Valider** (`om.valider`) / **Rejeter** (`om.rejeter`, motif ≥ 10 car.) sur la fiche OM, affichés seulement pour un OM `IMPORTE` d'une mission **sans** état |
+| Rejet | rejet motivé de l'état à chaque étape (signatures amont effacées) | `IMPORTE → REJETE` ; les versements `EN_ATTENTE` de l'OM passent `ANNULE` |
 
 **Le circuit par ÉTAT est le circuit officiel de l'ANaTT.** Une seule signature sur
 l'état (scellée HMAC, avec paraphe archivé et numéro de registre par tranche) vaut
@@ -52,6 +54,14 @@ instant donné :
 
 Cet invariant est verrouillé par `tests/Feature/CoherenceCircuitsTest.php`.
 
+**Un rejet par OM n'est jamais défait par l'état.** Un OM rejeté sur le circuit par OM
+**avant** que la mission ait un état reste `REJETE` : quand l'état des avances est ensuite
+établi puis validé, la propagation (`EtatPaiementService::propager`) ne touche que les OM
+qui ne sont ni `SOLDE`, ni `ANNULE`, ni `REJETE`. Sans cette exclusion, un OM rejeté
+redevenait `VALIDE`, donc payable, alors qu'il est absent de l'état signé (défaut corrigé
+par la revue d'octobre 2026, `docs/revue-projet-2026-10.md` §3 n° 1). Ses versements,
+passés `ANNULE` au rejet, restent de toute façon hors des fichiers.
+
 ---
 
 ## 3. La porte de paiement est déjà unifiée
@@ -62,6 +72,15 @@ Quel que soit le circuit, l'éligibilité d'un versement à un fichier passe par
 > un versement est éligible si son OM est `VALIDE` **ET**
 > (la mission n'a **aucun** état **OU** l'état **de sa tranche** est `VALIDE`).
 
+Le même filtre écarte aussi, quel que soit le circuit :
+
+- les versements déjà `CONFIRME`, `ANNULE` (OM rejeté) ou en régularisation
+  (`A_RECOUVRER` / `RECOUVRE`) ;
+- les montants **≤ 0** (reliquat de trop-perçu) ;
+- tout versement porté par un lot **`CONFIRME`** : un lot confirmé n'est jamais réécrit,
+  et un versement devenu payable après coup part dans un **lot complémentaire**
+  (`lots_paiement.sequence` 2, 3…).
+
 Conséquences :
 
 - `VALIDE` a le **même sens** dans les deux circuits : l'OM est verrouillé et
@@ -70,7 +89,8 @@ Conséquences :
 - Verrou **par tranche** : valider les **avances** n'ouvre **pas** les reliquats.
 - Seconde barrière (défense en profondeur) : même si un OM est forcé à `VALIDE`
   hors circuit, aucun fichier n'est écrit tant que l'état de la tranche n'est pas
-  validé — couvert par `tests/Feature/Paiement/BarriereEtatTest.php`.
+  validé (`FileGenerator::exigerEtatValide`, appelée avant toute écriture) — couvert par
+  `tests/Feature/Paiement/BarriereEtatTest.php`.
 
 ---
 
@@ -121,10 +141,19 @@ Quand l'avance a déjà été payée, un OM peut voir ses **jours facturés** ch
 plus. C'est le **reliquat** qui absorbe tout l'écart — quitte à devenir **négatif**
 (trop-perçu). Cf. `docs/amendement-om.md` pour le détail métier.
 
-Le point charnière est le **gel de l'avance** : à la validation finale de l'état
-des **avances**, chaque OM mémorise son avance dans `avance_engagee`
-(`EtatPaiementService::propager`). À partir de là,
-`reliquat = montant_total − avance_engagee`.
+Le point charnière est le **gel de l'avance**, posé par l'un ou l'autre circuit :
+
+- **circuit par état** : à la validation finale de l'état des **avances**, chaque OM
+  mémorise son avance dans `avance_engagee` (`EtatPaiementService::propager`) ;
+- **circuit par OM** (mission sans état) : il n'y a pas de validation d'état pour figer
+  l'avance ; c'est l'**amendement** lui-même qui l'engage si l'avance a déjà été payée
+  (versement AVANCE `CONFIRME`), dans `MissionService::amender`. Sans cela, l'amendement
+  recalculait la répartition complète en ignorant l'avance décaissée (défaut corrigé par
+  la revue d'octobre 2026, §3 n° 3).
+
+À partir de là, `reliquat = montant_total − avance_engagee`. Tant qu'aucune avance n'est
+engagée, la répartition est recalculée en entier avec la part d'avance paramétrée
+(`Parametres::partAvance()`, 70 % par défaut).
 
 ```mermaid
 flowchart TD
@@ -143,7 +172,9 @@ flowchart TD
 
 | État de la mission | Amendement |
 |---|---|
-| Aucun état, ou état des avances `BROUILLON` | ✅ recalcul complet 70/30 (rien n'est figé) |
+| Un versement de l'OM est `GENERE` (fichier en attente de dépôt) | ⛔ confirmez le lot ou passez-le en `ERREUR` d'abord |
+| Aucun état et avance non payée, ou état des avances `BROUILLON` | ✅ recalcul complet avec la part d'avance (rien n'est figé) |
+| Aucun état et avance déjà `CONFIRME` (circuit par OM) | ✅ avance engagée à l'amendement, seul le reliquat bouge |
 | État des avances `VALIDE` | ✅ avance figée, seul le reliquat bouge |
 | État des avances `CONTROLE` / `VISA_DAF` | ⛔ rejetez-le d'abord (document en cours de signature) |
 | État des reliquats `CONTROLE` / `VISA_DAF` | ⛔ **rejet guidé** : rejetez-le, amendez, puis rétablissez-le |
@@ -154,10 +185,14 @@ flowchart TD
 
 **Intégrité garantie :**
 
+- l'amendement verrouille l'OM puis les états de la mission (`lockForUpdate`) : un
+  contrôle concurrent ne peut pas signer l'état entre la garde et la resynchronisation ;
 - un état des reliquats en `BROUILLON` (ou `REJETE`) est **resynchronisé
   automatiquement** sur les montants amendés (`OrdreMissionObserver` →
-  `EtatPaiementService::synchroniser`), y compris un total **négatif** (colonnes
-  `etats_paiement` signées) ;
+  `EtatPaiementService::synchroniser`). Son total est le montant **payable** : la somme
+  des reliquats **positifs** (`EtatPaiementService::montantsTranche`). Un trop-perçu
+  n'abaisse jamais le total signé ; le PDF le mentionne à part (« hors total, à recouvrer
+  par retenue sur salaire ») ;
 - un état **signé** (`CONTROLE` / `VISA_DAF` / `VALIDE`) n'est **jamais** altéré
   par un amendement ; l'état des **avances validé reste scellé** (HMAC), ses
   montants ne bougeant pas (l'avance est figée) ;
@@ -180,8 +215,10 @@ retenue.
 | Circuit par OM | `app/Services/MissionService.php`, `app/Http/Controllers/Api/ValidationController.php` |
 | Règles de statut / séparation des tâches | `app/Support/Workflow.php`, `config/workflow.php` |
 | Exclusivité (verrou) | `MissionService::exigerAbsenceDEtat()` |
-| Porte de paiement unifiée | `Versement::scopeEligiblesLot()` |
-| Amendement (avenant) & régularisations | `MissionService::amender()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
+| Propagation (exclut `SOLDE` / `ANNULE` / `REJETE`) | `EtatPaiementService::propager()` |
+| Porte de paiement unifiée | `Versement::scopeEligiblesLot()`, `FileGenerator::exigerEtatValide()` |
+| Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
+| Amendement (avenant) & régularisations | `MissionService::amender()`, `MissionService::exigerAmendementPossible()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
 | Document de retenue (PDF pour la RH) | `PdfGenerator::genererDocumentRetenue()`, `GET /api/paiements/regularisations/:versement/document` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |
 | Tests — barrière de paiement | `tests/Feature/Paiement/BarriereEtatTest.php` |
@@ -189,3 +226,6 @@ retenue.
 | Tests — séparation des tâches | `tests/Feature/SeparationTachesTest.php` |
 | Tests — amendement & intégrité de l'état | `tests/Feature/AmendementOmTest.php`, `tests/Feature/AmendementIntegriteEtatTest.php` |
 | Tests — trop-perçus / régularisations | `tests/Feature/RegularisationTest.php` |
+| Tests — avance engagée | `tests/Feature/AvanceEngageeTest.php` (circuit par état), `tests/Feature/AmendementOmTest.php` (circuit par OM) |
+| Tests — OM rejeté jamais repêché, versements annulés | `tests/Feature/EtatPaiementTest.php`, `tests/Feature/MissionTest.php` |
+| Revue d'octobre 2026 (défauts corrigés sur ces circuits) | `docs/revue-projet-2026-10.md` |

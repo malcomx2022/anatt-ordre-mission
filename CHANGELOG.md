@@ -213,6 +213,19 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     nulle part et contredisaient la règle d'or.
   - **§1** : séparation ordonnateur/payeur vérifiée pour chaque membre d'un profil.
 
+#### Documentation — circuits de validation
+
+- **`docs/circuits-validation.md`** aligné sur la 1.3 :
+  - interface du circuit par OM (boutons Valider / Rejeter) et rejet par OM (versements `ANNULE`) ;
+  - un OM rejeté n'est jamais repêché par la validation de l'état (propagation qui exclut `REJETE`) ;
+  - porte de paiement : exclusions complètes de `scopeEligiblesLot` (lot `CONFIRME`, lot
+    complémentaire) et seconde barrière `FileGenerator::exigerEtatValide` ;
+  - gel de l'avance sur le circuit par OM (engagée à l'amendement si elle est déjà payée) ; part
+    d'avance paramétrable au lieu de « 70/30 » ;
+  - tableau des amendements : garde « fichier en attente de dépôt » ; verrou `lockForUpdate` ;
+    état des reliquats au montant **payable** (la mention d'un total négatif était obsolète) ;
+  - références et tests complétés.
+
 #### Documentation — rapport de revue
 
 - **`docs/revue-projet-2026-10.md`** mis à jour en fin de revue :
