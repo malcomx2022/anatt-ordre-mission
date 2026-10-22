@@ -133,6 +133,15 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 
 #### Documentation — déploiement
 
+- **`docs/runbook-mise-a-jour-cron.md`** adapté à la mise à jour vers la 1.3 :
+  - encadrés « 1.3 » : migration attendue, `vendor/` inchangé, contrôle du 401 JSON, lots
+    re-téléchargeables et écran Sauvegardes ;
+  - prérequis : aucun lot en attente de dépôt avant l'opération ;
+  - tâches Cron permanentes (`db:backup`, `queue:work`) distinguées des tâches temporaires du
+    runbook ; elles restent en place et sont contrôlées au ménage ;
+  - retour arrière : le `down()` de `add_sequence_to_lots_paiement` échoue dès qu'un lot
+    complémentaire existe (revenir par le dump) ; fichiers écrits après la mise à jour à rapprocher
+    avant tout redépôt. Compte des migrations corrigé (33).
 - **`docs/checklist-post-deploiement.md`** complétée pour la 1.3 :
   - API : cohérence de la file d'attente (`QUEUE_CONNECTION` et tâche `queue:work`) et contrôle
     de la sauvegarde planifiée du lendemain ;
