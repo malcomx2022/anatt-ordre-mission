@@ -222,6 +222,24 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — workflows par profil
+
+- **`docs/workflows-par-profil.md`** réécrit : il décrivait encore le circuit **par OM** en
+  trois signatures (statuts OM `VERIFIE` / `VISA_DAF`, drapeau `WORKFLOW_DOUBLE_VALIDATION`),
+  retiré depuis.
+  - Parcours : récapitulatif par le gestionnaire, puis contrôle → visa DAF → validation DG
+    **sur l'état de paiement**, une fois par tranche (avances puis reliquats) ; repli par OM
+    en une étape pour les missions sans état.
+  - Profils : récapitulatif et amendement (gestionnaire), numérotation (contrôleur, DAF,
+    DG), lot en erreur, lot complémentaire et recouvrement (agent financier), séparation des
+    tâches telle que codée (DG distinct du contrôleur **et** du DAF).
+  - Matrice complétée (`om.numeroter`, `roles.gerer`) et recalée sur `config/profils.php`.
+  - Brouillons d'OM et d'état ; document signé = état de paiement (paraphe archivé, état
+    général). Constat signalé : le PDF de l'OM d'une mission validée par état garde ses
+    blocs de signature « en attente » (les signatures vivent sur l'état).
+  - Menu et écran de travail de chaque profil recalés sur `navigation.ts` (file `/etats`
+    ouverte sur l'étape du signataire).
+
 #### Documentation — catégories d'indice
 
 - **`docs/categories-indice.md`** :

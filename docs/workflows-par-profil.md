@@ -1,50 +1,63 @@
 # Workflows par profil — qui fait quoi, dans quel ordre
 
-> Matrice extraite du code (`App\Support\Permissions`), pas rédigée de mémoire.
-> Le circuit décrit ici est celui en mode **complet**
-> (`WORKFLOW_DOUBLE_VALIDATION=true`). En mode simple, seule l'étape du contrôleur
-> existe et elle valide directement.
+> Matrice extraite du code (`config/profils.php`, lue par `App\Support\Permissions`),
+> pas rédigée de mémoire. C'est la matrice **par défaut** : elle est éditable à chaud par
+> le SUPER_ADMIN (cf. `docs/rbac-flexible.md`), une installation personnalisée peut donc
+> s'en écarter.
+>
+> **Mise à jour 1.3 (octobre 2026).** Les trois signatures (contrôle → visa DAF →
+> validation DG) se jouent sur l'**état de paiement** de la mission, une fois par tranche
+> (avances, puis reliquats). Le circuit « double validation » par OM (statuts OM `VERIFIE`
+> / `VISA_DAF`, drapeau `WORKFLOW_DOUBLE_VALIDATION`) a été **retiré** ; seule subsiste une
+> validation par OM en **une étape**, pour les missions sans état. Référence :
+> `docs/circuits-validation.md`.
 
 ---
 
-## 1. Le parcours d'un ordre de mission, de bout en bout
+## 1. Le parcours d'une mission, de bout en bout
 
 ```
-   SEMO émet l'OM (hors application)
+   SEMO émet les OM (hors application)
              │
              ▼
    ┌──────────────────┐
-   │ GESTIONNAIRE_OM  │  retranscrit la mission + N bénéficiaires
+   │ GESTIONNAIRE_OM  │  retranscrit la mission + N bénéficiaires (OM : IMPORTE)
    └──────────────────┘  calcul du per diem, création des versements
-             │            statut : IMPORTE
+             │            puis établit le RÉCAPITULATIF de l'état des AVANCES (BROUILLON)
              ▼
    ┌──────────────────┐
-   │   CONTROLEUR     │  étape 1 — vérification de conformité
-   └──────────────────┘  statut : VERIFIE                    ─── rejet possible
+   │   CONTROLEUR     │  étape 1 — contrôle de conformité     état : CONTROLE
+   └──────────────────┘                                      ─── rejet motivé possible
              │
              ▼
    ┌──────────────────┐
-   │      DAF         │  étape 2 — « Vu »
-   └──────────────────┘  statut : VISA_DAF                   ─── rejet possible
+   │      DAF         │  étape 2 — « Vu »                     état : VISA_DAF
+   └──────────────────┘                                      ─── rejet motivé possible
              │
              ▼
    ┌──────────────────┐
-   │       DG         │  étape 3 — VALIDATION FINALE
-   └──────────────────┘  statut : VALIDE — l'OM est verrouillé ─── rejet possible
-             │
+   │       DG         │  étape 3 — VALIDATION FINALE          état : VALIDE
+   └──────────────────┘  (numéro de registre exigé)          ─── rejet motivé possible
+             │            les OM passent VALIDE, l'avance est figée (avance_engagee)
              ▼
    ┌──────────────────┐
-   │ AGENT_FINANCIER  │  génère le fichier MTN (.txt) / Moov (.xlsx)
-   └──────────────────┘  dépôt manuel sur la plateforme opérateur
-             │            puis confirmation → statut : SOLDE
+   │ AGENT_FINANCIER  │  génère les fichiers AVANCE MTN (.txt) / Moov (.xlsx)
+   └──────────────────┘  dépôt manuel sur la plateforme, puis confirmation
+             │
              ▼
-        paiement effectué
+   même circuit pour l'état des RELIQUATS (établi seulement après validation
+   de l'état des avances) → fichiers RELIQUAT → confirmation
 ```
 
-**Le point de bascule est unique** : tant que le DG n'a pas validé, aucun
-bénéficiaire n'entre dans un fichier de paiement. Ni la vérification du
-contrôleur, ni le visa du DAF n'ouvrent le paiement — c'est vérifié par un test
-qui compte les versements éligibles à chaque étape.
+**Le point de bascule est unique, par tranche** : tant que le DG n'a pas validé l'état
+d'une tranche, aucun versement de cette tranche n'entre dans un fichier
+(`Versement::scopeEligiblesLot`, doublé de `FileGenerator::exigerEtatValide`). Ni le
+contrôle, ni le visa du DAF n'ouvrent le paiement — vérifié par les tests du circuit
+(`EtatPaiementTest`, `Paiement/BarriereEtatTest`).
+
+**Mission sans état** (reprise de données, correction ponctuelle) : le contrôleur valide
+l'OM directement sur sa fiche (`IMPORTE → VALIDE`, une étape) ou le rejette. Ce repli est
+fermé dès qu'un état existe pour la mission.
 
 ---
 
@@ -52,36 +65,38 @@ qui compte les versements éligibles à chaque étape.
 
 ### GESTIONNAIRE_OM — la saisie
 
-Retranscrit dans l'application les ordres de mission émis par SEMO. C'est le seul
-profil qui crée de la donnée métier.
+Retranscrit dans l'application les ordres de mission émis par SEMO. C'est le seul profil
+qui crée de la donnée métier.
 
 | Peut | Ne peut pas |
 |---|---|
-| Retranscrire une mission et ses N bénéficiaires | Valider quoi que ce soit |
-| Gérer le référentiel agents (créer, modifier, importer) | Générer ou confirmer un paiement |
-| Consulter OM, paiements, barème, rapports | Modifier le barème |
-| Télécharger le brouillon d'un OM | Consulter le journal d'audit |
+| Retranscrire une mission et ses N bénéficiaires | Signer un état (contrôle, visa, validation) |
+| **Établir / rafraîchir le récapitulatif** de l'état d'une tranche | Numéroter un état |
+| **Amender** les jours facturés d'un OM (motif ≥ 10 caractères) | Générer ou confirmer un paiement |
+| Gérer le référentiel agents (créer, modifier, importer) | Modifier le barème |
+| Consulter OM, états, paiements, barème, rapports ; télécharger les brouillons | Consulter le journal d'audit |
 
-**Son geste quotidien** : `/ordres/nouveau` → mission + participants + CAV → le
-per diem se calcule en temps réel → l'OM naît en `IMPORTE`, prêt pour le contrôle.
+**Son geste quotidien** : `/ordres/nouveau` → mission + participants + CAV → le per diem
+se calcule en temps réel → les OM naissent en `IMPORTE` → sur la mission, **Établir le
+récapitulatif** de l'état des avances, qui part au contrôle.
 
 ---
 
-### CONTROLEUR — étape 1, la vérification
+### CONTROLEUR — étape 1, le contrôle
 
-Premier regard sur l'OM retranscrit. Vérifie la conformité avant que le dossier ne
+Premier regard sur l'état de paiement. Vérifie la conformité avant que le dossier ne
 monte à la direction.
 
 | Peut | Ne peut pas |
 |---|---|
-| **Vérifier** un OM `IMPORTE` → `VERIFIE` | Apposer le visa DAF |
-| **Rejeter** avec motif (≥ 10 caractères) | Prononcer la validation finale |
-| Consulter le journal d'audit | Générer ou confirmer un paiement |
-| Consulter OM, paiements, barème, rapports | Modifier des données |
+| **Contrôler** un état `BROUILLON` → `CONTROLE` | Apposer le visa DAF |
+| **Rejeter** un état avec motif (≥ 10 caractères) | Prononcer la validation finale |
+| **Numéroter** un état (registre papier) | Générer ou confirmer un paiement |
+| Valider / rejeter un OM d'une mission **sans état** | Retranscrire ou amender |
+| Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
-**Son geste** : bouton **Vérifier** sur la fiche OM. En circuit simple, ce même
-bouton s'appelle **Valider** et mène directement à `VALIDE` — le libellé est piloté
-par le serveur, l'utilisateur n'a rien à savoir du mode.
+**Son écran** : `/etats` — la file s'ouvre sur les états `BROUILLON`, ceux qui attendent
+son contrôle.
 
 ---
 
@@ -91,33 +106,34 @@ Deuxième signature. C'est le « **Vu** » qui figure sur l'état de paiement of
 
 | Peut | Ne peut pas |
 |---|---|
-| **Viser** un OM `VERIFIE` → `VISA_DAF` | Vérifier (étape du contrôleur) |
-| **Rejeter** avec motif | **Prononcer la validation finale** |
-| Consulter le journal d'audit | Générer ou confirmer un paiement |
-| Consulter OM, paiements, barème, rapports | Gérer les agents ou les comptes |
+| **Viser** un état `CONTROLE` → `VISA_DAF` | Contrôler (étape 1) |
+| **Rejeter** un état avec motif | **Prononcer la validation finale** |
+| **Numéroter** un état | Générer ou confirmer un paiement |
+| Consulter le journal d'audit, OM, paiements, barème, rapports | Gérer les agents ou les comptes |
 
-**Ce que son visa ne fait pas** : il ne rend pas l'OM payable. Le dossier attend
-encore le DG.
+**Ce que son visa ne fait pas** : il ne rend rien payable. Le dossier attend encore le DG.
+Sa file s'ouvre sur les états `CONTROLE`.
 
 ---
 
 ### DG — étape 3, la validation finale
 
-Dernière signature du circuit. **C'est elle qui verrouille l'OM et ouvre le
-paiement.**
+Dernière signature. **C'est elle qui verrouille l'état, fait passer les OM à `VALIDE`
+(état des avances) et ouvre les fichiers de paiement de la tranche.**
 
 | Peut | Ne peut pas |
 |---|---|
-| **Valider définitivement** un OM `VISA_DAF` → `VALIDE` | Apposer le visa DAF |
-| **Rejeter** avec motif | Vérifier (étape du contrôleur) |
-| Consulter le journal d'audit | Générer ou confirmer un paiement |
-| Consulter OM, paiements, barème, rapports | Gérer les agents ou les comptes |
+| **Valider définitivement** un état `VISA_DAF` → `VALIDE` (numéro exigé) | Contrôler ou viser |
+| **Rejeter** un état avec motif | Générer ou confirmer un paiement |
+| **Numéroter** un état | Gérer les agents ou les comptes |
+| Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
-**Séparation des tâches** : une même personne ne peut pas porter deux signatures
-du même OM. Si quelqu'un a visé en tant que DAF, la validation finale lui est
-refusée sur ce dossier — y compris un super administrateur, qui cumule pourtant
-les permissions. Une double signature par une seule personne viderait le contrôle
-de sa substance.
+Sa file s'ouvre sur les états `VISA_DAF`.
+
+**Séparation des tâches** (`workflow.separation_des_taches`, active par défaut) : une même
+personne ne peut pas porter deux signatures du même état. Le DAF doit être distinct du
+contrôleur ; le DG, distinct **des deux** — y compris un super administrateur, qui cumule
+pourtant les permissions (`EtatPaiementService::viser` / `approuver`).
 
 ---
 
@@ -127,16 +143,19 @@ N'autorise rien, exécute. Sépare l'ordonnateur du payeur.
 
 | Peut | Ne peut pas |
 |---|---|
-| Prévisualiser les bénéficiaires éligibles d'un lot | **Valider un OM à quelque étape que ce soit** |
-| Générer le fichier MTN (`.txt`) / Moov (`.xlsx`) | Retranscrire un OM |
+| Prévisualiser les bénéficiaires éligibles d'un lot | **Signer un état à quelque étape que ce soit** |
+| Générer le fichier MTN (`.txt`) / Moov (`.xlsx`) d'une tranche | Retranscrire ou amender un OM |
 | Confirmer un lot après dépôt sur la plateforme | Modifier le barème |
-| Marquer un lot en erreur (autorise la régénération) | Consulter le journal d'audit |
+| Marquer un lot en **erreur** (versements remis en attente, coordonnées de l'agent rafraîchies) | Consulter le journal d'audit |
+| Constater le **recouvrement** d'un trop-perçu (retenue RH appliquée) | |
 
-**Son geste** : `/paiements/mtn` ou `/paiements/moov` → choisir mission + tranche →
-aperçu → télécharger → déposer sur la plateforme opérateur → revenir confirmer.
+**Son geste** : `/paiements/mtn` ou `/paiements/moov` → mission + tranche → aperçu →
+télécharger (un gros lot se génère en arrière-plan, avec suivi) → déposer sur la plateforme
+opérateur → revenir **confirmer**.
 
-**Garde-fou** : un versement `CONFIRME` n'est jamais réinclus dans un nouveau
-fichier, et un lot confirmé ne peut plus être régénéré. C'est l'anti-double-paiement.
+**Garde-fous** : un versement `CONFIRME`, ou porté par un lot `CONFIRME`, n'est jamais
+réinclus ; un lot confirmé n'est jamais réécrit — un versement devenu payable ensuite part
+dans un **lot complémentaire** (`…_COMPL2`). C'est l'anti-double-paiement.
 
 ---
 
@@ -146,10 +165,10 @@ Supervise sans jamais exécuter ni signer.
 
 | Peut | Ne peut pas |
 |---|---|
-| Gérer les utilisateurs (sauf super admins) | **Signer à une quelconque étape** |
+| Gérer les utilisateurs (sauf super admins) ; **consulter** la matrice des permissions | **Signer à une quelconque étape** |
 | Modifier le barème per diem | Retranscrire un OM |
 | Gérer le référentiel agents | Générer ou confirmer un paiement |
-| Consulter le journal d'audit, les rapports | Toucher aux paramètres système |
+| Consulter le journal d'audit, les paiements, les rapports | Modifier la matrice, les paramètres système, les sauvegardes |
 
 ---
 
@@ -159,7 +178,7 @@ Lecture seule, périmètre volontairement étroit.
 
 | Peut | Ne peut pas |
 |---|---|
-| Consulter le tableau de bord, les OM, les rapports | Voir le référentiel agents |
+| Consulter le tableau de bord, les missions, les OM, les états, les rapports | Voir le référentiel agents |
 | — | Voir les paiements, le barème, l'audit |
 | — | Toute action d'écriture |
 
@@ -167,18 +186,20 @@ Lecture seule, périmètre volontairement étroit.
 
 ### SUPER_ADMIN — l'accès total
 
-Passe toutes les gardes (`Gate::before`). Seul à gérer les autres super
-administrateurs et les paramètres système. Il existe toujours au moins un super
-admin actif : le dernier ne peut être ni supprimé, ni désactivé, ni rétrogradé.
+Passe toutes les gardes (`Gate::before`). Seul à gérer les autres super administrateurs,
+les paramètres système (dont la part d'avance et l'exercice), les paraphes des
+signataires, les sauvegardes et la matrice des permissions (`roles.gerer`). Il existe
+toujours au moins un super admin actif : le dernier ne peut être ni supprimé, ni désactivé,
+ni rétrogradé.
 
-**Une exception à son omnipotence** : la séparation des tâches s'applique aussi à
-lui. Il ne peut pas viser puis valider le même OM.
+**Une exception à son omnipotence** : la séparation des tâches s'applique aussi à lui. Il
+ne peut pas porter deux signatures du même état.
 
 ---
 
-## 3. Matrice complète des permissions
+## 3. Matrice des permissions par défaut
 
-Générée depuis `App\Support\Permissions` — source de vérité du RBAC.
+Générée depuis `config/profils.php`. `SUPER_ADMIN` a tout, implicitement.
 
 | Permission | SUPER_ADMIN | ADMIN | GESTION. OM | AGENT FIN. | DAF | DG | CONTRÔLEUR | LECTEUR |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -186,10 +207,11 @@ Générée depuis `App\Support\Permissions` — source de vérité du RBAC.
 | `personnel.consulter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | `personnel.gerer` | ✅ | ✅ | ✅ | — | — | — | — | — |
 | `om.consulter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `om.retranscrire` | ✅ | — | ✅ | — | — | — | — | — |
-| **`om.valider`** (étape 1) | ✅ | — | — | — | — | — | **✅** | — |
-| **`om.viser`** (étape 2) | ✅ | — | — | — | **✅** | — | — | — |
-| **`om.approuver`** (étape 3) | ✅ | — | — | — | — | **✅** | — | — |
+| `om.retranscrire` (saisie, récapitulatif, amendement) | ✅ | — | ✅ | — | — | — | — | — |
+| **`om.valider`** (étape 1 — contrôle) | ✅ | — | — | — | — | — | **✅** | — |
+| `om.numeroter` (numéro de registre) | ✅ | — | — | — | ✅ | ✅ | ✅ | — |
+| **`om.viser`** (étape 2 — visa) | ✅ | — | — | — | **✅** | — | — | — |
+| **`om.approuver`** (étape 3 — validation finale) | ✅ | — | — | — | — | **✅** | — | — |
 | `om.rejeter` | ✅ | — | — | — | ✅ | ✅ | ✅ | — |
 | `paiements.consulter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | `paiements.generer` | ✅ | — | — | ✅ | — | — | — | — |
@@ -201,74 +223,89 @@ Générée depuis `App\Support\Permissions` — source de vérité du RBAC.
 | `utilisateurs.gerer` | ✅ | ✅ | — | — | — | — | — | — |
 | `superadmins.gerer` | ✅ | — | — | — | — | — | — | — |
 | `parametres.gerer` | ✅ | — | — | — | — | — | — | — |
+| `roles.gerer` | ✅ | — | — | — | — | — | — | — |
 
-Les trois permissions de signature sont **mutuellement exclusives** entre DAF, DG
-et contrôleur : aucun profil métier n'en détient deux. C'est ce qui rend le circuit
-infalsifiable sans complicité entre trois personnes.
+Les trois permissions de signature sont **mutuellement exclusives** entre contrôleur, DAF
+et DG : aucun profil métier n'en détient deux. Combinées à la séparation des tâches, elles
+rendent le circuit infalsifiable sans complicité entre trois personnes. Le serveur refuse
+aussi qu'un profil — ou un utilisateur, compte tenu de ses droits individuels — cumule
+`om.approuver` (ordonnateur) et `paiements.generer` / `paiements.confirmer` (payeur).
 
 ---
 
-## 4. Le brouillon, disponible à tous les relecteurs
+## 4. Les brouillons, disponibles à tous les relecteurs
 
-Tout profil disposant de `om.consulter` peut télécharger le **brouillon** d'un OM
-tant que le circuit n'est pas achevé (`IMPORTE`, `VERIFIE`, `VISA_DAF`).
+Tout profil disposant de `om.consulter` peut télécharger :
 
-L'épreuve porte un filigrane diagonal « BROUILLON — NON VALIDE » sur chaque page,
-un bandeau « DOCUMENT PROVISOIRE — SANS VALEUR D'AUTORISATION DE PAIEMENT », des
-cadres de signature vides, et **aucun code de vérification**. Elle ne montre jamais
-de signature, même si l'OM en porte déjà : un document qui autorise un paiement
+- le **brouillon d'un OM** (`GET /api/ordres/:id/pdf/brouillon`) ;
+- le **brouillon de l'état** d'une tranche (`GET /api/missions/:id/etat/brouillon`) ; le
+  téléchargement « normal » de l'état reste filigrané tant que la tranche n'est pas validée.
+
+L'épreuve porte un filigrane « BROUILLON — NON VALIDE », un bandeau « DOCUMENT PROVISOIRE —
+SANS VALEUR D'AUTORISATION DE PAIEMENT », des cadres de signature vides et **aucun code de
+vérification**. Elle ne montre jamais de signature : un document qui autorise un paiement
 doit être impossible à confondre avec un document approuvé.
 
 ---
 
-## 5. Le document signé
+## 5. Les documents signés
 
-Le PDF de l'OM porte quatre blocs, dans l'ordre du circuit :
+**L'état de paiement** (une tranche) est le document que le circuit signe. Il porte les
+trois blocs contrôle / « Vu » DAF / validation DG, le numéro de registre et, pour l'état
+des reliquats, les trop-perçus mentionnés **hors total**. Une fois les deux tranches
+validées, l'**état général** consolidé (`GET /api/missions/:id/etat/final`) les réunit.
 
-| Bloc | Rempli par | Contenu une fois signé |
-|---|---|---|
-| Le bénéficiaire | — (signature manuscrite) | nom de l'agent |
-| Le Contrôleur — vérification | étape 1 | nom, date, code de vérification |
-| **Vu** — Le Directeur de l'Administration et des Finances | étape 2 | nom, date, code de vérification |
-| Le Directeur Général *(validation finale)* | étape 3 | nom, date, code de vérification |
+Chaque signature enregistre un **instantané** du nom et de la fonction du signataire, et
+**archive le paraphe** en vigueur : un renommage, une mutation, un changement de titulaire
+ou la suppression du compte ne réécrit pas un document déjà signé. Un rejet purge les
+paraphes archivés des signatures effacées.
 
-Chaque signature enregistre un **instantané** du nom et de la fonction du
-signataire : un renommage, une mutation ou la suppression du compte ne réécrit pas
-un document déjà signé.
-
-Le **code de vérification** est dérivé d'un scellé HMAC-SHA256 calculé sur les
-montants signés. Si un montant est altéré après signature, le scellé recalculé
+Le **code de vérification** est dérivé d'un scellé HMAC-SHA256 calculé sur les montants
+signés (et la tranche). Si un montant est altéré après signature, le scellé recalculé
 diverge. C'est un contrôle d'intégrité interne — **pas** une signature électronique
 qualifiée : aucune PKI, aucun certificat, aucune valeur probante au sens légal.
+
+> **Le PDF de l'OM** garde quatre blocs (bénéficiaire, contrôleur, « Vu » DAF, DG). Ils ne
+> se remplissent qu'avec les signatures portées par **l'OM lui-même** : le bloc
+> « contrôleur » par la validation par OM (mission sans état), les blocs DAF et DG
+> uniquement pour des données héritées de l'ancien circuit. Sur le circuit par état, les
+> signatures vivent sur l'**état** et ne sont pas recopiées sur l'OM : le PDF de l'OM d'une
+> mission validée par état affiche donc ces blocs « en attente ». Le document probant est
+> l'état de paiement.
 
 ---
 
 ## 6. Absence d'un signataire
 
-**Aucun mécanisme de délégation n'est prévu, et c'est un choix.** L'application
-étant accessible en ligne, le DAF et le DG peuvent signer depuis n'importe où, y
-compris en congé — exactement comme ils signeraient un parapheur à distance. La
-digitalisation reproduit le circuit manuel sans y ajouter d'intérim qui n'existe
-pas dans la procédure papier.
+**Aucun mécanisme de délégation n'est prévu, et c'est un choix.** L'application étant
+accessible en ligne, le DAF et le DG peuvent signer depuis n'importe où, y compris en
+congé — exactement comme ils signeraient un parapheur à distance. La digitalisation
+reproduit le circuit manuel sans y ajouter d'intérim qui n'existe pas dans la procédure
+papier.
 
-Si un poste devait être vacant durablement, la voie reste l'administration des
-comptes : un super administrateur réattribue le profil `DAF` ou `DG` à la personne
-désignée. Ce changement est journalisé.
+Si un poste devait être vacant durablement, la voie reste l'administration des comptes :
+un administrateur réattribue le profil `DAF` ou `DG` à la personne désignée (changement de
+rôle audité, sessions révoquées), et le SUPER_ADMIN met à jour son nom, sa fonction et son
+paraphe dans **Signatures** (`/admin/signatures`).
 
 ---
 
-## 7. Où chaque profil atterrit en se connectant
+## 7. Menu et écran de travail de chaque profil
+
+Après connexion, chacun arrive sur le tableau de bord ; le menu ne montre que ce que ses
+permissions ouvrent.
 
 | Profil | Voit dans le menu | Écran de travail principal |
 |---|---|---|
-| `GESTIONNAIRE_OM` | Dashboard, Personnel, Ordres, Paiements, Barème, Rapports | `/ordres/nouveau` |
-| `CONTROLEUR` | Dashboard, Personnel, Ordres, Paiements, Barème, Rapports, Audit | `/ordres?statut=IMPORTE` |
-| `DAF` | idem contrôleur | `/ordres?statut=VERIFIE` |
-| `DG` | idem contrôleur | `/ordres?statut=VISA_DAF` |
-| `AGENT_FINANCIER` | Dashboard, Personnel, Ordres, Paiements, Barème, Rapports | `/paiements` |
-| `ADMIN` | tout sauf Paramètres et génération de paiements | `/admin/utilisateurs` |
-| `LECTEUR` | Dashboard, Ordres, Rapports | `/` |
+| `GESTIONNAIRE_OM` | Tableau de bord, Personnel, Missions, Ordres de mission, États de paiement, Paiements (consultation), Barèmes, Rapports | `/ordres/nouveau`, puis `/missions` (récapitulatifs) |
+| `CONTROLEUR` | idem + Audit (sans saisie) | `/etats` (file : brouillons) |
+| `DAF` | idem contrôleur | `/etats` (file : contrôlés) |
+| `DG` | idem contrôleur | `/etats` (file : visés DAF) |
+| `AGENT_FINANCIER` | Tableau de bord, Personnel, Missions, Ordres, États, Paiements (génération, régularisations), Barèmes, Rapports | `/paiements/mtn`, `/paiements/moov`, `/paiements` |
+| `ADMIN` | tout sauf génération de paiements, Signatures et Paramètres | `/admin/utilisateurs` |
+| `LECTEUR` | Tableau de bord, Missions, Ordres de mission, États de paiement, Rapports | `/` |
 | `SUPER_ADMIN` | tout | `/admin/parametres` |
 
-Le menu est piloté par les permissions renvoyées par `/api/auth/me/permissions` :
-un profil ne voit jamais une entrée qu'il ne peut pas ouvrir.
+Le menu est piloté par les permissions renvoyées par `/api/auth/me/permissions` : un
+profil ne voit jamais une entrée qu'il ne peut pas ouvrir (verrouillé par
+`frontend/src/__tests__/navigation.spec.ts`).
