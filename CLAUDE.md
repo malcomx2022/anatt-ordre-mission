@@ -125,7 +125,8 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > `roles.gerer`, **exclusive au SUPER_ADMIN** (comme `superadmins.gerer` /
 > `parametres.gerer`, jamais attribuables). **Garde-fous serveur** : SUPER_ADMIN non
 > éditable, clés réservées refusées, et **séparation ordonnateur/payeur** (un profil
-> avec `om.approuver` ne peut cumuler `paiements.generer`/`confirmer`). Chaque édition
+> avec `om.approuver` ne peut cumuler `paiements.generer`/`confirmer` — contrôlé aussi sur
+> l'effectif de chaque membre du profil, droits individuels compris). Chaque édition
 > est auditée (`ROLE_PERM_UPDATE` / `ROLE_PERM_RESET`). Référence : `docs/rbac-flexible.md`.
 
 > **Cohérence menu ↔ routes ↔ API.** Chaque entrée du menu latéral
@@ -143,30 +144,30 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 
 ### Frontend
 - **Framework** : Vue.js 3 (Composition API) + TypeScript strict
-- **Build** : Vite 5
+- **Build** : Vite 8 (TypeScript 6, `vue-tsc`)
 - **CSS** : Tailwind CSS 3.4+ (config personnalisée ANaTT)
-- **State** : Pinia
-- **Router** : Vue Router 4 (guards d'authentification)
+- **State** : Pinia 3
+- **Router** : Vue Router 5 (guards d'authentification + permissions)
 - **HTTP** : Axios avec intercepteurs (token Bearer)
 - **Graphiques** : Chart.js 4
 - **PDF viewer** : VuePDF
-- **Tests** : Vitest + Vue Test Utils
+- **Tests** : Vitest 4 + Vue Test Utils ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
 - **PHP** : **8.4+** (minimum imposé par `composer.lock` : Symfony 8 + spatie/laravel-activitylog)
-- **Auth** : Laravel Sanctum (SPA tokens)
+- **Auth** : Laravel Sanctum 4 (SPA tokens)
 - **BDD** : MySQL 8 (production) / SQLite (tests)
-- **Cache/Queue** : Redis
-- **PDF** : DomPDF (Laravel-dompdf)
+- **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
+- **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest PHP + PHPUnit
+- **Tests** : Pest 3 + PHPUnit 11 (552 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 
 ### DevOps
-- Docker + Docker Compose
-- Nginx
-- GitHub Actions (CI/CD)
-- Certbot (SSL)
+- Développement : WAMP + `start-dev.ps1` / `stop-dev.ps1` (API, worker, Vite)
+- Production : hébergement **cPanel mutualisé** (FTP + phpMyAdmin + tâches Cron, AutoSSL) — `DEPLOY-CPANEL.md`
+- GitHub Actions (`.github/workflows/ci.yml`) : Lint, Pest, Vitest + type-check, Playwright, build `frontend-dist`
+- Pas de Docker dans le dépôt (aucun `docker-compose.yml`)
 
 ---
 
@@ -175,7 +176,10 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 ```
 anatt-ordre-mission/
 ├── CLAUDE.md                    ← CE FICHIER
-├── docker-compose.yml
+├── AGENTS.md · README.md · CHANGELOG.md
+├── DEPLOY-CPANEL.md · UPLOAD-VENDOR.md   ← déploiement / mise à jour (cPanel)
+├── start-dev.ps1 · stop-dev.ps1          ← environnement de dev (Windows)
+├── .github/workflows/ci.yml
 ├── frontend/                    ← Application Vue 3
 │   ├── src/
 │   │   ├── assets/
@@ -183,93 +187,76 @@ anatt-ordre-mission/
 │   │   │   ├── logo-anatt-white.png  ← Logo blanc, barre tricolore conservée (fonds sombres)
 │   │   │   └── icon-anatt.png         ← Marque carrée (vert ANaTT + ANaTT blanc) — base favicon
 │   │   ├── components/
-│   │   │   ├── shared/         ← Composants réutilisables
-│   │   │   │   ├── AppLayout.vue
-│   │   │   │   ├── AppSidebar.vue
-│   │   │   │   ├── AppTopBar.vue
-│   │   │   │   ├── AppButton.vue
-│   │   │   │   ├── AppCard.vue
-│   │   │   │   ├── AppBadge.vue
-│   │   │   │   ├── AppTable.vue
-│   │   │   │   ├── AppModal.vue
-│   │   │   │   ├── AppAlert.vue
-│   │   │   │   └── AppPagination.vue
-│   │   │   ├── auth/
-│   │   │   ├── dashboard/
-│   │   │   ├── agents/
-│   │   │   ├── missions/
-│   │   │   ├── paiements/
-│   │   │   ├── taux/
-│   │   │   ├── rapports/
-│   │   │   ├── audit/
-│   │   │   └── admin/
-│   │   ├── composables/
-│   │   │   ├── useApi.ts
-│   │   │   ├── useAuth.ts
-│   │   │   ├── useMissions.ts
-│   │   │   ├── usePaiements.ts
-│   │   │   └── useToast.ts
-│   │   ├── router/
-│   │   │   └── index.ts
-│   │   ├── stores/
-│   │   │   ├── auth.ts
-│   │   │   ├── missions.ts
-│   │   │   └── notifications.ts
-│   │   ├── types/
-│   │   │   ├── agent.ts
-│   │   │   ├── mission.ts
-│   │   │   └── paiement.ts
-│   │   ├── views/              ← Pages (42 écrans)
-│   │   └── main.ts
-│   ├── tailwind.config.ts
+│   │   │   ├── shared/         ← AppLayout, AppSidebar, AppTopBar, AppButton, AppCard, AppBadge,
+│   │   │   │                     AppTable, AppModal, AppAlert, AppPagination… + navigation.ts (menu)
+│   │   │   ├── agents/  audit/  dashboard/  etats/  missions/
+│   │   │   └── paiements/      ← PaiementGeneration.vue (génération MTN/Moov, suivi des gros lots)
+│   │   ├── composables/        ← useApi, useAuth, usePartAvance, useSearch, useToast
+│   │   ├── services/           ← un client par domaine (agents, ordres, missions, etats, paiements,
+│   │   │                         rapports, roles, users, audit, baremes, notifications) + http.ts
+│   │   ├── stores/             ← auth, notifications, ordres-mission (Pinia)
+│   │   ├── router/index.ts     ← routes + meta.permission
+│   │   ├── types/              ← agent, bareme, etat, mission, paiement (+ index)
+│   │   ├── utils/              ← benin (téléphone, catégorie, moisLocal), permissions, roles, etats
+│   │   ├── directives/
+│   │   ├── views/              ← Pages : les 42 écrans du registre (§5) + écrans ajoutés depuis
+│   │   │                         (états, régularisations, signatures, permissions par utilisateur…)
+│   │   └── __tests__/          ← Vitest
+│   ├── e2e/                    ← Playwright (parcours-critique.spec.ts)
+│   ├── public/runtime-config.js ← URL de l'API modifiable après build
+│   ├── tailwind.config.js
 │   └── vite.config.ts
 │
 ├── backend/                     ← API Laravel 12
 │   ├── app/
+│   │   ├── Console/Commands/   ← DatabaseBackup (db:backup), DatabaseRestore (db:restore)
 │   │   ├── Http/Controllers/Api/
-│   │   │   ├── AuthController.php
+│   │   │   ├── AuthController.php · UserController.php · RoleController.php
 │   │   │   ├── AgentController.php
-│   │   │   ├── MissionController.php      ← missions + OM (index/show/storeMission/pdf)
-│   │   │   ├── ValidationController.php   ← valider / rejeter
-│   │   │   ├── PaiementController.php     ← lots (génération/confirmation)
-│   │   │   ├── BaremeController.php
-│   │   │   ├── RapportController.php
-│   │   │   └── AuditController.php
-│   │   ├── Models/
-│   │   │   ├── User.php
-│   │   │   ├── Agent.php
-│   │   │   ├── Mission.php
-│   │   │   ├── OrdreMission.php
-│   │   │   ├── OmAmendement.php    ← journal des amendements (avenants)
-│   │   │   ├── Versement.php
-│   │   │   ├── LotPaiement.php
-│   │   │   ├── Bareme.php
-│   │   │   ├── ZoneGeographique.php
-│   │   │   └── AuditLog.php
+│   │   │   ├── MissionController.php      ← missions + OM (index/show/storeMission/amender/pdf)
+│   │   │   ├── ValidationController.php   ← circuit par OM : valider / rejeter (missions sans état)
+│   │   │   ├── EtatPaiementController.php ← états de paiement (récapitulatif, circuit, PDF)
+│   │   │   ├── PaiementController.php     ← lots (génération/confirmation/erreur), régularisations
+│   │   │   ├── BaremeController.php · RapportController.php · AuditController.php
+│   │   │   └── SettingsController.php · SignatureController.php · BackupController.php · NotificationController.php
+│   │   ├── Models/             ← User, Agent, Mission, OrdreMission, OmAmendement, EtatPaiement,
+│   │   │                         Versement, LotPaiement, Bareme, ZoneGeographique, AuditLog,
+│   │   │                         Role, RolePermission, UserPermission, Notification
 │   │   ├── Services/
-│   │   │   ├── MissionService.php
+│   │   │   ├── MissionService.php          ← retranscription, validation par OM, amendement
+│   │   │   ├── EtatPaiementService.php     ← circuit des états + propagation (+ EtatPaiementPdf, LignesEtatPaiement)
 │   │   │   ├── CalculIndemniteService.php
-│   │   │   ├── LotPaiementService.php
-│   │   │   ├── BaremeService.php
-│   │   │   ├── RapportService.php
-│   │   │   ├── AuditService.php
-│   │   │   ├── PdfGenerator.php
+│   │   │   ├── LotPaiementService.php · AgentService.php · BaremeService.php · RapportService.php
+│   │   │   ├── AuditService.php · NotificationService.php · UserPermissionService.php
+│   │   │   ├── PdfGenerator.php · SignatureParametres.php
 │   │   │   └── Paiement/
+│   │   │       ├── FileGenerator.php      ← lot, séquence (lot complémentaire), garde état validé
 │   │   │       ├── MtnFileGenerator.php   ← .txt
 │   │   │       └── MoovFileGenerator.php  ← .xlsx (PhpSpreadsheet)
+│   │   ├── Support/            ← Permissions, PermissionRepository, CategorieIndice, Parametres,
+│   │   │                         Workflow, MontantEnLettres, Telephone, ZoneResolver…
+│   │   ├── Observers/  Exports/  Imports/  Providers/
 │   │   └── Jobs/
-│   │       ├── GenererLotPaiementJob.php  ← file Redis « paiements »
-│   │       └── GenererEtatJob.php         ← file Redis « etats »
+│   │       ├── GenererLotPaiementJob.php  ← file « paiements »
+│   │       ├── GenererEtatJob.php         ← file « etats »
+│   │       └── SendNotification.php
 │   ├── database/
 │   │   ├── migrations/
 │   │   └── seeders/
+│   ├── docs/                   ← queues.md, openapi.yaml
+│   ├── tests/{Feature,Unit}    ← Pest
 │   └── routes/
-│       └── api.php
+│       ├── api.php
+│       └── console.php         ← planification (db:backup 02:00, purge des tokens)
 │
 └── docs/                        ← Documentation
-    ├── manuel-utilisateur.docx
-    ├── specs-techniques.pdf
-    └── architecture.png
+    ├── Guide-Utilisateur-ANaTT.docx              ← généré par generer_guide_utilisateur.py
+    ├── ANaTT_Documentation_Technique_Fonctionnelle.docx ← généré par generer_documentation_technique.py
+    ├── SCENARIO-DEMO.md · revue-projet-2026-10.md
+    ├── circuits-validation.md · amendement-om.md · rbac-flexible.md · workflows-par-profil.md
+    ├── parametrage-part-avance.md · annee-fiscale.md · categories-indice.md
+    ├── checklist-post-deploiement.md · runbook-mise-a-jour-cron.md
+    └── 00_galerie_index.html … 41_page_maintenance.html  ← maquettes HTML des écrans
 ```
 
 ---
@@ -727,6 +714,7 @@ POST   /api/notifications/lues      → Tout marquer lu
 POST   /api/notifications/:id/lu    → Marquer une notification lue
 ```
 > Le login renvoie `{ token, user, permissions[] }` et met à jour `derniere_connexion`.
+> Toute route `/api/*` non authentifiée répond **401 en JSON**, même sans en-tête `Accept` (aucune redirection vers une page de login).
 
 ### Utilisateurs (administration — `utilisateurs.gerer`)
 ```
@@ -820,7 +808,7 @@ POST   /api/missions                → Retranscription : crée la mission + N O
                                        Body: { objet, destination, zone_code?, dates, prise_en_charge_tiers,
                                                ordres:[{ reference_semo, agent_id, role, type_prise_en_charge,
                                                          categorie?, nb_jours? }] }
-GET    /api/ordres                  → Liste filtrée (statut, zone, agent_id, operateur, dates, search)
+GET    /api/ordres                  → Liste filtrée (statut, zone, agent_id, operateur, dates, search) — operateur = celui des VERSEMENTS (repli : agent si aucun versement)
 GET    /api/ordres/:id              → Détail OM (mission, agent, versements)
 POST   /api/ordres/:id/valider      → IMPORTE → VALIDE (rôle controleur : om.valider)
 POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars ; om.rejeter) — versements EN_ATTENTE → ANNULE
@@ -836,7 +824,7 @@ GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
 
 ### États de paiement (circuit par tranche : avances puis reliquats)
 ```
-GET    /api/missions                      → Missions + avancement des deux états (avances / reliquats)
+GET    /api/missions                      → Missions + avancement des deux états (avances / reliquats) — per_page 5-100, défaut 20
 GET    /api/missions/:id/etat             → { data: { avance: EtatPaiement|null, reliquat: EtatPaiement|null } }
                                             (data: null si aucun récapitulatif établi)
 POST   /api/missions/:id/etat/recapituler → Établit/rafraîchit l'état d'une tranche en BROUILLON
@@ -845,7 +833,7 @@ POST   /api/missions/:id/etat/recapituler → Établit/rafraîchit l'état d'une
 GET    /api/missions/:id/etat/brouillon   → PDF filigrané de la tranche (?tranche=, défaut AVANCE)
 GET    /api/missions/:id/etat/telecharger → PDF de la tranche (?tranche=) — filigrané tant que non validé
 GET    /api/missions/:id/etat/final       → État général consolidé (avances + reliquats) — 422 tant que les DEUX tranches ne sont pas VALIDE
-GET    /api/etats                         → File de travail (filtres: statut, tranche, search)
+GET    /api/etats                         → File de travail (filtres: statut, tranche, search) — per_page 5-100, défaut 20
 PUT    /api/etats/:id/numero              → Numéro de registre (unique ; figé à la validation finale)
 POST   /api/etats/:id/controler           → BROUILLON → CONTROLE (om.valider)
 POST   /api/etats/:id/viser               → CONTROLE → VISA_DAF (om.viser)
@@ -858,7 +846,7 @@ POST   /api/etats/:id/rejeter             → → REJETE (motif ≥ 10 chars ; e
 
 ### Paiements (mode GÉNÉRATION — rôle agent_financier)
 ```
-GET    /api/paiements/lots                  → Liste des lots (filtres mission/tranche/operateur/statut)
+GET    /api/paiements/lots                  → Liste des lots (filtres mission/tranche/operateur/statut) ; chaque lot expose `sequence`
 GET    /api/paiements/lots/previsualiser    → ?mission_id&tranche&operateur → bénéficiaires éligibles
 POST   /api/paiements/lots/generer          → Génère le fichier (.txt MTN / .xlsx Moov), lot → GENERE
                                               petit lot : téléchargement direct ; gros lot : 202 + tracking_id (file Redis)
@@ -919,11 +907,14 @@ $nbJours = abs(Carbon::parse($depart)->diffInDays(Carbon::parse($retour))) + 1;
 // Taux depuis le barème officiel (catégorie × zone × type) :
 $taux = Bareme::taux($categorie, $zoneCode, $type);   // null => erreur de validation
 
-$montantTotal = $taux * $nbJours;
-$avance       = (int) round($montantTotal * 0.70);     // 70 %
-$reliquat     = $montantTotal - $avance;               // 30 %
+// Répartition détaillée possible : Σ (taux(type) × jours) sur plusieurs types + transport.
+$montantTotal = $taux * $nbJours + $montantTransport;
+$avance       = (int) round($montantTotal * Parametres::partAvance() / 100); // 70 % par défaut
+$reliquat     = $montantTotal - $avance;               // le reliquat absorbe l'arrondi
 
-// Exonération : si mission.prise_en_charge_tiers => montants à 0, aucun versement.
+// Exonération : si mission.prise_en_charge_tiers => montants à 0 (transport compris), aucun versement.
+// Sans aucun jour facturé (hors exonération) : per diem nul, mais le transport reste dû.
+// Après amendement d'un OM dont l'avance est engagée : reliquat = total − avance_engagee (peut être < 0).
 ```
 
 ### Format fichier virement MTN (.txt) — exact, validé
@@ -947,7 +938,9 @@ HDR,SARALY,1,45000
 - Validation : `IMPORTE → VALIDE` (rôle `controleur`, permission `om.valider`). Rejet : `IMPORTE → REJETE` avec motif ≥ 10 chars.
 - Contrainte type↔zone : repas (`UN_REPAS`/`DEUX_REPAS`) ⇒ INTERIEUR ; hébergement (`LOGE_*`/`NOURRI_SEUL`) ⇒ EXTÉRIEUR.
 - Téléphone/opérateur viennent du **référentiel agent** ; cohérence numéro↔opérateur validée.
-- Paiement : cycle `EN_ATTENTE → GENERE → CONFIRME`. Confirmation **manuelle** après dépôt. Régénération tant que non confirmé ; **idempotence** (un versement CONFIRME n'est jamais réinclus).
+- Paiement : cycle `EN_ATTENTE → GENERE → CONFIRME`. Confirmation **manuelle** après dépôt. Régénération tant que non confirmé ; **idempotence** (un versement CONFIRME, ou porté par un lot CONFIRME, n'est jamais réinclus ; un lot CONFIRME n'est jamais réécrit → lot complémentaire).
+- Un même agent ne figure qu'**une fois** par mission (`ordres.*.agent_id` distinct).
+- Rejet d'un OM : ses versements `EN_ATTENTE` passent `ANNULE` ; la validation d'un état ne repropage jamais `VALIDE` à un OM `REJETE`.
 
 ---
 
@@ -1037,20 +1030,25 @@ public function store(CreateOrdreMissionRequest $request): JsonResponse
 cd frontend
 npm install
 npm run dev              # http://localhost:5173
-npm run build
-npm run test
+npm run build            # type-check + build
+npm run test:unit -- --run
+npm run lint:check       # ESLint + oxlint (vérification)
+npm run test:e2e         # Playwright (PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé)
 
 # Backend
 cd backend
 composer install
 php artisan migrate --seed
 php artisan serve        # http://localhost:8000
-php artisan queue:work   # Jobs en arrière-plan
-./vendor/bin/pest        # Tests
+php artisan queue:work --queue=paiements,etats,default --tries=3   # Jobs en arrière-plan
+./vendor/bin/pest        # Tests (aucun .env requis)
+./vendor/bin/pint --test # Style (vérification)
+php artisan schedule:run # cron : db:backup 02:00, purge des tokens
+php artisan db:backup --compress
+php artisan db:restore <fichier> --force   # sauvegarde de sécurité prise avant
 
-# Docker
-docker-compose up -d     # Démarre tout
-docker-compose logs -f   # Logs temps réel
+# Windows : tout l'environnement de dev
+.\start-dev.ps1 [-Install -Fresh]   /   .\stop-dev.ps1
 
 # Génération de code Laravel
 php artisan make:model OrdreMission -mcr   # Model + migration + controller
@@ -1089,24 +1087,27 @@ DB_PORT=3306
 DB_DATABASE=anatt_missions
 DB_USERNAME=root
 DB_PASSWORD=
+DB_DUMP_BINARY=mysqldump   # utilisé par db:backup
+DB_RESTORE_BINARY=mysql    # utilisé par db:restore
 
 MAIL_MAILER=smtp
 MAIL_FROM_ADDRESS=noreply@anatt.bj
 MAIL_FROM_NAME="ANaTT Missions"
 
-REDIS_HOST=127.0.0.1
+REDIS_HOST=127.0.0.1      # facultatif
 REDIS_PORT=6379
 
-# Mobile Money (sandbox)
-MOOV_API_URL=https://api-sandbox.moov-africa.bj
-MOOV_API_KEY=
-MTN_API_URL=https://sandbox.momodeveloper.mtn.com
-MTN_API_KEY=
-MTN_SUBSCRIPTION_KEY=
+# Fichiers de paiement (config/paiement.php)
+MTN_COMPTE=SARALY          # compte payeur de l'en-tête MTN : HDR,{COMPTE},…
+PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ```
+
+> Aucune variable d'API Mobile Money : conformément à la règle d'or, l'application ne
+> s'adresse jamais aux opérateurs (fichiers déposés à la main). En production, partir de
+> `backend/.env.production.example` (voir `DEPLOY-CPANEL.md` §5.1).
 
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 14 septembre 2026 (catégories d'indice nominatives — ORDRE_* remplacé)*  
+*Dernière mise à jour : 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes — cf. `docs/revue-projet-2026-10.md`)*  
 *Version projet : 1.0.0*
