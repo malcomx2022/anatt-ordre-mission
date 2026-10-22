@@ -11,6 +11,19 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ### Documentation
 
+- **Documentation technique 1.3** (`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`, régénérée
+  par `docs/generer_documentation_technique.py`) : chapitre « Évolutions de la version 1.3 ».
+  - Stack à jour : Laravel 12, PHP 8.4, Vite 8, Pinia 3, Vue Router 5, Vitest 4, Playwright.
+  - Entités ajoutées : `om_amendements`, `roles`, `role_permissions`, `user_permissions` et
+    `notifications` ; le nom de la table `ordre_missions` est corrigé.
+  - Statuts des versements et des lots. Nouveaux workflows : amendement (§4.6) et
+    sauvegarde/restauration (§4.7).
+  - Montants des états (§5.4) et RBAC flexible (§6.2.1). Audit et API complétés : amendement,
+    régularisations, notifications, rôles, sauvegardes, suivi des jobs.
+  - Stockage des fichiers par mission. Mise à jour d'instance (§9.5) et nouveau chapitre
+    10 « Qualité et tests ».
+  - Comptes de démo `daf@` et `dg@` ajoutés.
+
 - **Guide utilisateur 1.4** (`docs/Guide-Utilisateur-ANaTT.docx`, régénéré par
   `docs/generer_guide_utilisateur.py`) : nouveau chapitre « Nouveautés de la version 1.4 » et
   mise à jour des chapitres concernés.
