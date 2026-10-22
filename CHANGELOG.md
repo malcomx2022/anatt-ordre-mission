@@ -222,6 +222,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — catégories d'indice
+
+- **`docs/categories-indice.md`** :
+  - bornes inclusives par le bas précisées (salaire 186 000 à 371 999 pour `INDICE_400_799`) ;
+  - champ indice vidé ignoré côté client (défaut n° 7 de la revue), avec son test ;
+  - formule de secours `× 12 / 3097` : située (`Agent::indiceDepuisSalaire`) et signalée comme
+    non utilisée par la déduction ni par un écran ;
+  - points d'entrée de `normaliser()` vérifiés, tableau des tests, vérification manuelle
+    complétée.
+
 #### Documentation — année fiscale
 
 - **`docs/annee-fiscale.md`** :

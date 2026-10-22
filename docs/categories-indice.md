@@ -10,13 +10,20 @@
 | Code (stocké, API, import) | Libellé (écrans, PDF) | Plage imprimée sur l'état officiel | Indice | Salaire brut |
 |---|---|---|---|---|
 | `INDICE_SUP_800` | Indice ≥ 800 | `≥ 800` | ≥ 800 | ≥ 372 000 |
-| `INDICE_400_799` | Indice 400-799 | `400-799` | 400 à 799 | 186 000 à 372 000 |
+| `INDICE_400_799` | Indice 400-799 | `400-799` | 400 à 799 | 186 000 à 371 999 |
 | `INDICE_INF_400` | Indice < 400 | `< 400` | < 400 | < 186 000 |
+
+Les bornes sont **inclusives par le bas** : un indice de 800 ou un salaire de 372 000
+relève de `INDICE_SUP_800`, un indice de 400 ou un salaire de 186 000 de `INDICE_400_799`
+(`CategorieIndice::determiner`, comparaisons `>=`).
 
 La catégorie est **reprise telle quelle de SEMO**. À défaut, elle se déduit de
 l'**indice** (prioritaire) ou, en secours, du **salaire brut** — les deux jeux de
 seuils sont concordants. Formule de reconstitution d'un indice manquant :
-`indice = salaire_base × 12 / 3097`.
+`indice = salaire_base × 12 / 3097` (`Agent::indiceDepuisSalaire`, diviseur
+`Agent::DIVISEUR_INDICE`). Elle reste un **outil de calcul** : la déduction automatique de
+la catégorie ne l'utilise pas (elle s'appuie sur les seuils de salaire concordants), et
+aucun écran ne l'appelle aujourd'hui.
 
 **Le code porte le seuil** : un export, un log ou une requête SQL se lisent sans
 table de concordance. C'est la raison du nommage retenu.
@@ -30,6 +37,13 @@ table de concordance. C'est la raison du nommage retenu.
 | Serveur | `App\Support\CategorieIndice` | codes, libellés, plages, seuils, `determiner()`, `normaliser()`, `regleIn()` |
 | Client | `frontend/src/types/agent.ts` | `CATEGORIES`, `CATEGORIE_LABELS`, `categorieLabel()` |
 | Client (seuils) | `frontend/src/utils/benin.ts` | `categorieDeduite()` — miroir du calcul serveur, pour le retour visuel temps réel |
+
+**Champ vidé côté client.** Dans les formulaires d'agent, un champ `v-model.number` vidé
+vaut `''` (chaîne vide), pas `null`. `categorieDeduite()` ignore toute valeur qui n'est pas
+un nombre (`estNombre`) : un indice effacé laisse la main au salaire brut. Avant ce
+garde-fou, effacer l'indice faisait proposer « Indice < 400 » quel que soit le salaire
+(défaut n° 7 de la revue d'octobre 2026, `docs/revue-projet-2026-10.md` ; test
+`frontend/src/__tests__/benin.spec.ts`).
 
 Avant cette bascule, les seuils (800 / 400 / 372 000 / 186 000) étaient dupliqués
 en quatre endroits côté serveur. Ils n'existent plus qu'une fois par couche : une
@@ -52,6 +66,8 @@ entrée** et traduit silencieusement par `CategorieIndice::normaliser()` :
   déjà préparés par l'ANaTT continuent de fonctionner ;
 - filtres de liste `?categorie=…` (`AgentService`, `BaremeService`) — les liens
   mis en favori avant la bascule restent valides.
+
+(Liste vérifiée le 22/10/2026 : ce sont les seuls appels à `CategorieIndice::normaliser()`.)
 
 Un code inconnu des deux vocabulaires (`ORDRE_9`, `INDICE_X`) est **rejeté** en
 422 comme avant : la normalisation ne masque pas une erreur de saisie.
@@ -100,13 +116,21 @@ chaque exécution de la suite de tests **rejoue réellement la bascule**.
 ## 6. Recette
 
 ```bash
-cd backend  && ./vendor/bin/pest                 # dont CategorieIndiceTransitionTest
-cd frontend && npm run test:unit && npm run type-check && npm run lint:check
+cd backend  && ./vendor/bin/pest                 # dont CategorieIndiceTransitionTest, Unit/CategorieTest
+cd frontend && npm run test:unit && npm run type-check && npm run lint:check   # dont benin.spec.ts
 ```
+
+| Test | Couvre |
+|---|---|
+| `backend/tests/Feature/CategorieIndiceTransitionTest.php` | vocabulaire produit, anciens codes acceptés (création, filtres agents et barème, import CSV), code inconnu rejeté |
+| `backend/tests/Unit/CategorieTest.php` | normalisation, libellés, plages, seuils |
+| `backend/tests/Feature/ImportModeleAgentsTest.php` | modèles d'import distribués (3 catégories, 2 opérateurs) |
+| `frontend/src/__tests__/benin.spec.ts` | seuils d'indice prioritaires sur le salaire, champ indice vidé ignoré |
 
 Vérifications manuelles après déploiement :
 
 1. **Créer un agent** avec un indice de 850 → catégorie proposée « Indice ≥ 800 ».
+   Effacer l'indice et saisir un salaire de 200 000 → « Indice 400-799 » (et non « < 400 »).
 2. **Importer** un CSV portant encore `ORDRE_1` → importé et traduit.
 3. **Retranscrire un OM** → montant identique à celui d'avant la bascule.
 4. **Réimprimer un état déjà signé** → document identique au pixel près.
