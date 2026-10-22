@@ -222,6 +222,13 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — CLAUDE.md (compléments)
+
+- **`CLAUDE.md`** : part d'avance paramétrable rappelée dans les règles métier ; séparation des
+  tâches telle que codée ; PDF de l'OM signé par l'état (priorité, exclusions, clé de cache) ;
+  cache de la matrice sans expiration, purgé par `db:restore` ; exercice non consommé à ce jour ;
+  ce qui reste hors sauvegarde de la base.
+
 #### Documentation — déploiement (compléments)
 
 - **`DEPLOY-CPANEL.md`** :

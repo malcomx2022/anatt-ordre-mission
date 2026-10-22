@@ -47,7 +47,7 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   - Types `INTERIEUR` : `UN_REPAS` / `DEUX_REPAS` / `JOURNEE_COMPLETE`.
   - Types `EXTERIEUR` : `JOURNEE_COMPLETE` / `LOGE_NOURRI` / `LOGE_SEUL` / `NOURRI_SEUL`.
   - **Règle des 12 h** pour le nb de jours (période ≥ 12 h = jour entier ; retour 0-12 h = rien).
-  - Répartition : **AVANCE 70 %** / **RELIQUAT 30 %**.
+  - Répartition : **AVANCE 70 %** / **RELIQUAT 30 %** par défaut — part de l'avance paramétrable (`partAvance`, cf. §7).
   - **Exonération** si prise en charge par un organisme tiers (aucun frais alloué).
 - **Téléphone et opérateur** (MTN / Moov) viennent du **référentiel agents**, pas de l'OM.
 - **Référence SEMO** = clé naturelle **UNIQUE** (anti-doublon).
@@ -70,6 +70,12 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     (missions sans aucun état = reprise de données, périmètre par OM `VALIDE` comme avant).
   - Intégrité : tableau `lignes` figé au récapitulatif, paraphe archivé à la signature (purgé au rejet),
     scellé HMAC (inclut la tranche) sur les montants signés.
+  - **Séparation des tâches** (`workflow.separation_des_taches`, vaut aussi pour le SUPER_ADMIN) : le DAF ne vise pas
+    un état qu'il a contrôlé ; le DG ne valide pas un état qu'il a contrôlé **ou** visé.
+  - **PDF de l'OM** : il reprend les signatures de l'**état des avances** qui couvre l'OM (OM présent dans `lignes`) —
+    même instantané, paraphe archivé et code de vérification (`PdfGenerator::etatSignataire`). Une signature portée
+    par l'OM lui-même (circuit par OM, données héritées) reste prioritaire ; OM `REJETE`/`ANNULE`, état `REJETE` et
+    brouillon n'en montrent aucune. Clé de cache `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf`.
   - **Deux circuits de validation** (par état = canonique ; par OM = repli des missions sans état) :
     ils sont **exclusifs par mission** (verrou `MissionService::exigerAbsenceDEtat`) et unifiés à la porte
     de paiement (`Versement::scopeEligiblesLot`). Référence unique : `docs/circuits-validation.md`.
@@ -120,7 +126,9 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > table n'existe pas). Un profil sans ligne hérite du défaut ; dès qu'on l'édite,
 > ses lignes font foi (réinitialisable au défaut). `Permissions::pour()` délègue au
 > repository ; les droits de l'utilisateur courant (login + `/auth/me/permissions`)
-> reflètent la matrice à jour dès la connexion/rafraîchissement suivant.
+> reflètent la matrice à jour dès la connexion/rafraîchissement suivant. Le cache de la matrice
+> est **sans expiration** : purgé à chaque écriture et par `db:restore` ; toute modification de
+> `role_permissions` hors application (import SQL) impose une purge du cache.
 > **Lecture** de la matrice : `utilisateurs.gerer` (l'ADMIN consulte). **Écriture** :
 > `roles.gerer`, **exclusive au SUPER_ADMIN** (comme `superadmins.gerer` /
 > `parametres.gerer`, jamais attribuables). **Garde-fous serveur** : SUPER_ADMIN non
@@ -772,7 +780,8 @@ GET    /api/admin/backups                     → Sauvegardes .sql/.sql.gz (para
 POST   /api/admin/backups                     → Crée une sauvegarde (artisan db:backup)
 GET    /api/admin/backups/:name/download      → Télécharge une sauvegarde
 POST   /api/admin/backups/:name/restaurer     → Restaure (artisan db:restore) — body { confirmation: <nom du fichier> } ;
-                                                sauvegarde de sécurité de l'état courant prise juste avant ; audit BACKUP_RESTORE
+                                                sauvegarde de sécurité de l'état courant prise juste avant ; purge la matrice
+                                                des permissions en cache ; audit BACKUP_RESTORE
 DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 ```
 > `partAvance` (défaut 70) définit la répartition avance/reliquat : `avance = round(montant × partAvance/100)`,
@@ -787,7 +796,12 @@ DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 > renvoie la valeur configurée ou, à défaut, l'exercice courant calculé ; `libelleAnneeFiscale()` produit
 > « 2026 » ou « 2026-2027 » (exercice à cheval). Écriture SUPER_ADMIN via `/settings` (validées, mises en
 > cache 60 s, invalidées à l'écriture) ; **lecture publique** via `parametres/annee-fiscale`. Le sélecteur
-> d'année de l'UI est dynamique (plus de liste figée). Détail : `docs/annee-fiscale.md`.
+> d'année de l'UI est dynamique (plus de liste figée). **À ce jour, aucun écran ni traitement ne consomme
+> l'exercice** (rapports et exports filtrent par dates). Détail : `docs/annee-fiscale.md`.
+>
+> **Hors sauvegarde de la base** : `storage/app/settings.json` (réglages ci-dessus, signataires), les paraphes
+> (`storage/app/private/signatures/`) et les fichiers produits (PDF, paiements) vivent sur le disque ; `db:backup`
+> ne les inclut pas et `db:restore` ne les modifie pas — ils se sauvegardent avec `storage/`.
 
 ### Agents
 ```
@@ -814,7 +828,7 @@ POST   /api/ordres/:id/valider      → IMPORTE → VALIDE (rôle controleur : o
 POST   /api/ordres/:id/rejeter      → IMPORTE → REJETE (motif ≥ 10 chars ; om.rejeter) — versements EN_ATTENTE → ANNULE
 POST   /api/ordres/:id/amender      → Amende les jours facturés (avenant). Body: { nb_jours? , lignes? , motif }
                                        Avance figée → seul le reliquat bouge (peut devenir négatif). Rôle gestionnaire_om : om.retranscrire
-GET    /api/ordres/:id/pdf          → Génère le PDF de l'OM → { url, fichier }
+GET    /api/ordres/:id/pdf          → Génère le PDF de l'OM → { url, fichier } (signatures reprises de l'état des avances)
 GET    /api/ordres/:id/pdf/download → Télécharge le PDF
 GET    /api/ordres/:id/pdf/brouillon → PDF filigrané « brouillon » de l'OM
 GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
@@ -1109,5 +1123,5 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes — cf. `docs/revue-projet-2026-10.md`)*  
+*Dernière mise à jour : 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes ; puis PDF de l'OM signé par l'état, purge de la matrice à la restauration — cf. `docs/revue-projet-2026-10.md`)*  
 *Version projet : 1.0.0*
