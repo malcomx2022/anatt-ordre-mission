@@ -222,6 +222,19 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — part d'avance paramétrable
+
+- **`docs/parametrage-part-avance.md`** :
+  - comportement complété : transport compris dans le total, exonération, cache serveur de
+    60 s, interaction avec l'amendement (part neutralisée une fois l'avance engagée), valeurs
+    extrêmes 0 % et 100 % ;
+  - durcissements frontend de la revue d'octobre 2026 (pas de cache sur échec, relecture
+    après le changement de mot de passe imposé, lectures réactives) ;
+  - validation située dans `SettingsController` (et non `routes/api.php`), lecteurs de la
+    valeur, tests backend et frontend complétés ;
+  - nouvelle section **Exploitation** : `settings.json` n'est pas dans les sauvegardes de la
+    base, à conserver avec `storage/`.
+
 #### Documentation — RBAC flexible
 
 - **`docs/rbac-flexible.md`** :
