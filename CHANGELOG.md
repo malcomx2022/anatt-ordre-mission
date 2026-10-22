@@ -222,6 +222,26 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — checklist post-déploiement (compléments)
+
+- **`docs/checklist-post-deploiement.md`** :
+  - réglages conservés : `settings.json` présent et valeurs inchangées (hors sauvegardes de
+    la base) ;
+  - document signé à vérifier = PDF de l'état ; les cases « en attente » du PDF de l'OM sont
+    attendues ;
+  - recette : la restauration rétablit la matrice des permissions sans purge manuelle du
+    cache (correctif `db:restore`), et ne touche pas aux réglages.
+
+#### Documentation — scénario de démo (compléments)
+
+- **`docs/SCENARIO-DEMO.md`** (montants et fichiers inchangés) :
+  - séparation des tâches détaillée (le DG ne valide pas un état qu'il a contrôlé ou visé) ;
+  - étape C : un OM rejeté reste rejeté, l'avance est figée ; encadré « quel document
+    montrer » — le PDF de l'état, pas celui de l'OM, dont les cases de signature restent
+    « en attente » sur le circuit par état ;
+  - §8.4 : restauration qui purge la matrice des permissions (démonstration proposée),
+    réglages `settings.json` hors sauvegarde, prérequis du client `mysql`.
+
 #### Documentation — workflows par profil
 
 - **`docs/workflows-par-profil.md`** réécrit : il décrivait encore le circuit **par OM** en

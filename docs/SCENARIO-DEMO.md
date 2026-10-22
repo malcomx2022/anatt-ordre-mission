@@ -6,7 +6,10 @@
 > Les montants et les fichiers ci-dessous sont **réels** : ils ont été produits
 > par le code de l'application (calcul du per diem + générateurs MTN/Moov), pas
 > saisis à la main. Dernière vérification : **22 octobre 2026**, scénario complet
-> rejoué sur l'API (version issue de la revue d'octobre 2026).
+> rejoué sur l'API (version issue de la revue d'octobre 2026). Compléments du même jour,
+> sans effet sur les montants ni les fichiers : séparation des tâches détaillée, document
+> à montrer pour la validation, restauration (purge de la matrice des permissions,
+> réglages hors sauvegarde).
 
 ---
 
@@ -23,7 +26,9 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
 | Agent financier | `finance@anatt.bj` | Générer les fichiers MTN / Moov + confirmer |
 
 > 🔐 **Séparation des tâches** : les trois signataires du circuit (contrôleur, DAF,
-> DG) doivent être **trois personnes distinctes** — d'où les trois comptes dédiés.
+> DG) doivent être **trois personnes distinctes** — d'où les trois comptes dédiés. Le DAF
+> ne peut pas viser un état qu'il a contrôlé ; le DG ne peut pas valider un état qu'il a
+> contrôlé **ou** visé. Même le `superadmin@` ne peut pas enchaîner deux signatures.
 
 ---
 
@@ -96,8 +101,17 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 3. **Viser (Vu)**  ·  `daf@` — **Viser** → **VISÉ DAF** (interdit au contrôleur :
    séparation des tâches).
 4. **Numéroter puis valider**  ·  `dg@` — saisir le **numéro** de l'état (registre)
-   puis **Valider** → **VALIDÉ**. Cette validation **arrête l'état**, fait passer
-   tous les OM de la mission à **VALIDE** et **ouvre les fichiers d'avance**.
+   puis **Valider** → **VALIDÉ** (interdit au contrôleur et au DAF de cet état).
+   Cette validation **arrête l'état**, fait passer les OM de la mission à **VALIDE**
+   (un OM rejeté auparavant reste **REJETÉ**), fige l'avance de chacun et **ouvre les
+   fichiers d'avance**.
+
+> 📄 **Quel document montrer ?** Le document signé est le **PDF de l'état de paiement**
+> (bouton **« Télécharger l'état »** sur l'écran de l'état) : il porte les trois signatures,
+> le numéro et les paraphes.
+> Le PDF de **l'OM** garde ses cases de signature « en attente » sur ce circuit — les
+> signatures vivent sur l'état, pas sur l'OM. Ne pas ouvrir le PDF de l'OM pour montrer
+> la validation.
 
 > ⚠️ **Préalable obligatoire** : un versement n'est éligible à un fichier que si
 > l'état **de sa tranche** est **VALIDÉ** par le DG. Tant que l'état des avances
@@ -352,6 +366,16 @@ Dès qu'un état existe pour la mission, ces boutons disparaissent.
 **Télécharger**. Pour **Restaurer**, recopier le nom exact du fichier : l'application
 crée d'abord une **sauvegarde de sécurité** de l'état courant (opération
 réversible). À ne montrer que sur une base de démonstration.
+
+Pour une démonstration parlante : prendre une sauvegarde, retirer une permission à un
+profil dans **Matrice des rôles**, puis restaurer → la matrice revient à son état
+d'avant **dès la requête suivante** (la restauration purge la matrice mise en cache).
+Les réglages de `Paramètres` (part d'avance, exercice) ne font **pas** partie de la
+sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.
+
+> Prérequis : le client `mysql` doit être accessible au serveur (`DB_RESTORE_BINARY`,
+> `exec()` autorisé) — cf. `DEPLOY-CPANEL.md` §9.1. Sans lui, la restauration échoue
+> proprement, base intacte.
 
 ---
 
