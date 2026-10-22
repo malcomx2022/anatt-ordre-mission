@@ -28,7 +28,7 @@ Le back-end doit répondre **avant** tout test du SPA.
 - [ ] **Permissions** : `storage/` (récursif) et `bootstrap/cache/` en écriture (755/775) — sinon erreur 500 au premier appel.
 - [ ] **Caches applicatifs vidés** après changement de code ou de `.env` : `php artisan optimize:clear` (ou `config:clear` + `view:clear`).
 - [ ] **HTTPS (AutoSSL)** actif sur `api-omsemo.anatt.bj`.
-- [ ] **File d'attente cohérente** : avec `QUEUE_CONNECTION=sync` (défaut du gabarit de production), rien à faire. Avec `database`, la tâche Cron `queue:work --stop-when-empty` (chaque minute) est **active** — sinon les gros lots restent « en cours » indéfiniment (`DEPLOY-CPANEL.md` §9).
+- [ ] **File d'attente cohérente** : avec `QUEUE_CONNECTION=sync` (défaut du gabarit de production), rien à faire. Avec `database`, la tâche Cron `queue:work --queue=paiements,etats,default --stop-when-empty` (chaque minute) est **active** et nomme bien les **trois files** — sinon les gros lots restent « en file d'attente » et l'écran finit par afficher « la file de traitement ne répond pas » (`DEPLOY-CPANEL.md` §9, `backend/docs/queues.md`).
 - [ ] **Sauvegarde planifiée** : la tâche Cron `db:backup --compress` (02:00) existe ; le lendemain, un fichier daté apparaît dans `anatt-api/storage/app/backups/` (et `storage/logs/backup.log` ne contient pas d'erreur `mysqldump`/`exec`).
 
 > Sur mutualisé sans SSH, les commandes `artisan` passent par une **tâche Cron ponctuelle** (voie la plus

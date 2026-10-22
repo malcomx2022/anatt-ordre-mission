@@ -83,3 +83,31 @@ it('expose le suivi via l’endpoint dédié', function () {
         ->assertOk()
         ->assertJsonPath('data.statut', 'TERMINE');
 });
+
+it('remet les versements EN_ATTENTE quand le job échoue sur un lot déjà généré', function () {
+    // Un premier fichier a été produit (lot GENERE, versement GENERE).
+    GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    $lot = LotPaiement::first();
+    $versement = Versement::first();
+    expect($versement->statut)->toBe('GENERE');
+
+    // L'échec définitif d'une régénération suit le même chemin que « Marquer en erreur ».
+    $job = new GenererLotPaiementJob($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    $job->failed(new RuntimeException('disque plein'));
+
+    expect($lot->fresh()->statut)->toBe('ERREUR')
+        ->and($versement->fresh()->statut)->toBe('EN_ATTENTE');
+});
+
+it('ne touche jamais un lot confirmé quand le job échoue', function () {
+    GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    $lot = LotPaiement::first();
+    $lot->update(['statut' => 'CONFIRME']);
+    Versement::query()->update(['statut' => 'CONFIRME']);
+
+    (new GenererLotPaiementJob($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid()))
+        ->failed(new RuntimeException('échec'));
+
+    expect($lot->fresh()->statut)->toBe('CONFIRME')
+        ->and(Versement::first()->statut)->toBe('CONFIRME');
+});

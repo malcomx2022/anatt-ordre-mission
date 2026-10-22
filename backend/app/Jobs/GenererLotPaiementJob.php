@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
- * Génération asynchrone d'un lot de paiement (gros lots) sur la file Redis « paiements ».
+ * Génération asynchrone d'un lot de paiement (gros lots) sur la file « paiements ».
  * Reprise sur erreur : 3 tentatives, backoff progressif. Suivi via le cache (trackingId).
  */
 class GenererLotPaiementJob implements ShouldQueue
@@ -54,12 +54,20 @@ class GenererLotPaiementJob implements ShouldQueue
     {
         Cache::put($this->cle(), ['statut' => 'ERREUR', 'message' => $e->getMessage()], now()->addDay());
 
-        // Marque le lot en ERREUR (s'il existe et n'est pas confirmé) pour autoriser une régénération.
-        LotPaiement::where('mission_id', $this->missionId)
+        // Le dernier lot de la clé, s'il n'est pas confirmé, passe en ERREUR par le même
+        // chemin que l'action manuelle : ses versements redeviennent EN_ATTENTE avec les
+        // coordonnées courantes de l'agent (sinon : lot ERREUR, versements GENERE, OM non
+        // amendable). Un lot CONFIRME n'est jamais touché.
+        $lot = LotPaiement::where('mission_id', $this->missionId)
             ->where('tranche', $this->tranche)
             ->where('operateur', $this->operateur)
-            ->where('statut', '!=', 'CONFIRME')
-            ->update(['statut' => 'ERREUR']);
+            ->orderByDesc('sequence')
+            ->first();
+        $user = User::find($this->userId);
+
+        if ($lot && $user && in_array($lot->statut, ['GENERE', 'ERREUR'], true)) {
+            app(LotPaiementService::class)->marquerErreur($lot, $user);
+        }
     }
 
     public function cle(): string
