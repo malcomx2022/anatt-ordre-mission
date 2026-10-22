@@ -14,7 +14,8 @@
 3. **Détermination** : `Parametres::anneeFiscalePour($date)` renvoie l'exercice
    d'une date donnée ; l'exercice est **étiqueté par son année de début**.
 4. **Validation** à l'écriture (année 2000-2100 ; mois 1-12).
-5. **Lecture publique** de l'exercice courant pour toute l'UI.
+5. **Lecture publique** de l'exercice courant (route dédiée, tout profil authentifié),
+   prête à être consommée par l'UI — voir § *Où l'exercice est utilisé* pour l'état réel.
 
 ## Backend — `App\Support\Parametres`
 
@@ -34,7 +35,7 @@ numérique (« 2028 ») est acceptée et normalisée en entier.
 
 | Méthode | Route | Accès | Effet |
 |---|---|---|---|
-| `PUT` | `/api/admin/settings` | SUPER_ADMIN (`parametres.gerer`) | écrit `fiscalYear` / `fiscalYearStartMonth` (validés) |
+| `PUT` | `/api/admin/settings` | SUPER_ADMIN (`parametres.gerer`) | écrit `fiscalYear` / `fiscalYearStartMonth` (validés par `SettingsController::update`, 422 sinon ; chaîne numérique acceptée et stockée en entier) |
 | `GET` | `/api/admin/parametres/annee-fiscale` | tout authentifié | `{ annee, mois_debut, libelle }` |
 
 ## Convention de détermination
@@ -46,3 +47,37 @@ Pour un mois de début `M` :
 Exemple `M = 7` (juillet) : `2026-07-01` → exercice **2026** (« 2026-2027 ») ;
 `2026-06-30` → exercice **2025** (« 2025-2026 »). Avec `M = 1` (défaut), exercice =
 année civile, libellé « 2026 ».
+
+## Où l'exercice est utilisé (état au 22/10/2026)
+
+| Consommateur | Utilisation |
+|---|---|
+| `views/admin/SettingsView.vue` | Saisie de l'année et du mois de début ; aperçu du libellé (« 2026 » / « 2026-2027 ») |
+| `GET /api/admin/parametres/annee-fiscale` (`SettingsController::anneeFiscale`) | Exposition de l'exercice courant |
+
+À ce jour, **aucun autre écran ni traitement ne lit l'exercice** : la route publique n'est
+appelée par aucun service du frontend, et les rapports, exports, états de paiement et PDF
+filtrent par **dates** (mois, période `date_debut` / `date_fin`), pas par exercice. Le
+réglage est donc stocké, validé et exposé, mais n'a encore **aucun effet** sur les montants,
+les filtres ou les documents. Le brancher sur un écran (par exemple un filtre « exercice »
+des rapports, via `Parametres::anneeFiscalePour()`) est une évolution, pas un correctif.
+
+## Fichiers et tests
+
+| Élément | Emplacement |
+|---|---|
+| Lecture, cache, détermination | `backend/app/Support/Parametres.php` |
+| Validation et route publique | `backend/app/Http/Controllers/Api/SettingsController.php`, `backend/routes/api.php` |
+| Écran | `frontend/src/views/admin/SettingsView.vue` |
+| Tests | `backend/tests/Feature/AnneeFiscaleTest.php` (année civile, exercice à cheval, détermination sans réglage, année configurée, bornes, mois invalide, chaîne numérique, lecture publique) ; `RoutesPermissionsTest` (route publique déclarée) |
+
+## Exploitation
+
+- Les deux clés vivent dans `storage/app/settings.json`, comme `partAvance` : elles **ne
+  sont pas** dans les sauvegardes de la base (`db:backup`) et une restauration ne les modifie
+  pas. Conserver `storage/` lors d'une mise à jour (`docs/runbook-mise-a-jour-cron.md`).
+- Sans réglage, l'exercice est **déterminé** depuis la date du jour : il bascule seul au
+  1er janvier (ou au mois de début configuré). Mais dès que l'écran Paramètres est
+  enregistré, il envoie l'année sélectionnée : l'année devient **explicite** et reste figée
+  jusqu'à sa prochaine modification (l'API refuse une valeur vide). Penser à la changer à
+  chaque nouvel exercice — sans conséquence aujourd'hui, puisque rien ne la consomme encore.

@@ -222,6 +222,17 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   (`PermissionRepository::vider`). Repéré en mettant à jour `docs/rbac-flexible.md` ; test
   ajouté (`BackupControllerTest`), rouge sans le correctif.
 
+#### Documentation — année fiscale
+
+- **`docs/annee-fiscale.md`** :
+  - nouvelle section **« Où l'exercice est utilisé »** : constat vérifié dans le code — en
+    dehors de l'écran Paramètres et de sa route publique, **aucun écran ni traitement ne lit
+    l'exercice** (rapports, exports, états et PDF filtrent par dates). Le document annonçait
+    une lecture « pour toute l'UI » ;
+  - validation située dans `SettingsController`, fichiers et tests listés ;
+  - section **Exploitation** : clés dans `settings.json` (hors sauvegardes de la base) ; une
+    année enregistrée depuis l'écran devient explicite et ne bascule plus seule.
+
 #### Documentation — part d'avance paramétrable
 
 - **`docs/parametrage-part-avance.md`** :
