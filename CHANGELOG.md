@@ -166,6 +166,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   11 et 16). **Scénario de démo rejoué**, §7 « avenant » compris : montants et fichiers conformes au
   document (`docs/revue-projet-2026-10.md` §1).
 
+#### Corrigé (guide utilisateur, 23/10/2026)
+
+- **PDF officiel de l'OM inaccessible depuis l'interface** : la fiche de l'OM ne proposait que
+  « Télécharger le brouillon », masqué une fois l'OM validé ; l'écran OM-07 (`/ordres/:id/pdf`) n'était
+  lié de nulle part. Nouveau lien **« PDF de l'OM »** dans l'en-tête de la fiche, à côté de
+  « Historique ». Test dans `mission-detail.spec.ts`.
+- **Guide utilisateur** (régénéré) : accès au PDF de l'OM, journal des amendements (le plus récent en
+  tête), document de retenue (motif du dernier amendement), boutons « Document » et « Marquer recouvré »
+  (le guide citait « Constater le recouvrement », qui n'existe pas). `docs/SCENARIO-DEMO.md` §7 aligné.
+
 #### Supprimé
 
 - **Form Requests inutilisées** `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` : vestiges de la
