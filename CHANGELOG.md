@@ -175,6 +175,21 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   solde. Test dans `SoldeTest` (Pest : 572 tests). Défaut n° 19 de
   `docs/revue-projet-2026-10.md`.
 
+#### Documentation — revue au 23/10/2026, fin de journée
+
+- **`docs/revue-projet-2026-10.md`** mis à jour après la PR #152 :
+  - en-tête : défauts n° 10 à 22 et leur origine ;
+  - tableau des résultats : CI 5/5 sur les PR #132 à #152 ;
+  - §5 et §6 : PR #143 à #152 ;
+  - exploitation : aucune migration de plus pour les correctifs n° 17 à 22 ;
+  - dette : tailles de `vendor/` retirées.
+- **Rejeu sur l'API réelle** (base SQLite neuve, `QUEUE_CONNECTION=sync`) :
+  - recette 83/83 ;
+  - 9/9 sondes supplémentaires : OM soldé avec une part d'avance à 100 % (n° 19), amendement
+    refusé sur un reliquat payé (n° 22) ;
+  - scénario de démo conforme : fichiers MTN/Moov, lot complémentaire `HDR,SARALY,1,199500`,
+    avenant 171 000 puis −54 000.
+
 #### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
 
 - **Amendement accepté sur un reliquat déjà payé.** Sur une mission **sans état**, un OM dont le
