@@ -98,10 +98,18 @@ Chaque édition est **auditée** : `ROLE_PERM_UPDATE` / `ROLE_PERM_RESET`
 
 ## Prise d'effet
 
-Les droits de l'utilisateur courant proviennent du serveur au **login** et via
-`GET /api/auth/me/permissions`. Après une modification de la matrice, les profils
-concernés voient leurs droits ajustés **à la connexion / au rafraîchissement
-suivant**. Le cache serveur est purgé immédiatement à l'écriture.
+Il faut distinguer deux niveaux.
+
+- **Côté serveur, l'effet est immédiat.** Le cache de la matrice est purgé à l'écriture. Chaque
+  requête API résout de nouveau les droits : chaque Gate appelle `User::hasPermission`, qui
+  passe par `User::permissions()`, mémoïsé seulement le temps de la requête, puis par le
+  repository. Dès la requête suivante, un membre du profil obtient la permission ajoutée, ou
+  reçoit un 403 sur celle qui a été retirée, sans se reconnecter. Testé : *personnalise un profil
+  et applique le changement immédiatement* (`RolePermissionTest`).
+- **Côté interface, le rafraîchissement est différé.** Le menu et les boutons suivent la liste
+  des permissions reçue au **login** et via `GET /api/auth/me/permissions`. Ils ne s'ajustent
+  qu'à la connexion ou au rafraîchissement suivant. Entre-temps, un bouton encore affiché pour
+  une permission retirée reçoit un 403 du serveur.
 
 ## Défaut vs miroir front
 
@@ -143,8 +151,10 @@ permissions effectives = base_du_profil  ∪  accordées  −  retirées
 | `services/users.ts` | client API |
 
 `User::permissions()` est **mémoïsé** le temps de la requête (`oublierPermissions()`
-invalide le mémo après écriture). Le login et `/auth/me/permissions` reflètent donc
-l'effectif (profil + overrides) dès la connexion/rafraîchissement suivant.
+invalide le mémo après écriture). Un override s'applique donc **dès la requête API suivante**
+de la personne concernée, sans reconnexion. Testé : *applique les overrides immédiatement*
+(`UserPermissionTest`). Son menu ne s'ajuste qu'au login ou au rafraîchissement de
+`/auth/me/permissions`, comme au niveau 1.
 
 ## API
 
@@ -296,6 +306,8 @@ nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
 | Overrides par utilisateur | `tests/Feature/UserPermissionTest.php` |
 | Rôles personnalisés | `tests/Feature/RolePersonnaliseTest.php` |
 | Séparation des tâches dans le circuit | `tests/Feature/SeparationTachesTest.php` |
+| Accès par profil sur les routes réelles (SUPER_ADMIN, ADMIN, gestionnaire…) | `tests/Feature/RoleMiddlewareTest.php` |
 | Aucune route API sans permission | `tests/Feature/RoutesPermissionsTest.php` |
+| Permission annoncée (`x-permission`) = permission exigée, pour chaque route, dont `/admin/roles*` et `/admin/users/{user}/permissions` | `tests/Feature/OpenApiTest.php` (`backend/docs/openapi.yaml`) |
 | Purge de la matrice après `db:restore` | `tests/Feature/BackupControllerTest.php` |
 | Cohérence menu ↔ routes ↔ API | `frontend/src/__tests__/navigation.spec.ts` |

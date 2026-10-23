@@ -224,6 +224,24 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - Les tailles figées (« ~64 Mo », « ≈14 Mo ») sont retirées, car invérifiables et dépendantes
     du mode d'installation. Le contrôle des dossiers `.git` reste le garde-fou.
   - `DEPLOY-CPANEL.md` §4 : même borne haute.
+- **`docs/workflows-par-profil.md`** confronté aux routes, à `config/profils.php` (matrice
+  identique) et au menu :
+  - Le rejet d'un OM d'une mission sans état relève de `om.rejeter`. Le DAF et le DG peuvent
+    donc aussi le prononcer, pas seulement le contrôleur.
+  - Le document de retenue d'un trop-perçu se télécharge avec `paiements.consulter`, et seul
+    l'agent financier constate le recouvrement.
+  - Accès au PDF de l'OM par le lien « PDF de l'OM ».
+  - Menus du contrôleur et de l'ADMIN précisés : l'ADMIN n'a pas « Retranscrire ».
+- **`docs/rbac-flexible.md`** confronté au code (composants, routes, permissions, audit, regex :
+  conformes) :
+  - *Prise d'effet* corrigée. Côté **serveur**, une édition de la matrice ou d'un override
+    s'applique **dès la requête API suivante**, sans reconnexion (cache purgé, droits résolus à
+    chaque requête). Seuls le menu et les boutons attendent le login ou le rafraîchissement de
+    `/auth/me/permissions`.
+  - Les tests « applique … immédiatement » (`RolePermissionTest`, `UserPermissionTest`)
+    vérifient désormais aussi la **route** (403 avant, 200 après), et plus seulement
+    `hasPermission()`.
+  - `RoleMiddlewareTest` et `OpenApiTest` ajoutés à la table des tests.
 
 #### Supprimé
 

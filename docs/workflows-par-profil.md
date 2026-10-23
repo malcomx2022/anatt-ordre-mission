@@ -56,7 +56,8 @@ contrôle, ni le visa du DAF n'ouvrent le paiement — vérifié par les tests d
 (`EtatPaiementTest`, `Paiement/BarriereEtatTest`).
 
 **Mission sans état** (reprise de données, correction ponctuelle) : le contrôleur valide
-l'OM directement sur sa fiche (`IMPORTE → VALIDE`, une étape) ou le rejette. Ce repli est
+l'OM directement sur sa fiche (`IMPORTE → VALIDE`, une étape, `om.valider`). Le rejet de l'OM
+relève de `om.rejeter` : le contrôleur, le DAF et le DG peuvent le prononcer. Ce repli est
 fermé dès qu'un état existe pour la mission.
 
 ---
@@ -109,7 +110,8 @@ Deuxième signature. C'est le « **Vu** » qui figure sur l'état de paiement of
 | **Viser** un état `CONTROLE` → `VISA_DAF` | Contrôler (étape 1) |
 | **Rejeter** un état avec motif | **Prononcer la validation finale** |
 | **Numéroter** un état | Générer ou confirmer un paiement |
-| Consulter le journal d'audit, OM, paiements, barème, rapports | Gérer les agents ou les comptes |
+| Rejeter un OM d'une mission **sans état** (pas le valider) | Gérer les agents ou les comptes |
+| Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
 **Ce que son visa ne fait pas** : il ne rend rien payable. Le dossier attend encore le DG.
 Sa file s'ouvre sur les états `CONTROLE`.
@@ -126,6 +128,7 @@ Dernière signature. **C'est elle qui verrouille l'état, fait passer les OM à 
 | **Valider définitivement** un état `VISA_DAF` → `VALIDE` (numéro exigé) | Contrôler ou viser |
 | **Rejeter** un état avec motif | Générer ou confirmer un paiement |
 | **Numéroter** un état | Gérer les agents ou les comptes |
+| Rejeter un OM d'une mission **sans état** (pas le valider) | |
 | Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
 Sa file s'ouvre sur les états `VISA_DAF`.
@@ -147,7 +150,8 @@ N'autorise rien, exécute. Sépare l'ordonnateur du payeur.
 | Générer le fichier MTN (`.txt`) / Moov (`.xlsx`) d'une tranche | Retranscrire ou amender un OM |
 | Confirmer un lot après dépôt sur la plateforme | Modifier le barème |
 | Marquer un lot en **erreur** (versements remis en attente, coordonnées de l'agent rafraîchies) | Consulter le journal d'audit |
-| Constater le **recouvrement** d'un trop-perçu (retenue RH appliquée) | |
+| Télécharger le **document de retenue** d'un trop-perçu, à remettre à la RH | |
+| Constater le **recouvrement** d'un trop-perçu (retenue RH appliquée), seul profil à le faire | |
 
 **Son geste** : `/paiements/mtn` ou `/paiements/moov` → mission + tranche → aperçu →
 télécharger (un gros lot se génère en arrière-plan, avec suivi) → déposer sur la plateforme
@@ -246,6 +250,11 @@ SANS VALEUR D'AUTORISATION DE PAIEMENT », des cadres de signature vides et **au
 vérification**. Elle ne montre jamais de signature : un document qui autorise un paiement
 doit être impossible à confondre avec un document approuvé.
 
+Le **document de retenue** d'un trop-perçu (`/paiements/regularisations` › *Document*) suit
+`paiements.consulter`. Tous les profils qui voient les paiements peuvent le télécharger, donc
+tous sauf le lecteur. Seul l'agent financier (`paiements.confirmer`) constate ensuite le
+recouvrement (*Marquer recouvré*).
+
 ---
 
 ## 5. Les documents signés
@@ -271,7 +280,9 @@ qualifiée : aucune PKI, aucun certificat, aucune valeur probante au sens légal
 > même code de vérification que sur l'état (`PdfGenerator::etatSignataire`). Un OM absent
 > de l'état signé (rejeté, annulé) n'en reçoit aucune ; une signature portée par l'OM
 > lui-même (validation par OM d'une mission sans état, données héritées) reste prioritaire.
-> Le document probant demeure l'**état de paiement**.
+> Le document probant demeure l'**état de paiement**. Le PDF de l'OM, lui, s'ouvre pour tout
+> profil disposant de `om.consulter` depuis la fiche de l'OM, par le lien **« PDF de l'OM »**
+> (écran `/ordres/:id/pdf`). C'est le seul accès une fois l'OM validé, le brouillon n'étant plus proposé.
 >
 > Après un **amendement** (gestionnaire OM), le PDF de l'OM est régénéré et affiche la
 > répartition réelle : « Avance engagée », puis « Reliquat (ajusté par amendement) » ou
@@ -305,11 +316,11 @@ permissions ouvrent.
 | Profil | Voit dans le menu | Écran de travail principal |
 |---|---|---|
 | `GESTIONNAIRE_OM` | Tableau de bord, Personnel, Missions, Ordres de mission, États de paiement, Paiements (consultation), Barèmes, Rapports | `/ordres/nouveau`, puis `/missions` (récapitulatifs) |
-| `CONTROLEUR` | idem + Audit (sans saisie) | `/etats` (file : brouillons) |
+| `CONTROLEUR` | idem, sans Retranscrire, Nouvel agent ni Import, + Audit | `/etats` (file : brouillons) |
 | `DAF` | idem contrôleur | `/etats` (file : contrôlés) |
 | `DG` | idem contrôleur | `/etats` (file : visés DAF) |
 | `AGENT_FINANCIER` | Tableau de bord, Personnel, Missions, Ordres, États, Paiements (génération, régularisations), Barèmes, Rapports | `/paiements/mtn`, `/paiements/moov`, `/paiements` |
-| `ADMIN` | tout sauf génération de paiements, Signatures et Paramètres | `/admin/utilisateurs` |
+| `ADMIN` | tout sauf Retranscrire, Générer MTN / Moov, Signatures et Paramètres (Messagerie, Sauvegardes) | `/admin/utilisateurs` |
 | `LECTEUR` | Tableau de bord, Missions, Ordres de mission, États de paiement, Rapports | `/` |
 | `SUPER_ADMIN` | tout | `/admin/parametres` |
 
