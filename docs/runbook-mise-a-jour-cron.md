@@ -47,6 +47,10 @@
       `db:backup` à 02:00 et, si `QUEUE_CONNECTION=database`, `queue:work` chaque minute. Elles
       **restent en place** pendant toute l'opération ; seules les tâches temporaires de ce runbook
       seront créées puis supprimées.
+      **1.3** : si la tâche `queue:work` existe, vérifiez qu'elle nomme les trois files
+      (`queue:work --queue=paiements,etats,default --tries=3 --stop-when-empty`). Sans `--queue`, elle
+      ne traite que `default` : gros lots et exports en file ne s'exécutent jamais. Corrigez-la
+      (cPanel > Cron Jobs > *Edit*) ; ce n'est pas une tâche temporaire.
 
 > Le bouton « Nouvelle sauvegarde » de l'écran *Sauvegardes* (`db:backup`) complète le dump
 > phpMyAdmin mais ne le remplace pas : il dépend de `exec()` et de `mysqldump`, et son fichier reste
@@ -160,6 +164,12 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 > `anatt-api/bootstrap/cache/*.php`, `anatt-api/storage/framework/views/*.php`,
 > `anatt-api/storage/framework/cache/data/`.
 
+- [ ] **1.3** : vider le cache des PDF d'OM — Gestionnaire de fichiers >
+      `anatt-api/storage/app/private/ordres/` > sélectionner tout le contenu > *Delete* (garder le
+      dossier). Le PDF de l'OM a changé (signatures de l'état, répartition après amendement, taux
+      hors transport) et un OM sans état ni amendement garderait sinon son ancien PDF. Les PDF se
+      régénèrent au premier téléchargement ; ne touchez pas à `paiements/` ni à `signatures/`.
+
 ---
 
 ## 7 · Mettre à jour le SPA
@@ -195,8 +205,8 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 ## 9 · Ménage
 
 - [ ] Toutes les tâches Cron temporaires supprimées (étapes 3, 5a, 5b).
-- [ ] Tâches Cron **permanentes** toujours présentes (`db:backup` 02:00, `queue:work` le cas
-      échéant) ; le lendemain, un nouveau fichier daté apparaît dans `anatt-api/storage/app/backups/`.
+- [ ] Tâches Cron **permanentes** toujours présentes (`db:backup` 02:00, `queue:work
+      --queue=paiements,etats,default` le cas échéant) ; le lendemain, un nouveau fichier daté apparaît dans `anatt-api/storage/app/backups/`.
 - [ ] `/home/anatt/php-version.log`, `migration-status.log`, `migration-run.log` supprimés.
 - [ ] Sauvegardes de l'étape 1 archivées hors du serveur.
 
