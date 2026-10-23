@@ -17,7 +17,15 @@
 | Effet sur les OM | la validation finale du DG **propage** `VALIDE` aux N OM | fait passer **l'OM** à `VALIDE` |
 | Quand | mission **avec** état de paiement (cas normal) | mission **sans** état (reprise de données, correction ponctuelle) |
 | Interface | écrans *États de paiement* (récapitulatif, signatures, numéro) | boutons **Valider** (`om.valider`) / **Rejeter** (`om.rejeter`, motif ≥ 10 car.) sur la fiche OM, affichés seulement pour un OM `IMPORTE` d'une mission **sans** état |
-| Rejet | rejet motivé de l'état à chaque étape (signatures amont effacées) | `IMPORTE → REJETE` ; les versements `EN_ATTENTE` de l'OM passent `ANNULE` |
+| Rejet | rejet motivé de l'état à chaque étape (signatures amont effacées, paraphes archivés purgés) | `IMPORTE → REJETE` ; les versements `EN_ATTENTE` de l'OM passent `ANNULE` |
+| Permissions | `om.retranscrire` (récapitulatif) · `om.valider` (contrôle) · `om.viser` (visa DAF) · `om.numeroter` (numéro) · `om.approuver` (validation DG) · `om.rejeter` | `om.valider` · `om.rejeter` |
+| Signatures sur le PDF de l'OM | celles de l'**état des avances** qui couvre l'OM (§7) | celle portée par l'OM |
+
+**Séparation des tâches** (`config/workflow.php` → `separation_des_taches`, activée par
+défaut, `Workflow::separationDesTaches()`) : sur un même état, le DAF ne vise pas un état
+qu'il a contrôlé, et le DG ne valide pas un état qu'il a contrôlé **ou** visé. La règle
+vaut aussi pour le SUPER_ADMIN, qui détient pourtant toutes les permissions. Elle ne
+concerne que le circuit par état : le circuit par OM n'a qu'une signature.
 
 **Le circuit par ÉTAT est le circuit officiel de l'ANaTT.** Une seule signature sur
 l'état (scellée HMAC, avec paraphe archivé et numéro de registre par tranche) vaut
@@ -53,6 +61,12 @@ instant donné :
 - mission **sans** état → l'**OM** fait foi.
 
 Cet invariant est verrouillé par `tests/Feature/CoherenceCircuitsTest.php`.
+
+**Un état rejeté ne rouvre pas le circuit par OM.** Le verrou regarde l'existence d'un
+état, quel que soit son statut : un état `REJETE` ferme toujours le circuit par OM. On
+reprend la main en établissant de nouveau le récapitulatif (`POST /api/missions/:id/etat/recapituler`),
+qui ramène l'état rejeté en `BROUILLON` sur les montants courants, puis en refaisant
+le circuit.
 
 **Un rejet par OM n'est jamais défait par l'état.** Un OM rejeté sur le circuit par OM
 **avant** que la mission ait un état reste `REJETE` : quand l'état des avances est ensuite
@@ -172,7 +186,7 @@ flowchart TD
 
 | État de la mission | Amendement |
 |---|---|
-| Un versement de l'OM est `GENERE` (fichier en attente de dépôt) | ⛔ confirmez le lot ou passez-le en `ERREUR` d'abord |
+| Un versement de l'OM est `GENERE` (fichier en attente de dépôt) | ⛔ confirmez le lot ou passez-le en `ERREUR` d'abord (l'échec définitif d'une génération en file fait de même, `docs/queues.md`) |
 | Aucun état et avance non payée, ou état des avances `BROUILLON` | ✅ recalcul complet avec la part d'avance (rien n'est figé) |
 | Aucun état et avance déjà `CONFIRME` (circuit par OM) | ✅ avance engagée à l'amendement, seul le reliquat bouge |
 | État des avances `VALIDE` | ✅ avance figée, seul le reliquat bouge |
@@ -207,7 +221,33 @@ retenue.
 
 ---
 
-## 7. Références
+## 7. Les signatures sur le PDF de l'OM
+
+Le PDF d'un OM (`GET /api/ordres/:id/pdf`) porte trois cases de signature : contrôle,
+visa DAF, validation DG. Sous le circuit par état, l'OM lui-même n'est jamais signé ;
+sans précaution, ces cases restaient « en attente » alors que l'état de la mission était
+validé (défaut corrigé par la revue d'octobre 2026, §3 n° 11). Le PDF reprend donc les
+signatures de l'**état des avances** qui couvre l'OM (`PdfGenerator::etatSignataire`) :
+
+| Situation | Signatures affichées |
+|---|---|
+| OM signé lui-même (circuit par OM, données héritées) | celles de l'OM — **prioritaires** |
+| État des avances `CONTROLE` / `VISA_DAF` / `VALIDE` et OM présent dans ses `lignes` | celles de l'état, étape par étape : même instantané du signataire, même paraphe archivé, même code de vérification que le PDF de l'état |
+| OM absent des `lignes` figées de l'état (le récapitulatif écarte les OM `REJETE` / `ANNULE`) | aucune : l'état signé ne le couvre pas |
+| OM `REJETE` / `ANNULE`, état `REJETE` ou `BROUILLON`, aucun état | aucune |
+| PDF brouillon (`/pdf/brouillon`, filigrané) | aucune |
+
+Seul l'état des **avances** est repris : c'est sa validation qui fait passer l'OM à
+`VALIDE`. L'état des reliquats ne change pas le statut de l'OM et n'apparaît pas sur son
+PDF.
+
+Le PDF est mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf` : chaque
+signature de l'état change la clé, donc le PDF est régénéré sans purge manuelle.
+Tests : `tests/Feature/OmPdfSignaturesEtatTest.php`.
+
+---
+
+## 8. Références
 
 | Sujet | Emplacement |
 |---|---|
@@ -217,6 +257,8 @@ retenue.
 | Exclusivité (verrou) | `MissionService::exigerAbsenceDEtat()` |
 | Propagation (exclut `SOLDE` / `ANNULE` / `REJETE`) | `EtatPaiementService::propager()` |
 | Porte de paiement unifiée | `Versement::scopeEligiblesLot()`, `FileGenerator::exigerEtatValide()` |
+| Signatures de l'état sur le PDF de l'OM | `PdfGenerator::etatSignataire()`, `PdfGenerator::signatureEtat()` |
+| Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
 | Amendement (avenant) & régularisations | `MissionService::amender()`, `MissionService::exigerAmendementPossible()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
 | Document de retenue (PDF pour la RH) | `PdfGenerator::genererDocumentRetenue()`, `GET /api/paiements/regularisations/:versement/document` |
@@ -224,6 +266,7 @@ retenue.
 | Tests — barrière de paiement | `tests/Feature/Paiement/BarriereEtatTest.php` |
 | Tests — circuit OM (une étape) | `tests/Feature/CircuitValidationTest.php` |
 | Tests — séparation des tâches | `tests/Feature/SeparationTachesTest.php` |
+| Tests — signatures de l'état sur le PDF de l'OM | `tests/Feature/OmPdfSignaturesEtatTest.php` |
 | Tests — amendement & intégrité de l'état | `tests/Feature/AmendementOmTest.php`, `tests/Feature/AmendementIntegriteEtatTest.php` |
 | Tests — trop-perçus / régularisations | `tests/Feature/RegularisationTest.php` |
 | Tests — avance engagée | `tests/Feature/AvanceEngageeTest.php` (circuit par état), `tests/Feature/AmendementOmTest.php` (circuit par OM) |
