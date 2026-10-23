@@ -197,6 +197,15 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - file `sync` en production ;
   - pièges des correctifs n° 17, 19, 20, 21 et 22 ;
   - Cron `schedule:run`.
+- **`README.md`** confronté au code :
+  - PHP 8.4.x 64 bits (8.5 non pris en charge : PhpSpreadsheet `<8.5.0`) ;
+  - comptes de démonstration seedés seulement en `APP_ENV=local`/`testing` ;
+  - `start-dev.ps1 -NoWorker` (2 fenêtres) et `QUEUE_CONNECTION=database` de `.env.example` ;
+  - SOLDE malgré une tranche nulle, lot complémentaire proposé, refus d'amendement (reliquat payé,
+    trop-perçu recouvré, fichier en attente de dépôt) ;
+  - Cron `schedule:run` (sauvegarde + `sanctum:prune-expired`), file `sync` en production ;
+  - Playwright sans écran ; structure et tableau de documentation complétés (`AGENTS.md`,
+    documents historiques, maquettes HTML).
 
 #### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
 

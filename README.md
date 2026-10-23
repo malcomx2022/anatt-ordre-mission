@@ -10,7 +10,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 | Couche | Technologies |
 |---|---|
-| Backend | Laravel 12 · **PHP 8.4+** · Sanctum · MySQL 8 · (Redis facultatif) |
+| Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
 | Tests | Pest / PHPUnit (573 tests, 68 fichiers) · Vitest (120 tests) · Playwright (parcours critique e2e) |
 
@@ -18,11 +18,13 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 ## Démarrage rapide (Windows)
 
-Prérequis : **WAMP** (MySQL démarré), **PHP 8.4+**, **Node 20.19+ ou 22.12+** (Vite 8), **Composer**.
+Prérequis : **WAMP** (MySQL démarré), **PHP 8.4.x 64 bits**, **Node 20.19+ ou 22.12+** (Vite 8), **Composer**.
 
 > PHP 8.4 est un **minimum** : `composer.lock` épingle Symfony 8 et `spatie/laravel-activitylog`,
-> qui l'exigent. Sous 8.3, Composer refuse de charger l'autoloader. Même contrainte en production
-> (cf. [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) §4).
+> qui l'exigent. Sous 8.3, Composer refuse de charger l'autoloader. **PHP 8.5 n'est pas encore pris
+> en charge** : `phpoffice/phpspreadsheet` (fichiers Moov, exports Excel) déclare `<8.5.0`, alors que le
+> contrôle de plateforme de Composer ne vérifie que le minimum et le 64 bits — l'application démarrerait
+> sans avertissement. Même contrainte en production (cf. [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) §4).
 
 ```powershell
 cd C:\wamp64\www\anatt-ordre-mission
@@ -37,12 +39,17 @@ cd C:\wamp64\www\anatt-ordre-mission
 .\stop-dev.ps1
 ```
 
-Le script lance **3 fenêtres** : API (`http://localhost:8000`), worker de file, frontend (`http://localhost:5173`).
+Le script lance **3 fenêtres** : API (`http://localhost:8000`), worker de file, frontend (`http://localhost:5173`)
+— 2 seulement avec `-NoWorker` (les traitements en file attendent alors un `queue:work` lancé à la main).
 Si l'exécution est bloquée : `powershell -ExecutionPolicy Bypass -File .\start-dev.ps1`.
 
 Application : **http://localhost:5173**
 
 ### Comptes de démonstration (mot de passe : `password`)
+
+> Créés par le seed **uniquement** si `APP_ENV=local` (ou `testing`), avec les agents, missions et paiements
+> fictifs. En production, le seed ne crée que le SUPER_ADMIN initial (`SUPERADMIN_EMAIL` /
+> `SUPERADMIN_PASSWORD`), les zones et le barème.
 
 | Email | Profil | Peut |
 |---|---|---|
@@ -68,6 +75,8 @@ php artisan migrate --seed      # ou migrate:fresh --seed (DESTRUCTIF)
 
 php artisan serve               # http://localhost:8000  (terminal A)
 php artisan queue:work --queue=paiements,etats,default --tries=3   # (terminal B)
+# .env.example règle QUEUE_CONNECTION=database : sans worker, les gros lots et exports
+# restent en attente. QUEUE_CONNECTION=sync traite tout immédiatement (réglage de production).
 
 # 2) Frontend
 cd ..\frontend
@@ -95,10 +104,14 @@ npm run dev                     # http://localhost:5173  (terminal C)
   un lot passé en **erreur** remet ses versements en attente avec le numéro **actuel** de l'agent.
   **Idempotence** : un versement confirmé n'est jamais réinclus ; un lot confirmé n'est jamais réécrit — un
   versement devenu payable après coup part dans un **lot complémentaire** (`…_COMPL2`). Un OM dont tous les
-  versements sont confirmés passe à **SOLDE** ; un OM **rejeté** voit ses versements **annulés**.
+  versements sont confirmés passe à **SOLDE** (une tranche nulle, part d'avance à 0 ou 100 %, ne le retient
+  pas) ; un OM **rejeté** voit ses versements **annulés**. Après confirmation, l'écran de génération propose
+  directement le lot complémentaire quand il reste des bénéficiaires payables.
 - **Amendement (avenant)** : après paiement de l'avance, les jours facturés d'un OM peuvent changer ; l'avance
   est figée et seul le **reliquat** absorbe l'écart. Un reliquat négatif est un **trop-perçu**, récupéré par
   retenue sur salaire (écran *Régularisations*, document de retenue PDF) — jamais par Mobile Money.
+  L'amendement est refusé quand le reliquat est déjà payé, qu'un trop-perçu a été recouvré ou qu'un fichier
+  de l'OM attend son dépôt : ces cas relèvent d'un avenant formel ou d'une action sur le lot d'abord.
 
 ---
 
@@ -120,8 +133,12 @@ npm run dev                     # http://localhost:5173  (terminal C)
 
 ## Exploitation
 
-- **Sauvegardes** : `php artisan db:backup --compress` (planifiée chaque jour à 02:00 via
-  `php artisan schedule:run`, rétention 30 jours, dans `storage/app/backups/`).
+- **Tâches planifiées** : une tâche Cron (recommandée, [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) §9) appelle
+  `php artisan schedule:run` chaque minute. Elle lance
+  `db:backup --compress` chaque jour à 02:00 (rétention 30 jours, dans `storage/app/backups/`) et purge les
+  jetons de connexion expirés (`sanctum:prune-expired`).
+- **Files d'attente** : en mutualisé, `QUEUE_CONNECTION=sync` (aucun worker ; cf.
+  `backend/.env.production.example`) ; avec un worker, voir [`backend/docs/queues.md`](backend/docs/queues.md).
 - **Restauration** : écran *Administration › Sauvegardes* (SUPER_ADMIN, confirmation par recopie du nom du
   fichier) ou `php artisan db:restore <fichier> --force`. Une **sauvegarde de sécurité** de l'état courant
   est prise avant d'écraser la base. Requiert `mysqldump` et `mysql` (`DB_DUMP_BINARY` /
@@ -140,6 +157,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
 ```
 anatt-ordre-mission/
 ├── CLAUDE.md            # contexte/spec détaillée du projet
+├── AGENTS.md            # consignes pour les contributeurs (humains et assistants)
+├── DEPLOY-CPANEL.md     # déploiement et mise à jour en production
+├── .github/workflows/   # CI (Lint, Pest, Vitest, Playwright, build)
 ├── start-dev.ps1        # démarre l'env de dev (Windows)
 ├── stop-dev.ps1         # arrête l'env de dev
 ├── backend/             # API Laravel
@@ -147,8 +167,10 @@ anatt-ordre-mission/
 │   ├── database/{migrations,seeders,factories}
 │   ├── tests/{Feature,Unit}
 │   └── docs/queues.md   # documentation des files (worker)
-└── frontend/            # SPA Vue 3
-    └── src/{views,components,stores,services,types}
+├── frontend/            # SPA Vue 3
+│   ├── src/{views,components,stores,services,types}
+│   └── e2e/             # parcours critique Playwright
+└── docs/                # guides, procédures, revue, maquettes HTML des écrans
 ```
 
 ---
@@ -173,6 +195,8 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 >
 > La suite Pest s'exécute **sans `.env`** (`phpunit.xml` fournit une `APP_KEY` de test). Pour Playwright
 > avec un Chromium déjà installé d'une autre version : `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/chromium`.
+> Sur une machine sans écran (serveur, conteneur), pointer cette variable vers le binaire
+> `headless_shell` et ajouter `--project=chromium`.
 
 ---
 
@@ -181,6 +205,7 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | Document | Contenu |
 |---|---|
 | `CLAUDE.md` | Modèles de données, endpoints API, règles métier, design system |
+| `AGENTS.md` | Consignes de contribution : environnement, vérifications, règles à ne pas casser |
 | `CHANGELOG.md` | Historique des modifications |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.3) — générée par `docs/generer_documentation_technique.py` |
@@ -191,4 +216,6 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Droits d'accès et parcours par profil |
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
 | `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
+| `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
+| `docs/00_galerie_index.html` … | Maquettes HTML des écrans |
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest`) |
