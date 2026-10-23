@@ -14,7 +14,7 @@
 | Service | `EtatPaiementService` | `MissionService` / `ValidationController` |
 | Objet validé | l'**état de paiement** de la mission (document signé) | un **OM** isolé |
 | Étapes | récap → `CONTROLE` → `VISA_DAF` → `VALIDE` (par tranche) | `IMPORTE` → `VALIDE` (**une seule étape**) |
-| Effet sur les OM | la validation finale du DG **propage** `VALIDE` aux N OM | fait passer **l'OM** à `VALIDE` |
+| Effet sur les OM | la validation finale du DG **propage** `VALIDE` aux N OM ; un OM exonéré (montant nul) passe directement `SOLDE` | fait passer **l'OM** à `VALIDE` ; exonéré (montant nul) → `SOLDE` d'emblée |
 | Quand | mission **avec** état de paiement (cas normal) | mission **sans** état (reprise de données, correction ponctuelle) |
 | Interface | écrans *États de paiement* (récapitulatif, signatures, numéro) | boutons **Valider** (`om.valider`) / **Rejeter** (`om.rejeter`, motif ≥ 10 car.) sur la fiche OM, affichés seulement pour un OM `IMPORTE` d'une mission **sans** état |
 | Rejet | rejet motivé de l'état à chaque étape (signatures amont effacées, paraphes archivés purgés) | `IMPORTE → REJETE` ; les versements `EN_ATTENTE` de l'OM passent `ANNULE` |
@@ -104,10 +104,17 @@ Conséquences :
   payable. `scopeEligiblesLot` n'a donc jamais à distinguer par quel circuit un
   OM est arrivé à `VALIDE`.
 - Verrou **par tranche** : valider les **avances** n'ouvre **pas** les reliquats.
-- **Solde** : un OM passe `SOLDE` à la confirmation du lot qui règle son dernier versement
-  (`LotPaiementService::confirmer`), quel que soit le circuit. Un versement de montant nul (tranche
-  vide, part d'avance à 0 ou 100 %) n'entre dans aucun fichier et ne retient pas l'OM (défaut
-  n° 19). Un trop-perçu `A_RECOUVRER` le retient, lui.
+- **Solde** : un OM passe `SOLDE` dès que tous ses versements sont **réglés** — payés
+  (`CONFIRME`) ou, pour un trop-perçu, récupérés par retenue (`RECOUVRE`) —, quel que soit le
+  circuit (`LotPaiementService::solderSiRegle`). Le contrôle a lieu à la confirmation d'un lot
+  **et** au constat d'un recouvrement : avant le 23/10, un OM au trop-perçu recouvré restait
+  `VALIDE` pour toujours (défaut n° 23). Un versement de montant nul (tranche vide, part d'avance
+  à 0 ou 100 %) n'entre dans aucun fichier et ne retient pas l'OM (défaut n° 19). Un trop-perçu
+  encore `A_RECOUVRER` le retient.
+- **OM exonéré** (prise en charge par un tiers : montants nuls, aucun versement) : il est soldé
+  dès sa validation, dans les deux circuits — par `EtatPaiementService::propager` sur le circuit
+  par état, par `MissionService::valider` sur le circuit par OM (défaut n° 24 : il restait
+  `VALIDE` sur ce dernier).
 - Seconde barrière (défense en profondeur) : même si un OM est forcé à `VALIDE`
   hors circuit, aucun fichier n'est écrit tant que l'état de la tranche n'est pas
   validé (`FileGenerator::exigerEtatValide`, appelée avant toute écriture) — couvert par
@@ -186,7 +193,7 @@ flowchart TD
   F -->|"reliquat ≥ 0"| G["Versement RELIQUAT EN_ATTENTE<br/>(payable si l'état des reliquats est VALIDE)"]
   F -->|"reliquat < 0"| H["Trop-perçu → Versement RELIQUAT A_RECOUVRER"]
   H --> I["Écran Régularisations<br/>retenue sur salaire (RH)"]
-  I --> J["Marquer recouvré → RECOUVRE"]
+  I --> J["Marquer recouvré → RECOUVRE<br/>(OM SOLDE si l'avance est payée)"]
 ```
 
 **Quand l'amendement est-il permis ?** (`MissionService::exigerAmendementPossible`)
@@ -269,16 +276,16 @@ purge manuelle (`docs/amendement-om.md` §4.6). Tests : `tests/Feature/OmPdfSign
 | Signatures de l'état sur le PDF de l'OM | `PdfGenerator::etatSignataire()`, `PdfGenerator::signatureEtat()` |
 | Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
-| Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
+| Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `LotPaiementService::marquerRecouvre()` (règle commune `solderSiRegle`), `MissionService::valider()` (exonéré), `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `tests/Feature/RegularisationTest.php`, `tests/Feature/CircuitValidationTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
 | Amendement (avenant) & régularisations | `MissionService::amender()`, `MissionService::exigerAmendementPossible()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
 | Document de retenue (PDF pour la RH) | `PdfGenerator::genererDocumentRetenue()`, `GET /api/paiements/regularisations/:versement/document` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |
 | Tests — barrière de paiement | `tests/Feature/Paiement/BarriereEtatTest.php` |
-| Tests — circuit OM (une étape) | `tests/Feature/CircuitValidationTest.php` |
+| Tests — circuit OM (une étape, exonéré soldé) | `tests/Feature/CircuitValidationTest.php` |
 | Tests — séparation des tâches | `tests/Feature/SeparationTachesTest.php` |
 | Tests — signatures de l'état sur le PDF de l'OM | `tests/Feature/OmPdfSignaturesEtatTest.php` |
 | Tests — amendement & intégrité de l'état | `tests/Feature/AmendementOmTest.php`, `tests/Feature/AmendementIntegriteEtatTest.php` |
-| Tests — trop-perçus / régularisations | `tests/Feature/RegularisationTest.php` |
+| Tests — trop-perçus / régularisations (solde après recouvrement) | `tests/Feature/RegularisationTest.php` |
 | Tests — avance engagée | `tests/Feature/AvanceEngageeTest.php` (circuit par état), `tests/Feature/AmendementOmTest.php` (circuit par OM) |
 | Tests — OM rejeté jamais repêché, versements annulés | `tests/Feature/EtatPaiementTest.php`, `tests/Feature/MissionTest.php` |
 | Revue d'octobre 2026 (défauts corrigés sur ces circuits) | `docs/revue-projet-2026-10.md` |

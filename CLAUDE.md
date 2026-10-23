@@ -61,8 +61,10 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     un lot de **séquence** suivante (`sequence` 2, 3… ; fichier `…_COMPL{n}`). Fichiers rangés par mission : `paiements/{mission_id}/`.
     L'écran de génération le propose de lui-même (« Générer le lot complémentaire ») quand l'aperçu d'un lot confirmé
     compte encore des bénéficiaires ; la liste des lots est triée par date puis par `id` (le plus récent d'abord).
-  - **Solde d'un OM** : à la confirmation, un OM dont tous les versements **non nuls** sont `CONFIRME` passe à `SOLDE`
-    (une tranche nulle — part d'avance à 0 ou 100 % — n'entre dans aucun fichier et ne le retient pas).
+  - **Solde d'un OM** : un OM dont tous les versements **non nuls** sont réglés — `CONFIRME`, ou `RECOUVRE` pour un
+    trop-perçu — passe à `SOLDE`, à la confirmation d'un lot comme au constat d'un recouvrement
+    (`LotPaiementService::solderSiRegle`). Une tranche nulle — part d'avance à 0 ou 100 % — n'entre dans aucun fichier et
+    ne le retient pas. Un OM exonéré (montant nul) est soldé dès sa validation, dans les deux circuits.
 - **États de paiement PAR TRANCHE** — une mission porte **DEUX états**, chacun avec son circuit complet
   (récapitulatif → `BROUILLON` → `CONTROLE` → `VISA_DAF` → `VALIDE` ; rejet motivé possible à chaque étape) :
   1. **État des AVANCES** (Σ avances des OM) : sa validation finale par le DG fait passer les OM à `VALIDE`
@@ -181,7 +183,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (573 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (576 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -971,7 +973,8 @@ HDR,SARALY,1,45000
 - Paiement : cycle `EN_ATTENTE → GENERE → CONFIRME`. Confirmation **manuelle** après dépôt. Régénération tant que non confirmé ; **idempotence** (un versement CONFIRME, ou porté par un lot CONFIRME, n'est jamais réinclus ; un lot CONFIRME n'est jamais réécrit → lot complémentaire).
 - Un même agent ne figure qu'**une fois** par mission (`ordres.*.agent_id` distinct).
 - Rejet d'un OM : ses versements `EN_ATTENTE` passent `ANNULE` ; la validation d'un état ne repropage jamais `VALIDE` à un OM `REJETE`.
-- Solde : un OM passe `SOLDE` quand tous ses versements non nuls sont `CONFIRME` (`LotPaiementService::confirmer`).
+- Solde : un OM passe `SOLDE` quand tous ses versements non nuls sont `CONFIRME` ou `RECOUVRE` (confirmation d'un lot,
+  constat d'un recouvrement) ; un OM exonéré est soldé à sa validation (état des avances ou validation par OM).
 - Amendement : refusé si le reliquat de l'OM est déjà `CONFIRME` (avenant formel), en plus des gardes du §1.
 
 ---

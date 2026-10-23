@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 22 ne touchent que le code (`app/`, SPA) ;
+  les correctifs n° 10 à 24 ne touchent que le code (`app/`, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -40,6 +40,8 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 20 | Mineur | Exercice proposé par l'écran Paramètres ignorant le mois de début | Corrigé (exercice proposé par l'écran Paramètres) | #150 |
 | 21 | Majeur | Lot complémentaire impossible à générer depuis l'écran | Corrigé (lot complémentaire depuis l'écran) | #152 |
 | 22 | Majeur | Amendement accepté sur un reliquat déjà payé (mission sans état) | Corrigé (amendement d'un OM au reliquat payé) | #152 |
+| 23 | Mineur | OM au trop-perçu recouvré jamais soldé | Corrigé (solde d'un OM, 23/10/2026) | #154 |
+| 24 | Mineur | OM exonéré resté `VALIDE` après validation par OM | Corrigé (solde d'un OM, 23/10/2026) | #154 |
 
 #### Corrigé (première passe)
 
@@ -265,6 +267,20 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Corrigé (solde d'un OM, 23/10/2026)
+
+- **OM au trop-perçu recouvré jamais soldé.** Le solde n'était examiné qu'à la confirmation d'un lot,
+  et un versement `RECOUVRE` comptait comme restant à régler : un OM dont l'avance était payée et le
+  trop-perçu récupéré par retenue restait `VALIDE`. Règle commune `LotPaiementService::solderSiRegle`
+  (versements `CONFIRME` ou `RECOUVRE` = réglés, versements nuls ignorés), appelée à la confirmation
+  **et** au constat du recouvrement. Deux tests dans `RegularisationTest`. Défaut n° 23.
+- **OM exonéré resté `VALIDE` sur le circuit par OM.** La validation de l'état des avances solde aussitôt
+  un OM de montant nul ; `MissionService::valider` le laissait `VALIDE`. Il le solde désormais. Test dans
+  `CircuitValidationTest` (Pest : 576 tests). Défaut n° 24.
+- Trouvés en mettant à jour **`docs/circuits-validation.md`** (§1, §3 « Solde » et « OM exonéré »,
+  diagramme du §6, références). Mis à jour aussi : `docs/amendement-om.md`, la revue (n° 23 et 24),
+  `CLAUDE.md`, `README.md`, `AGENTS.md` et le guide utilisateur (régénéré, annexe des statuts).
+
 #### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
 
 - **Amendement accepté sur un reliquat déjà payé.** Sur une mission **sans état**, un OM dont le
@@ -418,7 +434,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 
 État au 23/10/2026, après les correctifs n° 17 à 22 (fin de revue du 22/10 entre parenthèses) :
 
-- **Pest** : 573 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
+- **Pest** : 576 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
 - **Vitest** : 121 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
 - **Recette sur l'API réelle** : 83 / 83 contrôles (76 / 76) et 9 / 9 sondes sur les correctifs
   n° 19 et 22 ; scénario de démo rejoué, §7 « avenant » et §8.2 « lot complémentaire » compris

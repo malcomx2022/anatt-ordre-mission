@@ -789,7 +789,7 @@ tableau(["Statut", "Signification"],
          ["VERIFIE / VISA_DAF", "Étapes intermédiaires du circuit par OM (validation directe, activée en option)."],
          ["VALIDE", "L'état des avances de sa mission a été validé par le DG — payable."],
          ["REJETE", "Rejeté individuellement (reprise de données ; motif requis) ; ses versements sont annulés."],
-         ["SOLDE", "Tous les versements de l'OM ont été confirmés (ou OM exonéré)."]],
+         ["SOLDE", "Tous les versements de l'OM ont été confirmés, ou le trop-perçu recouvré (ou OM exonéré)."]],
         largeurs=[4.0, 12.8])
 h2("Versement")
 tableau(["Statut", "Signification"],

@@ -322,7 +322,8 @@ Questions de gestion posées au cadrage, et la réponse retenue :
 
 1. **Trop-perçu** — comment le récupère-t-on ? → **Retenue sur salaire**, hors
    application. L'application constate (`A_RECOUVRER`), produit le **document de retenue**
-   pour la RH, puis enregistre le recouvrement (`RECOUVRE`).
+   pour la RH, puis enregistre le recouvrement (`RECOUVRE`). L'OM passe alors `SOLDE` si son
+   avance est payée : un trop-perçu recouvré vaut règlement (défaut n° 23, corrigé le 23/10/2026).
 2. **Amendement après l'état des reliquats validé / payé** → **hors périmètre v1** :
    l'amendement est permis jusqu'à la validation de l'état des reliquats ; au-delà,
    avenant formel (refusé par l'application).

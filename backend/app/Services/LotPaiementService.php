@@ -94,20 +94,8 @@ class LotPaiementService
                 ->where('statut', '!=', 'CONFIRME')
                 ->update(['statut' => 'CONFIRME', 'date_paiement' => $now]);
 
-            // Un OM dont TOUS les versements sont confirmés passe à SOLDE. Un
-            // versement nul (tranche vide : part d'avance à 0 ou 100 %) n'entre
-            // dans aucun fichier : il ne retient pas l'OM.
             foreach ($omIds as $omId) {
-                $resteAConfirmer = Versement::where('ordre_mission_id', $omId)
-                    ->where('statut', '!=', 'CONFIRME')
-                    ->where('montant', '!=', 0)
-                    ->exists();
-
-                if (! $resteAConfirmer) {
-                    OrdreMission::where('id', $omId)
-                        ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
-                        ->update(['statut' => 'SOLDE']);
-                }
+                $this->solderSiRegle($omId);
             }
 
             $lot->update([
@@ -168,6 +156,26 @@ class LotPaiementService
         ]);
 
         return $lot->fresh();
+    }
+
+    /**
+     * Un OM dont tous les versements sont réglés passe à SOLDE : payés
+     * (CONFIRME) ou, pour un trop-perçu, récupérés par retenue (RECOUVRE). Un
+     * versement nul (tranche vide : part d'avance à 0 ou 100 %) n'entre dans
+     * aucun fichier : il ne retient pas l'OM. Un trop-perçu A_RECOUVRER le retient.
+     */
+    private function solderSiRegle(int $omId): void
+    {
+        $resteARegler = Versement::where('ordre_mission_id', $omId)
+            ->whereNotIn('statut', ['CONFIRME', 'RECOUVRE'])
+            ->where('montant', '!=', 0)
+            ->exists();
+
+        if (! $resteARegler) {
+            OrdreMission::where('id', $omId)
+                ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
+                ->update(['statut' => 'SOLDE']);
+        }
     }
 
     /**
@@ -236,7 +244,10 @@ class LotPaiementService
             ]);
         }
 
-        $versement->update(['statut' => 'RECOUVRE', 'date_paiement' => now()]);
+        DB::transaction(function () use ($versement) {
+            $versement->update(['statut' => 'RECOUVRE', 'date_paiement' => now()]);
+            $this->solderSiRegle($versement->ordre_mission_id);
+        });
 
         AuditService::log($user, 'RECOUVRER_VERSEMENT', 'versement', $versement->id, [
             'montant_recouvre' => abs((int) $versement->montant),

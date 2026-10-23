@@ -33,6 +33,17 @@ it('valide un OM en une étape et le trace (signature de contrôle)', function (
         ->and($om->verifie_le)->not->toBeNull();
 });
 
+it('solde à la validation un OM exonéré (montant nul), comme le circuit par état', function () {
+    // Prise en charge par un tiers : montants à 0, aucun versement — rien à payer.
+    $om = OrdreMission::factory()->create([
+        'statut' => 'IMPORTE', 'montant_total' => 0, 'avance' => 0, 'reliquat' => 0,
+    ]);
+
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
+
+    expect($om->fresh()->statut)->toBe('SOLDE');
+});
+
 it('journalise la validation en une étape', function () {
     $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
 

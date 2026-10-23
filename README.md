@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (573 tests, 68 fichiers) · Vitest (121 tests) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (576 tests, 68 fichiers) · Vitest (121 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -104,7 +104,7 @@ npm run dev                     # http://localhost:5173  (terminal C)
   un lot passé en **erreur** remet ses versements en attente avec le numéro **actuel** de l'agent.
   **Idempotence** : un versement confirmé n'est jamais réinclus ; un lot confirmé n'est jamais réécrit — un
   versement devenu payable après coup part dans un **lot complémentaire** (`…_COMPL2`). Un OM dont tous les
-  versements sont confirmés passe à **SOLDE** (une tranche nulle, part d'avance à 0 ou 100 %, ne le retient
+  versements sont réglés (confirmés, ou trop-perçu recouvré) passe à **SOLDE** (une tranche nulle, part d'avance à 0 ou 100 %, ne le retient
   pas) ; un OM **rejeté** voit ses versements **annulés**. Après confirmation, l'écran de génération propose
   directement le lot complémentaire quand il reste des bénéficiaires payables.
 - **Amendement (avenant)** : après paiement de l'avance, les jours facturés d'un OM peuvent changer ; l'avance
@@ -179,7 +179,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 573 tests (68 fichiers)
+.\vendor\bin\pest                 # 576 tests (68 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend

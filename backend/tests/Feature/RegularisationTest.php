@@ -131,6 +131,29 @@ it('marque une régularisation comme recouvrée', function () {
         ->and($v->date_paiement)->not->toBeNull();
 });
 
+it('solde l’OM une fois son trop-perçu recouvré (avance payée)', function () {
+    amenderEnTropPercu($this);
+    expect($this->om->fresh()->statut)->toBe('VALIDE');
+
+    $this->actingAs($this->finance)
+        ->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")
+        ->assertOk();
+
+    // Avance CONFIRME + trop-perçu RECOUVRE : plus rien à payer ni à récupérer.
+    expect($this->om->fresh()->statut)->toBe('SOLDE');
+});
+
+it('ne solde pas l’OM recouvré tant que son avance reste à payer', function () {
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'AVANCE')->update(['statut' => 'EN_ATTENTE']);
+    amenderEnTropPercu($this);
+
+    $this->actingAs($this->finance)
+        ->postJson("/api/paiements/regularisations/{$this->reliquat->id}/recouvrer")
+        ->assertOk();
+
+    expect($this->om->fresh()->statut)->toBe('VALIDE');
+});
+
 it('refuse de recouvrer un versement qui n’est pas à recouvrer', function () {
     // Reliquat resté EN_ATTENTE (aucun trop-perçu).
     $this->actingAs($this->finance)
