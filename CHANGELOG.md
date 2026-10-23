@@ -175,6 +175,21 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   solde. Test dans `SoldeTest` (Pest : 572 tests). Défaut n° 19 de
   `docs/revue-projet-2026-10.md`.
 
+#### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
+
+- **Amendement accepté sur un reliquat déjà payé.** Sur une mission **sans état**, un OM dont le
+  versement RELIQUAT était `CONFIRME` (OM soldé) restait amendable par l'API : le reliquat de l'OM
+  changeait sans versement correspondant. Une rallonge n'était donc jamais payée, et une réduction ne
+  produisait pas de trop-perçu. `MissionService::exigerAmendementPossible` refuse désormais ce cas
+  (avenant formel), l'équivalent de l'état des reliquats validé sur le circuit par état. L'écran
+  masquait déjà le bouton pour un OM soldé. Test dans `AmendementOmTest` (Pest : 573 tests).
+  Défaut n° 22 de la revue.
+- **`docs/amendement-om.md`** : révision du 23/10 (garde du reliquat payé, départage du dernier
+  amendement par `id`, n° 17), ligne ajoutée au tableau §3, garde-fou §4.3, ordre des amendements
+  §4.6. Mis à jour aussi : `docs/circuits-validation.md` §6, le guide utilisateur (régénéré),
+  les compteurs Pest (573) dans `CLAUDE.md`, `README.md`, la documentation technique (régénérée)
+  et la revue.
+
 #### Corrigé (lot complémentaire depuis l'écran, 23/10/2026)
 
 - **Lot complémentaire impossible à générer depuis l'interface.** `PaiementGeneration` masquait le

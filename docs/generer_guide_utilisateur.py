@@ -519,8 +519,9 @@ encadre("L'avance est figée, seul le reliquat bouge",
 bullet("Chaque amendement est historisé (jours et montants avant / après, écart, motif, auteur, date) et "
        "consultable sur la fiche de l'OM, le plus récent en tête ; il est tracé au journal d'audit.")
 bullet("L'amendement est refusé si l'OM est rejeté ou annulé, si un état de tranche est en cours de "
-       "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, ou si un trop-perçu "
-       "de l'OM a déjà été recouvré.")
+       "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, si le reliquat "
+       "de l'OM a déjà été payé, ou si un trop-perçu de l'OM a déjà été recouvré. Ces derniers cas "
+       "relèvent d'un avenant formel, hors application.")
 bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM attend son dépôt (lot GÉNÉRÉ) : "
        "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
 bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "

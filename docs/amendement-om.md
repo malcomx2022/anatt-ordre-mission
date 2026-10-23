@@ -90,6 +90,16 @@
 > - **signatures** : le PDF de l'OM reprend celles de l'état des avances
 >   (`docs/circuits-validation.md` §7) ; elles restent valables après un amendement,
 >   puisqu'elles portent sur l'avance, qui est figée.
+>
+> **Révisé (23/10/2026)** :
+> - **dernier amendement** : deux amendements dans la même seconde sont départagés par l'id
+>   (ordre de création). Cela vaut pour l'encadré du PDF de l'OM, le motif du document de
+>   retenue et le journal de la fiche (défaut n° 17) ;
+> - **reliquat déjà payé** : sur une mission **sans état**, un OM dont le versement RELIQUAT
+>   est `CONFIRME` n'est plus amendable. Auparavant l'API acceptait l'amendement : le reliquat
+>   de l'OM changeait sans versement correspondant, si bien qu'un complément n'était jamais
+>   payé et qu'un trop-perçu n'était jamais détecté. L'écran masquait déjà le bouton pour un OM
+>   soldé (défaut n° 22).
 
 ---
 
@@ -145,6 +155,7 @@ porter qu'un montant **strictement positif**.
 | État des reliquats en `BROUILLON` / `REJETE` | Autorisé : le récapitulatif se **resynchronise** sur les montants amendés. |
 | État des reliquats en `CONTROLE` / `VISA_DAF` | Refusé avec **rejet guidé** : rejeter l'état, amender, puis le rétablir. |
 | État des reliquats `VALIDE` (scellé), ou trop-perçu déjà `RECOUVRE` | **Avenant formel** — hors périmètre v1, refusé par l'application. |
+| Mission **sans état**, reliquat déjà payé (`CONFIRME`) | **Avenant formel**, refusé : c'est l'équivalent, sur le circuit par OM, de l'état des reliquats validé. |
 
 C'est le franchissement « avance figée » qui introduit la nouvelle règle.
 
@@ -197,6 +208,10 @@ Body: { nb_jours? , lignes? , motif }
   - refus si un trop-perçu de l'OM est déjà **`RECOUVRE`** (retenue RH soldée) : ré-amender
     rouvrirait un versement clos en ignorant le montant déjà retenu → avenant formel, hors
     périmètre v1. Un trop-perçu encore `A_RECOUVRER` (rien retenu) reste amendable ;
+  - refus si le versement **RELIQUAT** est déjà **`CONFIRME`** (reliquat payé) : il ne se
+    réécrit plus, et l'amendement ferait diverger le reliquat de l'OM de ce qui a été versé.
+    C'est un avenant formel. Le cas ne se présente que sur une mission sans état, car
+    ailleurs l'état des reliquats validé bloque déjà ;
   - refus tant qu'un versement de l'OM est **`GENERE`** (fichier en attente de dépôt) :
     confirmer le lot, ou le passer en `ERREUR` — ses versements redeviennent `EN_ATTENTE`.
     L'échec définitif d'une génération en file a le même effet (`GenererLotPaiementJob::failed`) ;
@@ -251,7 +266,9 @@ Le PDF de l'OM (`PdfGenerator`) en tient compte :
   | Reliquat négatif | `Avance engagée` / `Trop-perçu (à recouvrer par retenue sur salaire)` ; l'encadré du total devient « Montant total dû » |
 
 - **mention** : un encadré rappelle le dernier amendement (date, jours avant → après,
-  motif, nombre d'amendements s'il y en a plusieurs) ;
+  motif, nombre d'amendements s'il y en a plusieurs). Le « dernier » se départage par
+  `amende_le` puis par `id`, car deux amendements peuvent tomber dans la même seconde. Le même
+  ordre vaut pour le document de retenue et le journal de la fiche ;
 - **taux journalier** affiché sous le total : per diem seul, **hors transport**.
 
 Les signatures reprises de l'état des avances restent affichées : elles portent sur

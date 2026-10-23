@@ -166,6 +166,23 @@ it('refuse l’amendement quand l’état des reliquats est validé (hors périm
         ->assertStatus(422)->assertJsonValidationErrors('etat');
 });
 
+it('circuit par OM : refuse d’amender un OM dont le reliquat est déjà payé', function () {
+    // Mission sans état, avance ET reliquat confirmés (OM soldé). Le reliquat versé
+    // ne peut plus être réécrit : amender ferait diverger le reliquat de l'OM de ce
+    // qui a été payé (complément jamais versé, ou trop-perçu jamais détecté).
+    Versement::where('ordre_mission_id', $this->om->id)->update(['statut' => 'CONFIRME']);
+    $this->om->update(['statut' => 'SOLDE']);
+
+    amenderOm($this, ['nb_jours' => 3, 'motif' => 'Mission écourtée, retour anticipé constaté.'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('versement');
+
+    $om = $this->om->fresh();
+    expect($om->nb_jours)->toBe(6)
+        ->and($om->reliquat)->toBe(81000)
+        ->and(OmAmendement::where('ordre_mission_id', $om->id)->exists())->toBeFalse();
+});
+
 it('refuse d’amender un OM dont le trop-perçu a déjà été recouvré', function () {
     // Trop-perçu soldé : reliquat négatif recouvré (retenue RH appliquée).
     $this->om->update(['avance_engagee' => 189000]);

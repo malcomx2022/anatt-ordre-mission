@@ -201,6 +201,7 @@ flowchart TD
 | État des reliquats `CONTROLE` / `VISA_DAF` | ⛔ **rejet guidé** : rejetez-le, amendez, puis rétablissez-le |
 | État des reliquats `VALIDE` (scellé HMAC) | ⛔ avenant formel — hors périmètre v1 |
 | Trop-perçu de l'OM déjà `RECOUVRE` (retenue soldée) | ⛔ avenant formel — hors périmètre v1 |
+| Aucun état et reliquat déjà `CONFIRME` (circuit par OM) | ⛔ avenant formel — hors périmètre v1 (défaut n° 22) |
 | Trop-perçu de l'OM encore `A_RECOUVRER` (non retenu) | ✅ amendable (rien n'a été retenu) |
 | OM `REJETE` / `ANNULE` | ⛔ |
 
