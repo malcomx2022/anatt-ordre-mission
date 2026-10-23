@@ -193,6 +193,11 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   « Générer le lot complémentaire.txt », « Matrice des permissions ». Le §8.3 précise que le DAF
   et le DG peuvent aussi rejeter un OM sans état. Le guide utilisateur (régénéré) cite le bouton
   du lot complémentaire.
+- **`docs/circuits-validation.md`** :
+  - Qui porte `om.rejeter` sur le circuit par OM (contrôleur, DAF, DG).
+  - Solde d'un OM, identique dans les deux circuits, avec le versement nul ignoré (n° 19).
+  - Lot complémentaire proposé par l'écran (n° 21).
+  - Lien corrigé vers `backend/docs/queues.md`.
 
 #### Corrigé (exercice proposé par l'écran Paramètres, 23/10/2026)
 

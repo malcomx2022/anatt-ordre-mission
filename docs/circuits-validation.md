@@ -18,7 +18,7 @@
 | Quand | mission **avec** état de paiement (cas normal) | mission **sans** état (reprise de données, correction ponctuelle) |
 | Interface | écrans *États de paiement* (récapitulatif, signatures, numéro) | boutons **Valider** (`om.valider`) / **Rejeter** (`om.rejeter`, motif ≥ 10 car.) sur la fiche OM, affichés seulement pour un OM `IMPORTE` d'une mission **sans** état |
 | Rejet | rejet motivé de l'état à chaque étape (signatures amont effacées, paraphes archivés purgés) | `IMPORTE → REJETE` ; les versements `EN_ATTENTE` de l'OM passent `ANNULE` |
-| Permissions | `om.retranscrire` (récapitulatif) · `om.valider` (contrôle) · `om.viser` (visa DAF) · `om.numeroter` (numéro) · `om.approuver` (validation DG) · `om.rejeter` | `om.valider` · `om.rejeter` |
+| Permissions | `om.retranscrire` (récapitulatif) · `om.valider` (contrôle) · `om.viser` (visa DAF) · `om.numeroter` (numéro) · `om.approuver` (validation DG) · `om.rejeter` | `om.valider` (contrôleur seul, matrice par défaut) · `om.rejeter` (contrôleur, DAF et DG) |
 | Signatures sur le PDF de l'OM | celles de l'**état des avances** qui couvre l'OM (§7) | celle portée par l'OM |
 
 **Séparation des tâches** (`config/workflow.php` → `separation_des_taches`, activée par
@@ -93,7 +93,10 @@ Le même filtre écarte aussi, quel que soit le circuit :
 - les montants **≤ 0** (reliquat de trop-perçu) ;
 - tout versement porté par un lot **`CONFIRME`** : un lot confirmé n'est jamais réécrit,
   et un versement devenu payable après coup part dans un **lot complémentaire**
-  (`lots_paiement.sequence` 2, 3…).
+  (`lots_paiement.sequence` 2, 3…). L'écran de génération le propose (« Générer le lot
+  complémentaire ») dès que l'aperçu liste un tel versement. Il ne bloque la génération que
+  si rien n'est payable (défaut n° 21 de la revue : avant, il la bloquait dès que le dernier
+  lot était confirmé).
 
 Conséquences :
 
@@ -101,6 +104,10 @@ Conséquences :
   payable. `scopeEligiblesLot` n'a donc jamais à distinguer par quel circuit un
   OM est arrivé à `VALIDE`.
 - Verrou **par tranche** : valider les **avances** n'ouvre **pas** les reliquats.
+- **Solde** : un OM passe `SOLDE` à la confirmation du lot qui règle son dernier versement
+  (`LotPaiementService::confirmer`), quel que soit le circuit. Un versement de montant nul (tranche
+  vide, part d'avance à 0 ou 100 %) n'entre dans aucun fichier et ne retient pas l'OM (défaut
+  n° 19). Un trop-perçu `A_RECOUVRER` le retient, lui.
 - Seconde barrière (défense en profondeur) : même si un OM est forcé à `VALIDE`
   hors circuit, aucun fichier n'est écrit tant que l'état de la tranche n'est pas
   validé (`FileGenerator::exigerEtatValide`, appelée avant toute écriture) — couvert par
@@ -186,7 +193,7 @@ flowchart TD
 
 | État de la mission | Amendement |
 |---|---|
-| Un versement de l'OM est `GENERE` (fichier en attente de dépôt) | ⛔ confirmez le lot ou passez-le en `ERREUR` d'abord (l'échec définitif d'une génération en file fait de même, `docs/queues.md`) |
+| Un versement de l'OM est `GENERE` (fichier en attente de dépôt) | ⛔ confirmez le lot ou passez-le en `ERREUR` d'abord (l'échec définitif d'une génération en file fait de même, `backend/docs/queues.md`) |
 | Aucun état et avance non payée, ou état des avances `BROUILLON` | ✅ recalcul complet avec la part d'avance (rien n'est figé) |
 | Aucun état et avance déjà `CONFIRME` (circuit par OM) | ✅ avance engagée à l'amendement, seul le reliquat bouge |
 | État des avances `VALIDE` | ✅ avance figée, seul le reliquat bouge |
@@ -261,6 +268,7 @@ purge manuelle (`docs/amendement-om.md` §4.6). Tests : `tests/Feature/OmPdfSign
 | Signatures de l'état sur le PDF de l'OM | `PdfGenerator::etatSignataire()`, `PdfGenerator::signatureEtat()` |
 | Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
+| Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
 | Amendement (avenant) & régularisations | `MissionService::amender()`, `MissionService::exigerAmendementPossible()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
 | Document de retenue (PDF pour la RH) | `PdfGenerator::genererDocumentRetenue()`, `GET /api/paiements/regularisations/:versement/document` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |
