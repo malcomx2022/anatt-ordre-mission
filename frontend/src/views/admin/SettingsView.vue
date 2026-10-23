@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
+import { exerciceDe } from '@/utils/exercice'
 
 const api = useApi()
 const { success: toastSuccess } = useToast()
@@ -12,11 +13,19 @@ const saving = ref(false)
 
 const appName = ref('Systeme de Paiement des Missions - ANaTT')
 const appVersion = ref('1.0.0')
-// Année fiscale : dynamique (plus de liste figée). Défaut = année civile courante.
+// Année fiscale : dynamique (plus de liste figée). Sans année enregistrée, le
+// défaut est l'exercice EN COURS, déterminé comme le serveur
+// (Parametres::anneeFiscalePour) depuis le mois de début.
 const fiscalYear = ref<number>(new Date().getFullYear())
 // Mois de début de l'exercice (1 = janvier). Permet de déterminer l'exercice
 // quand il ne coïncide pas avec l'année civile.
 const fiscalYearStartMonth = ref<number>(1)
+// Vrai dès qu'une année est enregistrée ou choisie à la main : le défaut
+// déterminé ne l'écrase plus.
+const anneeExplicite = ref(false)
+watch(fiscalYearStartMonth, (mois) => {
+  if (!anneeExplicite.value) fiscalYear.value = exerciceDe(new Date(), mois)
+})
 const currency = ref('FCFA (XOF)')
 
 /** Années proposées : de l'an prochain jusqu'à 5 ans en arrière. */
@@ -74,7 +83,10 @@ onMounted(async () => {
     const s = data.data || {}
     if (s.appName) appName.value = s.appName
     if (s.appVersion) appVersion.value = s.appVersion
-    if (s.fiscalYear) fiscalYear.value = Number(s.fiscalYear)
+    if (s.fiscalYear) {
+      fiscalYear.value = Number(s.fiscalYear)
+      anneeExplicite.value = true
+    }
     if (s.fiscalYearStartMonth) fiscalYearStartMonth.value = Number(s.fiscalYearStartMonth)
     if (s.sessionDuration) sessionDuration.value = s.sessionDuration
     if (s.maxLoginAttempts) maxLoginAttempts.value = s.maxLoginAttempts
@@ -169,7 +181,7 @@ async function saveAll() {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Année fiscale en cours</label>
-                <select v-model.number="fiscalYear" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200">
+                <select v-model.number="fiscalYear" @change="anneeExplicite = true" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200">
                   <option v-for="a in anneeOptions" :key="a" :value="a">{{ a }}</option>
                 </select>
               </div>
