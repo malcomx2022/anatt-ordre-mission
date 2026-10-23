@@ -216,6 +216,14 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - Renvoi corrigé vers le *Repli B* (et non « voie 3 »).
   - Deux contrôles 1.3 : lien « PDF de l'OM » sur la fiche, et suppression des Form Requests
     retirées.
+- **`UPLOAD-VENDOR.md`** confronté à `composer.lock` :
+  - PHP **8.4.x en 64 bits**, ni 8.3 ni 8.5. `phpoffice/phpspreadsheet` 1.30.2 déclare
+    `php <8.5.0`, et `composer install` refuse le lock sous 8.5. `platform_check.php` ne contrôle
+    que le minimum 8.4 et le 64 bits : un site en 8.5 démarrerait hors de la plage supportée.
+  - `--no-dev` retire 51 paquets de développement ; le `vendor/` de production en compte 95.
+  - Les tailles figées (« ~64 Mo », « ≈14 Mo ») sont retirées, car invérifiables et dépendantes
+    du mode d'installation. Le contrôle des dossiers `.git` reste le garde-fou.
+  - `DEPLOY-CPANEL.md` §4 : même borne haute.
 
 #### Supprimé
 
