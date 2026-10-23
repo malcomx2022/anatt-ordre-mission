@@ -112,6 +112,22 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   `d/m/Y` comme une chaîne (le 22/10 avant le 03/11) ; elle trie désormais sur l'horodatage du
   fichier. Test dans `BackupControllerTest`.
 
+#### Documentation — circuits de validation
+
+- **`docs/circuits-validation.md`** mis à jour :
+  - tableau des deux circuits complété : permissions de chaque transition, paraphes purgés au
+    rejet, signatures affichées sur le PDF de l'OM ;
+  - séparation des tâches expliquée (règle, interrupteur `separation_des_taches`, SUPER_ADMIN
+    compris, circuit par état seulement) ;
+  - un état **rejeté** garde le circuit par OM fermé ; on reprend par un nouveau récapitulatif,
+    qui le ramène en `BROUILLON` (nouveau test dans `CoherenceCircuitsTest`) ;
+  - nouvelle section §7 « Les signatures sur le PDF de l'OM » : cas par cas, état des avances
+    seul repris, clé de cache ;
+  - garde d'amendement « versement `GENERE` » : l'échec définitif d'une génération en file
+    libère aussi les versements ;
+  - références : `PdfGenerator::etatSignataire()`, `backend/docs/openapi.yaml`,
+    `OmPdfSignaturesEtatTest`.
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.

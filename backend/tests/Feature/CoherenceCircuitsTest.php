@@ -66,6 +66,27 @@ it('refuse de rejeter un OM dès qu’un état existe', function () {
     ])->assertStatus(422)->assertJsonValidationErrors('etat');
 });
 
+it('garde le circuit par OM fermé quand l’état est rejeté, jusqu’au nouveau récapitulatif', function () {
+    $mission = missionAvecEtat($this);
+    $om = $mission->ordresMission()->first();
+    $etat = $mission->etatsPaiement()->first();
+
+    $this->actingAs($this->controleur)->postJson("/api/etats/{$etat->id}/rejeter", [
+        'motif' => 'Montants à revoir avant contrôle.',
+    ])->assertOk()->assertJsonPath('data.statut', 'REJETE');
+
+    // Un état rejeté existe toujours : l'OM ne se valide pas à part.
+    $this->actingAs($this->controleur)->postJson("/api/ordres/{$om->id}/valider")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('etat');
+
+    // On reprend par l'état : le récapitulatif le ramène en BROUILLON.
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/missions/{$mission->id}/etat/recapituler")
+        ->assertOk()
+        ->assertJsonPath('data.statut', 'BROUILLON');
+});
+
 // ── Sans état, le circuit par OM reste ouvert (repli / reprise de données) ──
 
 it('autorise la validation par OM tant qu’aucun état n’existe', function () {
