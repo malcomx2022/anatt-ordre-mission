@@ -241,9 +241,10 @@ Seul l'état des **avances** est repris : c'est sa validation qui fait passer l'
 `VALIDE`. L'état des reliquats ne change pas le statut de l'OM et n'apparaît pas sur son
 PDF.
 
-Le PDF est mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf` : chaque
-signature de l'état change la clé, donc le PDF est régénéré sans purge manuelle.
-Tests : `tests/Feature/OmPdfSignaturesEtatTest.php`.
+Le PDF est mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` : chaque
+signature de l'état et chaque amendement de l'OM changent la clé, donc le PDF est régénéré sans
+purge manuelle (`docs/amendement-om.md` §4.6). Tests : `tests/Feature/OmPdfSignaturesEtatTest.php`,
+`tests/Feature/OmPdfAmendementTest.php`.
 
 ---
 

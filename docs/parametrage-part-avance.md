@@ -61,8 +61,11 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
     423) ; elle est relue dès la sortie de ce verrou ;
   - les vues lisent la valeur **réactive** (`usePartAvance().partAvance`), pas une copie
     figée au montage.
-- **Libellés** : tous dynamiques (`{{ avancePct }} %` / `{{ 100 − avancePct }} %`), y
-  compris le **PDF officiel de l'ordre de mission**.
+- **Libellés** : tous dynamiques (`{{ avancePct }} %` / `{{ 100 − avancePct }} %`). Le
+  **PDF officiel de l'ordre de mission** tire, lui, son pourcentage des **montants de l'OM**
+  (`round(avance × 100 / total)`) : un OM retranscrit à 70 % garde « Avance (70 %) » même si la
+  part a changé depuis. Après un amendement, il affiche « Avance engagée » et « Reliquat (ajusté
+  par amendement) » ou « Trop-perçu » (`docs/amendement-om.md` §4.6).
 
 ## Fichiers principaux
 
@@ -74,7 +77,7 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 - `app/Http/Controllers/Api/SettingsController.php` — validation de `PUT /settings`
   (entier 0–100), invalidation du cache, lecture publique (`partAvance()`).
 - `resources/views/pdf/ordre-mission.blade.php` + `app/Services/PdfGenerator.php` —
-  libellés PDF dynamiques (`avance_pct` / `reliquat_pct`).
+  libellés de répartition du PDF (`libellesRepartition()` → `avance_libelle` / `reliquat_libelle`).
 - `app/Http/Controllers/Api/MissionController.php` — extraction de l'état reliquat par
   tranche (`firstWhere`).
 - Seeders / factory — `Parametres::partAvance()` au lieu de `0.70`.

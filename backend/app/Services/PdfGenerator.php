@@ -82,11 +82,10 @@ class PdfGenerator
      */
     public function donnees(OrdreMission $ordre, bool $brouillon = false): array
     {
-        $ordre->load(['agent', 'mission']);
+        $ordre->load(['agent', 'mission', 'amendements']);
         $agent = $ordre->agent;
         $mission = $ordre->mission;
 
-        $tauxJournalier = $ordre->nb_jours > 0 ? intdiv($ordre->montant_total, $ordre->nb_jours) : 0;
         $fmt = fn (int $n) => number_format($n, 0, ',', ' ');
 
         // Détail des lignes de per diem (état ANaTT) : type × taux × nb_jours = montant.
@@ -98,6 +97,10 @@ class PdfGenerator
         ], $ordre->lignes_per_diem ?? []);
         $montantTransport = (int) $ordre->montant_transport;
         $perDiem = $ordre->montant_total - $montantTransport;
+        // Taux affiché sous « jours × taux » : le per diem seul, transport exclu.
+        $tauxJournalier = $ordre->nb_jours > 0 ? intdiv($perDiem, $ordre->nb_jours) : 0;
+        $repartition = $this->libellesRepartition($ordre);
+        $amendement = $ordre->amendements->sortByDesc('amende_le')->first();
 
         // Circuit par ÉTAT : les signatures vivent sur l'état des avances, pas sur
         // l'OM. Elles sont reprises ici, à défaut de signature portée par l'OM
@@ -134,9 +137,17 @@ class PdfGenerator
             'montant_total' => $fmt($ordre->montant_total),
             'avance' => $fmt($ordre->avance),
             'reliquat' => $fmt($ordre->reliquat),
-            // Pourcentages paramétrables (le reliquat absorbe l'arrondi) — libellés dynamiques.
-            'avance_pct' => Parametres::partAvance(),
-            'reliquat_pct' => 100 - Parametres::partAvance(),
+            'avance_libelle' => $repartition['avance'],
+            'reliquat_libelle' => $repartition['reliquat'],
+            'trop_percu' => $ordre->reliquat < 0,
+            // Dernier amendement (avenant) : le PDF indique que les montants ont été ajustés.
+            'amendement' => $amendement ? [
+                'date' => $amendement->amende_le?->format('d/m/Y'),
+                'nb_jours_avant' => $amendement->nb_jours_avant,
+                'nb_jours_apres' => $amendement->nb_jours_apres,
+                'motif' => $amendement->motif,
+                'nombre' => $ordre->amendements->count(),
+            ] : null,
             'date_generation' => now()->format('d/m/Y H:i'),
             // ── Circuit de validation ──
             // Sur un brouillon, les signatures ne sont JAMAIS rendues, même si
@@ -274,6 +285,36 @@ class PdfGenerator
      * Le suffixe suit le statut, de sorte qu'une signature invalide d'office le
      * cache de l'étape précédente.
      */
+    /**
+     * Libellés de la répartition avance / reliquat.
+     *
+     * Le pourcentage vient des montants de l'OM, pas du paramètre courant : la
+     * part d'avance a pu changer depuis la retranscription. Une fois l'avance
+     * engagée, la répartition n'est plus un pourcentage : le reliquat absorbe
+     * l'amendement, jusqu'au trop-perçu (cf. docs/amendement-om.md).
+     *
+     * @return array{avance:string, reliquat:string}
+     */
+    private function libellesRepartition(OrdreMission $ordre): array
+    {
+        if ($ordre->reliquat < 0) {
+            return [
+                'avance' => 'Avance engagée',
+                'reliquat' => 'Trop-perçu (à recouvrer par retenue sur salaire)',
+            ];
+        }
+
+        if ($ordre->avance_engagee !== null && $ordre->amendements->isNotEmpty()) {
+            return ['avance' => 'Avance engagée', 'reliquat' => 'Reliquat (ajusté par amendement)'];
+        }
+
+        $part = $ordre->montant_total > 0
+            ? (int) round($ordre->avance * 100 / $ordre->montant_total)
+            : Parametres::partAvance();
+
+        return ['avance' => "Avance ({$part} %)", 'reliquat' => 'Reliquat ('.(100 - $part).' %)'];
+    }
+
     private function chemin(OrdreMission $ordre, bool $brouillon = false): string
     {
         $slug = Str::slug($ordre->reference_semo);
@@ -292,6 +333,10 @@ class PdfGenerator
         // statut (contrôle, visa) : le statut de l'état entre donc dans la clé.
         $etat = $this->etatSignataire($ordre);
         $suffixe = $etat !== null ? "-ETAT-{$etat->statut}" : '';
+        // Un amendement change les montants sans toucher aux statuts : sans ce
+        // compteur, le téléchargement servirait le PDF d'avant l'amendement.
+        $amendements = $ordre->amendements()->count();
+        $suffixe .= $amendements > 0 ? "-AMD{$amendements}" : '';
 
         return "ordres/OM-{$slug}-{$statut}{$suffixe}.pdf";
     }

@@ -17,7 +17,8 @@
 > barème, répartition contre l'avance engagée, réajustement des versements non
 > confirmés), table **`om_amendements`** (journal), gardes de périmètre v1 (refus si
 > `REJETE`/`ANNULE`, si un état de tranche est en cours de signature, ou si l'état des
-> reliquats est établi/validé), audit `AMEND_OM`. Colonnes `reliquat` et
+> reliquats est établi/validé — garde assouplie en Phase 4 : un état des reliquats en
+> `BROUILLON` / `REJETE` est resynchronisé, seul l'état validé bloque), audit `AMEND_OM`. Colonnes `reliquat` et
 > `versements.montant` passées en **entiers signés** ; `scopeEligiblesLot` exclut les
 > montants ≤ 0 (trop-perçu).
 >
@@ -77,6 +78,18 @@
 >   contrôle concurrent ne signe pas l'état entre la garde et la resynchronisation ;
 > - **état des reliquats au montant payable** (Σ des reliquats positifs) : un trop-perçu
 >   n'abaisse plus le total signé (cf. Phase 4 ci-dessus).
+>
+> **Révisé (octobre 2026, mises à jour de la documentation)** :
+> - **PDF de l'OM amendé** (§4.6) : il était servi depuis le cache d'avant l'amendement
+>   (l'écran télécharge `/pdf/download`, et la clé de cache ne dépendait que des statuts),
+>   et présentait un reliquat ajusté, voire négatif, comme « Reliquat (30 %) ». La clé
+>   compte désormais les amendements (`-AMD{n}`), les libellés suivent la répartition
+>   réelle et le PDF mentionne le dernier amendement ;
+> - **échec d'une génération en file** : il remet aussi les versements `GENERE` en
+>   `EN_ATTENTE`, ce qui lève la garde « fichier en attente de dépôt » (`backend/docs/queues.md`) ;
+> - **signatures** : le PDF de l'OM reprend celles de l'état des avances
+>   (`docs/circuits-validation.md` §7) ; elles restent valables après un amendement,
+>   puisqu'elles portent sur l'avance, qui est figée.
 
 ---
 
@@ -125,6 +138,8 @@ porter qu'un montant **strictement positif**.
 | Amendement survenant… | Traitement |
 |---|---|
 | **Avant** le récapitulatif des avances (OM `IMPORTE`) | Recalcul complet avec la part d'avance (`Parametres::partAvance()`, 70 % par défaut), trivial. **Aucun cas spécial** — équivaut à corriger la retranscription. |
+| État des avances en `BROUILLON` / `REJETE` | Recalcul complet (rien n'est figé) ; le récapitulatif des avances se **resynchronise**. |
+| État des avances en `CONTROLE` / `VISA_DAF` | Refusé : rejeter l'état des avances, amender, puis le rétablir. |
 | **Après** validation des avances, **avant** l'état des reliquats | ⭐ **Cas central** : avance figée, `reliquat = new_total − avance`. |
 | Mission **sans état**, avance déjà payée (`CONFIRME`) | Même règle : l'amendement **engage** l'avance payée, puis seul le reliquat bouge. |
 | État des reliquats en `BROUILLON` / `REJETE` | Autorisé : le récapitulatif se **resynchronise** sur les montants amendés. |
@@ -183,7 +198,8 @@ Body: { nb_jours? , lignes? , motif }
     rouvrirait un versement clos en ignorant le montant déjà retenu → avenant formel, hors
     périmètre v1. Un trop-perçu encore `A_RECOUVRER` (rien retenu) reste amendable ;
   - refus tant qu'un versement de l'OM est **`GENERE`** (fichier en attente de dépôt) :
-    confirmer le lot, ou le passer en `ERREUR` — ses versements redeviennent `EN_ATTENTE` ;
+    confirmer le lot, ou le passer en `ERREUR` — ses versements redeviennent `EN_ATTENTE`.
+    L'échec définitif d'une génération en file a le même effet (`GenererLotPaiementJob::failed`) ;
   - circuit par OM (mission sans état) : une avance déjà **`CONFIRME`** est engagée à
     l'amendement (`avance_engagee`), seul le reliquat absorbe l'écart ;
   - autorisé si l'état est en `BROUILLON` (le récapitulatif se rafraîchit) ou si les
@@ -218,6 +234,29 @@ Body: { nb_jours? , lignes? , motif }
 - `VALIDE` : le **scellé HMAC** protège le document ; l'amendement est **refusé** (avenant
   formel, hors périmètre v1 — décision §7.2).
 
+### 4.6 PDF de l'OM amendé
+
+L'amendement change les montants de l'OM sans changer son statut ni celui de l'état.
+Le PDF de l'OM (`PdfGenerator`) en tient compte :
+
+- **cache** : la clé `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` compte les
+  amendements ; après un amendement, `GET /api/ordres/:id/pdf/download` régénère le PDF au
+  lieu de servir celui d'avant ;
+- **répartition** (`libellesRepartition`) :
+
+  | Situation de l'OM | Libellés |
+  |---|---|
+  | Avance non engagée, ou engagée sans amendement | `Avance (70 %)` / `Reliquat (30 %)` — pourcentage tiré des montants de l'OM, pas du paramètre courant (la part d'avance a pu changer depuis la retranscription) |
+  | Avance engagée et OM amendé, reliquat ≥ 0 | `Avance engagée` / `Reliquat (ajusté par amendement)` |
+  | Reliquat négatif | `Avance engagée` / `Trop-perçu (à recouvrer par retenue sur salaire)` ; l'encadré du total devient « Montant total dû » |
+
+- **mention** : un encadré rappelle le dernier amendement (date, jours avant → après,
+  motif, nombre d'amendements s'il y en a plusieurs) ;
+- **taux journalier** affiché sous le total : per diem seul, **hors transport**.
+
+Les signatures reprises de l'état des avances restent affichées : elles portent sur
+l'avance, que l'amendement ne modifie pas. Tests : `tests/Feature/OmPdfAmendementTest.php`.
+
 ---
 
 ## 5. Conséquences sur l'existant
@@ -234,7 +273,7 @@ Body: { nb_jours? , lignes? , motif }
 | 5 | Générateurs MTN / Moov | Montants > 0 garantis par `scopeEligiblesLot` (seule source des lignes des fichiers) ; pas de contrôle supplémentaire dans les générateurs. |
 | 6 | Migrations | `avance_engagee`, table `om_amendements`, éventuel statut — **additif**. |
 | 7 | Frontend | Détail OM : bouton **Amender** (jours/lignes + motif), **historique**, badges « reliquat ajusté » / « trop-perçu » ; écran **Régularisations**. |
-| 8 | PDF | Réalisé sous deux formes : trop-perçus mentionnés hors total sur l'état des reliquats ; document de retenue (avant / après amendement, motif). |
+| 8 | PDF | Réalisé sous trois formes : trop-perçus mentionnés hors total sur l'état des reliquats ; document de retenue (avant / après amendement, motif) ; PDF de l'OM régénéré après amendement, avec libellés de répartition réels et mention de l'amendement (§4.6). |
 | 9 | Audit | Action `AMEND_OM`. |
 | 10 | Rapports | Réalisé : rapport des trop-perçus (`GET /api/rapports/trop-percus`, à recouvrer vs recouvrés). La distinction per diem initial / ajusté n'est pas faite : les rapports portent les montants courants. |
 | 11 | Idempotence | Garde-fou renforcé : une avance `CONFIRME` n'est **jamais** re-touchée ; aucun amendement tant qu'un versement est `GENERE`. |
@@ -290,5 +329,7 @@ Questions de gestion posées au cadrage, et la réponse retenue :
 | Amendement et gardes | `MissionService::amender()`, `MissionService::exigerAmendementPossible()` |
 | Régularisations et document de retenue | `LotPaiementService::regularisations()`, `PdfGenerator::genererDocumentRetenue()` |
 | Notification du trop-perçu | `NotificationService::tropPercuCree()` |
-| Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest` |
+| PDF de l'OM amendé | `PdfGenerator::donnees()`, `PdfGenerator::libellesRepartition()`, gabarit `pdf.ordre-mission` |
+| Endpoints et permissions | `backend/docs/openapi.yaml` (`POST /ordres/{ordre}/amender`, tag *Paiements* pour les régularisations) |
+| Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest`, `OmPdfAmendementTest` |
 | Revue d'octobre 2026 | `docs/revue-projet-2026-10.md` (§3 n° 3, §4 *Intégrité des paiements*) |

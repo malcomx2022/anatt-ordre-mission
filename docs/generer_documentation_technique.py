@@ -608,9 +608,12 @@ tableau(
 bullet("Couverture par l'état : l'OM doit figurer dans le tableau lignes figé au récapitulatif "
        "(numero = reference_semo) ; un OM REJETE / ANNULE ou un état REJETE ne fournit aucune signature, "
        "et un brouillon n'en montre jamais.")
-bullet("Cache : ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf — le statut de l'état entre dans la clé, "
-       "pour qu'une signature apposée sur l'état régénère le PDF d'un OM resté au même statut. "
-       "Tests : OmPdfSignaturesEtatTest.")
+bullet("Cache : ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf — le statut de l'état et le "
+       "nombre d'amendements entrent dans la clé, pour qu'une signature apposée sur l'état ou un amendement "
+       "régénère le PDF d'un OM resté au même statut. Tests : OmPdfSignaturesEtatTest, OmPdfAmendementTest.")
+bullet("Après un amendement, la répartition affichée suit les montants réels : « Avance engagée », "
+       "« Reliquat (ajusté par amendement) » ou « Trop-perçu (à recouvrer par retenue sur salaire) », "
+       "avec un encadré rappelant le dernier amendement ; le taux journalier affiché exclut le transport.")
 
 h2("4.5 Import en masse des agents (Excel / CSV)")
 tableau(
@@ -1016,7 +1019,7 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "≈ 130 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "565 tests au total (67 fichiers)"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "570 tests au total (68 fichiers)"],
         ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "113 tests / 26 fichiers"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],

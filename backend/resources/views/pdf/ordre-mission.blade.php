@@ -149,14 +149,22 @@
                             <td style="text-align:right">{{ $montant_transport }} FCFA</td>
                         </tr>
                     @endif
-                    <tr><td colspan="3">Avance ({{ $avance_pct }} %)</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
-                    <tr><td colspan="3">Reliquat ({{ $reliquat_pct }} %)</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
+                    <tr><td colspan="3">{{ $avance_libelle }}</td><td style="text-align:right">{{ $avance }} FCFA</td></tr>
+                    <tr><td colspan="3">{{ $reliquat_libelle }}</td><td style="text-align:right">{{ $reliquat }} FCFA</td></tr>
                     <tr class="total-row"><td colspan="3">Total</td><td style="text-align:right">{{ $montant_total }} FCFA</td></tr>
                 </tbody>
             </table>
 
+            @if($amendement)
+                <div class="exonere-box">
+                    Montants ajustés par amendement du {{ $amendement['date'] }} : {{ $amendement['nb_jours_avant'] }} → {{ $amendement['nb_jours_apres'] }} jour(s)
+                    @if($amendement['nombre'] > 1) ({{ $amendement['nombre'] }} amendements) @endif
+                    — {{ $amendement['motif'] }}
+                </div>
+            @endif
+
             <div class="amount-box">
-                <div class="label">Montant total à payer</div>
+                <div class="label">{{ $trop_percu ? 'Montant total dû' : 'Montant total à payer' }}</div>
                 <div class="amount">{{ $montant_total }} FCFA</div>
                 <div class="details">{{ $nb_jours }} jour(s) × {{ $taux_journalier }} FCFA — {{ $categorie }} / {{ $zone }}</div>
             </div>

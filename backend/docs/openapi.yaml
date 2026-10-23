@@ -1249,7 +1249,7 @@ paths:
         Reprend les signatures de l'**état des avances** qui couvre l'OM (même instantané,
         paraphe archivé, code de vérification) ; une signature portée par l'OM reste
         prioritaire. OM `REJETE`/`ANNULE` ou état `REJETE` : aucune signature.
-        Mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf`.
+        Mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` (n = nombre d'amendements).
       x-permission: om.consulter
       parameters: [{ $ref: '#/components/parameters/ordre' }]
       responses:
