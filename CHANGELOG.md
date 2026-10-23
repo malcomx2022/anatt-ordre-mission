@@ -209,6 +209,13 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     `schedule:run` est proposé au ménage, sans doubler la sauvegarde.
   - Étape 4 (1.3) : supprimer sur le serveur les deux Form Requests retirées.
   - Recette (1.3) : contrôle en lecture seule du lien « PDF de l'OM ».
+- **`docs/checklist-post-deploiement.md`** aligné :
+  - Extensions PHP de `composer.lock`.
+  - Sauvegarde planifiée par `schedule:run` **ou** `db:backup`, une seule des deux. `backup.log`
+    n'est écrit que par `schedule:run`.
+  - Renvoi corrigé vers le *Repli B* (et non « voie 3 »).
+  - Deux contrôles 1.3 : lien « PDF de l'OM » sur la fiche, et suppression des Form Requests
+    retirées.
 
 #### Supprimé
 
