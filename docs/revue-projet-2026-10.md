@@ -262,8 +262,9 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 - Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md` à remesurer sur le poste de build.
 - Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` ne sont plus utilisés et
   visent une table `taux_per_diems` disparue (relevé en réécrivant `openapi.yaml`).
-- Deux documents antérieurs à la revue n'ont pas été relus : `docs/deploiement-circuit-validation.md`
-  et `docs/plan-validation-daf-dg.md` (septembre 2026). Le second décrit un circuit DAF/DG par OM
-  qui a été retiré ; à classer comme historique ou à réviser.
+- `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md` (juillet-septembre
+  2026) décrivent le circuit DAF/DG par OM, retiré depuis. Ils sont désormais marqués **historiques**,
+  avec, en tête, ce qui reste valable (migrations, `ComptesCircuitSeeder`, arbitrages client) et ce
+  qui est obsolète (drapeau `WORKFLOW_DOUBLE_VALIDATION`, contrôles sur l'OM).
 - La recette sur l'API réelle et le rejeu du scénario de démo n'ont pas été refaits après les
   correctifs n° 10 à 16 ; ceux-ci sont couverts par des tests Pest.
