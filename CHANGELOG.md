@@ -166,6 +166,25 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   11 et 16). **Scénario de démo rejoué**, §7 « avenant » compris : montants et fichiers conformes au
   document (`docs/revue-projet-2026-10.md` §1).
 
+#### Corrigé (part d'avance aux bornes, 23/10/2026)
+
+- **OM jamais soldé avec une part d'avance à 100 % (ou à 0 %)**. La tranche nulle garde un
+  versement de montant 0, qui n'entre dans aucun fichier et n'est donc jamais confirmé.
+  `LotPaiementService::confirmer` exigeait que **tous** les versements soient `CONFIRME` : l'OM
+  payé en entier restait `VALIDE`. Les versements nuls sont désormais ignorés pour décider du
+  solde. Test dans `SoldeTest` (Pest : 572 tests). Défaut n° 19 de
+  `docs/revue-projet-2026-10.md`.
+
+#### Corrigé (exercice proposé par l'écran Paramètres, 23/10/2026)
+
+- **Exercice par défaut ignorant le mois de début.** Sans année enregistrée, `SettingsView`
+  proposait l'année civile. Avec un début en juillet, en mars 2027, il affichait « 2027-2028 », et le
+  premier enregistrement figeait cet exercice alors que le serveur déterminait « 2026-2027 ». Le
+  défaut est désormais déterminé comme côté serveur (`utils/exercice.ts` → `exerciceDe`, miroir de
+  `Parametres::anneeFiscalePour`). Il suit le mois de début tant que l'année n'est ni enregistrée ni
+  choisie. Tests dans `settings-exercice.spec.ts` (Vitest : 118 tests). Sans effet sur les montants,
+  car aucun traitement ne consomme encore l'exercice. Défaut n° 20 de la revue.
+
 #### Corrigé (guide utilisateur, 23/10/2026)
 
 - **PDF officiel de l'OM inaccessible depuis l'interface** : la fiche de l'OM ne proposait que
@@ -242,6 +261,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     vérifient désormais aussi la **route** (403 avant, 200 après), et plus seulement
     `hasPermission()`.
   - `RoleMiddlewareTest` et `OpenApiTest` ajoutés à la table des tests.
+- **`docs/parametrage-part-avance.md`** confronté au code :
+  - Les valeurs extrêmes décrivent la tranche nulle (versement conservé pour un amendement,
+    jamais dans un fichier, ne retient plus l'OM) et le défaut n° 19.
+  - Tests complétés : `SoldeTest`, `OmPdfAmendementTest` (pourcentage du PDF tiré des montants
+    de l'OM) et la part ignorée une fois l'avance engagée.
+  - Nombre de tests (572) mis à jour dans `CLAUDE.md`, `README.md`, la documentation technique
+    (régénérée) et la revue.
+- **`docs/annee-fiscale.md`** : défaut de l'écran (exercice déterminé), `utils/exercice.ts` et
+  `settings-exercice.spec.ts` ajoutés aux fichiers et tests ; consigne d'exploitation précisée
+  (défaut n° 20). Vitest 118 dans `README.md`, la documentation technique et la revue.
 
 #### Supprimé
 

@@ -94,10 +94,13 @@ class LotPaiementService
                 ->where('statut', '!=', 'CONFIRME')
                 ->update(['statut' => 'CONFIRME', 'date_paiement' => $now]);
 
-            // Un OM dont TOUS les versements sont confirmés passe à SOLDE.
+            // Un OM dont TOUS les versements sont confirmés passe à SOLDE. Un
+            // versement nul (tranche vide : part d'avance à 0 ou 100 %) n'entre
+            // dans aucun fichier : il ne retient pas l'OM.
             foreach ($omIds as $omId) {
                 $resteAConfirmer = Versement::where('ordre_mission_id', $omId)
                     ->where('statut', '!=', 'CONFIRME')
+                    ->where('montant', '!=', 0)
                     ->exists();
 
                 if (! $resteAConfirmer) {

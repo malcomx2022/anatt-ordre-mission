@@ -60,3 +60,25 @@ it('régénère un lot tant qu’il n’est pas confirmé', function () {
         ->and(LotPaiement::find($lot1->id)->statut)->toBe('GENERE');
     expect(Versement::where('type', 'AVANCE')->first()->statut)->toBe('GENERE');
 });
+
+it('solde l’OM quand la tranche restante est nulle (part d’avance à 100 %)', function () {
+    // Part d'avance à 100 % : le reliquat vaut 0. Son versement, créé à la
+    // retranscription, n'entre dans aucun fichier (scopeEligiblesLot exclut les
+    // montants ≤ 0) ; il ne doit pas empêcher l'OM d'être soldé.
+    $agent = Agent::factory()->mtn()->create();
+    $mission = Mission::factory()->create();
+    $om = OrdreMission::factory()->statut('VALIDE')->create([
+        'mission_id' => $mission->id, 'agent_id' => $agent->id,
+        'montant_total' => 135000, 'avance' => 135000, 'reliquat' => 0,
+    ]);
+    foreach (['AVANCE' => 135000, 'RELIQUAT' => 0] as $type => $montant) {
+        Versement::factory()->create([
+            'ordre_mission_id' => $om->id, 'type' => $type, 'montant' => $montant,
+            'operateur' => 'MTN', 'telephone' => $agent->telephone, 'statut' => 'EN_ATTENTE',
+        ]);
+    }
+
+    genererEtConfirmer($this->service, $mission->id, 'AVANCE', $this->user);
+
+    expect($om->fresh()->statut)->toBe('SOLDE');
+});
