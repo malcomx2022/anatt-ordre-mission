@@ -17,7 +17,7 @@ anatt-api/public/            -> racine du sous-domaine api-omsemo.anatt.bj
 
 ## 0. Prérequis (sur votre PC)
 
-**PHP 8.4+**, Composer et Node 18+ installés en local (pour préparer les artefacts).
+**PHP 8.4+**, Composer et **Node 20.19+ ou 22.12+** (exigé par Vite 8 ; la CI utilise Node 22) installés en local (pour préparer les artefacts).
 Le serveur mutualisé n'aura besoin **ni de Composer ni de Node** : on y envoie le code déjà prêt,
 mais il devra lui aussi tourner en **PHP 8.4** (cf. §4).
 
@@ -46,12 +46,19 @@ Copiez la valeur `base64:...` : elle ira dans `APP_KEY` du `.env` serveur.
 Choisissez **une** option, puis exportez en SQL.
 
 **Option A — base propre (recommandé en prod)** : schéma + référentiels + 1 super admin, sans les données de démonstration.
+
+Renseignez d'abord dans le `backend/.env` **local** le super admin définitif : `SUPERADMIN_EMAIL`,
+`SUPERADMIN_NAME` et surtout `SUPERADMIN_PASSWORD`. En local, `UserSeeder` retombe sinon sur le mot
+de passe de développement `password`, qui partirait tel quel dans le dump. Comme la base est seedée
+en environnement local, `UserSeeder` crée aussi les sept comptes de démo (`admin@`, `gestion@`…).
+Ils sont à supprimer une fois en ligne. Les données de démonstration (agents, missions, paiements)
+ne viennent pas : elles ne sont produites que par `db:seed` sans `--class`.
 ```powershell
 # Sur une base locale dédiée (ex. anatt_export)
 php artisan migrate:fresh
 php artisan db:seed --class=ZoneSeeder
 php artisan db:seed --class=BaremeSeeder
-php artisan db:seed --class=UserSeeder      # crée le SUPER_ADMIN (+ comptes démo à supprimer ensuite)
+php artisan db:seed --class=UserSeeder      # SUPER_ADMIN (SUPERADMIN_*) + comptes démo à supprimer ensuite
 ```
 
 **Option B — base de démonstration complète** (missions, paiements, audit) :
@@ -76,7 +83,7 @@ L'URL de l'API est **modifiable après déploiement** via `runtime-config.js` (p
 > `dist/` n'est **pas** versionné dans le dépôt (il est reconstruit à la demande,
 > comme `vendor/` côté backend). Deux façons de l'obtenir :
 
-**Option 1 — build local** (nécessite Node 18+) :
+**Option 1 — build local** (nécessite Node 20.19+ ou 22.12+) :
 ```powershell
 cd frontend
 npm ci
@@ -108,7 +115,12 @@ Dans les deux cas, `dist/` contient : `index.html`, `assets/`, les favicons,
 2. Réglez sa **Document Root** sur `anatt-api/public`
    (créez le dossier `anatt-api` à la racine du compte, **au même niveau** que `public_html`, pas dedans).
 3. **cPanel > Select PHP Version** : choisissez **PHP 8.4** et activez les extensions :
-   `mbstring, openssl, pdo_mysql, tokenizer, xml, ctype, json, bcmath, fileinfo, gd, zip, curl`.
+   `mbstring, openssl, pdo_mysql, tokenizer, xml, dom, simplexml, xmlreader, xmlwriter, ctype, json,
+   iconv, fileinfo, gd, zip, zlib, bcmath, curl`.
+   `dom`, `gd` et `iconv` servent aux PDF (DomPDF). `zip`, `xmlreader`, `xmlwriter` et `simplexml`
+   servent aux fichiers Moov `.xlsx`, à l'import Excel des agents et aux exports de rapports. `zlib`
+   sert aux sauvegardes `.sql.gz` et à leur restauration. Ces extensions sont exigées par
+   `composer.lock`. La plupart sont actives par défaut : vérifiez seulement qu'aucune n'est décochée.
 
 > ⚠️ **PHP 8.4 est un minimum, pas une préférence.** `composer.lock` épingle six paquets de
 > production qui exigent PHP ≥ 8.4 (`symfony/clock`, `css-selector`, `event-dispatcher`, `string`,
@@ -210,8 +222,15 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 ```bash
 # cPanel > Cron Jobs. Utilisez le chemin EXPLICITE de la version PHP sélectionnée
 # (/usr/local/bin/php est un alias qui pointe souvent vers une autre version).
-# Sauvegarde quotidienne à 02h00
-0 2 * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan db:backup --compress
+
+# Planificateur Laravel, chaque minute (recommandé) : il déclenche ce que routes/console.php
+# planifie — db:backup --compress à 02:00 (rétention 30 jours, log storage/logs/backup.log)
+# et la purge quotidienne des jetons Sanctum expirés (sanctum:prune-expired).
+* * * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan schedule:run >> /dev/null 2>&1
+
+# … OU, si vous ne voulez que la sauvegarde : une seule ligne à 02h00 (pas de purge des jetons).
+# N'activez pas les deux : la sauvegarde serait prise deux fois.
+# 0 2 * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan db:backup --compress
 
 # (si QUEUE_CONNECTION=database) traiter les TROIS files chaque minute — sans --queue,
 # seule « default » est traitée et les gros lots ne sont jamais générés
@@ -219,6 +238,8 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 ```
 
 > Files d'attente, modes `sync`/`database`/`redis` et comportement en cas d'échec : `backend/docs/queues.md`.
+> Les jetons expirés sont refusés même sans la purge (`SANCTUM_EXPIRATION`). La purge ne fait que
+> vider la table `personal_access_tokens`.
 
 > `db:backup` appelle `mysqldump` via `exec()`. Certains mutualisés désactivent `exec` ou
 > n'exposent pas `mysqldump` : renseignez alors `DB_DUMP_BINARY` dans le `.env`, et si la
@@ -478,7 +499,7 @@ Ce qui change pour la mise à jour d'une instance en 1.2 (revue d'octobre 2026) 
 | **`vendor/`** | **Inchangé** (`composer.lock` non modifié) : pas de ré-upload. |
 | **`.env`** | Facultatif : `DB_RESTORE_BINARY` si le client `mysql` n'est pas dans le PATH (§ 5.1, § 9.1). |
 | **Fichiers de paiement** | Les **nouveaux** fichiers sont rangés dans `storage/app/private/paiements/{mission_id}/`. Les anciens lots gardent leur chemin enregistré et restent re-téléchargeables : **ne rien déplacer**. ⚠️ Avant la 1.3, deux missions de **même objet** partageaient le même nom de fichier : le fichier de la plus ancienne a pu être écrasé par celui de l'autre. Contrôlez le contenu d'un tel fichier avant de le redéposer. |
-| **SPA** | À redéployer (§ F) : suivi des gros lots, lots complémentaires, boutons Valider / Rejeter du circuit par OM, page de maintenance, restauration des sauvegardes. |
+| **SPA** | À redéployer (§ F) : suivi des gros lots, lots complémentaires, boutons Valider / Rejeter du circuit par OM, page de maintenance, restauration des sauvegardes, lien « PDF de l'OM » sur la fiche de l'OM (seul accès au PDF officiel). |
 | **Comportement** | L'état des reliquats est désormais signé au montant **payable** : un état des reliquats déjà **validé** garde son montant scellé ; seuls les récapitulatifs établis ou rafraîchis après la mise à jour suivent la nouvelle règle. |
 | **PDF de l'OM** | Il reprend les signatures de l'état des avances qui couvre l'OM (même code de vérification) et, après un amendement, affiche la répartition réelle (« Avance engagée », « Reliquat (ajusté par amendement) » ou « Trop-perçu ») avec le rappel de l'amendement ; le taux journalier affiché exclut le transport. Code et gabarit seuls (`app/`, `resources/views/`), **aucune migration**. ➜ **Videz `storage/app/private/ordres/`** après la mise à jour (Gestionnaire de fichiers : sélectionner le contenu du dossier, puis *Delete*) : un OM sans état ni amendement garde le même nom de fichier en cache, et son ancien PDF serait encore servi. Ce dossier n'est qu'un cache : les PDF se régénèrent au premier téléchargement. |
 | **File d'attente** | Rien à faire en `QUEUE_CONNECTION=sync` (défaut). En `database`, la tâche Cron `queue:work` doit nommer les trois files (`--queue=paiements,etats,default`, §9) : l'ancienne ligne ne traitait que `default`. |

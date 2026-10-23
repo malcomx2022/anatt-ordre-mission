@@ -193,6 +193,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     - `QUEUE_CONNECTION` : `sync` en production.
     - Noms réels des stores et composables.
     - `GenererEtatJob` = export de rapports.
+- **`DEPLOY-CPANEL.md`** confronté au code :
+  - **Node 20.19+ ou 22.12+** au lieu de « Node 18+ », version exigée par Vite 8 (`engines`). Même
+    correction dans le `README.md`.
+  - Extensions PHP alignées sur `composer.lock` : ajout de `dom`, `simplexml`, `xmlreader`,
+    `xmlwriter`, `iconv` et `zlib`, avec leur usage (PDF, `.xlsx`, sauvegardes `.gz`).
+  - §1.3 Option A : renseigner `SUPERADMIN_*` avant le seed. Sans cela, le super admin part dans le
+    dump avec le mot de passe de développement `password`.
+  - §9 : la tâche Cron recommandée est `schedule:run`. Elle couvre la sauvegarde de 02:00 **et** la
+    purge des jetons Sanctum, que la seule ligne `db:backup` omettait.
+  - Notes de version 1.3 : le lien « PDF de l'OM » figure parmi les changements du SPA.
 
 #### Supprimé
 
