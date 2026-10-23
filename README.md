@@ -18,7 +18,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 ## Démarrage rapide (Windows)
 
-Prérequis : **WAMP** (MySQL démarré), **PHP 8.4+**, **Node 18+**, **Composer**.
+Prérequis : **WAMP** (MySQL démarré), **PHP 8.4+**, **Node 20.19+ ou 22.12+** (Vite 8), **Composer**.
 
 > PHP 8.4 est un **minimum** : `composer.lock` épingle Symfony 8 et `spatie/laravel-activitylog`,
 > qui l'exigent. Sous 8.3, Composer refuse de charger l'autoloader. Même contrainte en production

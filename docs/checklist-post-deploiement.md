@@ -24,19 +24,19 @@ Le back-end doit répondre **avant** tout test du SPA.
 - [ ] **`.env` serveur correct** : `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` renseignée, `APP_URL=https://api-omsemo.anatt.bj`, `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`.
 - [ ] **Base de données** : `DB_DATABASE / DB_USERNAME / DB_PASSWORD` valides et **schéma à jour**.
 - [ ] **Aucune migration en attente** : dans phpMyAdmin, `SELECT migration FROM migrations ORDER BY id;` contient bien **tous** les noms de fichiers de `backend/database/migrations/` (sans `.php`). Un nom manquant = migration non jouée. Voir `DEPLOY-CPANEL.md` § *Mise à jour*, B et D.
-- [ ] **PHP 8.4** sélectionné (minimum imposé par `composer.lock` — sous 8.3 l'API renvoie 500 sur tous les appels, cf. `DEPLOY-CPANEL.md` §4), extensions actives : `mbstring, openssl, pdo_mysql, tokenizer, xml, ctype, json, bcmath, fileinfo, gd, zip, curl`.
+- [ ] **PHP 8.4** sélectionné (minimum imposé par `composer.lock` — sous 8.3 l'API renvoie 500 sur tous les appels, cf. `DEPLOY-CPANEL.md` §4), extensions actives : `mbstring, openssl, pdo_mysql, tokenizer, xml, dom, simplexml, xmlreader, xmlwriter, ctype, json, iconv, fileinfo, gd, zip, zlib, bcmath, curl`. Cette liste est celle qu'exige `composer.lock` : `dom`, `gd` et `iconv` pour les PDF, `zip` et `xml*` pour les fichiers `.xlsx`, `zlib` pour les sauvegardes `.gz` (`DEPLOY-CPANEL.md` §4).
 - [ ] **Permissions** : `storage/` (récursif) et `bootstrap/cache/` en écriture (755/775) — sinon erreur 500 au premier appel.
 - [ ] **Caches applicatifs vidés** après changement de code ou de `.env` : `php artisan optimize:clear` (ou `config:clear` + `view:clear`).
 - [ ] **HTTPS (AutoSSL)** actif sur `api-omsemo.anatt.bj`.
 - [ ] **File d'attente cohérente** : avec `QUEUE_CONNECTION=sync` (défaut du gabarit de production), rien à faire. Avec `database`, la tâche Cron `queue:work --queue=paiements,etats,default --stop-when-empty` (chaque minute) est **active** et nomme bien les **trois files** — sinon les gros lots restent « en file d'attente » et l'écran finit par afficher « la file de traitement ne répond pas » (`DEPLOY-CPANEL.md` §9, `backend/docs/queues.md`).
-- [ ] **Sauvegarde planifiée** : la tâche Cron `db:backup --compress` (02:00) existe ; le lendemain, un fichier daté apparaît dans `anatt-api/storage/app/backups/` (et `storage/logs/backup.log` ne contient pas d'erreur `mysqldump`/`exec`).
+- [ ] **Sauvegarde planifiée** : une tâche Cron la déclenche. La ligne recommandée est `schedule:run` chaque minute : elle lance la sauvegarde de 02:00 et la purge quotidienne des jetons Sanctum expirés. L'ancienne ligne `db:backup --compress` à 02:00 suffit pour la sauvegarde seule. **Une seule des deux**, sinon la sauvegarde est prise deux fois (`DEPLOY-CPANEL.md` §9). Le lendemain, un fichier daté apparaît dans `anatt-api/storage/app/backups/`. Avec `schedule:run`, la sortie de la sauvegarde va dans `storage/logs/backup.log`, qui ne doit contenir aucune erreur `mysqldump`/`exec`. La ligne `db:backup` seule n'écrit pas ce fichier : renseignez l'adresse e-mail du Cron Job pour recevoir la sortie.
 
 > Sur mutualisé sans SSH, les commandes `artisan` passent par une **tâche Cron ponctuelle** (voie la plus
 > largement disponible) ou le **Terminal cPanel** s'il est activé, avec le chemin **explicite** de la
 > version PHP sélectionnée — `/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan …`
 > et non l'alias `/usr/local/bin/php`, qui pointe souvent vers une autre version. Si l'hébergeur n'offre
 > ni l'un ni l'autre, la base se met à jour par **migration à blanc en local puis réimport**
-> (`DEPLOY-CPANEL.md` § *Mise à jour*, D, voie 3).
+> (`DEPLOY-CPANEL.md` § *Mise à jour*, D, *Repli B*).
 
 ---
 
@@ -122,6 +122,8 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **PDF signés** : sur une mission validée par le circuit, le PDF de l'**état** (« Télécharger l'état ») porte les trois signatures, le numéro et les paraphes ; le PDF d'un **OM** de cette mission reprend les mêmes signatures (même code de vérification). Un OM rejeté n'en porte aucune (cf. `docs/workflows-par-profil.md` §5).
 - [ ] **PDF d'un OM avec transport** (sans état ni amendement) : la ligne « jour(s) × taux » sous le total affiche le taux du barème, **hors** transport. Un taux gonflé = le cache des PDF d'OM n'a pas été vidé (section 04).
 - [ ] **Liste des sauvegardes** (`/admin/sauvegardes`) : la plus récente est en tête, y compris d'un mois sur l'autre.
+- [ ] **Accès au PDF de l'OM** : la fiche d'un OM (`/ordres/:id`) propose le lien **« PDF de l'OM »** à côté de « Historique », y compris pour un OM validé. Il ouvre l'aperçu (`/ordres/:id/pdf`), et **Télécharger PDF** produit le document. « Télécharger le brouillon » n'apparaît plus une fois l'OM validé ou soldé.
+- [ ] **Fichiers retirés** : `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` ont été effacés du serveur, car l'envoi FTP ne les supprime pas (`docs/runbook-mise-a-jour-cron.md`, étape 4). S'ils restent, rien ne casse : ils ne sont jamais chargés.
 
 #### Sur l'instance de recette uniquement
 

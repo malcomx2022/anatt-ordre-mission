@@ -19,7 +19,8 @@
 
 - [ ] **PHP 8.4** sélectionné dans *Select PHP Version* — **minimum imposé**, pas une préférence :
       sous PHP 8.3 l'API renvoie 500 sur tous les appels (`DEPLOY-CPANEL.md` §4).
-- [ ] Nouveau `frontend/dist/` récupéré (build local, ou artefact CI **`frontend-dist`** du run `main`).
+- [ ] Nouveau `frontend/dist/` récupéré : artefact CI **`frontend-dist`** du run `main`, ou build local
+      (`npm ci && npm run build`, **Node 20.19+ ou 22.12+** exigé par Vite 8).
 - [ ] Nouveau code backend prêt à envoyer.
 - [ ] `vendor/` régénéré **seulement si `composer.lock` a changé** (`composer install --no-dev
       --optimize-autoloader`, puis envoi zippé — cf. [`UPLOAD-VENDOR.md`](../UPLOAD-VENDOR.md)).
@@ -43,8 +44,9 @@
 - [ ] **Réglages et paraphes** — télécharger `anatt-api/storage/app/settings.json` et
       `anatt-api/storage/app/private/signatures/` : ils ne sont pas dans le dump de la base
       (`DEPLOY-CPANEL.md` § *Mise à jour*, A.4).
-- [ ] **Relever les tâches Cron permanentes** (cPanel > Cron Jobs) : sauvegarde quotidienne
-      `db:backup` à 02:00 et, si `QUEUE_CONNECTION=database`, `queue:work` chaque minute. Elles
+- [ ] **Relever les tâches Cron permanentes** (cPanel > Cron Jobs) : planificateur `schedule:run`
+      chaque minute (sauvegarde de 02:00 + purge des jetons) **ou** l'ancienne ligne `db:backup` à 02:00,
+      et, si `QUEUE_CONNECTION=database`, `queue:work` chaque minute. Elles
       **restent en place** pendant toute l'opération ; seules les tâches temporaires de ce runbook
       seront créées puis supprimées.
       **1.3** : si la tâche `queue:work` existe, vérifiez qu'elle nomme les trois files
@@ -111,6 +113,10 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 
 - [ ] Code envoyé.
 - [ ] `vendor/` réenvoyé **uniquement** si `composer.lock` a changé.
+- [ ] **1.3** : supprimer par le Gestionnaire de fichiers
+      `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php`.
+      Ces fichiers ont été retirés du dépôt, mais un envoi FTP écrase sans jamais rien effacer.
+      Laissés en place, ils restent inertes : aucune route ne les charge.
 
 > Le code doit être en place **avant** de migrer : les fichiers de migration que vous venez
 > d'envoyer sont précisément ce que l'étape 5 exécutera.
@@ -194,6 +200,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       `/admin/sauvegardes` propose **Télécharger** et **Restaurer**. Ne générez **aucun** fichier de
       paiement et ne restaurez **rien** pour tester : ces contrôles-là se font en recette (section
       *06 › Sur l'instance de recette uniquement* de la checklist).
+- [ ] **1.3** : ouvrir la fiche d'un OM existant. Le lien **« PDF de l'OM »** apparaît dans l'en-tête,
+      à côté de « Historique », et ouvre l'aperçu. **Télécharger PDF** produit le document, régénéré
+      puisque le cache a été vidé à l'étape 6. Ce contrôle ne modifie aucune donnée.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu
       (version 1.3 : voir la section *06* de la checklist et les *Notes de version 1.3* de
@@ -205,8 +214,13 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 ## 9 · Ménage
 
 - [ ] Toutes les tâches Cron temporaires supprimées (étapes 3, 5a, 5b).
-- [ ] Tâches Cron **permanentes** toujours présentes (`db:backup` 02:00, `queue:work
-      --queue=paiements,etats,default` le cas échéant) ; le lendemain, un nouveau fichier daté apparaît dans `anatt-api/storage/app/backups/`.
+- [ ] Tâches Cron **permanentes** toujours présentes (`schedule:run` chaque minute ou `db:backup` 02:00,
+      `queue:work --queue=paiements,etats,default` le cas échéant). Le lendemain, un nouveau fichier
+      daté apparaît dans `anatt-api/storage/app/backups/`.
+- [ ] *(Facultatif)* Si seule la ligne `db:backup` existe, la remplacer par
+      `* * * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan schedule:run >> /dev/null 2>&1`.
+      Elle ajoute la purge quotidienne des jetons Sanctum expirés (`DEPLOY-CPANEL.md` §9). **Ne gardez
+      pas les deux**, sinon la sauvegarde est prise deux fois.
 - [ ] `/home/anatt/php-version.log`, `migration-status.log`, `migration-run.log` supprimés.
 - [ ] Sauvegardes de l'étape 1 archivées hors du serveur.
 
