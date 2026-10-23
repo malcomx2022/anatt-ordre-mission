@@ -64,6 +64,7 @@ it('refuse la lecture de la matrice à un profil sans utilisateurs.gerer', funct
 it('personnalise un profil et applique le changement immédiatement', function () {
     $lecteur = User::factory()->lecteur()->create();
     expect($lecteur->hasPermission('audit.consulter'))->toBeFalse();
+    $this->actingAs($lecteur->fresh())->getJson('/api/audit')->assertForbidden();
 
     $reponse = $this->actingAs(User::factory()->superAdmin()->create())
         ->putJson('/api/admin/roles/LECTEUR/permissions', [
@@ -77,6 +78,9 @@ it('personnalise un profil et applique le changement immédiatement', function (
 
     // Nouvelle résolution : le LECTEUR a désormais accès à l'audit.
     expect($lecteur->fresh()->hasPermission('audit.consulter'))->toBeTrue();
+
+    // Et la route l'ouvre dès la requête suivante, sans reconnexion (cache purgé à l'écriture).
+    $this->actingAs($lecteur->fresh())->getJson('/api/audit')->assertOk();
 });
 
 it('journalise chaque édition de la matrice', function () {

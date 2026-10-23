@@ -232,6 +232,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     l'agent financier constate le recouvrement.
   - Accès au PDF de l'OM par le lien « PDF de l'OM ».
   - Menus du contrôleur et de l'ADMIN précisés : l'ADMIN n'a pas « Retranscrire ».
+- **`docs/rbac-flexible.md`** confronté au code (composants, routes, permissions, audit, regex :
+  conformes) :
+  - *Prise d'effet* corrigée. Côté **serveur**, une édition de la matrice ou d'un override
+    s'applique **dès la requête API suivante**, sans reconnexion (cache purgé, droits résolus à
+    chaque requête). Seuls le menu et les boutons attendent le login ou le rafraîchissement de
+    `/auth/me/permissions`.
+  - Les tests « applique … immédiatement » (`RolePermissionTest`, `UserPermissionTest`)
+    vérifient désormais aussi la **route** (403 avant, 200 après), et plus seulement
+    `hasPermission()`.
+  - `RoleMiddlewareTest` et `OpenApiTest` ajoutés à la table des tests.
 
 #### Supprimé
 

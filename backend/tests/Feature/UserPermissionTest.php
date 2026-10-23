@@ -85,6 +85,10 @@ it('applique les overrides immédiatement', function () {
     $frais = $lecteur->fresh();
     expect($frais->hasPermission('audit.consulter'))->toBeTrue()
         ->and($frais->hasPermission('om.consulter'))->toBeFalse();
+
+    // Les routes suivent dès la requête suivante, sans reconnexion.
+    $this->actingAs($lecteur->fresh())->getJson('/api/audit')->assertOk();
+    $this->actingAs($lecteur->fresh())->getJson('/api/ordres')->assertForbidden();
 });
 
 it('journalise chaque édition des overrides', function () {
