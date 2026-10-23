@@ -175,6 +175,38 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   solde. Test dans `SoldeTest` (Pest : 572 tests). Défaut n° 19 de
   `docs/revue-projet-2026-10.md`.
 
+#### Documentation — revue au 23/10/2026, fin de journée
+
+- **`docs/revue-projet-2026-10.md`** mis à jour après la PR #152 :
+  - en-tête : défauts n° 10 à 22 et leur origine ;
+  - tableau des résultats : CI 5/5 sur les PR #132 à #152 ;
+  - §5 et §6 : PR #143 à #152 ;
+  - exploitation : aucune migration de plus pour les correctifs n° 17 à 22 ;
+  - dette : tailles de `vendor/` retirées.
+- **Rejeu sur l'API réelle** (base SQLite neuve, `QUEUE_CONNECTION=sync`) :
+  - recette 83/83 ;
+  - 9/9 sondes supplémentaires : OM soldé avec une part d'avance à 100 % (n° 19), amendement
+    refusé sur un reliquat payé (n° 22) ;
+  - scénario de démo conforme : fichiers MTN/Moov, lot complémentaire `HDR,SARALY,1,199500`,
+    avenant 171 000 puis −54 000.
+- **`AGENTS.md`** :
+  - environnement : PHP 8.4.x 64 bits (borne `<8.5` de PhpSpreadsheet), Node 20.19+ / 22.12+,
+    Playwright avec le *headless shell* sans écran ;
+  - vérifications : Vitest en mode surveillance par défaut, Pest ~573 tests ;
+  - prise d'effet immédiate des droits côté serveur ;
+  - file `sync` en production ;
+  - pièges des correctifs n° 17, 19, 20, 21 et 22 ;
+  - Cron `schedule:run`.
+- **`README.md`** confronté au code :
+  - PHP 8.4.x 64 bits (8.5 non pris en charge : PhpSpreadsheet `<8.5.0`) ;
+  - comptes de démonstration seedés seulement en `APP_ENV=local`/`testing` ;
+  - `start-dev.ps1 -NoWorker` (2 fenêtres) et `QUEUE_CONNECTION=database` de `.env.example` ;
+  - SOLDE malgré une tranche nulle, lot complémentaire proposé, refus d'amendement (reliquat payé,
+    trop-perçu recouvré, fichier en attente de dépôt) ;
+  - Cron `schedule:run` (sauvegarde + `sanctum:prune-expired`), file `sync` en production ;
+  - Playwright sans écran ; structure et tableau de documentation complétés (`AGENTS.md`,
+    documents historiques, maquettes HTML).
+
 #### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
 
 - **Amendement accepté sur un reliquat déjà payé.** Sur une mission **sans état**, un OM dont le

@@ -18,9 +18,13 @@ High-signal notes for OpenCode sessions in this repo.
   - sidebar/menu permissions: `frontend/src/components/shared/navigation.ts`
 
 ## Environment requirements
-- PHP **8.4+** is mandatory (not a preference): `composer.lock` pins Symfony 8 / spatie packages; under 8.3 Composer's platform check fails and every API call returns 500.
+- PHP **8.4.x, 64-bit** is mandatory, neither 8.3 nor 8.5:
+  - `composer.lock` pins Symfony 8 / spatie (≥ 8.4), so under 8.3 Composer's platform check fails and every API call returns 500;
+  - `phpoffice/phpspreadsheet` 1.30.2 declares `php <8.5.0`, so `composer install` refuses the lock under 8.5;
+  - `platform_check.php` only checks the minimum and 64-bit, so a server on 8.5 would boot outside the supported range.
+- Node **20.19+ or 22.12+** (Vite 8 `engines`; CI uses Node 22).
 - Backend tests run without a `.env`: `phpunit.xml` provides a test `APP_KEY` (phpdotenv then emits harmless warnings, exit code stays 0).
-- Playwright with an already-installed Chromium of another version: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:e2e`.
+- Playwright with an already-installed Chromium of another version: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:e2e`. In a container without a display, point it to the **headless shell** (e.g. `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`) and add `--project=chromium` like CI does; the full `chrome` binary fails with "Missing X server".
 
 ## Local dev commands (Windows-first)
 - Preferred boot: `./start-dev.ps1` (or first run `./start-dev.ps1 -Install -Fresh`), stop with `./stop-dev.ps1`.
@@ -30,13 +34,13 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~570 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, ~573 tests)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
   - `cd frontend && npm run lint:check` (check only; `npm run lint` auto-fixes)
   - `cd frontend && npm run type-check`
-  - `cd frontend && npx vitest run` (or `npm run test:unit -- src/__tests__/navigation.spec.ts` for the RBAC net)
+  - `cd frontend && npx vitest run` (or `npx vitest run src/__tests__/navigation.spec.ts` for the RBAC net). Plain `npm run test:unit` starts **watch mode** and never returns: add `-- --run`.
   - `cd frontend && npm run build` (includes type-check via script)
   - `cd frontend && npm run test:e2e` (Playwright critical path, API mocked)
 - CI (`.github/workflows/ci.yml`) runs Lint, Pest, Vitest + type-check, Playwright and the `frontend-dist` build on every PR.
@@ -56,14 +60,17 @@ High-signal notes for OpenCode sessions in this repo.
 - Pagination: use `$this->getPerPage($request[, $default])` (bounded 5–100), never a raw `per_page`.
 - Dates in the SPA: build `YYYY-MM` with `moisLocal()` (`utils/benin.ts`), never `toISOString()` (UTC shifts the month in Benin, UTC+1).
 - The permission matrix is cached with `rememberForever` (`rbac.matrice`): any code path that writes `role_permissions` (or replaces the DB, like `db:restore`) must call `PermissionRepository::vider()`.
+- Permission changes (matrix or user overrides) take effect server-side on the **next API request**: Gates resolve rights per request, and `User::permissions()` is memoized per request only. Only the SPA menu/buttons wait for login or `/auth/me/permissions`. In tests, use `actingAs($user->fresh())` after a change, because the memo lives on the model instance.
 - RBAC "ordonnateur/payeur" separation (`om.approuver` vs `paiements.generer|confirmer`) is enforced on profiles, on user overrides AND on every member's effective rights when a profile is edited or reset (`RoleController`).
 
 ## Payments/async gotchas
 - Async generation threshold is `config('paiement.async_seuil')` (default 50) in `backend/config/paiement.php`; above it `POST /paiements/lots/generer` returns 202 + `tracking_id` and the SPA polls `/paiements/lots/job/:id`.
-- Async jobs only progress if worker is running; local default queue connection is `database` (`backend/config/queue.php`, `backend/.env`).
+- Async jobs only progress if worker is running; local default queue connection is `database` (`backend/config/queue.php`, `backend/.env`). Production on cPanel runs `QUEUE_CONNECTION=sync` (`backend/.env.production.example`), so jobs run inside the request.
 - Payment file formats are strict (`.txt` MTN, `.xlsx` Moov); avoid "cleanup" edits to generators without running payment tests.
 - Files live on the `local` disk = `storage/app/private/`, one folder per mission: `paiements/{mission_id}/{slug}_{TRANCHE}[_COMPL{n}].{txt|xlsx}`. `lots_paiement.nom_fichier` stores that path (old lots keep their old path).
 - A lot is keyed by mission × tranche × operator × **`sequence`**. A CONFIRME lot is never rewritten: a versement that becomes payable later goes into the next sequence (complementary lot). `LotPaiementResource` must expose `sequence` (the UI badge depends on it).
+- `PaiementGeneration.vue` must **not** block generation just because the latest lot is CONFIRME. It blocks only when the preview has no payable line; otherwise it offers "Générer le lot complémentaire" (defect n° 21: the server supported complementary lots, the screen hid them). `GET /paiements/lots` orders by `created_at` then `id`.
+- An OM goes SOLDE when its last versement is confirmed (`LotPaiementService::confirmer`). Zero-amount versements (empty tranche, `partAvance` 0 or 100) are ignored there, since they never enter a file (n° 19). An `A_RECOUVRER` trop-perçu still holds the OM.
 - Eligibility gate is `Versement::scopeEligiblesLot`: excludes CONFIRME, ANNULE, A_RECOUVRER, RECOUVRE, amounts ≤ 0, versements carried by a CONFIRME lot, and requires the OM VALIDE + the état OF ITS TRANCHE VALIDE. `FileGenerator::exigerEtatValide` is a second barrier — keep both.
 - Marking a lot ERREUR puts its versements back to EN_ATTENTE with the agent's CURRENT phone/operator.
 - A mission has TWO payment states (`etats_paiement`, one per tranche AVANCE/RELIQUAT), each with its own full validation circuit; reliquat état is refused until the avance état is VALIDÉ. A versement is eligible only when the état OF ITS TRANCHE is valid (missions without any état = legacy OM-level fallback, `/ordres/:id/valider|rejeter`).
@@ -71,15 +78,19 @@ High-signal notes for OpenCode sessions in this repo.
 - The reliquat état is signed at the PAYABLE amount (sum of positive reliquats); trop-perçus (negative reliquats) are shown apart on the PDF, never subtracted from the signed total.
 - Validating the avance état propagates VALIDE to the mission's OM except SOLDE/ANNULE/REJETE; rejecting an OM sets its EN_ATTENTE versements to ANNULE.
 - The closing "état général" (avances + reliquats) is NOT an entity: `EtatPaiementPdf::telechargerFinal()` synthesizes it from the two sealed snapshots once BOTH tranches are VALIDE (422 otherwise) — no third circuit, no migration.
+- Fiscal year: the SPA default (`SettingsView`) is the *determined* current exercise (`utils/exercice.ts` → `exerciceDe`, mirror of `Parametres::anneeFiscalePour`), not the calendar year (n° 20). No screen or report consumes the exercise yet.
 - The avance/reliquat split is paramétrable via `GET/PUT /api/admin/settings` (SUPER_ADMIN only, key `partAvance`, int 0–100, default 70). Read publicly at `GET /api/admin/parametres/part-avance`.
 
 ## Amendments (avenants)
-- `MissionService::amender`: refused if the OM has a GENERE versement (file awaiting deposit), if an état is CONTROLE/VISA_DAF, if the reliquat état is VALIDE, or if a trop-perçu is RECOUVRE. États are read with `lockForUpdate`.
+- `MissionService::amender`: refused if the OM has a GENERE versement (file awaiting deposit), if an état is CONTROLE/VISA_DAF, if the reliquat état is VALIDE, if the RELIQUAT versement is already CONFIRME, or if a trop-perçu is RECOUVRE. États are read with `lockForUpdate`.
+  - The CONFIRME-reliquat case only arises on missions without état (n° 22). `reventilerVersements` never rewrites a CONFIRME versement, so amending would desync the OM from what was paid.
+  - The SPA hides "Amender" for a SOLDE OM, but the server guard is what counts.
+- "Last amendment" = order by `amende_le` then `id` (two amendments can share a second). The same order applies to the OM PDF box, the retenue document motif and the fiche journal (n° 17).
 - Once `avance_engagee` is set, only the reliquat moves (`reliquat = total − avance_engagee`, may go negative → versement A_RECOUVRER). On the per-OM circuit, a CONFIRME avance is engaged at amendment time.
 - Per diem with zero billed days keeps the transport; only `prise_en_charge_tiers` (exonération) zeroes everything.
 
 ## Backups
-- `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.
+- `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`, together with `sanctum:prune-expired`; on cPanel the recommended Cron line is `schedule:run` every minute) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.
 - Tests mock `Artisan::call` for the HTTP restore; `BackupControllerTest` also runs `db:restore` end-to-end with a fake POSIX `mysql` script (skipped on Windows). A real MySQL restore is never exercised in CI.
 - `db:restore` purges the cached permission matrix after success. The dump covers the DB only: `storage/app/settings.json` (partAvance, fiscal year, SMTP, signatories), paraphes (`storage/app/private/signatures/`) and generated files live on disk and are neither backed up nor restored.
 

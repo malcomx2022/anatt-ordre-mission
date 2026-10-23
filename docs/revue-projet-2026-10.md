@@ -8,13 +8,17 @@ Revue du dépôt à l'état `92fc7ef` (fusion de la PR #124), suivie de trois ca
 
 Environnement de test : PHP 8.4.27, Node 22, Chromium.
 
-> **État au 23/10/2026.** Les correctifs ont été livrés en trois passes (PR #125 à #131), puis la
-> documentation a été confrontée au code document par document (PR #132 à #144). Cette seconde
-> étape a fait apparaître sept défauts de plus (§3 n° 10 à 16), corrigés au fil de l'eau ; le rejeu
-> final de la recette et du scénario de démo en a trouvé un autre (n° 17), la relecture finale du guide
-> un dernier (n° 18). Tout est
-> fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la colonne
-> « 23/10 » après la PR #142.
+> **État au 23/10/2026, fin de journée.** Les correctifs ont été livrés en trois passes (PR #125 à
+> #131), puis la documentation a été confrontée au code document par document (PR #132 à #152).
+> Cette seconde étape a fait apparaître treize défauts de plus, tous corrigés avec un test :
+> - n° 10 à 16 lors de la relecture des documents ;
+> - n° 17 au rejeu de la recette et du scénario de démo ;
+> - n° 18 à la relecture du guide utilisateur ;
+> - n° 19 à 22 en confrontant les derniers documents à l'interface et aux gardes du serveur.
+>
+> Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
+> colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
+> état, avec 9 sondes supplémentaires sur les correctifs n° 19 et 22.
 
 ## 1. Résultats
 
@@ -28,10 +32,10 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 | Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur | 0 erreur |
 | Build frontend | `vite build` | OK | OK | OK |
 | Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 | 3 / 3 | 3 / 3 |
-| Recette API réelle | script HTTP | 76 / 76 (après correctifs) | 76 / 76 | **83 / 83** (76 + 7 sur les correctifs n° 4, 11 et 16) |
-| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) | conforme, §7 « avenant » compris (1 défaut trouvé et corrigé, §3 n° 17) |
+| Recette API réelle | script HTTP | 76 / 76 (après correctifs) | 76 / 76 | **83 / 83** (76 + 7 sur les correctifs n° 4, 11 et 16), plus **9 / 9** sondes sur les correctifs n° 19 et 22 |
+| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) | conforme, §7 « avenant » et §8.2 « lot complémentaire » compris (défaut n° 17 au rejeu ; n° 21 à la relecture contre l'écran) |
 | Description OpenAPI | `OpenApiTest` (routes ↔ spécification) | — | — | 96 / 96 opérations |
-| CI GitHub Actions | Lint, Pest, Vitest + type-check, Playwright, build | — | 5 / 5 (PR #130 et #131) | 5 / 5 sur chaque PR #132 à #142 |
+| CI GitHub Actions | Lint, Pest, Vitest + type-check, Playwright, build | — | 5 / 5 (PR #130 et #131) | 5 / 5 sur chaque PR #132 à #152 |
 
 La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 
@@ -220,6 +224,16 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | `backend/docs/openapi.yaml` | Réécrit sur les 96 opérations réelles, verrouillé par `OpenApiTest` ; défauts n° 14 et 15 | #140 |
 | `docs/circuits-validation.md` | Séparation des tâches, état rejeté, §7 « signatures sur le PDF de l'OM » | #141 |
 | `docs/amendement-om.md` | §4.6 « PDF de l'OM amendé », tableau des cas complété ; défaut n° 16 | #142 |
+| `docs/revue-projet-2026-10.md`, exploitation (déploiement, runbook, checklist), guide, démo, documents historiques | Rapport au 23/10 ; cache des PDF d'OM, ligne Cron des trois files | #143 |
+| *(code)* recette et démo rejouées | Défaut n° 17 (dernier amendement départagé par l'id) ; Form Requests inutilisées supprimées | #144 |
+| Guide utilisateur ; *(code)* fiche de l'OM | Défaut n° 18 (lien « PDF de l'OM ») | #145 |
+| Documentation technique | Évolutions 1.3 complétées, écarts au code corrigés (Docker, Nginx, `QUEUE_CONNECTION`) | #146 |
+| `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | Node 20.19+/22.12+, extensions PHP de `composer.lock`, `SUPERADMIN_*`, `schedule:run` | #147 |
+| `UPLOAD-VENDOR.md` | PHP 8.4.x en 64 bits (PhpSpreadsheet déclare `<8.5`), tailles retirées | #148 |
+| `docs/workflows-par-profil.md`, `docs/rbac-flexible.md` | Rejet par OM du DAF/DG, document de retenue, prise d'effet immédiate côté serveur (tests renforcés) | #149 |
+| `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md` | Défauts n° 19 (tranche nulle) et n° 20 (exercice proposé) | #150 |
+| `docs/categories-indice.md` | Méthodes de `CategorieIndice`, recette frontend en une passe | #151 |
+| `docs/SCENARIO-DEMO.md`, `docs/circuits-validation.md`, `docs/amendement-om.md` | Libellés exacts de l'interface ; défauts n° 21 (lot complémentaire) et n° 22 (reliquat payé) | #152 |
 
 ## 6. Livraison et suites à donner
 
@@ -241,12 +255,19 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #140 | Description OpenAPI et tri des sauvegardes (défauts n° 14 et 15) |
 | #141 | Circuits de validation : état rejeté, signatures du PDF |
 | #142 | PDF de l'OM amendé (défaut n° 16) |
+| #143 – #144 | Rapport au 23/10, exploitation ; rejeu de la recette et de la démo (défaut n° 17), Form Requests supprimées |
+| #145 | Lien « PDF de l'OM » sur la fiche (défaut n° 18), guide utilisateur |
+| #146 – #149 | Documentation technique, déploiement, runbook, checklist, `UPLOAD-VENDOR.md`, workflows, RBAC |
+| #150 | OM soldé malgré une tranche nulle (n° 19), exercice proposé déterminé (n° 20) |
+| #151 | Catégories d'indice |
+| #152 | Lot complémentaire depuis l'écran (n° 21), amendement d'un reliquat payé refusé (n° 22) |
 
 ### À faire côté exploitation
 
 1. **Mettre à jour l'instance en ligne** en suivant `docs/runbook-mise-a-jour-cron.md` : une seule
    migration (`2026_10_22_090000_add_sequence_to_lots_paiement`), `vendor/` inchangé, SPA à
-   redéployer. Contrôler ensuite avec `docs/checklist-post-deploiement.md`.
+   redéployer. Contrôler ensuite avec `docs/checklist-post-deploiement.md`. Les correctifs n° 17 à 22
+   ne portent que sur le code (`app/`, SPA) : aucune migration de plus.
 2. **Éprouver la restauration sur une base MySQL de recette** : `db:restore` n'est exercé qu'en
    simulation dans la CI (§4, *Fonctionnalités annoncées*). Les contrôles qui créent des données
    (lot en erreur, lot complémentaire, gros lot) se font aussi en recette.
@@ -269,7 +290,8 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 - Tests frontend des écrans `MissionCreateView`, `EtatDetailView`, `SignaturesView` et `RolesView` (§2).
 - Points « non testés » du §4 (minuteurs, page de maintenance, garde de route au rechargement,
   verrou `lockForUpdate` sous MySQL) : corrigés, mais sans test automatisé.
-- Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md` à remesurer sur le poste de build.
+- ~~Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md`~~ : **retirées** le 23/10 (#148). Elles ne se
+  vérifiaient pas et dépendent du mode d'installation ; le contrôle des dossiers `.git` reste le garde-fou.
 - ~~Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest`~~ — **supprimés** le 23/10 :
   aucune route ni aucun test ne les utilisait (les OM sont retranscrits par `StoreMissionRequest`) et
   ils visaient une table `taux_per_diems` disparue.
