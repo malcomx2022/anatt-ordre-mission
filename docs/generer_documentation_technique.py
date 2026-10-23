@@ -1019,7 +1019,7 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "≈ 130 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "570 tests au total (68 fichiers)"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "571 tests au total (68 fichiers)"],
         ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "113 tests / 26 fichiers"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],

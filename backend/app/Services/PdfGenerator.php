@@ -100,7 +100,7 @@ class PdfGenerator
         // Taux affiché sous « jours × taux » : le per diem seul, transport exclu.
         $tauxJournalier = $ordre->nb_jours > 0 ? intdiv($perDiem, $ordre->nb_jours) : 0;
         $repartition = $this->libellesRepartition($ordre);
-        $amendement = $ordre->amendements->sortByDesc('amende_le')->first();
+        $amendement = $ordre->amendements->sortBy([['amende_le', 'desc'], ['id', 'desc']])->first();
 
         // Circuit par ÉTAT : les signatures vivent sur l'état des avances, pas sur
         // l'OM. Elles sont reprises ici, à défaut de signature portée par l'OM
@@ -234,7 +234,7 @@ class PdfGenerator
         $agent = $ordre->agent;
         $mission = $ordre->mission;
         // Dernier amendement à l'origine du trop-perçu (le plus récent).
-        $amendement = $ordre->amendements->sortByDesc('amende_le')->first();
+        $amendement = $ordre->amendements->sortBy([['amende_le', 'desc'], ['id', 'desc']])->first();
 
         $fmt = fn (int $n) => number_format($n, 0, ',', ' ');
 

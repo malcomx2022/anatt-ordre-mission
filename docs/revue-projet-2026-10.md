@@ -9,8 +9,9 @@ Revue du dépôt à l'état `92fc7ef` (fusion de la PR #124), suivie de trois ca
 Environnement de test : PHP 8.4.27, Node 22, Chromium.
 
 > **État au 23/10/2026.** Les correctifs ont été livrés en trois passes (PR #125 à #131), puis la
-> documentation a été confrontée au code document par document (PR #132 à #142). Cette seconde
-> étape a fait apparaître sept défauts de plus (§3 n° 10 à 16), corrigés au fil de l'eau. Tout est
+> documentation a été confrontée au code document par document (PR #132 à #144). Cette seconde
+> étape a fait apparaître sept défauts de plus (§3 n° 10 à 16), corrigés au fil de l'eau ; le rejeu
+> final de la recette et du scénario de démo en a trouvé un dernier (n° 17). Tout est
 > fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la colonne
 > « 23/10 » après la PR #142.
 
@@ -19,15 +20,15 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 | Campagne | Outil | Première passe | Fin de revue | 23/10 |
 |----------|-------|----------------|--------------|-------|
 | Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 | 129 / 129 |
-| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 441 / 441 |
-| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **570 / 570 (68 fichiers)** |
+| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 442 / 442 |
+| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **571 / 571 (68 fichiers)** |
 | Style backend | Pint `--test` | conforme | conforme | conforme |
 | Unitaires frontend | Vitest | 99 / 99, 23 fichiers | 113 / 113, 26 fichiers | **113 / 113, 26 fichiers** |
 | Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur | 0 erreur |
 | Build frontend | `vite build` | OK | OK | OK |
 | Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 | 3 / 3 | 3 / 3 |
-| Recette API réelle | script HTTP, 76 vérifications | 76 / 76 (après correctifs) | 76 / 76 | non rejouée (correctifs couverts par Pest) |
-| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) | non rejoué |
+| Recette API réelle | script HTTP | 76 / 76 (après correctifs) | 76 / 76 | **83 / 83** (76 + 7 sur les correctifs n° 4, 11 et 16) |
+| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) | conforme, §7 « avenant » compris (1 défaut trouvé et corrigé, §3 n° 17) |
 | Description OpenAPI | `OpenApiTest` (routes ↔ spécification) | — | — | 96 / 96 opérations |
 | CI GitHub Actions | Lint, Pest, Vitest + type-check, Playwright, build | — | 5 / 5 (PR #130 et #131) | 5 / 5 sur chaque PR #132 à #142 |
 
@@ -63,8 +64,8 @@ La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 | Seeders & recette | — | ComptesCircuitSeeder, DemoCircuitSeeder, RecetteE2E | 18 |
 | **Total** | | | **552** (535 en première passe) |
 
-Comptes établis par `pest --list-tests` sur `main` en fin de revue. Depuis, 18 tests se sont
-ajoutés avec les correctifs n° 10 à 16 (total 570) :
+Comptes établis par `pest --list-tests` sur `main` en fin de revue. Depuis, 19 tests se sont
+ajoutés avec les correctifs n° 10 à 17 (total 571) :
 
 | Fichier | Tests ajoutés | Défaut couvert |
 |---------|---------------|----------------|
@@ -73,7 +74,7 @@ ajoutés avec les correctifs n° 10 à 16 (total 570) :
 | `Paiement/AsyncGenerationTest` | 2 | n° 12 (échec d'une génération en file) |
 | `OpenApiTest` (nouveau) | 3 | n° 15 (description OpenAPI verrouillée sur les routes) |
 | `CoherenceCircuitsTest` | 1 | état rejeté : circuit par OM toujours fermé (comportement documenté, non défaillant) |
-| `OmPdfAmendementTest` (nouveau) | 5 | n° 16 (PDF de l'OM amendé) |
+| `OmPdfAmendementTest` (nouveau) | 5 + 1 | n° 16 (PDF de l'OM amendé), n° 17 (dernier amendement) |
 
 Côté frontend, 18 vues sur 50 sont montées par au moins un test Vitest (16 en première passe), et le
 composant `PaiementGeneration` — qui porte la génération MTN/Moov et le suivi des gros lots — est
@@ -108,6 +109,7 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 14 | Mineur | *(trouvé en réécrivant `backend/docs/openapi.yaml`)* La liste des sauvegardes, annoncée « les plus récentes d'abord », triait la date affichée `d/m/Y` comme une chaîne : la sauvegarde du 22/10 passait avant celle du 03/11. | Tri sur l'horodatage du fichier ; test dans `BackupControllerTest`. |
 | 15 | Mineur | *(idem)* `backend/docs/openapi.yaml` décrivait encore le modèle initial (OM saisis à la main, soumission puis double validation N1/DG, paiement direct, catégories A1-D) : 15 chemins, dont la moitié n'existait plus ; rien sur les missions, les états de paiement, les lots ni l'administration. | Spécification réécrite sur les routes réelles (96 opérations, schémas des ressources, permissions) ; `OpenApiTest` la compare aux routes à chaque exécution (Pest : 564 tests). |
 | 16 | Majeur | *(trouvé en mettant à jour `docs/amendement-om.md`)* Après un amendement, le PDF de l'OM restait celui d'avant : l'écran télécharge `/pdf/download`, qui sert le fichier en cache, et la clé ne dépendait que des statuts, inchangés par l'amendement. Le PDF présentait aussi un reliquat ajusté ou négatif comme « Reliquat (30 %) », tirait le pourcentage du paramètre courant plutôt que des montants de l'OM, et calculait le taux journalier affiché transport compris. | Clé de cache `-AMD{n}` ; libellés de répartition réels (avance engagée, reliquat ajusté, trop-perçu) ; mention du dernier amendement ; taux hors transport. Tests `OmPdfAmendementTest` (Pest : 570 tests). |
+| 17 | Mineur | *(trouvé au rejeu du scénario de démo, §7, le 23/10)* Deux amendements enregistrés dans la même seconde (`amende_le` est précis à la seconde) : le PDF de l'OM rappelait le **premier** (« 6 → 8 jours — Rallonge ») au lieu du dernier, et le journal de la fiche OM les listait dans le désordre. Le document de retenue, qui cite le motif du dernier amendement, partageait le même tri. Introduit par le n° 16 pour le PDF de l'OM, antérieur pour les deux autres. | Tri sur `amende_le` puis `id` (ordre de création) aux trois endroits. Test dans `OmPdfAmendementTest` (Pest : 571 tests). |
 
 ## 4. Points restants — tous traités (seconde passe)
 
@@ -260,11 +262,13 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 - Points « non testés » du §4 (minuteurs, page de maintenance, garde de route au rechargement,
   verrou `lockForUpdate` sous MySQL) : corrigés, mais sans test automatisé.
 - Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md` à remesurer sur le poste de build.
-- Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` ne sont plus utilisés et
-  visent une table `taux_per_diems` disparue (relevé en réécrivant `openapi.yaml`).
+- ~~Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest`~~ — **supprimés** le 23/10 :
+  aucune route ni aucun test ne les utilisait (les OM sont retranscrits par `StoreMissionRequest`) et
+  ils visaient une table `taux_per_diems` disparue.
 - `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md` (juillet-septembre
   2026) décrivent le circuit DAF/DG par OM, retiré depuis. Ils sont désormais marqués **historiques**,
   avec, en tête, ce qui reste valable (migrations, `ComptesCircuitSeeder`, arbitrages client) et ce
   qui est obsolète (drapeau `WORKFLOW_DOUBLE_VALIDATION`, contrôles sur l'OM).
-- La recette sur l'API réelle et le rejeu du scénario de démo n'ont pas été refaits après les
-  correctifs n° 10 à 16 ; ceux-ci sont couverts par des tests Pest.
+- Non rejouables sans MySQL, et couverts seulement par Pest : restauration (n° 10), tri des
+  sauvegardes (n° 14, `db:backup` exige `mysqldump`). L'échec d'une génération en file (n° 12) n'est
+  pas reproductible en `QUEUE_CONNECTION=sync` sans provoquer une panne ; il est couvert par Pest.

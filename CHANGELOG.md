@@ -156,6 +156,23 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 - **`docs/deploiement-circuit-validation.md`** et **`docs/plan-validation-daf-dg.md`** marqués
   historiques, avec ce qui reste valable et ce qui est obsolète.
 
+#### Corrigé (rejeu de la recette et de la démo, 23/10/2026)
+
+- **Dernier amendement mal identifié** : deux amendements dans la même seconde (`amende_le` à la
+  seconde) faisaient rappeler le **premier** sur le PDF de l'OM, les listaient dans le désordre sur la
+  fiche OM et pouvaient citer le mauvais motif sur le document de retenue. Tri sur `amende_le` puis
+  `id`. Trouvé en rejouant le §7 du scénario de démo ; test dans `OmPdfAmendementTest`.
+- **Recette sur l'API réelle rejouée** : 83 / 83 (76 contrôles d'origine + 7 sur les correctifs n° 4,
+  11 et 16). **Scénario de démo rejoué**, §7 « avenant » compris : montants et fichiers conformes au
+  document (`docs/revue-projet-2026-10.md` §1).
+
+#### Supprimé
+
+- **Form Requests inutilisées** `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` : vestiges de la
+  saisie manuelle d'un OM, ils n'étaient référencés par aucune route ni aucun test et validaient
+  contre une table `taux_per_diems` qui n'existe plus. Les OM sont retranscrits par
+  `StoreMissionRequest` et ajustés par `AmenderOrdreMissionRequest`.
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.
