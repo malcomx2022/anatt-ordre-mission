@@ -238,6 +238,12 @@ tableau(
         ["Plateforme", "Laravel 12 / PHP 8.4 (imposé par composer.lock) ; suites de tests exécutables sans .env.", "§2.2, §10"],
         ["PDF de l'OM", "Reprend les signatures de l'état des avances qui couvre l'OM (instantané, paraphe archivé, même code de vérification) ; clé de cache incluant le statut de l'état.", "§4.4"],
         ["Restauration", "db:restore purge la matrice des permissions mise en cache (rememberForever) ; settings.json et fichiers du disque local hors sauvegarde.", "§4.7, §6.2.1"],
+        ["Files d'attente", "Échec définitif d'un gros lot : le lot passe ERREUR par LotPaiementService::marquerErreur (versements EN_ATTENTE, audit ERROR_LOT) ; la tâche Cron du worker nomme les trois files.", "§4.3, §9.3"],
+        ["Sauvegardes", "Liste triée par date du fichier (la plus récente en tête), et non plus par nom.", "§4.7"],
+        ["Référence API", "backend/docs/openapi.yaml réécrite sur les routes réelles (96 opérations, permission x-permission) et verrouillée par OpenApiTest.", "§7.1, §10"],
+        ["Amendement", "Deux amendements dans la même seconde : le dernier est départagé par l'id (PDF, document de retenue, journal de la fiche).", "§4.4"],
+        ["Fiche de l'OM", "Lien « PDF de l'OM » vers l'écran du PDF officiel (OM-07), seul accès depuis l'interface une fois l'OM validé.", "§4.4"],
+        ["Code mort", "Form Requests StoreOrdreMissionRequest / UpdateOrdreMissionRequest supprimées (les OM ne se créent que via /missions).", "§2.3, §9.5"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -316,8 +322,9 @@ para("Le système suit une architecture en couches découplées : une SPA (front
      "(backend) protégée par tokens. Cette séparation facilite la maintenance, les tests et le déploiement.")
 encadre("Architecture",
         "SPA Vue 3 (frontend) → API REST Laravel 12 (backend) → base MySQL. Communication HTTP/HTTPS avec "
-        "tokens Bearer (Sanctum). Files de travaux (queue) pour les générations volumineuses (fichiers de "
-        "paiement, états). Déploiement : WampServer ou Docker Compose (dev) ; serveur Linux + Nginx (prod).",
+        "tokens Bearer (Sanctum). Files de travaux (queue) pour les générations volumineuses (gros lots de "
+        "paiement, exports de rapports). Déploiement : WampServer + start-dev.ps1 (dev) ; hébergement cPanel "
+        "mutualisé (prod, DEPLOY-CPANEL.md).",
         fond="EDFAF2")
 
 h2("2.2 Stack technologique")
@@ -360,18 +367,20 @@ code("anatt-ordre-mission/\n"
      "  frontend/                Application Vue 3 (42 écrans)\n"
      "    src/views/             Pages par module (auth/, agents/, missions/, paiements/...)\n"
      "    src/components/shared/  Composants réutilisables (AppTable, AppModal, AppBadge...)\n"
-     "    src/stores/            Pinia (auth, missions, notifications)\n"
-     "    src/composables/       Logique réutilisable (useApi, useAuth, useMissions...)\n"
+     "    src/stores/            Pinia (auth, notifications, ordres-mission)\n"
+     "    src/composables/       Logique réutilisable (useApi, useAuth, usePartAvance, useSearch, useToast)\n"
      "    src/utils/permissions.ts  Miroir RBAC frontend (guards + directive v-permission)\n"
      "  backend/                 API Laravel 12\n"
      "    app/Http/Controllers/Api/  Contrôleurs REST\n"
+     "    app/Http/Requests/     Form Requests (validation des écritures)\n"
      "    app/Models/            Modèles Eloquent\n"
      "    app/Services/          Logique métier (calcul, lots, barème, rapports, audit)\n"
      "    app/Services/Paiement/  Générateurs MTN (.txt) et Moov (.xlsx)\n"
      "    app/Support/Permissions  Source unique des clés de permission (RBAC)\n"
      "    app/Support/PermissionRepository  Matrice effective (table role_permissions, cache)\n"
      "    app/Console/Commands/  db:backup / db:restore\n"
-     "    app/Jobs/              Tâches asynchrones (génération de lots, états)\n"
+     "    app/Jobs/              Tâches asynchrones (gros lots, exports de rapports, e-mails)\n"
+     "    docs/openapi.yaml      Référence API (verrouillée par tests/Feature/OpenApiTest.php)\n"
      "  docs/                    Documentation (.docx + scripts générateurs)\n"
      "  CLAUDE.md                Contexte projet")
 
@@ -593,12 +602,17 @@ encadre("Idempotence & confirmation",
         "versement porté par un lot CONFIRME (seconde barrière). Un lot CONFIRME n'est jamais réécrit : la "
         "génération suivante crée le lot de séquence suivante. Génération sous transaction avec lockForUpdate "
         "sur le dernier lot de la clé.")
+bullet("Gros lot en file (GenererLotPaiementJob, file « paiements ») : mêmes règles que la génération directe "
+       "(LotPaiementService::generer). En cas d'échec définitif (après 3 tentatives, ou dès le premier échec en "
+       "QUEUE_CONNECTION=sync), le suivi passe ERREUR et le dernier lot GENERE/ERREUR de la clé passe en ERREUR "
+       "par LotPaiementService::marquerErreur, comme l'action manuelle : versements EN_ATTENTE, coordonnées "
+       "rafraîchies, audit ERROR_LOT. Un lot CONFIRME n'est jamais touché. Détail : backend/docs/queues.md.")
 
 h2("4.4 Génération de l'ordre de mission en PDF")
 tableau(
     ["#", "Acteur", "Action", "Résultat / statut"],
     [
-        ["1", "Utilisateur", "Ouvre la fiche d'un OM et clique « Aperçu/Télécharger PDF ».", "GET /api/ordres/:id/pdf"],
+        ["1", "Utilisateur", "Ouvre la fiche d'un OM, clique « PDF de l'OM » (écran OM-07, /ordres/:id/pdf) puis « Télécharger PDF ».", "GET /api/ordres/:id/pdf"],
         ["2", "Système", "Génère le PDF via DomPDF (en-tête officiel ANaTT mutualisé, données OM, montants).", "PDF produit côté serveur"],
         ["3", "Système", "Blocs de signature : signature portée par l'OM (circuit par OM, données héritées) en priorité, sinon celle de l'état des AVANCES qui couvre l'OM (PdfGenerator::etatSignataire).", "Mêmes nom, fonction, paraphe archivé et code de vérification que l'état"],
         ["4", "Utilisateur", "Visualise ou télécharge le document.", "Fichier PDF imprimable"],
@@ -614,6 +628,10 @@ bullet("Cache : ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf — l
 bullet("Après un amendement, la répartition affichée suit les montants réels : « Avance engagée », "
        "« Reliquat (ajusté par amendement) » ou « Trop-perçu (à recouvrer par retenue sur salaire) », "
        "avec un encadré rappelant le dernier amendement ; le taux journalier affiché exclut le transport.")
+bullet("Dernier amendement : tri par amende_le puis id décroissants (deux amendements dans la même seconde "
+       "restent ordonnés). Même ordre pour le document de retenue (motif) et le journal de la fiche OM.")
+bullet("Accès : le lien « PDF de l'OM » de la fiche est le seul chemin vers le PDF officiel ; « Télécharger "
+       "le brouillon » (filigrané) n'est proposé que tant que l'OM n'est ni VALIDE ni SOLDE.")
 
 h2("4.5 Import en masse des agents (Excel / CSV)")
 tableau(
@@ -651,7 +669,7 @@ tableau(
     ["#", "Acteur", "Action", "Résultat"],
     [
         ["1", "Serveur (cron)", "db:backup --compress chaque jour à 02:00 (rétention 30 jours).", "backups/backup_AAAA-MM-JJ_HHMMSS.sql.gz"],
-        ["2", "SUPER_ADMIN", "Télécharge une sauvegarde (GET /api/admin/backups/:name/download).", "Copie hors serveur"],
+        ["2", "SUPER_ADMIN", "Consulte la liste (GET /api/admin/backups, triée par date du fichier, la plus récente en tête) et télécharge une sauvegarde (GET /api/admin/backups/:name/download).", "Copie hors serveur"],
         ["3", "SUPER_ADMIN", "Restaure : POST /api/admin/backups/:name/restaurer avec { confirmation: <nom du fichier> }.", "422 si le nom recopié diffère"],
         ["4", "Système", "db:restore prend d'abord une sauvegarde de sécurité de l'état courant, décompresse (.gz) en PHP puis rejoue le dump avec le client mysql (DB_RESTORE_BINARY).", "Base remplacée ; opération réversible"],
         ["5", "Système", "Purge la matrice des permissions mise en cache (PermissionRepository::vider) : role_permissions vient d'être remplacée.", "Droits de la sauvegarde effectifs dès la requête suivante"],
@@ -816,7 +834,10 @@ h1("7. Référence API")
 h2("7.1 Base et authentification")
 encadre("Conventions",
         "Préfixe : /api. Authentification : header Authorization: Bearer {token}. Format JSON. "
-        "Autorisation par middleware permission:{clé}. Throttling sur login, API, paiement et export.",
+        "Autorisation par middleware permission:{clé}. Throttling sur login, API, paiement et export. "
+        "Référence exhaustive : backend/docs/openapi.yaml (OpenAPI 3, 96 opérations, chacune avec sa clé "
+        "x-permission) ; OpenApiTest vérifie que chaque route y figure, sans opération en trop, avec la "
+        "permission exigée par le middleware. Les tableaux ci-dessous en sont un résumé.",
         fond="EDFAF2")
 
 h2("7.2 Authentification & compte")
@@ -959,9 +980,9 @@ h2("9.1 Environnements")
 tableau(
     ["Environnement", "Usage", "Base de données"],
     [
-        ["Développement (local)", "WampServer ou Docker Compose — données de test", "MySQL local / SQLite (tests)"],
+        ["Développement (local)", "WampServer + start-dev.ps1 / stop-dev.ps1 — données de test", "MySQL local / SQLite (tests)"],
         ["Préproduction", "Recette et validation utilisateurs", "MySQL préproduction"],
-        ["Production", "Usage opérationnel ANaTT", "MySQL production sécurisée"],
+        ["Production", "Hébergement cPanel mutualisé (FTP, phpMyAdmin, Cron, AutoSSL)", "MySQL production sécurisée"],
     ],
     largeurs=[4.6, 7.0, 5.2],
 )
@@ -972,7 +993,7 @@ tableau(
     [
         ["APP_ENV / APP_DEBUG / APP_URL", "Environnement, débogage, URL de base de l'API"],
         ["DB_DATABASE / DB_USERNAME / DB_PASSWORD", "Connexion MySQL"],
-        ["CACHE_STORE / SESSION_DRIVER / QUEUE_CONNECTION", "« database » pour fonctionner sans Redis"],
+        ["CACHE_STORE / SESSION_DRIVER / QUEUE_CONNECTION", "Production mutualisée : file / file / sync (aucun worker ni Redis) ; database ou redis si un worker traite la file"],
         ["SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD", "Super admin initial (mot de passe OBLIGATOIRE en production)"],
         ["MAIL_MAILER / MAIL_HOST / MAIL_FROM_ADDRESS", "Configuration SMTP"],
         ["APP_KEY", "Chiffrement et scellés HMAC des états — ne jamais régénérer en production"],
@@ -992,13 +1013,14 @@ code("# Backend (Laravel)\n"
      "php artisan migrate --seed\n"
      "php artisan storage:link\n"
      "php artisan config:cache && php artisan route:cache\n"
-     "php artisan queue:work --queue=paiements,etats,default --tries=3   # générations asynchrones\n"
+     "php artisan queue:work --queue=paiements,etats,default --tries=3   # worker (si QUEUE_CONNECTION ≠ sync)\n"
+     "#   Cron mutualisé (QUEUE_CONNECTION=database) : même ligne + --stop-when-empty, chaque minute\n"
      "php artisan schedule:run           # cron chaque minute : db:backup 02:00, purge des tokens\n"
      "php artisan db:restore <fichier>   # restauration (sauvegarde de sécurité préalable)\n\n"
      "# Frontend (Vue)\n"
      "cd frontend && npm install && npm run build\n\n"
-     "# Docker (alternative dev)\n"
-     "docker-compose up -d")
+     "# Windows : environnement de dev complet (API, worker, Vite)\n"
+     ".\\start-dev.ps1 [-Install -Fresh]   /   .\\stop-dev.ps1")
 
 h2("9.4 Comptes de démonstration (local uniquement)")
 para("En environnement local/testing, le seeder crée un compte par profil (mot de passe « password ») : "
@@ -1010,6 +1032,13 @@ bullet("Migration à jouer : 2026_10_22_090000_add_sequence_to_lots_paiement (co
        "unique créée avant la suppression de l'ancienne — compatible MySQL / clé étrangère).")
 bullet("Procédure sans SSH : DEPLOY-CPANEL.md et docs/runbook-mise-a-jour-cron.md (PHP 8.4 obligatoire).")
 bullet("Tester une restauration (db:restore) sur un environnement de recette MySQL avant la production.")
+bullet("Après la mise à jour, vider storage/app/private/ordres/ : un OM sans état ni amendement garde la même "
+       "clé de cache et son ancien PDF afficherait le taux journalier transport compris. Les PDF se régénèrent "
+       "à la demande.")
+bullet("Supprimer sur le serveur app/Http/Requests/StoreOrdreMissionRequest.php et UpdateOrdreMissionRequest.php : "
+       "un envoi FTP n'efface pas les fichiers retirés du dépôt.")
+bullet("Si la file passe en QUEUE_CONNECTION=database : la tâche Cron queue:work doit nommer les trois files "
+       "(--queue=paiements,etats,default), sinon les gros lots restent INTROUVABLE.")
 
 # =========================================================================
 # 10. QUALITÉ ET TESTS
@@ -1026,8 +1055,10 @@ tableau(
     ],
     largeurs=[3.2, 4.2, 6.6, 2.8],
 )
-bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permission) et navigation.spec.ts "
-       "(menu ↔ routes ↔ API cohérents).")
+bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permission), OpenApiTest "
+       "(openapi.yaml ↔ routes ↔ permissions) et navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
+bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
+       "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
        "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
 bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")
