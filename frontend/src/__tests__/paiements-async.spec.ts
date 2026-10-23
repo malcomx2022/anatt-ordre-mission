@@ -134,6 +134,35 @@ describe('PaiementGeneration — génération asynchrone (202)', () => {
   })
 })
 
+describe('PaiementGeneration — lot complémentaire', () => {
+  const lotConfirme = {
+    id: 9, mission_id: 5, tranche: 'AVANCE', operateur: 'MTN', sequence: 1, statut: 'CONFIRME',
+    nom_fichier: 'mission_AVANCE.txt', nb_lignes: 2, montant_total: 406000, confirme_le: '2026-10-23T10:00:00Z',
+  }
+
+  it('propose le lot complémentaire quand un versement est devenu payable après confirmation', async () => {
+    lots.mockResolvedValue({ items: [lotConfirme], meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 } })
+    previsualiser.mockResolvedValue({ nb_lignes: 1, total: 199500, beneficiaires: [] })
+
+    const wrapper = await monter()
+    const bouton = wrapper.findAll('button').find((x) => x.text().includes('Générer le lot complémentaire'))
+
+    expect(bouton).toBeDefined()
+    expect(bouton!.attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).not.toContain('réinclusion bloquée')
+  })
+
+  it('bloque la génération quand le lot est confirmé et que rien de nouveau n’est payable', async () => {
+    lots.mockResolvedValue({ items: [lotConfirme], meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 } })
+    previsualiser.mockResolvedValue({ nb_lignes: 0, total: 0, beneficiaires: [] })
+
+    const wrapper = await monter()
+
+    expect(wrapper.text()).toContain('réinclusion bloquée')
+    expect(wrapper.findAll('button').some((x) => x.text().includes('Générer'))).toBe(false)
+  })
+})
+
 describe('paiementsService.generer — réponse 202', () => {
   it('renvoie la charge asynchrone au lieu de lever une erreur', async () => {
     vi.resetModules()

@@ -31,8 +31,13 @@ const action = ref(false)
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 const extension = computed(() => (operateur.value === 'MTN' ? '.txt' : '.xlsx'))
 const confirme = computed(() => lot.value?.statut === 'CONFIRME')
+// Dernier lot confirmé ET rien de nouveau à payer : la sélection est soldée.
+const solde = computed(() => confirme.value && !apercu.value?.nb_lignes)
+// Dernier lot confirmé mais des versements devenus payables depuis : le serveur
+// les met dans un lot complémentaire (séquence suivante), sans réécrire le lot confirmé.
+const complementaire = computed(() => confirme.value && !solde.value)
 const peutGenerer = computed(
-  () => !!apercu.value && apercu.value.nb_lignes > 0 && !confirme.value && !suivi.value,
+  () => !!apercu.value && apercu.value.nb_lignes > 0 && !suivi.value,
 )
 
 // Sélecteur de mission : recherche serveur débouncée (plus de chargement de
@@ -296,13 +301,13 @@ async function marquerErreur() {
 
       <!-- Actions -->
       <div class="flex flex-wrap items-center justify-end gap-3 mt-5 pt-4 border-t border-gray-100">
-        <template v-if="confirme">
+        <template v-if="solde">
           <span class="text-sm font-display font-semibold text-green-600">Lot confirmé — réinclusion bloquée (anti-double-paiement).</span>
         </template>
         <template v-else>
           <AppButton v-if="lot?.statut === 'GENERE'" variant="outline" :loading="action" @click="marquerErreur">Marquer en erreur</AppButton>
           <AppButton :disabled="!peutGenerer" :loading="action" @click="generer">
-            {{ lot ? 'Régénérer le fichier' : 'Générer le fichier' }}{{ extension }}
+            {{ complementaire ? 'Générer le lot complémentaire' : lot ? 'Régénérer le fichier' : 'Générer le fichier' }}{{ extension }}
           </AppButton>
           <AppButton v-if="lot?.statut === 'GENERE'" :loading="action" @click="confirmer">Confirmer le paiement</AppButton>
         </template>

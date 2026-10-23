@@ -175,6 +175,25 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   solde. Test dans `SoldeTest` (Pest : 572 tests). Défaut n° 19 de
   `docs/revue-projet-2026-10.md`.
 
+#### Corrigé (lot complémentaire depuis l'écran, 23/10/2026)
+
+- **Lot complémentaire impossible à générer depuis l'interface.** `PaiementGeneration` masquait le
+  bouton de génération dès que le dernier lot de la sélection était `CONFIRME`, même si l'aperçu
+  listait des versements devenus payables (agent passé de Moov à MTN, OM validé tard…). Le serveur
+  produisait pourtant le lot de séquence suivante. Désormais, le blocage « Lot confirmé —
+  réinclusion bloquée » ne s'affiche que si rien n'est payable ; sinon l'écran propose **« Générer
+  le lot complémentaire »**. La liste des lots est départagée par `id` (lots créés dans la même
+  seconde).
+  - Tests dans `paiements-async.spec.ts` (Vitest : 120 tests).
+  - Mock Playwright aligné sur l'API : aperçu vide après confirmation.
+  - Défaut n° 21 de la revue.
+- **`docs/SCENARIO-DEMO.md`** relu contre l'interface. Libellés exacts : « Enregistrer la mission »,
+  « Apposer le visa DAF », « Valider définitivement », « Générer le fichier.txt / .xlsx »,
+  « Confirmer le paiement », « Enregistrer l'amendement », « Régénérer le fichier.txt »,
+  « Générer le lot complémentaire.txt », « Matrice des permissions ». Le §8.3 précise que le DAF
+  et le DG peuvent aussi rejeter un OM sans état. Le guide utilisateur (régénéré) cite le bouton
+  du lot complémentaire.
+
 #### Corrigé (exercice proposé par l'écran Paramètres, 23/10/2026)
 
 - **Exercice par défaut ignorant le mois de début.** Sans année enregistrée, `SettingsView`

@@ -122,7 +122,11 @@ async function installMocks(page: Page): Promise<void> {
     }
 
     // ── Génération de paiement ──
-    if (path.endsWith('/api/paiements/lots/previsualiser')) return json(route, { data: APERCU })
+    // Comme l'API réelle : une fois le lot confirmé, ses versements ne sont plus éligibles.
+    if (path.endsWith('/api/paiements/lots/previsualiser')) {
+      const solde = state.lot?.statut === 'CONFIRME'
+      return json(route, { data: solde ? { ...APERCU, nb_lignes: 0, total: 0, beneficiaires: [] } : APERCU })
+    }
     if (path.endsWith('/api/paiements/lots') && method === 'GET') {
       return json(route, { data: state.lot ? [state.lot] : [], meta: { current_page: 1, last_page: 1, per_page: 20, total: state.lot ? 1 : 0 } })
     }

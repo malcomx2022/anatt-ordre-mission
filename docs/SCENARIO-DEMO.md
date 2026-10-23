@@ -13,6 +13,9 @@
 > **Rejoué de nouveau le 23 octobre 2026** sur l'API réelle, §7 « avenant » compris : mêmes montants
 > et mêmes fichiers (§3 à §8), reliquat 171 000 puis trop-perçu −54 000, document de retenue
 > « Cinquante-quatre mille (54 000) FRANCS CFA », PDF de l'OM conforme au §7.
+> **Relu le 23 octobre 2026 contre l'interface** : les libellés des boutons sont alignés sur les
+> écrans. Le bouton **« Générer le lot complémentaire »** du §8.2 manquait à l'écran : il est
+> corrigé (défaut n° 21 de la revue), alors que le serveur produisait déjà le lot.
 
 ---
 
@@ -75,7 +78,7 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
    bénéficiaire. »).
 3. **Récapitulatif** : le per diem s'affiche en temps réel (avance **70 %** /
    reliquat **30 %** — part de l'avance **paramétrable** par le SUPER_ADMIN,
-   70 % par défaut), puis **Enregistrer**.
+   70 % par défaut), puis **Enregistrer la mission**.
 
 **Résultat — données réelles générées par l'application :**
 
@@ -101,10 +104,10 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
    **BROUILLON** (PDF filigrané « BROUILLON — NON VALIDE » téléchargeable).
 2. **Contrôler**  ·  `controle@` — `États de paiement` → ouvrir l'état → **Contrôler**
    → **CONTRÔLÉ**.
-3. **Viser (Vu)**  ·  `daf@` — **Viser** → **VISÉ DAF** (interdit au contrôleur :
+3. **Viser (Vu)**  ·  `daf@` — **Apposer le visa DAF** → **VISÉ DAF** (interdit au contrôleur :
    séparation des tâches).
 4. **Numéroter puis valider**  ·  `dg@` — saisir le **numéro** de l'état (registre)
-   puis **Valider** → **VALIDÉ** (interdit au contrôleur et au DAF de cet état).
+   puis **Valider définitivement** → **VALIDÉ** (interdit au contrôleur et au DAF de cet état).
    Cette validation **arrête l'état**, fait passer les OM de la mission à **VALIDE**
    (un OM rejeté auparavant reste **REJETÉ**), fige l'avance de chacun et **ouvre les
    fichiers d'avance**.
@@ -121,7 +124,7 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 
 ### ÉTAPE D — CAS 1 : fichier MTN  ·  compte `finance@`
 `Paiements → MTN` (`/paiements/mtn`) → mission = *Dossiers de passation de marchés*
-· tranche = **AVANCE** → **Générer**.
+· tranche = **AVANCE** → **Générer le fichier.txt**.
 
 **Fichier réel produit** — `dossiers-de-passation-de-marches_AVANCE.txt`
 (rangé côté serveur dans le dossier de **sa** mission : deux missions de même objet
@@ -139,7 +142,7 @@ HDR,SARALY,2,406000
 - Total avance MTN = **406 000** (dont les +6 500 d'ATCHA correspondent à son transport).
 
 ### ÉTAPE E — CAS 2 : fichier Moov  ·  compte `finance@`
-`Paiements → Moov` (`/paiements/moov`) → même mission · tranche **AVANCE** → **Générer**.
+`Paiements → Moov` (`/paiements/moov`) → même mission · tranche **AVANCE** → **Générer le fichier.xlsx**.
 
 **Fichier réel produit** — `dossiers-de-passation-de-marches_AVANCE.xlsx`
 (feuille `Sheet1`, en-tête à 9 colonnes) :
@@ -156,7 +159,7 @@ HDR,SARALY,2,406000
 - Total avance Moov = **399 000**.
 
 ### ÉTAPE F — Confirmer  ·  compte `finance@`
-Après dépôt réussi sur les plateformes MTN / Moov → **Confirmer le lot**.
+Après dépôt réussi sur les plateformes MTN / Moov → **Confirmer le paiement**.
 Les versements passent à **CONFIRME** et ne seront **jamais réinclus** dans un
 nouveau fichier (protection anti-double-paiement). Seul un lot au statut **GÉNÉRÉ**
 se confirme : un lot marqué « en erreur » doit d'abord être **régénéré**.
@@ -245,7 +248,7 @@ l'avance **189 000** est décaissée et **figée** (`avance_engagee`). Désormai
 ### CAS A — rallonge (mission prolongée de 2 jours)  ·  compte `gestion@`
 
 `Ordres → détail de l'OM` (`/ordres/:id`) → bouton **« Amender »** → **8 jours**
-+ motif → **Enregistrer**.
++ motif → **Enregistrer l'amendement**.
 
 ```
 Nouveau total   Avance (figée)   Reliquat
@@ -264,7 +267,7 @@ Les signatures de l'état des avances restent en place.
 
 ### CAS B — réduction forte (mission écourtée à 3 jours) → **trop-perçu**  ·  `gestion@`
 
-Même bouton **« Amender »** → **3 jours** + motif → **Enregistrer**.
+Même bouton **« Amender »** → **3 jours** + motif → **Enregistrer l'amendement**.
 
 ```
 Nouveau total   Avance (figée)   Reliquat
@@ -322,7 +325,7 @@ est erroné.
 2. `finance@` — `Paiements → MTN`, même mission et tranche → **« Marquer en erreur »**. Les
    versements du lot redeviennent **EN_ATTENTE** et reprennent le numéro
    **actuel** de l'agent.
-3. **Générer** à nouveau → le fichier repart avec le bon numéro :
+3. **Régénérer le fichier.txt** → le fichier repart avec le bon numéro :
 
 ```
 HDR,SARALY,2,406000
@@ -330,7 +333,7 @@ HDR,SARALY,2,406000
 2,MSISDN,2290191234567,206500,ATCHA GABRIEL DOSSIERS DE PASSATION DE MARCHES
 ```
 
-4. Déposer, puis **Confirmer** : le lot MTN AVANCE est **CONFIRMÉ**.
+4. Déposer, puis **Confirmer le paiement** : le lot MTN AVANCE est **CONFIRMÉ**.
 
 ### 8.2 Un bénéficiaire change d'opérateur → lot complémentaire  ·  `gestion@` puis `finance@`
 
@@ -339,9 +342,11 @@ Avant le paiement Moov, **ABLESSOU** signale qu'il est passé chez MTN
 
 1. `gestion@` — mettre à jour sa fiche (numéro + opérateur **MTN**). Ses
    versements encore en attente suivent automatiquement le référentiel.
-2. `finance@` — `Paiements → MTN`, même mission, tranche **AVANCE** → **Générer**.
-   Le lot MTN déjà confirmé n'est **pas réécrit** : un **lot complémentaire** est
-   créé, avec le seul nouveau bénéficiaire.
+2. `finance@` — `Paiements → MTN`, même mission, tranche **AVANCE**. L'écran rappelle que le
+   dernier lot est **confirmé**, et l'aperçu ne montre que **ABLESSOU**. Cliquer
+   **« Générer le lot complémentaire.txt »**. Le lot MTN déjà confirmé n'est **pas réécrit** :
+   un **lot complémentaire** est créé, avec le seul nouveau bénéficiaire. Quand plus rien n'est
+   payable, l'écran affiche « Lot confirmé — réinclusion bloquée » et ne propose aucune génération.
 
 **Fichier réel** — `dossiers-de-passation-de-marches_AVANCE_COMPL2.txt` :
 
@@ -366,7 +371,8 @@ Dans la liste des lots, il porte le badge **« complémentaire n° 2 »** :
 ### 8.3 (Option) Mission sans état de paiement — reprise de données
 
 Pour une mission ancienne sans état de paiement, la fiche d'un OM **IMPORTE**
-propose **« Valider »** (`controle@`) et **« Rejeter »** (motif ≥ 10 caractères).
+propose **« Valider »** (`controle@`) et **« Rejeter »** (motif ≥ 10 caractères). Le rejet
+relève de `om.rejeter` : `daf@` et `dg@` le voient aussi, la validation reste au contrôleur.
 Un OM rejeté voit ses versements **ANNULÉS** : il n'apparaîtra dans aucun fichier.
 Dès qu'un état existe pour la mission, ces boutons disparaissent.
 
@@ -378,7 +384,7 @@ crée d'abord une **sauvegarde de sécurité** de l'état courant (opération
 réversible). À ne montrer que sur une base de démonstration.
 
 Pour une démonstration parlante : prendre une sauvegarde, retirer une permission à un
-profil dans **Matrice des rôles**, puis restaurer → la matrice revient à son état
+profil dans **Matrice des permissions** (menu *Utilisateurs › Matrice des roles*), puis restaurer → la matrice revient à son état
 d'avant **dès la requête suivante** (la restauration purge la matrice mise en cache).
 Les réglages de `Paramètres` (part d'avance, exercice) ne font **pas** partie de la
 sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.

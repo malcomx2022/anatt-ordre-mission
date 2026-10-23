@@ -660,7 +660,8 @@ bullet("Seul un lot au statut GÉNÉRÉ peut être confirmé : un lot en erreur 
 encadre("Lots complémentaires",
         "Un lot confirmé n'est jamais réécrit. Si un versement devient payable après coup (OM validé plus "
         "tard, agent passé d'un opérateur à l'autre, reliquat redevenu positif…), une nouvelle génération "
-        "crée un lot COMPLÉMENTAIRE qui ne contient que ces nouveaux bénéficiaires. Il est signalé par un "
+        "crée un lot COMPLÉMENTAIRE qui ne contient que ces nouveaux bénéficiaires : sur l'écran MTN ou Moov, "
+        "l'aperçu les liste et le bouton devient « Générer le lot complémentaire ». Il est signalé par un "
         "badge « complémentaire n° 2, 3… » dans la liste des lots et son fichier porte le suffixe "
         "« _COMPL2 », « _COMPL3 »… Il se dépose et se confirme comme un lot ordinaire.")
 
