@@ -10,6 +10,9 @@
 > sans effet sur les montants ni les fichiers : séparation des tâches détaillée, document
 > à montrer pour la validation, signatures de l'état reprises sur le PDF de l'OM,
 > restauration (purge de la matrice des permissions, réglages hors sauvegarde).
+> **Rejoué de nouveau le 23 octobre 2026** sur l'API réelle, §7 « avenant » compris : mêmes montants
+> et mêmes fichiers (§3 à §8), reliquat 171 000 puis trop-perçu −54 000, document de retenue
+> « Cinquante-quatre mille (54 000) FRANCS CFA », PDF de l'OM conforme au §7.
 
 ---
 

@@ -36,7 +36,8 @@ class OrdreMissionResource extends JsonResource
             'versements' => VersementResource::collection($this->whenLoaded('versements')),
             // Journal des amendements (rallonge / réduction des jours facturés).
             'amendements' => $this->whenLoaded('amendements', fn () => $this->amendements
-                ->sortByDesc('amende_le')
+                // Le dernier en tête ; à la même seconde, l'ordre de création départage.
+                ->sortBy([['amende_le', 'desc'], ['id', 'desc']])
                 ->map(fn ($a) => [
                     'id' => $a->id,
                     'nb_jours_avant' => $a->nb_jours_avant,

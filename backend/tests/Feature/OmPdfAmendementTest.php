@@ -2,6 +2,7 @@
 
 use App\Models\Bareme;
 use App\Models\Mission;
+use App\Models\OmAmendement;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
@@ -104,4 +105,31 @@ it('affiche le taux journalier hors transport', function () {
     $this->om->update(['montant_transport' => 30000, 'montant_total' => 300000]);
 
     expect($this->pdf->donnees($this->om->fresh())['taux_journalier'])->toBe('45 000');
+});
+
+it('retient le dernier amendement même quand deux tombent dans la même seconde', function () {
+    $this->om->update(['avance_engagee' => 189000]);
+    amenderPourPdf($this, 8, 'Rallonge de deux jours après paiement de l’avance.');
+    amenderPourPdf($this, 3, 'Mission écourtée, retour anticipé constaté.');
+
+    // amende_le est précis à la seconde : on force l'égalité pour rendre le cas certain.
+    $instant = now()->startOfSecond();
+    OmAmendement::where('ordre_mission_id', $this->om->id)->update(['amende_le' => $instant]);
+
+    $om = $this->om->fresh();
+    $d = $this->pdf->donnees($om);
+    expect($d['amendement']['nb_jours_avant'])->toBe(8)
+        ->and($d['amendement']['nb_jours_apres'])->toBe(3)
+        ->and($d['amendement']['nombre'])->toBe(2);
+
+    // Document de retenue (trop-perçu) : motif du dernier amendement.
+    $versement = Versement::where('ordre_mission_id', $om->id)->where('type', 'RELIQUAT')->firstOrFail();
+    expect($versement->statut)->toBe('A_RECOUVRER')
+        ->and($this->pdf->donneesRetenue($versement)['motif'])->toBe('Mission écourtée, retour anticipé constaté.');
+
+    // Journal de la fiche OM : le dernier en tête.
+    $this->actingAs($this->gestionnaire)->getJson("/api/ordres/{$om->id}")
+        ->assertOk()
+        ->assertJsonPath('data.amendements.0.nb_jours_apres', 3)
+        ->assertJsonPath('data.amendements.1.nb_jours_apres', 8);
 });
