@@ -156,6 +156,13 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 - **`docs/deploiement-circuit-validation.md`** et **`docs/plan-validation-daf-dg.md`** marqués
   historiques, avec ce qui reste valable et ce qui est obsolète.
 
+#### Supprimé
+
+- **Form Requests inutilisées** `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` : vestiges de la
+  saisie manuelle d'un OM, ils n'étaient référencés par aucune route ni aucun test et validaient
+  contre une table `taux_per_diems` qui n'existe plus. Les OM sont retranscrits par
+  `StoreMissionRequest` et ajustés par `AmenderOrdreMissionRequest`.
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.

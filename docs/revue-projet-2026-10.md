@@ -260,8 +260,9 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 - Points « non testés » du §4 (minuteurs, page de maintenance, garde de route au rechargement,
   verrou `lockForUpdate` sous MySQL) : corrigés, mais sans test automatisé.
 - Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md` à remesurer sur le poste de build.
-- Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` ne sont plus utilisés et
-  visent une table `taux_per_diems` disparue (relevé en réécrivant `openapi.yaml`).
+- ~~Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest`~~ — **supprimés** le 23/10 :
+  aucune route ni aucun test ne les utilisait (les OM sont retranscrits par `StoreMissionRequest`) et
+  ils visaient une table `taux_per_diems` disparue.
 - `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md` (juillet-septembre
   2026) décrivent le circuit DAF/DG par OM, retiré depuis. Ils sont désormais marqués **historiques**,
   avec, en tête, ce qui reste valable (migrations, `ComptesCircuitSeeder`, arbitrages client) et ce
