@@ -121,6 +121,15 @@ describe('menu latéral', () => {
     expect(chemins.filter((c, i) => chemins.indexOf(c) !== i)).toEqual([])
   })
 
+  it('écrit ses libellés en français accentué', () => {
+    // Le menu affichait « Etats de paiement », « Generer MTN », « Parametres »…
+    // alors que les écrans et la documentation portent les accents.
+    const sansAccent = /\b(Etats?|Generer|Regularisations|Reconciliation|Baremes|percus|Systeme|Parametres|roles)\b/
+    const libelles = [...NAVIGATION.map((g) => g.title), ...entrees.map((e) => e.label)]
+
+    expect(libelles.filter((l) => sansAccent.test(l))).toEqual([])
+  })
+
   it('rend accessible tout écran métier depuis le menu', () => {
     // Les écrans atteignables uniquement par une URL tapée à la main sont des
     // écrans morts : /admin/roles, /admin/email, /admin/sauvegardes et les

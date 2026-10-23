@@ -226,7 +226,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - stack : Vue **3.6 bêta** (dist-tag `beta` + `overrides`, figée par `package-lock.json` → `npm ci`),
     PHP 8.4.x 64 bits (8.5 non pris en charge), Node 20.19+/22.12+, Telescope local seulement ;
     la « visionneuse VuePDF » n'existait pas (aperçu HTML + PDF serveur) ;
-  - comptes de tests (Pest 573 / 68 fichiers, Vitest 120), structure (`utils/exercice.ts`, `services/auth.ts`,
+  - comptes de tests (Pest 573 / 68 fichiers, Vitest 120, puis 121 avec le menu accentué), structure (`utils/exercice.ts`, `services/auth.ts`,
     directive `v-permission`) ;
   - API : `GET /api/agents/stats` ajouté ;
   - règles : solde malgré une tranche nulle (n° 19), lot complémentaire proposé (n° 21), amendement
@@ -241,6 +241,20 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - Cron `schedule:run` (sauvegarde + `sanctum:prune-expired`), file `sync` en production ;
   - Playwright sans écran ; structure et tableau de documentation complétés (`AGENTS.md`,
     documents historiques, maquettes HTML).
+- **Menu latéral sans accents** (`components/shared/navigation.ts`) : « Etats de paiement »,
+  « Generer MTN / Moov », « Regularisations », « Reconciliation », « Baremes », « Trop-percus »,
+  « Systeme », « Parametres » et « Matrice des roles », alors que les écrans et la documentation
+  portent les accents. Libellés corrigés ; l'entrée de `/admin/roles` reprend le titre de son écran,
+  « Matrice des permissions ». Test dans `navigation.spec.ts` (Vitest : 121 tests). Trouvé en
+  mettant à jour `docs/SCENARIO-DEMO.md`.
+- **`docs/SCENARIO-DEMO.md`** rejoué une troisième fois (base neuve, API réelle : fichiers et
+  montants identiques) :
+  - écart du transport d'ATCHA dans l'avance : **+7 000** (70 % de 10 000), et non +6 500 ;
+  - chemins de menu exacts (`Personnel › Nouvel agent`, `Ordres de Mission › Retranscrire`,
+    `Missions` → écran de l'état, `Paiements › Générer MTN`, `Paramètres › Sauvegardes`…) et
+    boutons « Établir le récapitulatif des avances / des reliquats » ;
+  - comptes de démo seedés seulement en `APP_ENV=local`, base neuve pour rejouer.
+  `docs/checklist-post-deploiement.md` : « Matrice des permissions ».
 - **`CHANGELOG.md`** relu contre la revue et le code :
   - en-tête : revue du 22 au 23/10, consignes de mise à jour complètes (une seule migration sur 33,
     `storage/app/private/ordres/` à vider, Form Requests à supprimer) ;
@@ -405,7 +419,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 État au 23/10/2026, après les correctifs n° 17 à 22 (fin de revue du 22/10 entre parenthèses) :
 
 - **Pest** : 573 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
-- **Vitest** : 120 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
+- **Vitest** : 121 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
 - **Recette sur l'API réelle** : 83 / 83 contrôles (76 / 76) et 9 / 9 sondes sur les correctifs
   n° 19 et 22 ; scénario de démo rejoué, §7 « avenant » et §8.2 « lot complémentaire » compris
   (fichiers MTN/Moov réels).

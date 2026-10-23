@@ -16,12 +16,18 @@
 > **Relu le 23 octobre 2026 contre l'interface** : les libellés des boutons sont alignés sur les
 > écrans. Le bouton **« Générer le lot complémentaire »** du §8.2 manquait à l'écran : il est
 > corrigé (défaut n° 21 de la revue), alors que le serveur produisait déjà le lot.
+> **Rejoué une troisième fois le 23 octobre 2026** (base neuve, API réelle) : fichiers et montants
+> identiques (§3 à §8). Chemins de menu alignés sur le menu latéral, dont les libellés sont
+> désormais accentués (« États de paiement », « Générer MTN », « Matrice des permissions »…) ;
+> écart du transport d'ATCHA dans l'avance corrigé (**+7 000**, et non +6 500).
 
 ---
 
 ## 1. Pré-requis — comptes de démonstration
 
-Mot de passe commun : `password` (comptes de démo, **jamais en production**).
+Mot de passe commun : `password` (comptes de démo, **jamais en production**). Ils sont créés par
+`php artisan migrate:fresh --seed` **uniquement** si `APP_ENV=local` (ou `testing`) ; une base neuve
+est nécessaire pour rejouer le scénario, les références SEMO du §3 étant uniques.
 
 | Rôle | Compte | Sert à |
 |---|---|---|
@@ -61,12 +67,12 @@ Mot de passe commun : `password` (comptes de démo, **jamais en production**).
 ## 3. Déroulé pas à pas
 
 ### ÉTAPE A — Créer les employés  ·  compte `gestion@`
-`Personnel → Nouveau` (`/agents/nouveau`) — créer les 4 agents ci-dessus.
+Menu `Personnel › Nouvel agent` (`/agents/nouveau`) — créer les 4 agents ci-dessus.
 À la saisie du numéro, l'app affiche en temps réel le badge **MTN** ou **MOOV**
 (contrôle de cohérence numéro ↔ opérateur).
 
 ### ÉTAPE B — Retranscrire l'OM SEMO  ·  compte `gestion@`
-`Ordres → Nouveau` (`/ordres/nouveau`), assistant en 3 étapes :
+Menu `Ordres de Mission › Retranscrire` (`/ordres/nouveau`), assistant en 3 étapes :
 
 1. **Contexte** : objet « Dossiers de passation de marchés », destination BOHICON,
    dates 18 → 23/05/2026.
@@ -99,10 +105,11 @@ La validation ne se fait **pas** OM par OM : c'est **l'état de paiement de la
 mission** — et d'abord celui des **avances** — qui passe le circuit. Une mission
 porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 
-1. **Établir le récapitulatif**  ·  `gestion@` — depuis la mission, tranche
-   **Avances**, cliquer **« Établir le récapitulatif »** → l'état passe en
+1. **Établir le récapitulatif**  ·  `gestion@` — menu `Missions` (`/missions`) → la mission
+   (écran de l'état, `/missions/:id/etat` ; aussi accessible par **« Établir l'état »** sur la fiche
+   d'un OM), tranche **Avances**, cliquer **« Établir le récapitulatif des avances »** → l'état passe en
    **BROUILLON** (PDF filigrané « BROUILLON — NON VALIDE » téléchargeable).
-2. **Contrôler**  ·  `controle@` — `États de paiement` → ouvrir l'état → **Contrôler**
+2. **Contrôler**  ·  `controle@` — menu `États de paiement` (`/etats`) → ouvrir l'état → **Contrôler**
    → **CONTRÔLÉ**.
 3. **Viser (Vu)**  ·  `daf@` — **Apposer le visa DAF** → **VISÉ DAF** (interdit au contrôleur :
    séparation des tâches).
@@ -123,7 +130,7 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 > n'est pas validé, aucun bénéficiaire n'apparaît à la génération des avances.
 
 ### ÉTAPE D — CAS 1 : fichier MTN  ·  compte `finance@`
-`Paiements → MTN` (`/paiements/mtn`) → mission = *Dossiers de passation de marchés*
+Menu `Paiements › Générer MTN` (`/paiements/mtn`) → mission = *Dossiers de passation de marchés*
 · tranche = **AVANCE** → **Générer le fichier.txt**.
 
 **Fichier réel produit** — `dossiers-de-passation-de-marches_AVANCE.txt`
@@ -139,10 +146,11 @@ HDR,SARALY,2,406000
 - Séparateur **virgule**, fins de ligne **CRLF**, saut de ligne final, ASCII.
 - En-tête `HDR,{compte},{nb_lignes},{montant_total}` (compte = `SARALY` en config).
 - Détail `{seq},MSISDN,{229 + numéro},{montant},{libellé MAJUSCULES}`.
-- Total avance MTN = **406 000** (dont les +6 500 d'ATCHA correspondent à son transport).
+- Total avance MTN = **406 000** : l'avance d'ATCHA dépasse de **7 000** celle de SOUMANOU
+  (70 % de ses 10 000 de transport).
 
 ### ÉTAPE E — CAS 2 : fichier Moov  ·  compte `finance@`
-`Paiements → Moov` (`/paiements/moov`) → même mission · tranche **AVANCE** → **Générer le fichier.xlsx**.
+Menu `Paiements › Générer Moov` (`/paiements/moov`) → même mission · tranche **AVANCE** → **Générer le fichier.xlsx**.
 
 **Fichier réel produit** — `dossiers-de-passation-de-marches_AVANCE.xlsx`
 (feuille `Sheet1`, en-tête à 9 colonnes) :
@@ -171,8 +179,8 @@ Régénération possible tant que le lot n'est pas confirmé (voir la variante 8
 ### Bonus — le reliquat (30 %)
 Le reliquat vient **après** l'avance. Une fois l'état des avances **VALIDÉ** :
 
-1. `gestion@` — établir le récapitulatif de la tranche **Reliquats** (l'onglet
-   n'est débloqué qu'à ce moment) → **BROUILLON**.
+1. `gestion@` — sur l'écran de l'état, tranche **Reliquats** (l'onglet n'est débloqué qu'à ce
+   moment) → **« Établir le récapitulatif des reliquats »** → **BROUILLON**.
 2. Rejouer le circuit **contrôle → visa DAF → validation DG** (`controle@` → `daf@`
    → `dg@`) sur l'état des reliquats → **VALIDÉ** : les fichiers de reliquat s'ouvrent.
 3. `finance@` — rejouer les étapes D et E avec la tranche **RELIQUAT** :
@@ -281,7 +289,7 @@ Nouveau total   Avance (figée)   Reliquat
 - Le **PDF de l'OM** affiche « Trop-perçu (à recouvrer par retenue sur salaire) —
   −54 000 » et, dans l'encadré du total, « Montant total dû — 135 000 » (et non plus
   « Montant total à payer »).
-- `finance@` — `Paiements → Régularisations` (`/paiements/regularisations`) : la
+- `finance@` — menu `Paiements › Régularisations` (`/paiements/regularisations`) : la
   ligne apparaît, **à recouvrer = 54 000**.
 - Bouton **« Document »** → **PDF de retenue sur salaire** (en-tête ANaTT) à
   remettre à la RH : bénéficiaire, mission, décomposition (avance engagée 189 000
@@ -322,7 +330,7 @@ Le fichier MTN de l'étape D est refusé par la plateforme : le numéro d'**ATCH
 est erroné.
 
 1. `gestion@` — corriger la fiche d'ATCHA : **01 91 23 45 67** (toujours MTN).
-2. `finance@` — `Paiements → MTN`, même mission et tranche → **« Marquer en erreur »**. Les
+2. `finance@` — `Paiements › Générer MTN`, même mission et tranche → **« Marquer en erreur »**. Les
    versements du lot redeviennent **EN_ATTENTE** et reprennent le numéro
    **actuel** de l'agent.
 3. **Régénérer le fichier.txt** → le fichier repart avec le bon numéro :
@@ -342,7 +350,7 @@ Avant le paiement Moov, **ABLESSOU** signale qu'il est passé chez MTN
 
 1. `gestion@` — mettre à jour sa fiche (numéro + opérateur **MTN**). Ses
    versements encore en attente suivent automatiquement le référentiel.
-2. `finance@` — `Paiements → MTN`, même mission, tranche **AVANCE**. L'écran rappelle que le
+2. `finance@` — `Paiements › Générer MTN`, même mission, tranche **AVANCE**. L'écran rappelle que le
    dernier lot est **confirmé**, et l'aperçu ne montre que **ABLESSOU**. Cliquer
    **« Générer le lot complémentaire.txt »**. Le lot MTN déjà confirmé n'est **pas réécrit** :
    un **lot complémentaire** est créé, avec le seul nouveau bénéficiaire. Quand plus rien n'est
@@ -378,13 +386,13 @@ Dès qu'un état existe pour la mission, ces boutons disparaissent.
 
 ### 8.4 (Option) Sauvegarde et restauration  ·  `superadmin@`
 
-`Administration → Sauvegardes` : **Nouvelle sauvegarde**, puis icône
+Menu `Paramètres › Sauvegardes` (`/admin/sauvegardes`) : **Nouvelle sauvegarde**, puis icône
 **Télécharger**. Pour **Restaurer**, recopier le nom exact du fichier : l'application
 crée d'abord une **sauvegarde de sécurité** de l'état courant (opération
 réversible). À ne montrer que sur une base de démonstration.
 
 Pour une démonstration parlante : prendre une sauvegarde, retirer une permission à un
-profil dans **Matrice des permissions** (menu *Utilisateurs › Matrice des roles*), puis restaurer → la matrice revient à son état
+profil dans **Matrice des permissions** (menu *Utilisateurs › Matrice des permissions*), puis restaurer → la matrice revient à son état
 d'avant **dès la requête suivante** (la restauration purge la matrice mise en cache).
 Les réglages de `Paramètres` (part d'avance, exercice) ne font **pas** partie de la
 sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.
