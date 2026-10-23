@@ -34,7 +34,7 @@ table de concordance. C'est la raison du nommage retenu.
 
 | Couche | Fichier | Contenu |
 |---|---|---|
-| Serveur | `App\Support\CategorieIndice` | codes, libellés, plages, seuils, `determiner()`, `normaliser()`, `regleIn()` |
+| Serveur | `App\Support\CategorieIndice` | codes, libellés, plages, seuils, `determiner()`, `normaliser()`, `libelle()`, `plage()`, `valeursAcceptees()`, `regleIn()` |
 | Client | `frontend/src/types/agent.ts` | `CATEGORIES`, `CATEGORIE_LABELS`, `categorieLabel()` |
 | Client (seuils) | `frontend/src/utils/benin.ts` | `categorieDeduite()` — miroir du calcul serveur, pour le retour visuel temps réel |
 
@@ -50,7 +50,16 @@ en quatre endroits côté serveur. Ils n'existent plus qu'une fois par couche : 
 révision du barème de l'ANaTT se fait désormais dans **deux** fichiers, pas vingt.
 
 **Règle** : ne jamais afficher le code brut. Les écrans passent par
-`categorieLabel()` / `CATEGORIE_LABELS`, les PDF par `CategorieIndice::libelle()`.
+`categorieLabel()` / `CATEGORIE_LABELS`. Le PDF de l'OM et le document de retenue passent par
+`CategorieIndice::libelle()` (`PdfGenerator`). L'état de paiement imprime la **plage**
+(`CategorieIndice::plage()`, via `LignesEtatPaiement`). La plage retombe sur l'indice réel de
+l'agent, puis sur « — », pour un code inconnu (donnée héritée). `libelle()` renvoie le code tel
+quel dans ce cas : c'est le seul chemin par lequel un code brut peut encore apparaître.
+
+La validation passe par `CategorieIndice::regleIn()` (`in:` sur `valeursAcceptees()`, soit le
+vocabulaire courant plus l'héritage `ORDRE_*`) dans `StoreAgentRequest`, `UpdateAgentRequest`,
+`StoreMissionRequest`, `StoreBaremeRequest` et l'import (`AgentService`). Les exports Excel et PDF des
+rapports ne portent pas la catégorie.
 
 ---
 
@@ -67,7 +76,7 @@ entrée** et traduit silencieusement par `CategorieIndice::normaliser()` :
 - filtres de liste `?categorie=…` (`AgentService`, `BaremeService`) — les liens
   mis en favori avant la bascule restent valides.
 
-(Liste vérifiée le 22/10/2026 : ce sont les seuls appels à `CategorieIndice::normaliser()`.)
+(Liste vérifiée le 23/10/2026 : ce sont les seuls appels à `CategorieIndice::normaliser()`.)
 
 Un code inconnu des deux vocabulaires (`ORDRE_9`, `INDICE_X`) est **rejeté** en
 422 comme avant : la normalisation ne masque pas une erreur de saisie.
@@ -117,8 +126,11 @@ chaque exécution de la suite de tests **rejoue réellement la bascule**.
 
 ```bash
 cd backend  && ./vendor/bin/pest                 # dont CategorieIndiceTransitionTest, Unit/CategorieTest
-cd frontend && npm run test:unit && npm run type-check && npm run lint:check   # dont benin.spec.ts
+cd frontend && npm run test:unit -- --run && npm run type-check && npm run lint:check   # dont benin.spec.ts
 ```
+
+> `npm run test:unit` seul lance Vitest en mode **surveillance** et ne rend pas la main :
+> `-- --run` l'exécute une fois, comme la CI.
 
 | Test | Couvre |
 |---|---|
