@@ -139,6 +139,12 @@ class MissionService
             ]),
         );
 
+        // OM exonéré (montant nul, aucun versement) : rien à payer, il est soldé
+        // d'emblée — comme à la validation de l'état des avances (propager).
+        if ($ordre->montant_total <= 0) {
+            $ordre->update(['statut' => 'SOLDE']);
+        }
+
         $this->notifications->omValide($ordre);
 
         return $ordre;

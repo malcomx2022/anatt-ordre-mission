@@ -9,12 +9,39 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
-Contenu de la **version 1.3** (revue d'octobre 2026, 22/10/2026) en tête ; les entrées plus
-anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
-instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
-`2026_10_22_090000_add_sequence_to_lots_paiement`, `vendor/` inchangé, SPA à redéployer).
+Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tête ; les entrées
+plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
+instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
+- une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
+  les correctifs n° 10 à 24 ne touchent que le code (`app/`, SPA) ;
+- `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
+- vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
+  Form Requests retirées (voir *Supprimé*).
 
 ### Version 1.3 — revue d'octobre 2026
+
+#### Défauts corrigés — index
+
+Numérotation de `docs/revue-projet-2026-10.md` §3, qui donne le détail et la reproduction.
+Chaque correctif a un test de non-régression vu en échec sans lui.
+
+| N° | Gravité | Défaut | Rubrique ci-dessous | PR |
+|----|---------|--------|---------------------|----|
+| 1-8 | 4 bloquants, 4 majeurs | OM rejeté repassé `VALIDE`, collision des fichiers de paiement, amendement ignorant l'avance payée (circuit par OM), 500 HTML sans `Accept`, paraphe non téléversé, mois en UTC, catégorie suggérée fausse, historique OM-08 muet | Corrigé (première passe) | #125 |
+| 9 | Mineur | Badge « complémentaire n° N » jamais affiché (`sequence` absent de la ressource) | Corrigé (scénario de démo) | #127 |
+| 10 | Majeur | `db:restore` laissait l'ancienne matrice des permissions en cache | Corrigé — restauration et permissions | #133 |
+| 11 | Mineur | PDF de l'OM sans les signatures de l'état des avances | Modifié — signatures sur le PDF de l'OM | #136 |
+| 12-13 | Majeurs | Échec d'un gros lot sans libérer ses versements ; Cron `queue:work` limité à la file `default` | Corrigé (files d'attente) | #139 |
+| 14-15 | Mineurs | Tri des sauvegardes sur la date affichée ; `openapi.yaml` obsolète | Documentation — description OpenAPI | #140 |
+| 16 | Majeur | PDF de l'OM servi d'avant l'amendement (cache) et répartition mal libellée | Corrigé (PDF de l'OM amendé) | #142 |
+| 17 | Mineur | Dernier amendement mal identifié (même seconde) | Corrigé (rejeu de la recette et de la démo) | #144 |
+| 18 | Majeur | PDF officiel de l'OM inaccessible depuis l'interface | Corrigé (guide utilisateur) | #145 |
+| 19 | Mineur | OM jamais soldé avec une part d'avance à 0 ou 100 % | Corrigé (part d'avance aux bornes) | #150 |
+| 20 | Mineur | Exercice proposé par l'écran Paramètres ignorant le mois de début | Corrigé (exercice proposé par l'écran Paramètres) | #150 |
+| 21 | Majeur | Lot complémentaire impossible à générer depuis l'écran | Corrigé (lot complémentaire depuis l'écran) | #152 |
+| 22 | Majeur | Amendement accepté sur un reliquat déjà payé (mission sans état) | Corrigé (amendement d'un OM au reliquat payé) | #152 |
+| 23 | Mineur | OM au trop-perçu recouvré jamais soldé | Corrigé (solde d'un OM, 23/10/2026) | #154 |
+| 24 | Mineur | OM exonéré resté `VALIDE` après validation par OM | Corrigé (solde d'un OM, 23/10/2026) | #154 |
 
 #### Corrigé (première passe)
 
@@ -161,7 +188,7 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 - **Dernier amendement mal identifié** : deux amendements dans la même seconde (`amende_le` à la
   seconde) faisaient rappeler le **premier** sur le PDF de l'OM, les listaient dans le désordre sur la
   fiche OM et pouvaient citer le mauvais motif sur le document de retenue. Tri sur `amende_le` puis
-  `id`. Trouvé en rejouant le §7 du scénario de démo ; test dans `OmPdfAmendementTest`.
+  `id`. Trouvé en rejouant le §7 du scénario de démo ; test dans `OmPdfAmendementTest`. Défaut n° 17.
 - **Recette sur l'API réelle rejouée** : 83 / 83 (76 contrôles d'origine + 7 sur les correctifs n° 4,
   11 et 16). **Scénario de démo rejoué**, §7 « avenant » compris : montants et fichiers conformes au
   document (`docs/revue-projet-2026-10.md` §1).
@@ -197,6 +224,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - file `sync` en production ;
   - pièges des correctifs n° 17, 19, 20, 21 et 22 ;
   - Cron `schedule:run`.
+- **`CLAUDE.md`** confronté au code (23/10) :
+  - stack : Vue **3.6 bêta** (dist-tag `beta` + `overrides`, figée par `package-lock.json` → `npm ci`),
+    PHP 8.4.x 64 bits (8.5 non pris en charge), Node 20.19+/22.12+, Telescope local seulement ;
+    la « visionneuse VuePDF » n'existait pas (aperçu HTML + PDF serveur) ;
+  - comptes de tests (Pest 573 / 68 fichiers, Vitest 120, puis 121 avec le menu accentué), structure (`utils/exercice.ts`, `services/auth.ts`,
+    directive `v-permission`) ;
+  - API : `GET /api/agents/stats` ajouté ;
+  - règles : solde malgré une tranche nulle (n° 19), lot complémentaire proposé (n° 21), amendement
+    refusé sur reliquat payé (n° 22), dernier amendement départagé par `id` (n° 17), exercice recalculé (n° 20) ;
+  - commandes : `npm ci`, Playwright sans écran, `make:class` au lieu d'un `make:service` inexistant.
 - **`README.md`** confronté au code :
   - PHP 8.4.x 64 bits (8.5 non pris en charge : PhpSpreadsheet `<8.5.0`) ;
   - comptes de démonstration seedés seulement en `APP_ENV=local`/`testing` ;
@@ -206,6 +243,43 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - Cron `schedule:run` (sauvegarde + `sanctum:prune-expired`), file `sync` en production ;
   - Playwright sans écran ; structure et tableau de documentation complétés (`AGENTS.md`,
     documents historiques, maquettes HTML).
+- **Menu latéral sans accents** (`components/shared/navigation.ts`) : « Etats de paiement »,
+  « Generer MTN / Moov », « Regularisations », « Reconciliation », « Baremes », « Trop-percus »,
+  « Systeme », « Parametres » et « Matrice des roles », alors que les écrans et la documentation
+  portent les accents. Libellés corrigés ; l'entrée de `/admin/roles` reprend le titre de son écran,
+  « Matrice des permissions ». Test dans `navigation.spec.ts` (Vitest : 121 tests). Trouvé en
+  mettant à jour `docs/SCENARIO-DEMO.md`.
+- **`docs/SCENARIO-DEMO.md`** rejoué une troisième fois (base neuve, API réelle : fichiers et
+  montants identiques) :
+  - écart du transport d'ATCHA dans l'avance : **+7 000** (70 % de 10 000), et non +6 500 ;
+  - chemins de menu exacts (`Personnel › Nouvel agent`, `Ordres de Mission › Retranscrire`,
+    `Missions` → écran de l'état, `Paiements › Générer MTN`, `Paramètres › Sauvegardes`…) et
+    boutons « Établir le récapitulatif des avances / des reliquats » ;
+  - comptes de démo seedés seulement en `APP_ENV=local`, base neuve pour rejouer.
+  `docs/checklist-post-deploiement.md` : « Matrice des permissions ».
+- **`CHANGELOG.md`** relu contre la revue et le code :
+  - en-tête : revue du 22 au 23/10, consignes de mise à jour complètes (une seule migration sur 33,
+    `storage/app/private/ordres/` à vider, Form Requests à supprimer) ;
+  - nouvel **index des défauts n° 1 à 22** (gravité, rubrique, PR) ; n° 17 et 18 repérés dans
+    leurs rubriques ;
+  - *Vérification* au 23/10 (Pest 573, Vitest 120, recette 83/83 + 9 sondes) au lieu des
+    chiffres du 22/10 ;
+  - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
+    confrontés au code ce jour-là.
+
+#### Corrigé (solde d'un OM, 23/10/2026)
+
+- **OM au trop-perçu recouvré jamais soldé.** Le solde n'était examiné qu'à la confirmation d'un lot,
+  et un versement `RECOUVRE` comptait comme restant à régler : un OM dont l'avance était payée et le
+  trop-perçu récupéré par retenue restait `VALIDE`. Règle commune `LotPaiementService::solderSiRegle`
+  (versements `CONFIRME` ou `RECOUVRE` = réglés, versements nuls ignorés), appelée à la confirmation
+  **et** au constat du recouvrement. Deux tests dans `RegularisationTest`. Défaut n° 23.
+- **OM exonéré resté `VALIDE` sur le circuit par OM.** La validation de l'état des avances solde aussitôt
+  un OM de montant nul ; `MissionService::valider` le laissait `VALIDE`. Il le solde désormais. Test dans
+  `CircuitValidationTest` (Pest : 576 tests). Défaut n° 24.
+- Trouvés en mettant à jour **`docs/circuits-validation.md`** (§1, §3 « Solde » et « OM exonéré »,
+  diagramme du §6, références). Mis à jour aussi : `docs/amendement-om.md`, la revue (n° 23 et 24),
+  `CLAUDE.md`, `README.md`, `AGENTS.md` et le guide utilisateur (régénéré, annexe des statuts).
 
 #### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
 
@@ -261,12 +335,12 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 - **PDF officiel de l'OM inaccessible depuis l'interface** : la fiche de l'OM ne proposait que
   « Télécharger le brouillon », masqué une fois l'OM validé ; l'écran OM-07 (`/ordres/:id/pdf`) n'était
   lié de nulle part. Nouveau lien **« PDF de l'OM »** dans l'en-tête de la fiche, à côté de
-  « Historique ». Test dans `mission-detail.spec.ts`.
+  « Historique ». Test dans `mission-detail.spec.ts`. Défaut n° 18.
 - **Guide utilisateur** (régénéré) : accès au PDF de l'OM, journal des amendements (le plus récent en
   tête), document de retenue (motif du dernier amendement), boutons « Document » et « Marquer recouvré »
   (le guide citait « Constater le recouvrement », qui n'existe pas). `docs/SCENARIO-DEMO.md` §7 aligné.
 
-#### Documentation technique (23/10/2026)
+#### Documentation — confrontation au code, document par document (23/10/2026)
 
 - **`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`** (régénéré par
   `docs/generer_documentation_technique.py`) :
@@ -358,9 +432,13 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 
 #### Vérification
 
-- **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.
-- **Vitest** : 113 tests ; **Playwright** : parcours critique (3 tests, API mockée).
-- **Recette sur l'API réelle** : 76 / 76 contrôles ; scénario de démo rejoué (fichiers MTN/Moov réels).
+État au 23/10/2026, après les correctifs n° 17 à 22 (fin de revue du 22/10 entre parenthèses) :
+
+- **Pest** : 576 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
+- **Vitest** : 121 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
+- **Recette sur l'API réelle** : 83 / 83 contrôles (76 / 76) et 9 / 9 sondes sur les correctifs
+  n° 19 et 22 ; scénario de démo rejoué, §7 « avenant » et §8.2 « lot complémentaire » compris
+  (fichiers MTN/Moov réels).
 - Chaque correctif a un test de non-régression vu en échec sans le correctif.
 - **CI** (`.github/workflows/ci.yml`) : Lint, Pest, Vitest + type-check, Playwright et build
   `frontend-dist` exécutés sur chaque PR.

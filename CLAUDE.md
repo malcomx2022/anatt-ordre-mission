@@ -59,6 +59,12 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   - **Idempotence** : un versement `CONFIRME` (ou porté par un lot `CONFIRME`) n'est **jamais** réinclus dans un nouveau fichier (anti-double-paiement).
   - **Lot complémentaire** : un lot `CONFIRME` n'est jamais réécrit ; un versement devenu payable après coup part dans
     un lot de **séquence** suivante (`sequence` 2, 3… ; fichier `…_COMPL{n}`). Fichiers rangés par mission : `paiements/{mission_id}/`.
+    L'écran de génération le propose de lui-même (« Générer le lot complémentaire ») quand l'aperçu d'un lot confirmé
+    compte encore des bénéficiaires ; la liste des lots est triée par date puis par `id` (le plus récent d'abord).
+  - **Solde d'un OM** : un OM dont tous les versements **non nuls** sont réglés — `CONFIRME`, ou `RECOUVRE` pour un
+    trop-perçu — passe à `SOLDE`, à la confirmation d'un lot comme au constat d'un recouvrement
+    (`LotPaiementService::solderSiRegle`). Une tranche nulle — part d'avance à 0 ou 100 % — n'entre dans aucun fichier et
+    ne le retient pas. Un OM exonéré (montant nul) est soldé dès sa validation, dans les deux circuits.
 - **États de paiement PAR TRANCHE** — une mission porte **DEUX états**, chacun avec son circuit complet
   (récapitulatif → `BROUILLON` → `CONTROLE` → `VISA_DAF` → `VALIDE` ; rejet motivé possible à chaque étape) :
   1. **État des AVANCES** (Σ avances des OM) : sa validation finale par le DG fait passer les OM à `VALIDE`
@@ -88,8 +94,10 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   chaque amendement est tracé dans la table **`om_amendements`** + audit `AMEND_OM`.
   - **Gardes** : refus si OM `REJETE`/`ANNULE`, si un état de tranche est en cours de signature
     (`CONTROLE`/`VISA_DAF` → rejet guidé), si l'état des reliquats est **validé**, ou si un trop-perçu de l'OM
-    a déjà été **`RECOUVRE`** (retenue soldée → avenant formel, hors périmètre). Un trop-perçu encore
-    `A_RECOUVRER` reste amendable (rien n'a été retenu).
+    a déjà été **`RECOUVRE`** (retenue soldée → avenant formel, hors périmètre), ou si le **reliquat** de l'OM est
+    déjà `CONFIRME` (payé : avenant formel — garde utile surtout au circuit par OM, sans état des reliquats).
+    Un trop-perçu encore `A_RECOUVRER` reste amendable (rien n'a été retenu). Le « dernier amendement » se départage
+    par `id` quand deux portent le même horodatage.
   - **Garde supplémentaire** : amendement refusé tant qu'un versement de l'OM est `GENERE` (fichier en attente de dépôt :
     confirmer le lot ou le passer en `ERREUR`). Sur le circuit par OM (mission sans état), une avance déjà `CONFIRME`
     est engagée à l'amendement (`avance_engagee`), comme si l'état des avances l'avait figée.
@@ -152,25 +160,31 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 ## 2. STACK TECHNIQUE
 
 ### Frontend
-- **Framework** : Vue.js 3 (Composition API) + TypeScript strict
+- **Framework** : Vue.js **3.6 bêta** (Composition API) + TypeScript strict — `package.json` suit le dist-tag `beta`
+  (+ `overrides` des paquets `@vue/*`) ; la version effective est figée par `package-lock.json` (`3.6.0-beta.9`) :
+  installer avec `npm ci` pour ne pas changer de bêta
 - **Build** : Vite 8 (TypeScript 6, `vue-tsc`)
 - **CSS** : Tailwind CSS 3.4+ (config personnalisée ANaTT)
 - **State** : Pinia 3
 - **Router** : Vue Router 5 (guards d'authentification + permissions)
 - **HTTP** : Axios avec intercepteurs (token Bearer)
 - **Graphiques** : Chart.js 4
-- **PDF viewer** : VuePDF
-- **Tests** : Vitest 4 + Vue Test Utils ; Playwright (parcours critique e2e, API mockée)
+- **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
+  Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` sont déclarés mais non importés)
+- **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
+- **Tests** : Vitest 4 + Vue Test Utils (121 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
-- **PHP** : **8.4+** (minimum imposé par `composer.lock` : Symfony 8 + spatie/laravel-activitylog)
+- **PHP** : **8.4.x 64 bits** (minimum imposé par `composer.lock` : Symfony 8 + spatie/laravel-activitylog ;
+  **8.5 non pris en charge** : `phpoffice/phpspreadsheet` 1.30 déclare `<8.5.0`, que `platform_check` ne contrôle pas)
 - **Auth** : Laravel Sanctum 4 (SPA tokens)
 - **BDD** : MySQL 8 (production) / SQLite (tests)
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (573 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (576 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
 - Développement : WAMP + `start-dev.ps1` / `stop-dev.ps1` (API, worker, Vite)
@@ -202,12 +216,13 @@ anatt-ordre-mission/
 │   │   │   └── paiements/      ← PaiementGeneration.vue (génération MTN/Moov, suivi des gros lots)
 │   │   ├── composables/        ← useApi, useAuth, usePartAvance, useSearch, useToast
 │   │   ├── services/           ← un client par domaine (agents, ordres, missions, etats, paiements,
-│   │   │                         rapports, roles, users, audit, baremes, notifications) + http.ts
+│   │   │                         rapports, roles, users, audit, baremes, notifications, auth) + http.ts
 │   │   ├── stores/             ← auth, notifications, ordres-mission (Pinia)
 │   │   ├── router/index.ts     ← routes + meta.permission
 │   │   ├── types/              ← agent, bareme, etat, mission, paiement (+ index)
-│   │   ├── utils/              ← benin (téléphone, catégorie, moisLocal), permissions, roles, etats
-│   │   ├── directives/
+│   │   ├── utils/              ← benin (téléphone, catégorie, moisLocal), permissions, roles, etats,
+│   │   │                         exercice (exerciceDe : miroir de Parametres::anneeFiscalePour)
+│   │   ├── directives/         ← permission (v-permission)
 │   │   ├── views/              ← Pages : les 42 écrans du registre (§5) + écrans ajoutés depuis
 │   │   │                         (états, régularisations, signatures, permissions par utilisateur…)
 │   │   └── __tests__/          ← Vitest
@@ -797,7 +812,8 @@ DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 > renvoie la valeur configurée ou, à défaut, l'exercice courant calculé ; `libelleAnneeFiscale()` produit
 > « 2026 » ou « 2026-2027 » (exercice à cheval). Écriture SUPER_ADMIN via `/settings` (validées, mises en
 > cache 60 s, invalidées à l'écriture) ; **lecture publique** via `parametres/annee-fiscale`. Le sélecteur
-> d'année de l'UI est dynamique (plus de liste figée). **À ce jour, aucun écran ni traitement ne consomme
+> d'année de l'UI est dynamique (plus de liste figée) ; tant qu'aucune année n'est choisie explicitement, changer le
+> mois de début recalcule l'exercice courant (`utils/exercice.ts` → `exerciceDe`). **À ce jour, aucun écran ni traitement ne consomme
 > l'exercice** (rapports et exports filtrent par dates). Détail : `docs/annee-fiscale.md`.
 >
 > **Hors sauvegarde de la base** : `storage/app/settings.json` (réglages ci-dessus, signataires), les paraphes
@@ -808,6 +824,7 @@ DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 ```
 GET    /api/agents                  → { data: Agent[], meta } (filtres: search, categorie, operateur, actif)
 GET    /api/agents/recherche        → ?q=...  autocomplétion (nom/matricule/IFU)
+GET    /api/agents/stats            → compteurs globaux (mêmes filtres que la liste) pour les cartes de l'écran Personnel
 POST   /api/agents                  → Créer (catégorie déduite, cohérence numéro/opérateur)
 GET    /api/agents/:id              → Agent + ordres de mission
 PUT    /api/agents/:id              → Modifier agent
@@ -956,6 +973,9 @@ HDR,SARALY,1,45000
 - Paiement : cycle `EN_ATTENTE → GENERE → CONFIRME`. Confirmation **manuelle** après dépôt. Régénération tant que non confirmé ; **idempotence** (un versement CONFIRME, ou porté par un lot CONFIRME, n'est jamais réinclus ; un lot CONFIRME n'est jamais réécrit → lot complémentaire).
 - Un même agent ne figure qu'**une fois** par mission (`ordres.*.agent_id` distinct).
 - Rejet d'un OM : ses versements `EN_ATTENTE` passent `ANNULE` ; la validation d'un état ne repropage jamais `VALIDE` à un OM `REJETE`.
+- Solde : un OM passe `SOLDE` quand tous ses versements non nuls sont `CONFIRME` ou `RECOUVRE` (confirmation d'un lot,
+  constat d'un recouvrement) ; un OM exonéré est soldé à sa validation (état des avances ou validation par OM).
+- Amendement : refusé si le reliquat de l'OM est déjà `CONFIRME` (avenant formel), en plus des gardes du §1.
 
 ---
 
@@ -1043,12 +1063,13 @@ public function store(CreateOrdreMissionRequest $request): JsonResponse
 ```bash
 # Frontend
 cd frontend
-npm install
+npm ci                   # installe la version figée par package-lock.json (Vue 3.6 bêta)
 npm run dev              # http://localhost:5173
 npm run build            # type-check + build
 npm run test:unit -- --run
 npm run lint:check       # ESLint + oxlint (vérification)
-npm run test:e2e         # Playwright (PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé)
+npm run test:e2e         # Playwright (PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé ;
+                         #  sans écran : binaire headless_shell + --project=chromium)
 
 # Backend
 cd backend
@@ -1070,7 +1091,7 @@ php artisan make:model OrdreMission -mcr   # Model + migration + controller
 php artisan make:request CreateOrdreMissionRequest
 php artisan make:resource OrdreMissionResource
 php artisan make:job GeneratePaiementFile
-php artisan make:service MissionService    # (package nécessaire)
+php artisan make:class Services/MissionService   # classe de service (Laravel 11+)
 ```
 
 ---
@@ -1124,5 +1145,6 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes ; puis PDF de l'OM signé par l'état, purge de la matrice à la restauration — cf. `docs/revue-projet-2026-10.md`)*  
+*Dernière mise à jour : 23 octobre 2026 (stack et règles confrontées au code : Vue 3.6 bêta, PHP 8.4.x, solde et
+amendement après les correctifs n° 17 à 22) — précédente : 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes ; puis PDF de l'OM signé par l'état, purge de la matrice à la restauration — cf. `docs/revue-projet-2026-10.md`)*  
 *Version projet : 1.0.0*
