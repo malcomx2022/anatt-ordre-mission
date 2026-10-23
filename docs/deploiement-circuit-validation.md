@@ -1,5 +1,20 @@
 # Déploiement du circuit de validation sur une base déjà en ligne
 
+> **Document historique (juillet-septembre 2026) — ne plus suivre tel quel.** Il décrit le
+> passage au circuit à trois signatures **par OM**, piloté par le drapeau
+> `WORKFLOW_DOUBLE_VALIDATION`. Ce circuit a été retiré : les trois signatures se jouent
+> désormais sur l'**état de paiement** de la mission, et le circuit par OM n'a plus qu'une étape
+> (`docs/circuits-validation.md` §4). Vérifié contre le code le 23/10/2026 :
+>
+> | Section | Statut |
+> |---|---|
+> | §1-2 Migrations du 27/07/2026 | Toujours présentes ; elles s'exécutent avec les autres à toute installation ou mise à jour (`php artisan migrate`). Les statuts `VERIFIE` / `VISA_DAF` restent acceptés en base mais ne sont plus produits. |
+> | §3.3 Comptes du circuit (`ComptesCircuitSeeder`) | **Toujours valable** : variables `CONTROLEUR_*`, `DAF_*`, `DG_*` du `.env`, mot de passe temporaire affiché une fois, changement imposé à la première connexion. |
+> | §3.4 Bascule `WORKFLOW_DOUBLE_VALIDATION`, §4 interrupteur « Double validation », §6 désactivation | **Obsolètes** : le drapeau n'existe plus ; seul `WORKFLOW_SEPARATION_TACHES` subsiste dans `config/workflow.php`. |
+> | §5 Contrôle fonctionnel (boutons Vérifier / Viser / Valider sur l'OM) | **Obsolète** : le contrôle se fait sur l'état (`docs/checklist-post-deploiement.md`, `docs/workflows-par-profil.md`). |
+>
+> Pour une mise à jour d'aujourd'hui, suivre `DEPLOY-CPANEL.md` et `docs/runbook-mise-a-jour-cron.md`.
+
 > Procédure de mise à jour d'une instance **en production** vers le circuit
 > `CONTROLEUR → DAF → DG`. Le SQL présenté ici est celui que Laravel produit
 > réellement pour MySQL 8 (compilé depuis la grammaire du framework, non recopié

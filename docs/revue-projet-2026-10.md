@@ -8,25 +8,28 @@ Revue du dépôt à l'état `92fc7ef` (fusion de la PR #124), suivie de trois ca
 
 Environnement de test : PHP 8.4.27, Node 22, Chromium.
 
-> **État au 22/10/2026, fin de revue.** Les correctifs ont été livrés en trois passes, puis la
-> documentation a été remise à niveau. Tout est fusionné sur `main` (PR #125 à #131, cf. §6). Les
-> chiffres « fin de revue » ci-dessous sont mesurés sur `main` après la dernière fusion.
+> **État au 23/10/2026.** Les correctifs ont été livrés en trois passes (PR #125 à #131), puis la
+> documentation a été confrontée au code document par document (PR #132 à #142). Cette seconde
+> étape a fait apparaître sept défauts de plus (§3 n° 10 à 16), corrigés au fil de l'eau. Tout est
+> fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la colonne
+> « 23/10 » après la PR #142.
 
 ## 1. Résultats
 
-| Campagne | Outil | Première passe | Fin de revue |
-|----------|-------|----------------|--------------|
-| Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 |
-| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 |
-| Total backend | Pest (65 fichiers) | 535 | **552 / 552** |
-| Style backend | Pint `--test` | conforme | conforme |
-| Unitaires frontend | Vitest | 99 / 99, 23 fichiers | **113 / 113, 26 fichiers** |
-| Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur |
-| Build frontend | `vite build` | OK | OK |
-| Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 | 3 / 3 |
-| Recette API réelle | script HTTP, 76 vérifications | 76 / 76 (après correctifs) | 76 / 76 |
-| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) |
-| CI GitHub Actions | Lint, Pest, Vitest + type-check, Playwright, build | — | 5 / 5 (constaté sur les PR #130 et #131) |
+| Campagne | Outil | Première passe | Fin de revue | 23/10 |
+|----------|-------|----------------|--------------|-------|
+| Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 | 129 / 129 |
+| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 441 / 441 |
+| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **570 / 570 (68 fichiers)** |
+| Style backend | Pint `--test` | conforme | conforme | conforme |
+| Unitaires frontend | Vitest | 99 / 99, 23 fichiers | 113 / 113, 26 fichiers | **113 / 113, 26 fichiers** |
+| Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur | 0 erreur |
+| Build frontend | `vite build` | OK | OK | OK |
+| Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 | 3 / 3 | 3 / 3 |
+| Recette API réelle | script HTTP, 76 vérifications | 76 / 76 (après correctifs) | 76 / 76 | non rejouée (correctifs couverts par Pest) |
+| Scénario de démo | rejeu de `docs/SCENARIO-DEMO.md` sur l'API | — | conforme (1 défaut trouvé et corrigé, §3 n° 9) | non rejoué |
+| Description OpenAPI | `OpenApiTest` (routes ↔ spécification) | — | — | 96 / 96 opérations |
+| CI GitHub Actions | Lint, Pest, Vitest + type-check, Playwright, build | — | 5 / 5 (PR #130 et #131) | 5 / 5 sur chaque PR #132 à #142 |
 
 La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 
@@ -60,7 +63,17 @@ La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 | Seeders & recette | — | ComptesCircuitSeeder, DemoCircuitSeeder, RecetteE2E | 18 |
 | **Total** | | | **552** (535 en première passe) |
 
-Comptes établis par `pest --list-tests` sur `main` en fin de revue.
+Comptes établis par `pest --list-tests` sur `main` en fin de revue. Depuis, 18 tests se sont
+ajoutés avec les correctifs n° 10 à 16 (total 570) :
+
+| Fichier | Tests ajoutés | Défaut couvert |
+|---------|---------------|----------------|
+| `BackupControllerTest` | 2 | n° 10 (purge de la matrice à la restauration), n° 14 (tri des sauvegardes) |
+| `OmPdfSignaturesEtatTest` (nouveau) | 5 | n° 11 (signatures de l'état sur le PDF de l'OM) |
+| `Paiement/AsyncGenerationTest` | 2 | n° 12 (échec d'une génération en file) |
+| `OpenApiTest` (nouveau) | 3 | n° 15 (description OpenAPI verrouillée sur les routes) |
+| `CoherenceCircuitsTest` | 1 | état rejeté : circuit par OM toujours fermé (comportement documenté, non défaillant) |
+| `OmPdfAmendementTest` (nouveau) | 5 | n° 16 (PDF de l'OM amendé) |
 
 Côté frontend, 18 vues sur 50 sont montées par au moins un test Vitest (16 en première passe), et le
 composant `PaiementGeneration` — qui porte la génération MTN/Moov et le suivi des gros lots — est
@@ -160,7 +173,7 @@ Chaque point est couvert par un test, sauf mention contraire.
 | Deux exports lancés dans la même seconde s'écrasaient | Le nom de fichier reçoit un suffixe aléatoire. |
 | Transport perdu quand un OM passe à 0 jour | Seule l'exonération annule tout. Sans jour facturé, le per diem vaut 0 mais le transport reste dû. |
 
-Chaque point a un test qui échoue sans le correctif et passe avec. Pest : 552 / 552. La recette sur l'API réelle donne 76 / 76.
+Chaque point a un test qui échoue sans le correctif et passe avec. En fin de revue : Pest 552 / 552, recette sur l'API réelle 76 / 76.
 
 ## 5. Documentation remise à niveau
 
@@ -181,6 +194,23 @@ modification ; les montants et fichiers du scénario de démo sont ceux produits
 | `docs/runbook-mise-a-jour-cron.md` | Encadrés 1.3, tâches Cron permanentes, retour arrière (`down()` de la migration 1.3) | #131 |
 | `UPLOAD-VENDOR.md` | Étape « faut-il renvoyer `vendor/` ? », PHP 8.4 en local, `--prefer-dist`, extraction sans résidu | #131 |
 
+Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un par un.
+
+| Document | Contenu mis à jour | PR |
+|----------|--------------------|----|
+| `docs/circuits-validation.md` | Alignement 1.3 | #132 |
+| `docs/revue-projet-2026-10.md` | État de fin de revue | #132 |
+| `docs/amendement-om.md`, `docs/rbac-flexible.md`, `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md` | Alignement 1.3 ; l'exercice est documenté tel qu'il est (aucun écran ne le consomme) ; défaut n° 10 corrigé | #133 |
+| `docs/workflows-par-profil.md`, `docs/categories-indice.md` | Réécriture pour le circuit par état ; bornes et formule de secours des catégories | #134 |
+| `docs/SCENARIO-DEMO.md`, `docs/checklist-post-deploiement.md` | Séparation des tâches, document à montrer, restauration, contrôles complémentaires | #135 |
+| *(code)* PDF de l'OM | Défaut n° 11 : signatures de l'état des avances reprises sur le PDF de l'OM | #136 |
+| Guide utilisateur, documentation technique, `README.md` | PDF de l'OM signé, restauration, exercice ; `.docx` régénérés | #137 |
+| `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `CLAUDE.md`, `AGENTS.md` | Restauration, contenu de `storage/`, PDF de l'OM, cache RBAC | #138 |
+| `backend/docs/queues.md` | Réécrit (modes `sync` / `database` / `redis`, comportement à l'échec) ; défauts n° 12 et 13 | #139 |
+| `backend/docs/openapi.yaml` | Réécrit sur les 96 opérations réelles, verrouillé par `OpenApiTest` ; défauts n° 14 et 15 | #140 |
+| `docs/circuits-validation.md` | Séparation des tâches, état rejeté, §7 « signatures sur le PDF de l'OM » | #141 |
+| `docs/amendement-om.md` | §4.6 « PDF de l'OM amendé », tableau des cas complété ; défaut n° 16 | #142 |
+
 ## 6. Livraison et suites à donner
 
 ### PR fusionnées sur `main`
@@ -194,6 +224,13 @@ modification ; les montants et fichiers du scénario de démo sont ceux produits
 | #129 | `CLAUDE.md` |
 | #130 | `AGENTS.md` et `CHANGELOG.md` |
 | #131 | Checklist post-déploiement, runbook Cron, `UPLOAD-VENDOR.md` |
+| #132 – #135 | Documentation alignée sur la 1.3 (circuits, amendement, RBAC, part d'avance, exercice, workflows, catégories, démo, checklist) ; défaut n° 10 |
+| #136 | PDF de l'OM signé par l'état (défaut n° 11) |
+| #137 – #138 | Guide utilisateur, documentation technique, README, déploiement, runbook, `CLAUDE.md`, `AGENTS.md` |
+| #139 | Files d'attente (défauts n° 12 et 13) |
+| #140 | Description OpenAPI et tri des sauvegardes (défauts n° 14 et 15) |
+| #141 | Circuits de validation : état rejeté, signatures du PDF |
+| #142 | PDF de l'OM amendé (défaut n° 16) |
 
 ### À faire côté exploitation
 
@@ -206,6 +243,16 @@ modification ; les montants et fichiers du scénario de démo sont ceux produits
 3. **Contrôler les fichiers de paiement antérieurs à la 1.3** : avant le correctif n° 2, deux
    missions de même objet partageaient un nom de fichier. Vérifier le contenu d'un tel fichier avant
    de le redéposer (*Notes de version 1.3* de `DEPLOY-CPANEL.md`).
+4. **Si la file passe en `QUEUE_CONNECTION=database`** : remplacer la tâche Cron `queue:work` par la
+   ligne qui nomme les trois files (`--queue=paiements,etats,default`, défaut n° 13). En `sync`, rien
+   à faire.
+5. **Vider le cache des PDF d'OM après la mise à jour** (défauts n° 11 et 16) : supprimer le contenu
+   de `storage/app/private/ordres/` (racine du disque `local`).
+   Pour un OM couvert par un état ou amendé, la clé a changé et l'ancien fichier n'est plus servi ;
+   mais un OM sans état ni amendement garde la même clé, et son PDF en cache afficherait encore
+   l'ancien taux journalier (transport compris). Les PDF se régénèrent à la demande.
+6. **Sauvegarder `storage/` avec la base** : `settings.json`, les paraphes et les fichiers produits
+   ne sont pas dans le dump (`DEPLOY-CPANEL.md` §9.1).
 
 ### Dette restante (hors périmètre de la revue)
 
@@ -213,3 +260,11 @@ modification ; les montants et fichiers du scénario de démo sont ceux produits
 - Points « non testés » du §4 (minuteurs, page de maintenance, garde de route au rechargement,
   verrou `lockForUpdate` sous MySQL) : corrigés, mais sans test automatisé.
 - Tailles indicatives de `vendor/` dans `UPLOAD-VENDOR.md` à remesurer sur le poste de build.
+- Code mort : `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` ne sont plus utilisés et
+  visent une table `taux_per_diems` disparue (relevé en réécrivant `openapi.yaml`).
+- `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md` (juillet-septembre
+  2026) décrivent le circuit DAF/DG par OM, retiré depuis. Ils sont désormais marqués **historiques**,
+  avec, en tête, ce qui reste valable (migrations, `ComptesCircuitSeeder`, arbitrages client) et ce
+  qui est obsolète (drapeau `WORKFLOW_DOUBLE_VALIDATION`, contrôles sur l'OM).
+- La recette sur l'API réelle et le rejeu du scénario de démo n'ont pas été refaits après les
+  correctifs n° 10 à 16 ; ceux-ci sont couverts par des tests Pest.

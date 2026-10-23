@@ -272,6 +272,13 @@ qualifiée : aucune PKI, aucun certificat, aucune valeur probante au sens légal
 > de l'état signé (rejeté, annulé) n'en reçoit aucune ; une signature portée par l'OM
 > lui-même (validation par OM d'une mission sans état, données héritées) reste prioritaire.
 > Le document probant demeure l'**état de paiement**.
+>
+> Après un **amendement** (gestionnaire OM), le PDF de l'OM est régénéré et affiche la
+> répartition réelle : « Avance engagée », puis « Reliquat (ajusté par amendement) » ou
+> « Trop-perçu (à recouvrer par retenue sur salaire) », avec un encadré qui rappelle
+> l'amendement (date, jours avant → après, motif). Les signatures de l'état des avances
+> restent affichées : elles portent sur l'avance, que l'amendement ne modifie pas
+> (`docs/amendement-om.md` §4.6).
 
 ---
 

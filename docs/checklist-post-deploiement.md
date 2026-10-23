@@ -69,6 +69,7 @@ Le symptôme « page blanche » venait d'un bundle mis en cache.
 - [ ] Rechargement forcé <kbd>Ctrl</kbd>+<kbd>F5</kbd> (et test en navigation privée).
 - [ ] Cache CDN / proxy purgé le cas échéant (Cloudflare, LiteSpeed cPanel…).
 - [ ] Onglet Réseau : les `assets/*.js` chargés portent les nouveaux hachages (ex. `EtatDetailView-*.js` en **200**, pas un ancien nom en `304`).
+- [ ] **Cache des PDF d'OM** vidé quand la version change le gabarit de l'OM (c'est le cas de la 1.3) : `anatt-api/storage/app/private/ordres/` est vide juste après la mise à jour, puis se remplit au fil des téléchargements.
 
 ---
 
@@ -119,6 +120,8 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Fichiers de paiement** : à la **première génération réelle** après la mise à jour, le fichier apparaît dans `anatt-api/storage/app/private/paiements/{mission_id}/` (Gestionnaire de fichiers cPanel). Ne déplacer aucun ancien fichier.
 - [ ] **Réglages conservés** : `anatt-api/storage/app/settings.json` est toujours présent et l'écran **Paramètres** affiche les mêmes valeurs qu'avant (part d'avance, exercice, SMTP). Ce fichier n'est **pas** dans les sauvegardes de la base : s'il a disparu (dossier `storage/` écrasé), le restaurer depuis la copie de `storage/` faite avant la mise à jour.
 - [ ] **PDF signés** : sur une mission validée par le circuit, le PDF de l'**état** (« Télécharger l'état ») porte les trois signatures, le numéro et les paraphes ; le PDF d'un **OM** de cette mission reprend les mêmes signatures (même code de vérification). Un OM rejeté n'en porte aucune (cf. `docs/workflows-par-profil.md` §5).
+- [ ] **PDF d'un OM avec transport** (sans état ni amendement) : la ligne « jour(s) × taux » sous le total affiche le taux du barème, **hors** transport. Un taux gonflé = le cache des PDF d'OM n'a pas été vidé (section 04).
+- [ ] **Liste des sauvegardes** (`/admin/sauvegardes`) : la plus récente est en tête, y compris d'un mois sur l'autre.
 
 #### Sur l'instance de recette uniquement
 
@@ -128,6 +131,7 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Lot complémentaire** : après confirmation d'un lot, un versement devenu payable ensuite (par exemple un agent passé de Moov à MTN avant le paiement Moov, cf. `docs/SCENARIO-DEMO.md` §8) part dans un lot badgé **« complémentaire n° 2 »** (fichier `…_COMPL2`) ; le lot confirmé n'est pas réécrit.
 - [ ] **Gros lot** (plus de `PAIEMENT_ASYNC_SEUIL` bénéficiaires, 50 par défaut) : la génération affiche son suivi en cours, puis le fichier se télécharge automatiquement.
 - [ ] **Amendement** : refusé tant qu'un lot contenant l'OM est **généré** (en attente de dépôt) ; accepté une fois le lot confirmé ou passé en erreur.
+- [ ] **PDF après amendement** : sur un OM dont l'avance est validée, télécharger le PDF, amender à la baisse jusqu'au trop-perçu, puis retélécharger → le nouveau PDF affiche « Avance engagée », « Trop-perçu (à recouvrer par retenue sur salaire) » avec un montant négatif, « Montant total dû », et l'encadré de l'amendement (date, jours avant → après, motif). Le premier PDF n'est plus servi.
 
 ---
 

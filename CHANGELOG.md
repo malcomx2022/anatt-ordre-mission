@@ -142,6 +142,20 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   `REJETE` / en signature), note de la Phase 2 précisée, échec d'une génération en file, références.
   Tests : `OmPdfAmendementTest` (5 cas).
 
+#### Documentation — fin de la mise à niveau (23/10/2026)
+
+- **`docs/revue-projet-2026-10.md`** : état au 23/10 (colonne de résultats, 570 tests), tests ajoutés
+  par défaut, tableau des documents relus en seconde étape (PR #132 à #142), PR fusionnées, nouvelles
+  suites à donner (cache des PDF d'OM, ligne Cron, `storage/`), dette restante complétée.
+- **Exploitation** (`DEPLOY-CPANEL.md` *Notes de version 1.3*, runbook, checklist) : **vider
+  `storage/app/private/ordres/`** après la mise à jour — un OM sans état ni amendement garderait sinon
+  son ancien PDF en cache ; vérifier la ligne Cron `queue:work` sur les trois files ; contrôles du PDF
+  d'un OM avec transport, du PDF après amendement et de l'ordre des sauvegardes.
+- **Guide utilisateur** (régénéré), **`docs/SCENARIO-DEMO.md`** §7, **`docs/workflows-par-profil.md`**
+  §5 : PDF de l'OM amendé ; liste des sauvegardes de la plus récente à la plus ancienne.
+- **`docs/deploiement-circuit-validation.md`** et **`docs/plan-validation-daf-dg.md`** marqués
+  historiques, avec ce qui reste valable et ce qui est obsolète.
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.

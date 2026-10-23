@@ -1,5 +1,14 @@
 # Plan d'implémentation — Brouillon d'OM + circuit de validation CONTROLEUR → DAF → DG
 
+> **Document historique (juillet 2026) — plan d'implémentation, conservé pour mémoire.** Les
+> phases décrites ici ont été livrées, puis le circuit a été déplacé : les trois signatures
+> (contrôle → visa DAF → validation DG) portent sur l'**état de paiement** de la mission, par
+> tranche (avances puis reliquats), et non plus sur chaque OM. Le drapeau
+> `WORKFLOW_DOUBLE_VALIDATION` et le toggle `doubleValidation` (phase 0.5) ont été retirés ; le
+> brouillon d'OM et l'état de paiement (§7-8) existent toujours. Les arbitrages client (§1 bis,
+> §2 : répartition 70/30) restent valables. Référence actuelle : `docs/circuits-validation.md` et
+> `docs/workflows-par-profil.md`.
+
 > Circuit en **trois** étapes : le contrôleur vérifie, le DAF vise, le Directeur Général
 > valide en dernier — c'est lui qui verrouille l'OM et ouvre le paiement.
 > Référence métier : état de paiement scanné `N°0069/ANaTT/DAF/C-SFC` du 23/06/2026.
