@@ -176,6 +176,24 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   tête), document de retenue (motif du dernier amendement), boutons « Document » et « Marquer recouvré »
   (le guide citait « Constater le recouvrement », qui n'existe pas). `docs/SCENARIO-DEMO.md` §7 aligné.
 
+#### Documentation technique (23/10/2026)
+
+- **`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`** (régénéré par
+  `docs/generer_documentation_technique.py`) :
+  - **Évolutions 1.3** complétées : échec d'un gros lot traité par `marquerErreur`, tri des
+    sauvegardes, `openapi.yaml` verrouillée par `OpenApiTest`, départage des amendements par l'id,
+    lien « PDF de l'OM », Form Requests supprimées.
+  - §4.3 : échec définitif d'un gros lot. §4.4 : accès au PDF et dernier amendement. §4.7 : tri des
+    sauvegardes. §7.1 : référence `openapi.yaml`. §10 : `OpenApiTest` et recette 83/83.
+  - §9.5 : consignes d'exploitation (vider `storage/app/private/ordres/`, supprimer les deux Form
+    Requests sur le serveur, Cron sur les trois files).
+  - Écarts au code corrigés :
+    - Docker cité alors que le dépôt n'en contient pas : remplacé par `start-dev.ps1`.
+    - « Linux + Nginx » : remplacé par l'hébergement cPanel mutualisé.
+    - `QUEUE_CONNECTION` : `sync` en production.
+    - Noms réels des stores et composables.
+    - `GenererEtatJob` = export de rapports.
+
 #### Supprimé
 
 - **Form Requests inutilisées** `StoreOrdreMissionRequest` et `UpdateOrdreMissionRequest` : vestiges de la
