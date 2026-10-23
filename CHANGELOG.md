@@ -189,6 +189,14 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     refusé sur un reliquat payé (n° 22) ;
   - scénario de démo conforme : fichiers MTN/Moov, lot complémentaire `HDR,SARALY,1,199500`,
     avenant 171 000 puis −54 000.
+- **`AGENTS.md`** :
+  - environnement : PHP 8.4.x 64 bits (borne `<8.5` de PhpSpreadsheet), Node 20.19+ / 22.12+,
+    Playwright avec le *headless shell* sans écran ;
+  - vérifications : Vitest en mode surveillance par défaut, Pest ~573 tests ;
+  - prise d'effet immédiate des droits côté serveur ;
+  - file `sync` en production ;
+  - pièges des correctifs n° 17, 19, 20, 21 et 22 ;
+  - Cron `schedule:run`.
 
 #### Corrigé (amendement d'un OM au reliquat payé, 23/10/2026)
 
