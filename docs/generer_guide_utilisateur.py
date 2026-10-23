@@ -245,7 +245,9 @@ tableau(
         ["PDF de l'OM", "Il reprend les signatures de l'état des avances qui couvre l'OM (même code de "
          "vérification que l'état), au fur et à mesure du circuit.", "6.2"],
         ["PDF d'un OM amendé", "Il est régénéré après chaque amendement et indique l'avance engagée, le "
-         "reliquat ajusté ou le trop-perçu, avec le rappel de l'amendement.", "6.3"],
+         "reliquat ajusté ou le trop-perçu, avec le rappel du dernier amendement.", "6.3"],
+        ["Fiche de l'OM", "Nouveau lien « PDF de l'OM » en haut de la fiche : le PDF officiel reste "
+         "accessible une fois l'OM validé.", "6.2"],
         ["Restauration", "Les droits d'accès sauvegardés reprennent effet immédiatement ; les réglages de "
          "« Paramètres » et les paraphes ne font pas partie de la sauvegarde.", "13.3"],
     ],
@@ -485,7 +487,9 @@ bullet("Liste filtrable par statut, zone, opérateur, agent, dates ; recherche p
 bullet("La fiche détaillée affiche la mission, le bénéficiaire, les montants et les versements.")
 bullet("La fiche renvoie vers l'état de paiement de la mission : c'est là que se fait la validation, "
        "pas sur l'OM lui-même.")
-bullet("Téléchargement du brouillon de l'OM et consultation de son journal d'audit.")
+bullet("En haut de la fiche, « Historique » ouvre le journal d'audit de l'OM et « PDF de l'OM » ouvre "
+       "l'aperçu du PDF officiel, avec le bouton « Télécharger PDF ». Ce lien reste disponible une fois "
+       "l'OM validé. Avant validation, « Télécharger le brouillon » fournit en plus une épreuve filigranée.")
 bullet("Le PDF de l'OM reprend les signatures de l'état des avances de sa mission, au fur et à mesure "
        "du circuit (contrôle, puis visa DAF, puis validation DG), avec le même code de vérification que "
        "l'état. Un OM rejeté n'en porte aucune, et un brouillon jamais. Le document de référence reste "
@@ -513,7 +517,7 @@ encadre("L'avance est figée, seul le reliquat bouge",
         "Le reliquat peut ainsi augmenter (rallonge) ou diminuer, voire devenir négatif (réduction) : on "
         "parle alors de trop-perçu (voir chapitre 9.5).")
 bullet("Chaque amendement est historisé (jours et montants avant / après, écart, motif, auteur, date) et "
-       "consultable sur la fiche de l'OM ; il est tracé au journal d'audit.")
+       "consultable sur la fiche de l'OM, le plus récent en tête ; il est tracé au journal d'audit.")
 bullet("L'amendement est refusé si l'OM est rejeté ou annulé, si un état de tranche est en cours de "
        "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, ou si un trop-perçu "
        "de l'OM a déjà été recouvré.")
@@ -521,7 +525,7 @@ bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM atten
        "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
 bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "
        "l'amendement, exactement comme après la validation d'un état des avances.")
-bullet("Le PDF de l'OM (bouton « PDF » de la fiche) est régénéré après l'amendement. Il n'affiche plus "
+bullet("Le PDF de l'OM (lien « PDF de l'OM » en haut de la fiche) est régénéré après l'amendement. Il n'affiche plus "
        "« Avance (70 %) / Reliquat (30 %) » mais « Avance engagée », puis « Reliquat (ajusté par "
        "amendement) » ou, en cas de réduction forte, « Trop-perçu (à recouvrer par retenue sur salaire) » "
        "avec un montant négatif et la mention « Montant total dû ». Un encadré rappelle l'amendement : "
@@ -671,8 +675,8 @@ para("Quand un OM est amendé à la baisse après paiement de l'avance, son reli
      "sur salaire, hors application. L'écran « Régularisations » (module Paiements) centralise ces cas.")
 bullet("Le versement concerné bascule automatiquement au statut À RECOUVRER et sort du périmètre payable.")
 etape("Ouvrez « Régularisations » : la liste des trop-perçus (à recouvrer / recouvrés) s'affiche, filtrable et paginée.")
-etape("Téléchargez le « document de retenue sur salaire » (PDF) à remettre à la RH ; il porte le montant à retenir, en chiffres et en toutes lettres.")
-etape("Une fois la retenue appliquée par la RH, cliquez sur « Constater le recouvrement » : le versement passe au statut RECOUVRÉ.")
+etape("Cliquez sur « Document » pour télécharger le « document de retenue sur salaire » (PDF) à remettre à la RH ; il porte le montant à retenir, en chiffres et en toutes lettres, et le motif du dernier amendement.")
+etape("Une fois la retenue appliquée par la RH, cliquez sur « Marquer recouvré » : le versement passe au statut RECOUVRÉ.")
 para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montants à recouvrer et déjà recouvrés. "
      "La consultation est ouverte aux profils disposant de « Paiements — consulter » ; le constat de "
      "recouvrement requiert « Paiements — confirmer ».")

@@ -257,7 +257,7 @@ Le versement **RELIQUAT** passe de 81 000 à **171 000** (statut `EN_ATTENTE`).
 Il sera payable une fois l'**état des reliquats** validé. Le **journal des
 amendements** de la fiche trace `6 j → 8 j`, delta **+90 000**.
 
-**À montrer** : bouton **« PDF »** de la fiche → le PDF de l'OM est régénéré et indique
+**À montrer** : lien **« PDF de l'OM »** en haut de la fiche, puis **« Télécharger PDF »** → le PDF de l'OM est régénéré et indique
 « Avance engagée — 189 000 », « Reliquat (ajusté par amendement) — 171 000 », total
 **360 000**, et un encadré « Montants ajustés par amendement du … : 6 → 8 jour(s) — *motif* ».
 Les signatures de l'état des avances restent en place.

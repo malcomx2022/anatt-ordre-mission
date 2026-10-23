@@ -38,7 +38,7 @@ vi.mock('vue-router', () => ({ useRoute: () => ({ params: { id: '10' } }), useRo
 
 const stubs = {
   AppLayout: defineComponent({ setup: (_, { slots }) => () => h('div', [slots['header-actions']?.(), slots.default?.()]) }),
-  RouterLink: defineComponent({ setup: (_, { slots }) => () => h('a', slots.default?.()) }),
+  RouterLink: defineComponent({ props: { to: { type: String, default: '' } }, setup: (props, { slots }) => () => h('a', { href: props.to }, slots.default?.()) }),
   Teleport: true,
 }
 
@@ -131,6 +131,21 @@ describe('MissionDetailView — circuit de repli par OM', () => {
     await bouton(w, 'Valider')!.trigger('click')
     await flushPromises()
     expect(toastError).toHaveBeenCalledWith('Cette mission a un état de paiement.')
+  })
+})
+
+describe('Accès au PDF officiel de l’OM', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissions = ['om.consulter']
+  })
+
+  it('propose le lien vers le PDF même une fois l’OM validé (le brouillon n’est plus proposé)', async () => {
+    get.mockResolvedValue(ordre('VALIDE', { id: 5, tranche: 'AVANCE', statut: 'VALIDE', numero: '0042', valide: true }))
+    const w = await monter()
+    const lien = w.findAll('a').find((a) => a.text().includes('PDF de l’OM'))
+    expect(lien?.attributes('href')).toBe('/ordres/10/pdf')
+    expect(w.text()).not.toContain('Télécharger le brouillon')
   })
 })
 
