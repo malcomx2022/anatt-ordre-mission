@@ -331,6 +331,17 @@ class MissionService
             ]);
         }
 
+        // Reliquat déjà PAYÉ (CONFIRME) : il ne se réécrit plus, et l'amendement
+        // ferait diverger le reliquat de l'OM de ce qui a été versé (complément
+        // jamais payé, ou trop-perçu jamais détecté). Sur le circuit par état,
+        // l'état des reliquats validé bloque déjà ; ce garde couvre la mission
+        // sans état. Avenant formel — hors périmètre v1.
+        if ($ordre->versements()->where('type', 'RELIQUAT')->where('statut', 'CONFIRME')->exists()) {
+            throw ValidationException::withMessages([
+                'versement' => ['Le reliquat de cet ordre de mission a déjà été payé : un nouvel amendement relève d\'un avenant formel (hors périmètre).'],
+            ]);
+        }
+
         // Un fichier contenant cet OM attend son dépôt (lot GENERE) : le montant
         // déposé ne doit pas diverger de l'OM. On confirme le lot, ou on le passe
         // en ERREUR (ses versements redeviennent EN_ATTENTE), avant d'amender.

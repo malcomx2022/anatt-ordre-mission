@@ -21,10 +21,10 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 | Campagne | Outil | Première passe | Fin de revue | 23/10 |
 |----------|-------|----------------|--------------|-------|
 | Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 | 129 / 129 |
-| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 443 / 443 |
-| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **572 / 572 (68 fichiers)** |
+| Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 444 / 444 |
+| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **573 / 573 (68 fichiers)** |
 | Style backend | Pint `--test` | conforme | conforme | conforme |
-| Unitaires frontend | Vitest | 99 / 99, 23 fichiers | 113 / 113, 26 fichiers | **118 / 118, 27 fichiers** |
+| Unitaires frontend | Vitest | 99 / 99, 23 fichiers | 113 / 113, 26 fichiers | **120 / 120, 27 fichiers** |
 | Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur | 0 erreur |
 | Build frontend | `vite build` | OK | OK | OK |
 | Fonctionnel UI | Playwright `e2e/parcours-critique` | 3 / 3 | 3 / 3 | 3 / 3 |
@@ -65,8 +65,8 @@ La recette sur l'API réelle déroule le parcours suivant, profil par profil :
 | Seeders & recette | — | ComptesCircuitSeeder, DemoCircuitSeeder, RecetteE2E | 18 |
 | **Total** | | | **552** (535 en première passe) |
 
-Comptes établis par `pest --list-tests` sur `main` en fin de revue. Depuis, 20 tests se sont
-ajoutés avec les correctifs n° 10 à 19 (total 572) :
+Comptes établis par `pest --list-tests` sur `main` en fin de revue. Depuis, 21 tests se sont
+ajoutés avec les correctifs n° 10 à 22 (total 573) :
 
 | Fichier | Tests ajoutés | Défaut couvert |
 |---------|---------------|----------------|
@@ -77,6 +77,7 @@ ajoutés avec les correctifs n° 10 à 19 (total 572) :
 | `CoherenceCircuitsTest` | 1 | état rejeté : circuit par OM toujours fermé (comportement documenté, non défaillant) |
 | `OmPdfAmendementTest` (nouveau) | 5 + 1 | n° 16 (PDF de l'OM amendé), n° 17 (dernier amendement) |
 | `SoldeTest` | 1 | n° 19 (OM soldé malgré une tranche nulle) |
+| `AmendementOmTest` | 1 | n° 22 (amendement refusé quand le reliquat est déjà payé) |
 
 Côté frontend, 19 vues sur 50 sont montées par au moins un test Vitest (16 en première passe), et le
 composant `PaiementGeneration` — qui porte la génération MTN/Moov et le suivi des gros lots — est
@@ -115,6 +116,8 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 18 | Majeur | *(trouvé en mettant à jour le guide utilisateur, le 23/10)* Aucun lien de l'interface ne menait à l'écran du PDF officiel de l'OM (OM-07, `/ordres/:id/pdf`) : la fiche ne proposait que « Télécharger le brouillon », masqué une fois l'OM validé. Le PDF signé (n° 11) et le PDF amendé (n° 16) n'étaient joignables qu'en tapant l'adresse. Le guide et le scénario de démo citaient un bouton « PDF » inexistant, et le guide un bouton « Constater le recouvrement » qui s'appelle « Marquer recouvré ». | Lien « PDF de l'OM » dans l'en-tête de la fiche, à côté de « Historique » ; libellés corrigés dans le guide et le scénario. Test dans `mission-detail.spec.ts` (Vitest : 114 tests). |
 | 19 | Mineur | *(trouvé en mettant à jour `docs/parametrage-part-avance.md`, le 23/10)* Avec une part d'avance à 100 % (ou à 0 %), la tranche nulle garde un versement de montant 0. Ce versement n'entre dans aucun fichier, donc n'est jamais confirmé, et l'OM, une fois l'autre tranche payée et confirmée, restait `VALIDE` au lieu de passer `SOLDE`. | `LotPaiementService::confirmer` ignore les versements nuls pour décider du solde. Test dans `SoldeTest` (Pest : 572 tests). |
 | 20 | Mineur | *(trouvé en mettant à jour `docs/annee-fiscale.md`, le 23/10)* Sans année enregistrée, l'écran Paramètres proposait l'année civile, sans tenir compte du mois de début d'exercice. Avec un début en juillet, en mars 2027, il affichait « 2027-2028 », et le premier enregistrement figeait cet exercice alors que le serveur déterminait « 2026-2027 ». Sans effet sur les montants : aucun traitement ne consomme encore l'exercice. | Défaut de l'écran déterminé comme le serveur (`utils/exercice.ts` → `exerciceDe`) ; une année enregistrée ou choisie n'est jamais écrasée. Tests dans `settings-exercice.spec.ts` (Vitest : 118 tests). |
+| 21 | Majeur | *(trouvé en mettant à jour `docs/SCENARIO-DEMO.md`, le 23/10)* L'écran de génération MTN/Moov ne permettait pas de produire un **lot complémentaire**. Dès que le dernier lot de la sélection était `CONFIRME`, il masquait le bouton de génération (« Lot confirmé — réinclusion bloquée »), même quand l'aperçu listait des versements devenus payables. Exemple : un agent passé de Moov à MTN (§8.2 du scénario). Le serveur produisait le lot de séquence 2, mais seul un appel direct à l'API y donnait accès ; la recette l'avait validé par l'API, pas par l'écran. | Le blocage ne vaut plus que si rien n'est payable ; sinon le bouton « Générer le lot complémentaire » est proposé. Liste des lots départagée par `id` (lots créés dans la même seconde). Tests dans `paiements-async.spec.ts` (Vitest : 120 tests) ; mock Playwright aligné sur l'API (aperçu vide après confirmation). |
+| 22 | Majeur | *(trouvé en mettant à jour `docs/amendement-om.md`, le 23/10)* Sur une mission **sans état**, un OM dont le reliquat était déjà payé (`CONFIRME`, OM soldé) restait amendable par l'API. `reventilerVersements` ne réécrit pas un versement confirmé : le reliquat de l'OM changeait sans versement correspondant. Une rallonge n'était donc jamais payée et une réduction ne produisait pas de trop-perçu. L'écran masquait le bouton pour un OM soldé, pas l'API. | Garde dans `MissionService::exigerAmendementPossible` : reliquat `CONFIRME` → refus, avenant formel (équivalent de l'état des reliquats validé). Test dans `AmendementOmTest` (Pest : 573 tests). |
 
 ## 4. Points restants — tous traités (seconde passe)
 

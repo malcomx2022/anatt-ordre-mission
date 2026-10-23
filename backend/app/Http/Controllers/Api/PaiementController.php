@@ -34,7 +34,7 @@ class PaiementController extends Controller
             }
         }
 
-        $lots = $query->orderByDesc('created_at')->paginate($this->getPerPage($request));
+        $lots = $query->orderByDesc('created_at')->orderByDesc('id')->paginate($this->getPerPage($request));
 
         return LotPaiementResource::collection($lots)->response();
     }

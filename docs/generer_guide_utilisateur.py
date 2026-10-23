@@ -519,8 +519,9 @@ encadre("L'avance est figée, seul le reliquat bouge",
 bullet("Chaque amendement est historisé (jours et montants avant / après, écart, motif, auteur, date) et "
        "consultable sur la fiche de l'OM, le plus récent en tête ; il est tracé au journal d'audit.")
 bullet("L'amendement est refusé si l'OM est rejeté ou annulé, si un état de tranche est en cours de "
-       "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, ou si un trop-perçu "
-       "de l'OM a déjà été recouvré.")
+       "signature (contrôle / visa en cours), si l'état des reliquats est déjà validé, si le reliquat "
+       "de l'OM a déjà été payé, ou si un trop-perçu de l'OM a déjà été recouvré. Ces derniers cas "
+       "relèvent d'un avenant formel, hors application.")
 bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM attend son dépôt (lot GÉNÉRÉ) : "
        "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
 bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "
@@ -660,7 +661,8 @@ bullet("Seul un lot au statut GÉNÉRÉ peut être confirmé : un lot en erreur 
 encadre("Lots complémentaires",
         "Un lot confirmé n'est jamais réécrit. Si un versement devient payable après coup (OM validé plus "
         "tard, agent passé d'un opérateur à l'autre, reliquat redevenu positif…), une nouvelle génération "
-        "crée un lot COMPLÉMENTAIRE qui ne contient que ces nouveaux bénéficiaires. Il est signalé par un "
+        "crée un lot COMPLÉMENTAIRE qui ne contient que ces nouveaux bénéficiaires : sur l'écran MTN ou Moov, "
+        "l'aperçu les liste et le bouton devient « Générer le lot complémentaire ». Il est signalé par un "
         "badge « complémentaire n° 2, 3… » dans la liste des lots et son fichier porte le suffixe "
         "« _COMPL2 », « _COMPL3 »… Il se dépose et se confirme comme un lot ordinaire.")
 
