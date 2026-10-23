@@ -166,6 +166,15 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   11 et 16). **Scénario de démo rejoué**, §7 « avenant » compris : montants et fichiers conformes au
   document (`docs/revue-projet-2026-10.md` §1).
 
+#### Corrigé (part d'avance aux bornes, 23/10/2026)
+
+- **OM jamais soldé avec une part d'avance à 100 % (ou à 0 %)**. La tranche nulle garde un
+  versement de montant 0, qui n'entre dans aucun fichier et n'est donc jamais confirmé.
+  `LotPaiementService::confirmer` exigeait que **tous** les versements soient `CONFIRME` : l'OM
+  payé en entier restait `VALIDE`. Les versements nuls sont désormais ignorés pour décider du
+  solde. Test dans `SoldeTest` (Pest : 572 tests). Défaut n° 19 de
+  `docs/revue-projet-2026-10.md`.
+
 #### Corrigé (guide utilisateur, 23/10/2026)
 
 - **PDF officiel de l'OM inaccessible depuis l'interface** : la fiche de l'OM ne proposait que
@@ -242,6 +251,13 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
     vérifient désormais aussi la **route** (403 avant, 200 après), et plus seulement
     `hasPermission()`.
   - `RoleMiddlewareTest` et `OpenApiTest` ajoutés à la table des tests.
+- **`docs/parametrage-part-avance.md`** confronté au code :
+  - Les valeurs extrêmes décrivent la tranche nulle (versement conservé pour un amendement,
+    jamais dans un fichier, ne retient plus l'OM) et le défaut n° 19.
+  - Tests complétés : `SoldeTest`, `OmPdfAmendementTest` (pourcentage du PDF tiré des montants
+    de l'OM) et la part ignorée une fois l'avance engagée.
+  - Nombre de tests (572) mis à jour dans `CLAUDE.md`, `README.md`, la documentation technique
+    (régénérée) et la revue.
 
 #### Supprimé
 

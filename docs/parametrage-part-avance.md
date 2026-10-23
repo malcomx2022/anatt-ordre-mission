@@ -49,8 +49,13 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   l'amendement si l'avance est déjà payée sur une mission sans état), la part est
   **neutralisée** : l'avance ne bouge plus et seul le reliquat absorbe l'écart
   (cf. `docs/amendement-om.md`).
-- **Valeurs extrêmes** : à 100 %, le reliquat vaut 0 et n'entre dans aucun fichier
-  (`Versement::scopeEligiblesLot` exclut les montants ≤ 0) ; à 0 %, tout passe en reliquat.
+- **Valeurs extrêmes** : à 100 %, le reliquat vaut 0 ; à 0 %, c'est l'avance qui vaut 0 et
+  tout passe en reliquat. La tranche nulle garde son versement, créé à la retranscription :
+  un amendement ultérieur pourra le réécrire. Ce versement n'entre dans aucun fichier
+  (`Versement::scopeEligiblesLot` exclut les montants ≤ 0) et **ne retient pas l'OM** : à la
+  confirmation de l'autre tranche, `LotPaiementService::confirmer` ignore les versements nuls
+  et passe l'OM à `SOLDE`. *Corrigé le 23/10/2026* : avant, un OM entièrement payé avec une part
+  à 100 % (ou à 0 %) restait `VALIDE` indéfiniment.
 - **Frontend** : la valeur est chargée à la connexion et au rechargement (garantie avant
   l'affichage des écrans), purgée au logout, et rafraîchie immédiatement après un
   changement de réglage (sans rechargement de page). *Durci par la revue d'octobre 2026* :
@@ -100,7 +105,12 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   la part configurée.
 - `tests/Feature/SettingsControllerTest.php` — bornes 0–100, refus d'une valeur non
   entière, invalidation du cache après écriture.
-- `tests/Unit/CalculIndemniteServiceTest.php` — split correct avec une part ≠ 70 %.
+- `tests/Unit/CalculIndemniteServiceTest.php` — split correct avec une part ≠ 70 % ; part
+  ignorée une fois l'avance engagée (amendement).
+- `tests/Feature/SoldeTest.php` — un OM dont la tranche restante est nulle (part à 100 %) passe
+  à `SOLDE` à la confirmation de son avance.
+- `tests/Feature/OmPdfAmendementTest.php` — le PDF de l'OM tire son pourcentage des montants
+  de l'OM, et non du paramètre courant.
 - `frontend/src/__tests__/part-avance.spec.ts` — pas de mise en cache du défaut sur
   erreur ; pas de chargement pendant le changement de mot de passe imposé, relecture après.
 - `tests/Feature/MissionsIndexTest.php` — distinction état des avances / état des
