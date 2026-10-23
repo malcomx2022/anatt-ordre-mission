@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 24 ne touchent que le code (`app/`, SPA) ;
+  les correctifs n° 10 à 26 ne touchent que le code (`app/`, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -42,6 +42,8 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 22 | Majeur | Amendement accepté sur un reliquat déjà payé (mission sans état) | Corrigé (amendement d'un OM au reliquat payé) | #152 |
 | 23 | Mineur | OM au trop-perçu recouvré jamais soldé | Corrigé (solde d'un OM, 23/10/2026) | #154 |
 | 24 | Mineur | OM exonéré resté `VALIDE` après validation par OM | Corrigé (solde d'un OM, 23/10/2026) | #154 |
+| 25 | Majeur | OM soldé encore amendable (reliquat recréé impayable) | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
+| 26 | Mineur | OM jamais soldé quand l'amendement ramène le reliquat à 0 | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
 
 #### Corrigé (première passe)
 
@@ -267,6 +269,21 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Corrigé (amendement d'un OM soldé, 23/10/2026)
+
+- **OM soldé encore amendable.** L'écran masquait « Amender » pour un OM `SOLDE`, pas l'API. Avec une part
+  d'avance à 100 %, l'OM est soldé dès le paiement de l'avance ; une rallonge recréait un reliquat positif
+  qu'aucun fichier ne pouvait porter (le périmètre payable exige un OM `VALIDE`).
+  `MissionService::exigerAmendementPossible` refuse désormais un OM soldé (avenant formel), après les gardes
+  plus précises du reliquat payé et du trop-perçu recouvré. Défaut n° 25.
+- **OM jamais soldé quand l'amendement ramène le reliquat à 0** (avance payée, total ramené à l'avance) : il
+  restait `VALIDE` sans rien à régler. La règle du solde passe sur le modèle (`OrdreMission::solderSiRegle`)
+  et s'applique aussi après un amendement. Défaut n° 26. Deux tests dans `AmendementOmTest` (Pest : 578 tests).
+- Trouvés en mettant à jour **`docs/amendement-om.md`** (en-tête, tableau §3, garde-fous et solde après
+  amendement §4.3, références). Mis à jour aussi : `docs/circuits-validation.md`, `backend/docs/openapi.yaml`
+  (gardes de `amender`), la revue (n° 25 et 26), `CLAUDE.md`, `README.md`, `AGENTS.md` et le guide
+  utilisateur (régénéré).
+
 #### Corrigé (solde d'un OM, 23/10/2026)
 
 - **OM au trop-perçu recouvré jamais soldé.** Le solde n'était examiné qu'à la confirmation d'un lot,
@@ -434,7 +451,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 
 État au 23/10/2026, après les correctifs n° 17 à 22 (fin de revue du 22/10 entre parenthèses) :
 
-- **Pest** : 576 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
+- **Pest** : 578 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
 - **Vitest** : 121 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
 - **Recette sur l'API réelle** : 83 / 83 contrôles (76 / 76) et 9 / 9 sondes sur les correctifs
   n° 19 et 22 ; scénario de démo rejoué, §7 « avenant » et §8.2 « lot complémentaire » compris

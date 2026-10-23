@@ -63,7 +63,7 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     compte encore des bénéficiaires ; la liste des lots est triée par date puis par `id` (le plus récent d'abord).
   - **Solde d'un OM** : un OM dont tous les versements **non nuls** sont réglés — `CONFIRME`, ou `RECOUVRE` pour un
     trop-perçu — passe à `SOLDE`, à la confirmation d'un lot comme au constat d'un recouvrement
-    (`LotPaiementService::solderSiRegle`). Une tranche nulle — part d'avance à 0 ou 100 % — n'entre dans aucun fichier et
+    (`OrdreMission::solderSiRegle`, aussi après un amendement qui ramène le reliquat à 0). Une tranche nulle — part d'avance à 0 ou 100 % — n'entre dans aucun fichier et
     ne le retient pas. Un OM exonéré (montant nul) est soldé dès sa validation, dans les deux circuits.
 - **États de paiement PAR TRANCHE** — une mission porte **DEUX états**, chacun avec son circuit complet
   (récapitulatif → `BROUILLON` → `CONTROLE` → `VISA_DAF` → `VALIDE` ; rejet motivé possible à chaque étape) :
@@ -96,6 +96,7 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     (`CONTROLE`/`VISA_DAF` → rejet guidé), si l'état des reliquats est **validé**, ou si un trop-perçu de l'OM
     a déjà été **`RECOUVRE`** (retenue soldée → avenant formel, hors périmètre), ou si le **reliquat** de l'OM est
     déjà `CONFIRME` (payé : avenant formel — garde utile surtout au circuit par OM, sans état des reliquats).
+    Un OM `SOLDE` n'est pas amendable (un reliquat recréé ne serait jamais payable).
     Un trop-perçu encore `A_RECOUVRER` reste amendable (rien n'a été retenu). Le « dernier amendement » se départage
     par `id` quand deux portent le même horodatage.
   - **Garde supplémentaire** : amendement refusé tant qu'un versement de l'OM est `GENERE` (fichier en attente de dépôt :
@@ -183,7 +184,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (576 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (578 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -975,7 +976,8 @@ HDR,SARALY,1,45000
 - Rejet d'un OM : ses versements `EN_ATTENTE` passent `ANNULE` ; la validation d'un état ne repropage jamais `VALIDE` à un OM `REJETE`.
 - Solde : un OM passe `SOLDE` quand tous ses versements non nuls sont `CONFIRME` ou `RECOUVRE` (confirmation d'un lot,
   constat d'un recouvrement) ; un OM exonéré est soldé à sa validation (état des avances ou validation par OM).
-- Amendement : refusé si le reliquat de l'OM est déjà `CONFIRME` (avenant formel), en plus des gardes du §1.
+- Amendement : refusé si le reliquat de l'OM est déjà `CONFIRME` ou si l'OM est `SOLDE` (avenant formel), en plus des gardes du §1 ;
+  un amendement qui ramène le reliquat à 0 (avance payée) solde l'OM.
 
 ---
 

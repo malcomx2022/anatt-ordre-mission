@@ -106,8 +106,8 @@ Conséquences :
 - Verrou **par tranche** : valider les **avances** n'ouvre **pas** les reliquats.
 - **Solde** : un OM passe `SOLDE` dès que tous ses versements sont **réglés** — payés
   (`CONFIRME`) ou, pour un trop-perçu, récupérés par retenue (`RECOUVRE`) —, quel que soit le
-  circuit (`LotPaiementService::solderSiRegle`). Le contrôle a lieu à la confirmation d'un lot
-  **et** au constat d'un recouvrement : avant le 23/10, un OM au trop-perçu recouvré restait
+  circuit (`OrdreMission::solderSiRegle`). Le contrôle a lieu à la confirmation d'un lot, au
+  constat d'un recouvrement **et** après un amendement qui ramène le reliquat à 0 (défaut n° 26) : avant le 23/10, un OM au trop-perçu recouvré restait
   `VALIDE` pour toujours (défaut n° 23). Un versement de montant nul (tranche vide, part d'avance
   à 0 ou 100 %) n'entre dans aucun fichier et ne retient pas l'OM (défaut n° 19). Un trop-perçu
   encore `A_RECOUVRER` le retient.
@@ -209,6 +209,7 @@ flowchart TD
 | État des reliquats `VALIDE` (scellé HMAC) | ⛔ avenant formel — hors périmètre v1 |
 | Trop-perçu de l'OM déjà `RECOUVRE` (retenue soldée) | ⛔ avenant formel — hors périmètre v1 |
 | Aucun état et reliquat déjà `CONFIRME` (circuit par OM) | ⛔ avenant formel — hors périmètre v1 (défaut n° 22) |
+| OM `SOLDE` (avance à 100 % payée, OM exonéré…) | ⛔ avenant formel — un reliquat recréé ne serait jamais payable (défaut n° 25) |
 | Trop-perçu de l'OM encore `A_RECOUVRER` (non retenu) | ✅ amendable (rien n'a été retenu) |
 | OM `REJETE` / `ANNULE` | ⛔ |
 
@@ -276,7 +277,7 @@ purge manuelle (`docs/amendement-om.md` §4.6). Tests : `tests/Feature/OmPdfSign
 | Signatures de l'état sur le PDF de l'OM | `PdfGenerator::etatSignataire()`, `PdfGenerator::signatureEtat()` |
 | Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
-| Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `LotPaiementService::marquerRecouvre()` (règle commune `solderSiRegle`), `MissionService::valider()` (exonéré), `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `tests/Feature/RegularisationTest.php`, `tests/Feature/CircuitValidationTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
+| Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `LotPaiementService::marquerRecouvre()`, `MissionService::amender()` (règle commune `OrdreMission::solderSiRegle()`), `MissionService::valider()` (exonéré), `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `tests/Feature/RegularisationTest.php`, `tests/Feature/CircuitValidationTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
 | Amendement (avenant) & régularisations | `MissionService::amender()`, `MissionService::exigerAmendementPossible()`, `LotPaiementService::regularisations()`, `docs/amendement-om.md` |
 | Document de retenue (PDF pour la RH) | `PdfGenerator::genererDocumentRetenue()`, `GET /api/paiements/regularisations/:versement/document` |
 | Tests — exclusivité & sens de VALIDE | `tests/Feature/CoherenceCircuitsTest.php` |

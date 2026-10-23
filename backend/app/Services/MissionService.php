@@ -259,6 +259,11 @@ class MissionService
 
             $this->reventilerVersements($ordre, $avance, $reliquat);
 
+            // Avance payée et reliquat ramené à 0 : plus rien à régler, l'OM est soldé.
+            if ($ordre->statut === Workflow::STATUT_VALIDE) {
+                OrdreMission::solderSiRegle($ordre->id);
+            }
+
             OmAmendement::create([
                 'ordre_mission_id' => $ordre->id,
                 'nb_jours_avant' => $avant['nb_jours'],
@@ -345,6 +350,15 @@ class MissionService
         if ($ordre->versements()->where('type', 'RELIQUAT')->where('statut', 'CONFIRME')->exists()) {
             throw ValidationException::withMessages([
                 'versement' => ['Le reliquat de cet ordre de mission a déjà été payé : un nouvel amendement relève d\'un avenant formel (hors périmètre).'],
+            ]);
+        }
+
+        // OM soldé autrement (avance à 100 % payée, OM exonéré…) : un reliquat
+        // recréé ne serait jamais payable — seul un OM VALIDE l'est. Avenant
+        // formel, hors périmètre v1 ; l'écran masque déjà le bouton.
+        if ($ordre->statut === 'SOLDE') {
+            throw ValidationException::withMessages([
+                'statut' => ['Cet ordre de mission est soldé : un nouvel amendement relève d\'un avenant formel (hors périmètre).'],
             ]);
         }
 

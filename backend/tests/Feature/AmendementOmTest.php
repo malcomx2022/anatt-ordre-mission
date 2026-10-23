@@ -220,6 +220,38 @@ it('refuse l’amendement quand l’état des avances est en cours de signature'
         ->assertStatus(422)->assertJsonValidationErrors('etat');
 });
 
+it('refuse d’amender un OM soldé', function () {
+    // L'écran masque « Amender » pour un OM soldé ; l'API doit refuser aussi : un
+    // reliquat recréé sur un OM SOLDE ne serait jamais payable (périmètre VALIDE).
+    $this->om->update(['statut' => 'SOLDE']);
+
+    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Rallonge après solde de l’OM.'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('statut');
+
+    expect($this->om->fresh()->nb_jours)->toBe(6);
+});
+
+it('solde l’OM quand l’amendement ramène le reliquat à zéro (avance payée)', function () {
+    // 10 j × 35 000 = 350 000 ; avance payée et engagée 245 000 ; 7 j → 245 000.
+    Bareme::factory()->create([
+        'categorie' => 'INDICE_400_799', 'zone_code' => 'INTERIEUR',
+        'type_prise_en_charge' => 'JOURNEE_COMPLETE', 'taux_journalier' => 35000,
+    ]);
+    $this->om->update([
+        'statut' => 'VALIDE', 'categorie' => 'INDICE_400_799', 'nb_jours' => 10,
+        'montant_total' => 350000, 'avance' => 245000, 'reliquat' => 105000, 'avance_engagee' => 245000,
+    ]);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'AVANCE')->update(['montant' => 245000, 'statut' => 'CONFIRME']);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'RELIQUAT')->update(['montant' => 105000]);
+
+    amenderOm($this, ['nb_jours' => 7, 'motif' => 'Mission écourtée à sept jours.'])->assertOk();
+
+    $om = $this->om->fresh();
+    expect($om->reliquat)->toBe(0)
+        ->and($om->statut)->toBe('SOLDE');
+});
+
 it('exige un motif d’au moins 10 caractères', function () {
     amenderOm($this, ['nb_jours' => 8, 'motif' => 'court'])
         ->assertStatus(422)->assertJsonValidationErrors('motif');
