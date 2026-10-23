@@ -271,6 +271,12 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
 - **`docs/annee-fiscale.md`** : défaut de l'écran (exercice déterminé), `utils/exercice.ts` et
   `settings-exercice.spec.ts` ajoutés aux fichiers et tests ; consigne d'exploitation précisée
   (défaut n° 20). Vitest 118 dans `README.md`, la documentation technique et la revue.
+- **`docs/categories-indice.md`** confronté au code :
+  - §2 : méthodes de `CategorieIndice` complétées (`libelle`, `plage` et son repli, `valeursAcceptees`,
+    `regleIn`) avec leurs consommateurs (PDF de l'OM et document de retenue, état de paiement,
+    validation, import). Les exports de rapports ne portent pas la catégorie.
+  - §6 : la commande de recette `npm run test:unit` restait en mode surveillance ; elle devient
+    `npm run test:unit -- --run`.
 
 #### Supprimé
 
