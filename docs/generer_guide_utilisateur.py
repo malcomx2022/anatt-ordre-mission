@@ -239,11 +239,13 @@ tableau(
         ["Per diem", "Sans jour facturé, le transport reste dû (seule l'exonération met tout à 0).", "8"],
         ["Liste des OM", "Le filtre « opérateur » porte sur l'opérateur du paiement.", "6.2"],
         ["Sauvegardes", "Téléchargement et restauration d'une sauvegarde, avec sauvegarde de sécurité "
-         "automatique avant restauration.", "13.3"],
+         "automatique avant restauration. La liste est classée de la plus récente à la plus ancienne.", "13.3"],
         ["Droits d'accès", "La séparation ordonnateur / payeur est aussi vérifiée pour chaque membre d'un "
          "profil modifié.", "2.2"],
         ["PDF de l'OM", "Il reprend les signatures de l'état des avances qui couvre l'OM (même code de "
          "vérification que l'état), au fur et à mesure du circuit.", "6.2"],
+        ["PDF d'un OM amendé", "Il est régénéré après chaque amendement et indique l'avance engagée, le "
+         "reliquat ajusté ou le trop-perçu, avec le rappel de l'amendement.", "6.3"],
         ["Restauration", "Les droits d'accès sauvegardés reprennent effet immédiatement ; les réglages de "
          "« Paramètres » et les paraphes ne font pas partie de la sauvegarde.", "13.3"],
     ],
@@ -519,6 +521,11 @@ bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM atten
        "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
 bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "
        "l'amendement, exactement comme après la validation d'un état des avances.")
+bullet("Le PDF de l'OM (bouton « PDF » de la fiche) est régénéré après l'amendement. Il n'affiche plus "
+       "« Avance (70 %) / Reliquat (30 %) » mais « Avance engagée », puis « Reliquat (ajusté par "
+       "amendement) » ou, en cas de réduction forte, « Trop-perçu (à recouvrer par retenue sur salaire) » "
+       "avec un montant négatif et la mention « Montant total dû ». Un encadré rappelle l'amendement : "
+       "date, nombre de jours avant et après, motif.")
 
 # =========================================================================
 # 7. ÉTAT DE PAIEMENT (CIRCUIT DE VALIDATION)
@@ -736,6 +743,7 @@ bullet("Sauvegardes : création, téléchargement, restauration et suppression d
 h2("13.3 Sauvegardes et restauration")
 para("Réservé au SUPER_ADMIN, écran « Sauvegardes ». Une sauvegarde automatique est faite chaque nuit "
      "(02:00) par le serveur ; le bouton « Nouvelle sauvegarde » en crée une immédiatement.")
+bullet("La liste est classée de la plus récente à la plus ancienne.")
 bullet("Télécharger : survolez une sauvegarde et cliquez sur l'icône de téléchargement pour en garder "
        "une copie hors du serveur.")
 h3("Restaurer une sauvegarde")

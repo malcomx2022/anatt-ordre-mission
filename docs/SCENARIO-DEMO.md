@@ -254,6 +254,11 @@ Le versement **RELIQUAT** passe de 81 000 à **171 000** (statut `EN_ATTENTE`).
 Il sera payable une fois l'**état des reliquats** validé. Le **journal des
 amendements** de la fiche trace `6 j → 8 j`, delta **+90 000**.
 
+**À montrer** : bouton **« PDF »** de la fiche → le PDF de l'OM est régénéré et indique
+« Avance engagée — 189 000 », « Reliquat (ajusté par amendement) — 171 000 », total
+**360 000**, et un encadré « Montants ajustés par amendement du … : 6 → 8 jour(s) — *motif* ».
+Les signatures de l'état des avances restent en place.
+
 ### CAS B — réduction forte (mission écourtée à 3 jours) → **trop-perçu**  ·  `gestion@`
 
 Même bouton **« Amender »** → **3 jours** + motif → **Enregistrer**.
@@ -267,6 +272,9 @@ Nouveau total   Avance (figée)   Reliquat
 - La fiche affiche le badge **« Trop-perçu »** ; le versement RELIQUAT bascule en
   **A_RECOUVRER** et **sort du périmètre payable** (il ne part jamais dans un
   fichier MTN / Moov).
+- Le **PDF de l'OM** affiche « Trop-perçu (à recouvrer par retenue sur salaire) —
+  −54 000 » et, dans l'encadré du total, « Montant total dû — 135 000 » (et non plus
+  « Montant total à payer »).
 - `finance@` — `Paiements → Régularisations` (`/paiements/regularisations`) : la
   ligne apparaît, **à recouvrer = 54 000**.
 - Bouton **« Document »** → **PDF de retenue sur salaire** (en-tête ANaTT) à
