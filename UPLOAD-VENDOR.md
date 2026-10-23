@@ -1,8 +1,8 @@
 # Zipper & uploader `vendor/` sur cPanel (rapide)
 
-Le dossier `backend/vendor/` (~64 Mo, ~8900 fichiers) est **trop lent à envoyer fichier
-par fichier** en FTP. On l'envoie donc **zippé** (≈14 Mo, 1 seul fichier), puis on
-l'extrait directement dans cPanel.
+Le dossier `backend/vendor/` de production (95 paquets, plusieurs milliers de fichiers) est
+**trop lent à envoyer fichier par fichier** en FTP. On l'envoie donc **zippé** (un seul fichier),
+puis on l'extrait directement dans cPanel.
 
 > `vendor/` n'est pas versionné (régénérable). À refaire après chaque changement de
 > dépendances backend (`composer.json` / `composer.lock`).
@@ -31,13 +31,22 @@ déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 
 À faire **uniquement** si les dépendances ont changé (sinon passez à l'étape 2).
 
-> **PHP 8.4 obligatoire, en local comme sur le serveur.** `composer.lock` épingle des paquets
-> qui exigent PHP ≥ 8.4 (Symfony 8, spatie/laravel-activitylog) :
-> - en local, sous PHP 8.3, `composer install` refuse avec *« Your lock file does not contain a
->   compatible set of packages »* → sélectionnez PHP 8.4 dans WAMP (ou appelez son `php.exe`) ;
-> - Composer écrit cette exigence dans `vendor/composer/platform_check.php`, chargé à **chaque**
->   requête : si le **site** cPanel tourne en 8.3, l'API répond 500 sur tous les appels
->   (`DEPLOY-CPANEL.md` §4).
+> **PHP 8.4 (8.4.x) obligatoire, en local comme sur le serveur, en 64 bits.** `composer.lock`
+> l'encadre des deux côtés :
+> - **minimum 8.4** : Symfony 8 (`clock`, `css-selector`, `event-dispatcher`, `string`,
+>   `translation`) et `spatie/laravel-activitylog` exigent PHP ≥ 8.4 ;
+> - **maximum 8.4.x** : `phpoffice/phpspreadsheet` 1.30.2 (fichiers Moov `.xlsx`, import Excel des
+>   agents, exports) déclare `php <8.5.0`.
+>
+> Ce que cela provoque :
+> - en local, sous PHP 8.3 **ou 8.5**, `composer install` refuse avec *« Your lock file does not
+>   contain a compatible set of packages »*. Sélectionnez PHP 8.4 dans WAMP (ou appelez son
+>   `php.exe`) ;
+> - Composer écrit dans `vendor/composer/platform_check.php`, chargé à **chaque** requête, le
+>   minimum 8.4 et l'exigence d'un PHP **64 bits**. Si le **site** cPanel tourne en 8.3 ou en
+>   32 bits, l'API répond 500 sur tous les appels (`DEPLOY-CPANEL.md` §4) ;
+> - ce contrôle ne vérifie **pas** le maximum : un site en PHP 8.5 démarrerait, mais hors de la
+>   plage que déclare PhpSpreadsheet. Restez en 8.4.
 
 ```powershell
 cd C:\wamp64\www\anatt-ordre-mission\backend
@@ -45,7 +54,8 @@ php -v   # doit afficher PHP 8.4.x
 php C:\composer\composer.phar install --no-dev --optimize-autoloader --prefer-dist
 ```
 
-> `--no-dev` retire Pest, Pint, Telescope, Faker, etc. (indispensable en prod). L'application le
+> `--no-dev` retire les 51 paquets de développement (Pest, PHPUnit, Pint, Telescope, Faker, Sail,
+> Pail, Collision, Mockery…), ce qui est indispensable en prod. L'application le
 > supporte : Telescope n'est enregistré qu'en environnement `local` **et** s'il est installé
 > (`AppServiceProvider`), et le seeder de production n'utilise pas Faker.
 >
@@ -71,7 +81,7 @@ if (Test-Path vendor.zip) { Remove-Item vendor.zip -Force }
 Compress-Archive -Path vendor -DestinationPath vendor.zip -CompressionLevel Optimal -Force
 ```
 
-Résultat : `backend\vendor.zip` (~14 Mo). L'archive contient `vendor/` à sa racine,
+Résultat : `backend\vendor.zip`. L'archive contient `vendor/` à sa racine,
 donc l'extraction recrée correctement `anatt-api/vendor/`.
 
 Vérifier rapidement le contenu (facultatif) :
