@@ -75,7 +75,8 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
   - **PDF de l'OM** : il reprend les signatures de l'**état des avances** qui couvre l'OM (OM présent dans `lignes`) —
     même instantané, paraphe archivé et code de vérification (`PdfGenerator::etatSignataire`). Une signature portée
     par l'OM lui-même (circuit par OM, données héritées) reste prioritaire ; OM `REJETE`/`ANNULE`, état `REJETE` et
-    brouillon n'en montrent aucune. Clé de cache `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}].pdf`.
+    brouillon n'en montrent aucune. Clé de cache `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` (n = nombre d'amendements).
+    Après un amendement, les libellés suivent la répartition réelle (avance engagée, reliquat ajusté, trop-perçu).
   - **Deux circuits de validation** (par état = canonique ; par OM = repli des missions sans état) :
     ils sont **exclusifs par mission** (verrou `MissionService::exigerAbsenceDEtat`) et unifiés à la porte
     de paiement (`Versement::scopeEligiblesLot`). Référence unique : `docs/circuits-validation.md`.
@@ -169,7 +170,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (565 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (570 tests ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 
 ### DevOps
 - Développement : WAMP + `start-dev.ps1` / `stop-dev.ps1` (API, worker, Vite)

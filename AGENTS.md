@@ -30,7 +30,7 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~565 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, ~570 tests)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
@@ -67,7 +67,7 @@ High-signal notes for OpenCode sessions in this repo.
 - Eligibility gate is `Versement::scopeEligiblesLot`: excludes CONFIRME, ANNULE, A_RECOUVRER, RECOUVRE, amounts ≤ 0, versements carried by a CONFIRME lot, and requires the OM VALIDE + the état OF ITS TRANCHE VALIDE. `FileGenerator::exigerEtatValide` is a second barrier — keep both.
 - Marking a lot ERREUR puts its versements back to EN_ATTENTE with the agent's CURRENT phone/operator.
 - A mission has TWO payment states (`etats_paiement`, one per tranche AVANCE/RELIQUAT), each with its own full validation circuit; reliquat état is refused until the avance état is VALIDÉ. A versement is eligible only when the état OF ITS TRANCHE is valid (missions without any état = legacy OM-level fallback, `/ordres/:id/valider|rejeter`).
-- The OM PDF takes its signature blocks from the OM itself first, else from the AVANCE état covering it (`PdfGenerator::etatSignataire`: OM listed in the état `lignes`, OM not REJETE/ANNULE, état not REJETE; never on a draft). The cache key includes the état status (`OM-{ref}-{statut}-ETAT-{statut_etat}.pdf`) — keep it in sync if you add state to the signatures, or stale PDFs get served.
+- The OM PDF takes its signature blocks from the OM itself first, else from the AVANCE état covering it (`PdfGenerator::etatSignataire`: OM listed in the état `lignes`, OM not REJETE/ANNULE, état not REJETE; never on a draft). The cache key includes the état status and the amendment count (`OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf`) — `/pdf/download` serves the cached file as is, so any new input to the PDF must enter the key, or stale PDFs get served.
 - The reliquat état is signed at the PAYABLE amount (sum of positive reliquats); trop-perçus (negative reliquats) are shown apart on the PDF, never subtracted from the signed total.
 - Validating the avance état propagates VALIDE to the mission's OM except SOLDE/ANNULE/REJETE; rejecting an OM sets its EN_ATTENTE versements to ANNULE.
 - The closing "état général" (avances + reliquats) is NOT an entity: `EtatPaiementPdf::telechargerFinal()` synthesizes it from the two sealed snapshots once BOTH tranches are VALIDE (422 otherwise) — no third circuit, no migration.

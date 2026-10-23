@@ -128,6 +128,20 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - références : `PdfGenerator::etatSignataire()`, `backend/docs/openapi.yaml`,
     `OmPdfSignaturesEtatTest`.
 
+#### Corrigé (PDF de l'OM amendé)
+
+- **PDF de l'OM servi d'avant l'amendement** : l'écran télécharge `/api/ordres/:id/pdf/download`,
+  qui sert le PDF en cache, et la clé ne dépendait que des statuts (inchangés par un amendement).
+  La clé compte désormais les amendements (`…-AMD{n}.pdf`).
+- **Répartition affichée** : un reliquat ajusté ou négatif n'apparaît plus comme « Reliquat (30 %) ».
+  Libellés « Avance engagée », « Reliquat (ajusté par amendement) » ou « Trop-perçu (à recouvrer par
+  retenue sur salaire) » ; pourcentage tiré des montants de l'OM, pas du paramètre courant ; encadré
+  rappelant le dernier amendement ; « Montant total dû » en cas de trop-perçu.
+- **Taux journalier affiché** : calculé sur le per diem seul (le transport le gonflait).
+- `docs/amendement-om.md` : nouvelle §4.6, tableau §3 complété (état des avances `BROUILLON` /
+  `REJETE` / en signature), note de la Phase 2 précisée, échec d'une génération en file, références.
+  Tests : `OmPdfAmendementTest` (5 cas).
+
 #### Vérification
 
 - **Pest** : 552 tests (65 fichiers), suite exécutable sans `.env`.
