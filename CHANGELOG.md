@@ -203,6 +203,12 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - §9 : la tâche Cron recommandée est `schedule:run`. Elle couvre la sauvegarde de 02:00 **et** la
     purge des jetons Sanctum, que la seule ligne `db:backup` omettait.
   - Notes de version 1.3 : le lien « PDF de l'OM » figure parmi les changements du SPA.
+- **`docs/runbook-mise-a-jour-cron.md`** aligné :
+  - Node 20.19+ ou 22.12+ pour un build local.
+  - Tâches permanentes : `schedule:run` **ou** `db:backup`. Le remplacement facultatif par
+    `schedule:run` est proposé au ménage, sans doubler la sauvegarde.
+  - Étape 4 (1.3) : supprimer sur le serveur les deux Form Requests retirées.
+  - Recette (1.3) : contrôle en lecture seule du lien « PDF de l'OM ».
 
 #### Supprimé
 
