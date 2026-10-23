@@ -197,6 +197,16 @@ instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` (migration
   - file `sync` en production ;
   - pièges des correctifs n° 17, 19, 20, 21 et 22 ;
   - Cron `schedule:run`.
+- **`CLAUDE.md`** confronté au code (23/10) :
+  - stack : Vue **3.6 bêta** (dist-tag `beta` + `overrides`, figée par `package-lock.json` → `npm ci`),
+    PHP 8.4.x 64 bits (8.5 non pris en charge), Node 20.19+/22.12+, Telescope local seulement ;
+    la « visionneuse VuePDF » n'existait pas (aperçu HTML + PDF serveur) ;
+  - comptes de tests (Pest 573 / 68 fichiers, Vitest 120), structure (`utils/exercice.ts`, `services/auth.ts`,
+    directive `v-permission`) ;
+  - API : `GET /api/agents/stats` ajouté ;
+  - règles : solde malgré une tranche nulle (n° 19), lot complémentaire proposé (n° 21), amendement
+    refusé sur reliquat payé (n° 22), dernier amendement départagé par `id` (n° 17), exercice recalculé (n° 20) ;
+  - commandes : `npm ci`, Playwright sans écran, `make:class` au lieu d'un `make:service` inexistant.
 - **`README.md`** confronté au code :
   - PHP 8.4.x 64 bits (8.5 non pris en charge : PhpSpreadsheet `<8.5.0`) ;
   - comptes de démonstration seedés seulement en `APP_ENV=local`/`testing` ;
