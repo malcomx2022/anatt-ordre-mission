@@ -209,7 +209,7 @@ flowchart TD
 | État des reliquats `VALIDE` (scellé HMAC) | ⛔ avenant formel — hors périmètre v1 |
 | Trop-perçu de l'OM déjà `RECOUVRE` (retenue soldée) | ⛔ avenant formel — hors périmètre v1 |
 | Aucun état et reliquat déjà `CONFIRME` (circuit par OM) | ⛔ avenant formel — hors périmètre v1 (défaut n° 22) |
-| OM `SOLDE` (avance à 100 % payée, OM exonéré…) | ⛔ avenant formel — un reliquat recréé ne serait jamais payable (défaut n° 25) |
+| OM `SOLDE` sans reliquat payé ni trop-perçu recouvré (avance à 100 % payée, reliquat ramené à 0) | ✅ l'OM redevient `VALIDE` si un montant est à régler, reste `SOLDE` sinon (défauts n° 25 et 28) |
 | Trop-perçu de l'OM encore `A_RECOUVRER` (non retenu) | ✅ amendable (rien n'a été retenu) |
 | OM `REJETE` / `ANNULE` | ⛔ |
 

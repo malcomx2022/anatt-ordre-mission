@@ -3,11 +3,16 @@
 > Avant : l'année fiscale était un champ **figé** dans l'écran Paramètres (liste
 > d'options codée en dur `2024`/`2025`, défaut `2026`), non validée et jamais
 > exploitée. Désormais elle est **paramétrable et déterminable**.
+>
+> *Relu le 24/10/2026 contre le code* (`Parametres`, `SettingsController`, `SettingsView`,
+> `utils/exercice.ts`) : conforme. Précisés : la liste d'années garde une année enregistrée hors
+> plage, et le serveur détermine l'exercice en **UTC** (voir *Fuseau horaire*).
 
 ## Ce qui change
 
 1. **Sélecteur d'année dynamique** (`SettingsView`) : la liste est générée
-   (année suivante → 5 ans en arrière), plus aucune valeur en dur. Sans année
+   (année suivante → 5 ans en arrière), plus aucune valeur en dur ; une année enregistrée hors de
+   cette plage y est ajoutée, pour ne jamais être remplacée en silence à l'enregistrement. Sans année
    enregistrée, le défaut est l'**exercice en cours déterminé** depuis le mois de
    début (`utils/exercice.ts` → `exerciceDe()`, miroir de `anneeFiscalePour()`). Il suit
    le mois de début tant que l'année n'est ni enregistrée ni choisie à la main.
@@ -50,7 +55,17 @@ Exemple `M = 7` (juillet) : `2026-07-01` → exercice **2026** (« 2026-2027 »)
 `2026-06-30` → exercice **2025** (« 2025-2026 »). Avec `M = 1` (défaut), exercice =
 année civile, libellé « 2026 ».
 
-## Où l'exercice est utilisé (état au 23/10/2026)
+## Fuseau horaire
+
+Le serveur détermine l'exercice courant avec l'horloge de l'application, réglée en **UTC**
+(`config/app.php`, `timezone`). L'écran Paramètres le détermine avec l'heure du navigateur,
+c'est-à-dire l'heure du Bénin (UTC+1). Le premier jour d'un exercice, entre 0 h et 1 h (heure
+du Bénin), le serveur renvoie donc encore l'exercice précédent alors que l'écran affiche déjà le
+nouveau. Sans effet aujourd'hui, puisque rien ne consomme l'exercice (§ suivant) ; à corriger
+avant de brancher un filtre par exercice, en même temps que le choix du fuseau de l'application
+(qui porte aussi les horodatages de paiement).
+
+## Où l'exercice est utilisé (état au 24/10/2026)
 
 | Consommateur | Utilisation |
 |---|---|
@@ -71,7 +86,7 @@ des rapports, via `Parametres::anneeFiscalePour()`) est une évolution, pas un c
 | Lecture, cache, détermination | `backend/app/Support/Parametres.php` |
 | Validation et route publique | `backend/app/Http/Controllers/Api/SettingsController.php`, `backend/routes/api.php` |
 | Écran | `frontend/src/views/admin/SettingsView.vue`, `frontend/src/utils/exercice.ts` (`exerciceDe`, détermination côté écran) |
-| Tests | `backend/tests/Feature/AnneeFiscaleTest.php` (année civile, exercice à cheval, détermination sans réglage, année configurée, bornes, mois invalide, chaîne numérique, lecture publique) ; `RoutesPermissionsTest` (route publique déclarée) ; `frontend/src/__tests__/settings-exercice.spec.ts` (`exerciceDe`, défaut de l'écran avec un début en juillet, année enregistrée jamais écrasée) |
+| Tests | `backend/tests/Feature/AnneeFiscaleTest.php` (8 tests : année civile, exercice à cheval, détermination sans réglage, année configurée, bornes, mois invalide, chaîne numérique, lecture publique) ; `RoutesPermissionsTest` (route publique déclarée) ; `frontend/src/__tests__/settings-exercice.spec.ts` (`exerciceDe`, défaut de l'écran avec un début en juillet, année enregistrée jamais écrasée) |
 
 ## Exploitation
 

@@ -42,11 +42,23 @@ const amendForm = ref<{ nb_jours: number | null; motif: string }>({ nb_jours: nu
 const avanceEngagee = computed(() => ordre.value?.avance_engagee != null)
 const reliquatNegatif = computed(() => (ordre.value?.reliquat ?? 0) < 0)
 
-// Amendable tant que l'OM n'est ni rejeté, ni annulé, ni entièrement soldé. Les
-// gardes fines (état en cours de signature, état des reliquats validé) restent
-// portées par l'API, qui répond 422 le cas échéant.
+// Reliquat payé ou trop-perçu recouvré : un nouvel amendement relève d'un avenant formel.
+const reliquatClos = computed(() =>
+  (ordre.value?.versements ?? []).some(
+    (v) => v.type === 'RELIQUAT' && ['CONFIRME', 'RECOUVRE'].includes(v.statut),
+  ),
+)
+
+// Amendable tant que l'OM n'est ni rejeté ni annulé. Un OM soldé l'est encore si son
+// reliquat n'est ni payé ni recouvré (avance à 100 % payée, reliquat ramené à 0) : une
+// rallonge le rouvre. Les gardes fines (état en cours de signature, état des reliquats
+// validé, fichier en attente) restent portées par l'API, qui répond 422 le cas échéant.
 const peutAmender = computed(
-  () => can('om.retranscrire') && !!ordre.value && ['IMPORTE', 'VALIDE'].includes(ordre.value.statut),
+  () =>
+    can('om.retranscrire') &&
+    !!ordre.value &&
+    (['IMPORTE', 'VALIDE'].includes(ordre.value.statut) ||
+      (ordre.value.statut === 'SOLDE' && !reliquatClos.value)),
 )
 
 function ouvrirAmend() {
