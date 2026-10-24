@@ -271,6 +271,14 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Documentation — checklist post-déploiement (24/10/2026)
+
+- **`docs/checklist-post-deploiement.md`** relu contre le code : route de santé `/up`, 401 JSON, CORS,
+  routes du SPA conformes. Ajouté : PHP **8.4.x 64 bits, ni 8.3 ni 8.5** ; libellé exact « Établir le
+  récapitulatif des avances » ; section *Correctifs des 23 et 24/10* (menu accentué, OM soldé amendable,
+  recouvrements antérieurs non repris) et contrôles de recette des n° 19 à 28 (lot complémentaire depuis
+  l'écran, solde, reliquat payé, compte désactivé non notifié). Aucune migration de plus.
+
 #### Documentation — catégories d'indice (24/10/2026)
 
 - **`docs/categories-indice.md`** relu contre le code (seuils serveur et client, appels de `normaliser()`
