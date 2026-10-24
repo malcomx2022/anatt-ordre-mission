@@ -271,6 +271,14 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Documentation — année fiscale (24/10/2026)
+
+- **`docs/annee-fiscale.md`** relu contre le code (`Parametres`, `SettingsController`, `SettingsView`,
+  `utils/exercice.ts`, routes, tests) : conforme. Précisés : la liste d'années garde une année enregistrée
+  hors plage ; nouvelle section *Fuseau horaire* — le serveur détermine l'exercice en UTC (`config/app.php`),
+  l'écran à l'heure du Bénin, d'où un décalage d'une heure le premier jour d'un exercice, sans effet tant
+  que rien ne consomme l'exercice ; « où l'exercice est utilisé » daté du 24/10.
+
 #### Corrigé (OM soldé de nouveau amendable, 24/10/2026)
 
 - **Régression du correctif n° 25.** Refuser tout amendement d'un OM `SOLDE` rendait l'avenant impossible
