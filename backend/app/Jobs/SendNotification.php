@@ -32,6 +32,11 @@ class SendNotification implements ShouldQueue
             return;
         }
 
+        // Compte désactivé entre la notification et l'envoi (file d'attente) : pas d'e-mail.
+        if (! $user->actif) {
+            return;
+        }
+
         $subject = $this->getSubject();
         $body = $this->getBody();
 

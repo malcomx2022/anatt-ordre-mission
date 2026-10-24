@@ -8,6 +8,7 @@ use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
 use App\Services\MissionService;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -42,6 +43,28 @@ it('n’envoie aucune notification si aucun destinataire du rôle', function () 
     $this->service->valider($om, $this->gestion);
 
     Queue::assertNotPushed(SendNotification::class);
+});
+
+it('ne notifie pas un compte désactivé du rôle', function () {
+    // Un compte désactivé ne se connecte plus : il ne doit recevoir ni la notification
+    // in-app ni l'e-mail (montants, mission), données réservées aux comptes actifs.
+    $actif = User::factory()->agentFinancier()->create();
+    $inactif = User::factory()->agentFinancier()->create(['actif' => false]);
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->service->valider($om, $this->gestion);
+
+    expect(Notification::pour($actif->id)->count())->toBe(1)
+        ->and(Notification::pour($inactif->id)->count())->toBe(0);
+    Queue::assertPushed(SendNotification::class, 1);
+});
+
+it('n’envoie pas l’e-mail d’un compte désactivé entre-temps (file d’attente)', function () {
+    Mail::shouldReceive('raw')->never();
+    $user = User::factory()->agentFinancier()->create(['actif' => false]);
+
+    (new SendNotification($user->id, 'om_valide', ['reference_semo' => 'SEMO-1', 'beneficiaire' => 'DADA Richard', 'montant' => '45 000']))->handle();
+
 });
 
 // ── Trop-perçu (amendement) ──
