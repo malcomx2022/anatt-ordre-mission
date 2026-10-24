@@ -10,12 +10,13 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 
 > **État au 23/10/2026, fin de journée.** Les correctifs ont été livrés en trois passes (PR #125 à
 > #131), puis la documentation a été confrontée au code document par document (PR #132 à #152).
-> Cette seconde étape a fait apparaître quinze défauts de plus, tous corrigés avec un test :
+> Cette seconde étape a fait apparaître dix-sept défauts de plus, tous corrigés avec un test :
 > - n° 10 à 16 lors de la relecture des documents ;
 > - n° 17 au rejeu de la recette et du scénario de démo ;
 > - n° 18 à la relecture du guide utilisateur ;
 > - n° 19 à 22 en confrontant les derniers documents à l'interface et aux gardes du serveur ;
-> - n° 23 et 24 (solde d'un OM) en relisant `docs/circuits-validation.md`, après la PR #153.
+> - n° 23 et 24 (solde d'un OM) en relisant `docs/circuits-validation.md`, après la PR #153 ;
+> - n° 25 et 26 (OM soldé amendable, reliquat ramené à 0) en relisant `docs/amendement-om.md`, après la PR #154.
 >
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
 > colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
@@ -27,7 +28,7 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 |----------|-------|----------------|--------------|-------|
 | Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 | 129 / 129 |
 | Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 444 / 444 |
-| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **573 / 573 (68 fichiers)** ; 576 après les n° 23-24 |
+| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **573 / 573 (68 fichiers)** ; 578 après les n° 23 à 26 |
 | Style backend | Pint `--test` | conforme | conforme | conforme |
 | Unitaires frontend | Vitest | 99 / 99, 23 fichiers | 113 / 113, 26 fichiers | **120 / 120, 27 fichiers** |
 | Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur | 0 erreur |
@@ -85,6 +86,7 @@ ajoutés avec les correctifs n° 10 à 22 (total 573) :
 | `AmendementOmTest` | 1 | n° 22 (amendement refusé quand le reliquat est déjà payé) |
 | `RegularisationTest` | 2 | n° 23 (OM soldé une fois son trop-perçu recouvré, pas avant le paiement de l'avance) |
 | `CircuitValidationTest` | 1 | n° 24 (OM exonéré soldé à la validation par OM) |
+| `AmendementOmTest` | 2 | n° 25 (OM soldé non amendable), n° 26 (OM soldé quand l'amendement ramène le reliquat à 0) |
 
 Côté frontend, 19 vues sur 50 sont montées par au moins un test Vitest (16 en première passe), et le
 composant `PaiementGeneration` — qui porte la génération MTN/Moov et le suivi des gros lots — est
@@ -125,8 +127,10 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 20 | Mineur | *(trouvé en mettant à jour `docs/annee-fiscale.md`, le 23/10)* Sans année enregistrée, l'écran Paramètres proposait l'année civile, sans tenir compte du mois de début d'exercice. Avec un début en juillet, en mars 2027, il affichait « 2027-2028 », et le premier enregistrement figeait cet exercice alors que le serveur déterminait « 2026-2027 ». Sans effet sur les montants : aucun traitement ne consomme encore l'exercice. | Défaut de l'écran déterminé comme le serveur (`utils/exercice.ts` → `exerciceDe`) ; une année enregistrée ou choisie n'est jamais écrasée. Tests dans `settings-exercice.spec.ts` (Vitest : 118 tests). |
 | 21 | Majeur | *(trouvé en mettant à jour `docs/SCENARIO-DEMO.md`, le 23/10)* L'écran de génération MTN/Moov ne permettait pas de produire un **lot complémentaire**. Dès que le dernier lot de la sélection était `CONFIRME`, il masquait le bouton de génération (« Lot confirmé — réinclusion bloquée »), même quand l'aperçu listait des versements devenus payables. Exemple : un agent passé de Moov à MTN (§8.2 du scénario). Le serveur produisait le lot de séquence 2, mais seul un appel direct à l'API y donnait accès ; la recette l'avait validé par l'API, pas par l'écran. | Le blocage ne vaut plus que si rien n'est payable ; sinon le bouton « Générer le lot complémentaire » est proposé. Liste des lots départagée par `id` (lots créés dans la même seconde). Tests dans `paiements-async.spec.ts` (Vitest : 120 tests) ; mock Playwright aligné sur l'API (aperçu vide après confirmation). |
 | 22 | Majeur | *(trouvé en mettant à jour `docs/amendement-om.md`, le 23/10)* Sur une mission **sans état**, un OM dont le reliquat était déjà payé (`CONFIRME`, OM soldé) restait amendable par l'API. `reventilerVersements` ne réécrit pas un versement confirmé : le reliquat de l'OM changeait sans versement correspondant. Une rallonge n'était donc jamais payée et une réduction ne produisait pas de trop-perçu. L'écran masquait le bouton pour un OM soldé, pas l'API. | Garde dans `MissionService::exigerAmendementPossible` : reliquat `CONFIRME` → refus, avenant formel (équivalent de l'état des reliquats validé). Test dans `AmendementOmTest` (Pest : 573 tests). |
-| 23 | Mineur | *(trouvé en mettant à jour `docs/circuits-validation.md`, le 23/10)* Un OM dont le trop-perçu était recouvré (`RECOUVRE`) ne passait jamais à `SOLDE`. Le solde n'était examiné qu'à la confirmation d'un lot, et `RECOUVRE` comptait comme un versement restant : l'OM, entièrement régularisé, restait `VALIDE` (filtre « Soldé » de la liste des OM, statut affiché). | Règle commune `LotPaiementService::solderSiRegle` : versements `CONFIRME` ou `RECOUVRE` = réglés ; appelée à la confirmation **et** au recouvrement. Deux tests dans `RegularisationTest` (Pest : 575 tests). |
+| 23 | Mineur | *(trouvé en mettant à jour `docs/circuits-validation.md`, le 23/10)* Un OM dont le trop-perçu était recouvré (`RECOUVRE`) ne passait jamais à `SOLDE`. Le solde n'était examiné qu'à la confirmation d'un lot, et `RECOUVRE` comptait comme un versement restant : l'OM, entièrement régularisé, restait `VALIDE` (filtre « Soldé » de la liste des OM, statut affiché). | Règle commune `LotPaiementService::solderSiRegle` (déplacée sur `OrdreMission` avec le n° 26) : versements `CONFIRME` ou `RECOUVRE` = réglés ; appelée à la confirmation **et** au recouvrement. Deux tests dans `RegularisationTest` (Pest : 575 tests). |
 | 24 | Mineur | *(idem)* Sur le circuit par OM, un OM exonéré (prise en charge par un tiers, montant nul, aucun versement) restait `VALIDE` après validation, alors que la validation de l'état des avances le solde aussitôt. | `MissionService::valider` solde un OM de montant nul. Test dans `CircuitValidationTest` (Pest : 576 tests). |
+| 25 | Majeur | *(trouvé en mettant à jour `docs/amendement-om.md`, le 23/10)* Un OM `SOLDE` restait amendable par l'API (l'écran masquait le bouton). Avec une part d'avance à 100 %, l'OM est soldé dès le paiement de l'avance ; une rallonge créait alors un reliquat positif `EN_ATTENTE` que rien ne pouvait payer, le périmètre payable exigeant un OM `VALIDE`. | `MissionService::exigerAmendementPossible` refuse un OM `SOLDE` (avenant formel), après les gardes plus précises (reliquat payé, trop-perçu recouvré). Test dans `AmendementOmTest`. |
+| 26 | Mineur | *(idem)* Un amendement qui ramenait le total à l'avance déjà payée (10 jours à 35 000 réduits à 7, avance 245 000) laissait l'OM `VALIDE` avec un reliquat nul : plus rien à régler, mais jamais soldé. | La règle du solde passe sur le modèle (`OrdreMission::solderSiRegle`) et s'applique aussi après un amendement. Test dans `AmendementOmTest` (Pest : 578 tests). |
 
 ## 4. Points restants — tous traités (seconde passe)
 

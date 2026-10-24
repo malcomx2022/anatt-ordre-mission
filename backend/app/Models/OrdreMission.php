@@ -103,6 +103,28 @@ class OrdreMission extends Model
         return $this->hasMany(Versement::class);
     }
 
+    /**
+     * Passe l'OM à SOLDE si tous ses versements sont réglés : payés (CONFIRME)
+     * ou, pour un trop-perçu, récupérés par retenue (RECOUVRE). Un versement nul
+     * (tranche vide : part d'avance à 0 ou 100 %, reliquat ramené à 0 par un
+     * amendement) n'entre dans aucun fichier : il ne retient pas l'OM. Un
+     * trop-perçu A_RECOUVRER le retient. Appelée à la confirmation d'un lot, au
+     * constat d'un recouvrement et après un amendement (cf. docs/circuits-validation.md §3).
+     */
+    public static function solderSiRegle(int $omId): void
+    {
+        $resteARegler = Versement::where('ordre_mission_id', $omId)
+            ->whereNotIn('statut', ['CONFIRME', 'RECOUVRE'])
+            ->where('montant', '!=', 0)
+            ->exists();
+
+        if (! $resteARegler) {
+            static::where('id', $omId)
+                ->whereNotIn('statut', ['SOLDE', 'ANNULE'])
+                ->update(['statut' => 'SOLDE']);
+        }
+    }
+
     /** Journal des amendements (rallonge / réduction des jours facturés). */
     public function amendements(): HasMany
     {

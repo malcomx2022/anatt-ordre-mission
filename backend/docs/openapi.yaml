@@ -1195,8 +1195,9 @@ paths:
         L'avance est figée (`avance_engagee`) ; seul le reliquat absorbe l'écart et peut
         devenir négatif (trop-perçu → versement `A_RECOUVRER`). 422 si l'OM est
         `REJETE`/`ANNULE`, si un état est en cours de signature, si l'état des reliquats
-        est validé, si un trop-perçu de l'OM est déjà `RECOUVRE`, ou si un versement de
-        l'OM est `GENERE`. Journal `om_amendements`, audit `AMEND_OM`.
+        est validé, si un trop-perçu de l'OM est déjà `RECOUVRE`, si son reliquat est déjà
+        `CONFIRME`, si l'OM est `SOLDE`, ou si un versement de l'OM est `GENERE`. Un amendement
+        qui ramène le reliquat à 0 (avance payée) solde l'OM. Journal `om_amendements`, audit `AMEND_OM`.
         Référence : `docs/amendement-om.md`.
       x-permission: om.retranscrire
       parameters: [{ $ref: '#/components/parameters/ordre' }]
