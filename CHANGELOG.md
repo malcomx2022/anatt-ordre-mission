@@ -271,6 +271,13 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Documentation — catégories d'indice (24/10/2026)
+
+- **`docs/categories-indice.md`** relu contre le code (seuils serveur et client, appels de `normaliser()`
+  et `regleIn()`, migration, tests) : conforme. Ajouté : un tableau *Quand la catégorie est déduite*
+  (création, modification — recalcul d'office dès que l'indice ou le salaire est transmis —, import,
+  suggestion de l'écran, catégorie de l'OM reprise de SEMO puis figée) et le filtre de `GET /api/agents/stats`.
+
 #### Documentation — année fiscale (24/10/2026)
 
 - **`docs/annee-fiscale.md`** relu contre le code (`Parametres`, `SettingsController`, `SettingsView`,

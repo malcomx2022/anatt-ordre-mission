@@ -2,6 +2,10 @@
 
 > Référence unique de la catégorie d'indice ANaTT : codes, libellés, seuils,
 > et règle de transition depuis l'ancien vocabulaire `ORDRE_1/2/3`.
+>
+> *Relu le 24/10/2026 contre le code* : seuils, appels de `normaliser()` et de `regleIn()`,
+> migration et tests conformes. Ajouté : **quand** la catégorie d'un agent est déduite ou
+> recalculée (§1), et la catégorie portée par l'OM.
 
 ---
 
@@ -24,6 +28,21 @@ seuils sont concordants. Formule de reconstitution d'un indice manquant :
 `Agent::DIVISEUR_INDICE`). Elle reste un **outil de calcul** : la déduction automatique de
 la catégorie ne l'utilise pas (elle s'appuie sur les seuils de salaire concordants), et
 aucun écran ne l'appelle aujourd'hui.
+
+**Quand la catégorie est déduite.**
+
+| Moment | Règle | Où |
+|---|---|---|
+| Création d'un agent | catégorie transmise retenue (ancien code traduit) ; **absente**, elle est déduite de l'indice ou du salaire | `StoreAgentRequest::prepareForValidation` |
+| Modification d'un agent | **recalculée d'office** dès que l'indice ou le salaire brut figure dans la requête, même si une catégorie est envoyée ; sinon la catégorie transmise est retenue | `UpdateAgentRequest::prepareForValidation` |
+| Import CSV/XLSX | colonne `categorie` retenue (ancien code traduit) ; vide, elle est déduite | `AgentService::normaliserLigne` |
+| Formulaire d'agent (écran) | suggestion en temps réel depuis l'indice ou le salaire (`categorieDeduite`), modifiable avant l'enregistrement | `components/agents/AgentForm.vue` |
+| Retranscription d'un OM | catégorie de l'OM **reprise de SEMO** si elle est saisie pour ce bénéficiaire, sinon celle de l'agent ; elle est ensuite **figée sur l'OM** | `MissionService` (`ordres.*.categorie`) |
+
+Conséquence : le référentiel agent suit les seuils dès qu'on modifie l'indice ou le salaire,
+tandis que la catégorie retenue pour le calcul du per diem est celle de l'**OM**, figée à la
+retranscription. Modifier un agent ne change ni les OM déjà retranscrits ni leurs montants.
+Côté serveur, un indice ou un salaire à 0 compte comme absent (`integer(...) ?: null`).
 
 **Le code porte le seuil** : un export, un log ou une requête SQL se lisent sans
 table de concordance. C'est la raison du nommage retenu.
@@ -74,9 +93,10 @@ entrée** et traduit silencieusement par `CategorieIndice::normaliser()` :
 - import CSV/XLSX du personnel (`AgentService::normaliserLigne`) — les fichiers
   déjà préparés par l'ANaTT continuent de fonctionner ;
 - filtres de liste `?categorie=…` (`AgentService`, `BaremeService`) — les liens
-  mis en favori avant la bascule restent valides.
+  mis en favori avant la bascule restent valides ; le même filtre sert aux compteurs de
+  l'écran Personnel (`GET /api/agents/stats`).
 
-(Liste vérifiée le 23/10/2026 : ce sont les seuls appels à `CategorieIndice::normaliser()`.)
+(Liste vérifiée le 24/10/2026 : ce sont les seuls appels à `CategorieIndice::normaliser()`.)
 
 Un code inconnu des deux vocabulaires (`ORDRE_9`, `INDICE_X`) est **rejeté** en
 422 comme avant : la normalisation ne masque pas une erreur de saisie.
