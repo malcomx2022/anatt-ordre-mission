@@ -277,6 +277,10 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   (montants, bénéficiaires, missions). Seuls les comptes actifs sont désormais retenus, et `SendNotification`
   n'envoie pas l'e-mail d'un compte désactivé entre la notification et l'envoi (file d'attente). Deux tests
   dans `NotificationTest` (Pest : 580 tests). Défaut n° 27.
+- **`docs/workflows-par-profil.md`** relu contre le code : matrice identique à `config/profils.php`, menus
+  conformes ; ajout du §8 *Qui est notifié* (événement → profil, comptes actifs seulement), des règles
+  d'amendement et de solde corrigées (n° 19, 22 à 27), du lot complémentaire proposé par l'écran, des
+  actions de l'ADMIN sur les comptes et de la place des rôles personnalisés dans le circuit.
 - Trouvé en mettant à jour **`docs/rbac-flexible.md`**, qui corrige aussi la portée des rôles personnalisés :
   ils peuvent signer un état s'ils portent les clés du circuit (autorisation par permission), mais ne sont
   pas notifiés. Nouvelle section *Limites connues* (notifications par profil, autorisations par permission ;

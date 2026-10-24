@@ -11,6 +11,10 @@
 > / `VISA_DAF`, drapeau `WORKFLOW_DOUBLE_VALIDATION`) a été **retiré** ; seule subsiste une
 > validation par OM en **une étape**, pour les missions sans état. Référence :
 > `docs/circuits-validation.md`.
+>
+> **Relu le 24/10/2026 contre le code** : matrice identique à `config/profils.php` ; ajout de
+> la section *Qui est notifié* (§8), des règles de solde et d'amendement corrigées depuis
+> (défauts n° 19 et 22 à 27) et de la place des rôles personnalisés.
 
 ---
 
@@ -81,6 +85,11 @@ qui crée de la donnée métier.
 se calcule en temps réel → les OM naissent en `IMPORTE` → sur la mission, **Établir le
 récapitulatif** de l'état des avances, qui part au contrôle.
 
+**Amendement** : refusé pour un OM `SOLDE`, un reliquat déjà payé, un trop-perçu déjà recouvré
+(avenant formel, hors application), un état en cours de signature ou un fichier en attente de
+dépôt. Un amendement qui ramène le reliquat à 0, avance payée, solde l'OM (`docs/amendement-om.md`).
+Il est notifié du **rejet** d'un OM ou d'un état, et de chaque **lot confirmé**.
+
 ---
 
 ### CONTROLEUR — étape 1, le contrôle
@@ -97,7 +106,7 @@ monte à la direction.
 | Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
 **Son écran** : `/etats` — la file s'ouvre sur les états `BROUILLON`, ceux qui attendent
-son contrôle.
+son contrôle. Il est notifié dès qu'un récapitulatif est établi (avances ou reliquats).
 
 ---
 
@@ -114,7 +123,7 @@ Deuxième signature. C'est le « **Vu** » qui figure sur l'état de paiement of
 | Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
 **Ce que son visa ne fait pas** : il ne rend rien payable. Le dossier attend encore le DG.
-Sa file s'ouvre sur les états `CONTROLE`.
+Sa file s'ouvre sur les états `CONTROLE` ; il est notifié à chaque contrôle.
 
 ---
 
@@ -131,7 +140,7 @@ Dernière signature. **C'est elle qui verrouille l'état, fait passer les OM à 
 | Rejeter un OM d'une mission **sans état** (pas le valider) | |
 | Consulter le journal d'audit, OM, paiements, barème, rapports | |
 
-Sa file s'ouvre sur les états `VISA_DAF`.
+Sa file s'ouvre sur les états `VISA_DAF` ; il est notifié à chaque visa du DAF.
 
 **Séparation des tâches** (`workflow.separation_des_taches`, active par défaut) : une même
 personne ne peut pas porter deux signatures du même état. Le DAF doit être distinct du
@@ -159,7 +168,14 @@ opérateur → revenir **confirmer**.
 
 **Garde-fous** : un versement `CONFIRME`, ou porté par un lot `CONFIRME`, n'est jamais
 réinclus ; un lot confirmé n'est jamais réécrit — un versement devenu payable ensuite part
-dans un **lot complémentaire** (`…_COMPL2`). C'est l'anti-double-paiement.
+dans un **lot complémentaire** (`…_COMPL2`), que l'écran propose (« Générer le lot
+complémentaire »). C'est l'anti-double-paiement.
+
+**Solde** : la confirmation d'un lot, comme le constat d'un recouvrement, passe l'OM à `SOLDE`
+dès que tous ses versements non nuls sont réglés (payés ou recouvrés).
+
+Il est notifié quand un **état est validé** (fichiers ouverts), quand un **OM est validé** par
+le circuit par OM, et quand un amendement crée un **trop-perçu**.
 
 ---
 
@@ -173,6 +189,9 @@ Supervise sans jamais exécuter ni signer.
 | Modifier le barème per diem | Retranscrire un OM |
 | Gérer le référentiel agents | Générer ou confirmer un paiement |
 | Consulter le journal d'audit, les paiements, les rapports | Modifier la matrice, les paramètres système, les sauvegardes |
+| Changer le rôle d'un compte, l'activer ou le désactiver (sessions révoquées) | |
+
+Il est notifié de chaque **lot confirmé**.
 
 ---
 
@@ -230,7 +249,9 @@ Générée depuis `config/profils.php`. `SUPER_ADMIN` a tout, implicitement.
 | `roles.gerer` | ✅ | — | — | — | — | — | — | — |
 
 Les trois permissions de signature sont **mutuellement exclusives** entre contrôleur, DAF
-et DG : aucun profil métier n'en détient deux. Combinées à la séparation des tâches, elles
+et DG : aucun profil métier n'en détient deux. Un **rôle personnalisé** (`docs/rbac-flexible.md`,
+niveau 3) peut aussi porter une clé du circuit : il signe alors sous les mêmes garde-fous, mais
+n'est pas notifié (§8). Combinées à la séparation des tâches, elles
 rendent le circuit infalsifiable sans complicité entre trois personnes. Le serveur refuse
 aussi qu'un profil — ou un utilisateur, compte tenu de ses droits individuels — cumule
 `om.approuver` (ordonnateur) et `paiements.generer` / `paiements.confirmer` (payeur).
@@ -327,3 +348,28 @@ permissions ouvrent.
 Le menu est piloté par les permissions renvoyées par `/api/auth/me/permissions` : un
 profil ne voit jamais une entrée qu'il ne peut pas ouvrir (verrouillé par
 `frontend/src/__tests__/navigation.spec.ts`).
+
+---
+
+## 8. Qui est notifié
+
+Chaque notification apparaît dans la cloche et part par e-mail (`NotificationService`). Elle vise
+les comptes **actifs** du profil système concerné ; un compte désactivé ne reçoit plus rien
+(défaut n° 27, corrigé le 24/10/2026).
+
+| Événement | Profil notifié |
+|---|---|
+| Récapitulatif d'un état établi ou rafraîchi (avances ou reliquats) | `CONTROLEUR` |
+| État contrôlé | `DAF` |
+| État visé par le DAF | `DG` |
+| État validé par le DG (fichiers de la tranche ouverts) | `AGENT_FINANCIER` |
+| État rejeté (motif) | `GESTIONNAIRE_OM` |
+| OM validé (circuit par OM, mission sans état) | `AGENT_FINANCIER` |
+| OM rejeté | `GESTIONNAIRE_OM` |
+| Lot de paiement confirmé | `GESTIONNAIRE_OM`, `ADMIN` |
+| Trop-perçu créé par un amendement | `AGENT_FINANCIER` |
+
+Les notifications suivent les **profils**, pas les permissions : un rôle personnalisé ou un droit
+accordé à titre individuel permet d'agir, mais ne déclenche aucune notification. Inversement, un
+membre du profil à qui l'on a retiré la permission reste notifié. Cette limite est documentée
+dans `docs/rbac-flexible.md` (*Limites connues*).
