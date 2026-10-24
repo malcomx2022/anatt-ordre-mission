@@ -149,6 +149,33 @@ describe('Accès au PDF officiel de l’OM', () => {
   })
 })
 
+describe('Amendement d’un OM soldé', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissions = ['om.consulter', 'om.retranscrire']
+  })
+
+  const solde = (statutReliquat: string) => ({
+    ...ordre('SOLDE', { id: 5, tranche: 'AVANCE', statut: 'VALIDE', numero: '0042', valide: true }),
+    versements: [
+      { id: 1, type: 'AVANCE', montant: 90000, statut: 'CONFIRME', operateur: 'MTN', telephone: '0197984877' },
+      { id: 2, type: 'RELIQUAT', montant: statutReliquat === 'CONFIRME' ? 27000 : 0, statut: statutReliquat, operateur: 'MTN', telephone: '0197984877' },
+    ],
+  })
+
+  it('propose « Amender » quand le reliquat n’est ni payé ni recouvré (avance à 100 %)', async () => {
+    get.mockResolvedValue(solde('EN_ATTENTE'))
+    const w = await monter()
+    expect(bouton(w, 'Amender')).toBeTruthy()
+  })
+
+  it('masque « Amender » quand le reliquat est déjà payé (avenant formel)', async () => {
+    get.mockResolvedValue(solde('CONFIRME'))
+    const w = await monter()
+    expect(bouton(w, 'Amender')).toBeUndefined()
+  })
+})
+
 describe('Chargement en échec (404)', () => {
   const e404 = { response: { status: 404, data: { message: 'Ordre de mission introuvable.' } } }
 

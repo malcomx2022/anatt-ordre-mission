@@ -8,6 +8,10 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 (`100 − partAvance`) et absorbe l'arrondi.
 
 > Défaut : **70 %**. Aucun changement de comportement pour une installation existante.
+>
+> *Relu le 24/10/2026 contre le code* : règle du solde déplacée sur le modèle
+> (`OrdreMission::solderSiRegle`), conséquences d'une part à 0 % ou 100 % sur l'état des avances
+> et sur l'amendement (défaut n° 28 : un OM soldé par une avance à 100 % redevient amendable).
 
 ## Où se règle-t-il
 
@@ -52,10 +56,17 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 - **Valeurs extrêmes** : à 100 %, le reliquat vaut 0 ; à 0 %, c'est l'avance qui vaut 0 et
   tout passe en reliquat. La tranche nulle garde son versement, créé à la retranscription :
   un amendement ultérieur pourra le réécrire. Ce versement n'entre dans aucun fichier
-  (`Versement::scopeEligiblesLot` exclut les montants ≤ 0) et **ne retient pas l'OM** : à la
-  confirmation de l'autre tranche, `LotPaiementService::confirmer` ignore les versements nuls
-  et passe l'OM à `SOLDE`. *Corrigé le 23/10/2026* : avant, un OM entièrement payé avec une part
-  à 100 % (ou à 0 %) restait `VALIDE` indéfiniment.
+  (`Versement::scopeEligiblesLot` exclut les montants ≤ 0) et **ne retient pas l'OM** : la
+  règle du solde (`OrdreMission::solderSiRegle`, appelée à la confirmation d'un lot) ignore les
+  versements nuls et passe l'OM à `SOLDE`. *Corrigé le 23/10/2026* : avant, un OM entièrement
+  payé avec une part à 100 % (ou à 0 %) restait `VALIDE` indéfiniment (défaut n° 19).
+  - **À 0 %** : l'état des avances est signé à 0 (aucun fichier d'avance) ; sa validation fige
+    une avance engagée de 0 et ouvre l'état des reliquats, qui porte tout le montant.
+  - **À 100 %** : l'OM est soldé dès la confirmation de son avance. Une rallonge reste possible
+    ensuite : l'amendement recrée un reliquat positif et **rouvre l'OM** (`SOLDE` → `VALIDE`),
+    payable après validation de l'état des reliquats ; un amendement qui ne laisse rien à régler
+    le laisse soldé. *Corrigé le 24/10/2026* (défaut n° 28) : l'amendement d'un OM soldé était
+    refusé, ce qui rendait l'avenant impossible après paiement avec une part à 100 %.
 - **Frontend** : la valeur est chargée à la connexion et au rechargement (garantie avant
   l'affichage des écrans), purgée au logout, et rafraîchie immédiatement après un
   changement de réglage (sans rechargement de page). *Durci par la revue d'octobre 2026* :
@@ -109,6 +120,10 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   ignorée une fois l'avance engagée (amendement).
 - `tests/Feature/SoldeTest.php` — un OM dont la tranche restante est nulle (part à 100 %) passe
   à `SOLDE` à la confirmation de son avance.
+- `tests/Feature/AmendementOmTest.php` — un OM soldé par une avance à 100 % est rouvert par une
+  rallonge (reliquat payable) et reste soldé si l'amendement ne laisse rien à régler.
+- `frontend/src/__tests__/mission-detail.spec.ts` — « Amender » proposé sur un OM soldé dont le
+  reliquat n'est ni payé ni recouvré, masqué sinon.
 - `tests/Feature/OmPdfAmendementTest.php` — le PDF de l'OM tire son pourcentage des montants
   de l'OM, et non du paramètre courant.
 - `frontend/src/__tests__/part-avance.spec.ts` — pas de mise en cache du défaut sur

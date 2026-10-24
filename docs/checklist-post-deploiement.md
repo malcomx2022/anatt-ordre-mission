@@ -12,6 +12,9 @@
 >
 > Sauf mention contraire, tout se vérifie **sans créer de données** en production : les contrôles
 > qui génèrent un lot ou restaurent une base se font sur une instance de **recette**.
+>
+> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 28 ajoutés (§06, *Correctifs
+> des 23 et 24/10*) — code seul, **aucune migration de plus** que celle de la 1.3.
 
 ---
 
@@ -24,7 +27,7 @@ Le back-end doit répondre **avant** tout test du SPA.
 - [ ] **`.env` serveur correct** : `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` renseignée, `APP_URL=https://api-omsemo.anatt.bj`, `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`.
 - [ ] **Base de données** : `DB_DATABASE / DB_USERNAME / DB_PASSWORD` valides et **schéma à jour**.
 - [ ] **Aucune migration en attente** : dans phpMyAdmin, `SELECT migration FROM migrations ORDER BY id;` contient bien **tous** les noms de fichiers de `backend/database/migrations/` (sans `.php`). Un nom manquant = migration non jouée. Voir `DEPLOY-CPANEL.md` § *Mise à jour*, B et D.
-- [ ] **PHP 8.4** sélectionné (minimum imposé par `composer.lock` — sous 8.3 l'API renvoie 500 sur tous les appels, cf. `DEPLOY-CPANEL.md` §4), extensions actives : `mbstring, openssl, pdo_mysql, tokenizer, xml, dom, simplexml, xmlreader, xmlwriter, ctype, json, iconv, fileinfo, gd, zip, zlib, bcmath, curl`. Cette liste est celle qu'exige `composer.lock` : `dom`, `gd` et `iconv` pour les PDF, `zip` et `xml*` pour les fichiers `.xlsx`, `zlib` pour les sauvegardes `.gz` (`DEPLOY-CPANEL.md` §4).
+- [ ] **PHP 8.4.x 64 bits** sélectionné — ni 8.3 (minimum imposé par `composer.lock` : l'API renvoie 500 sur tous les appels), ni 8.5 (`phpoffice/phpspreadsheet` déclare `<8.5.0`, l'API démarrerait hors plage supportée ; cf. `DEPLOY-CPANEL.md` §4), extensions actives : `mbstring, openssl, pdo_mysql, tokenizer, xml, dom, simplexml, xmlreader, xmlwriter, ctype, json, iconv, fileinfo, gd, zip, zlib, bcmath, curl`. Cette liste est celle qu'exige `composer.lock` : `dom`, `gd` et `iconv` pour les PDF, `zip` et `xml*` pour les fichiers `.xlsx`, `zlib` pour les sauvegardes `.gz` (`DEPLOY-CPANEL.md` §4).
 - [ ] **Permissions** : `storage/` (récursif) et `bootstrap/cache/` en écriture (755/775) — sinon erreur 500 au premier appel.
 - [ ] **Caches applicatifs vidés** après changement de code ou de `.env` : `php artisan optimize:clear` (ou `config:clear` + `view:clear`).
 - [ ] **HTTPS (AutoSSL)** actif sur `api-omsemo.anatt.bj`.
@@ -103,7 +106,7 @@ Connecté en Super Administrateur. Chaque route rend son écran, **sans page bla
 
 Vérifier ce qui a changé dans ce build.
 
-- [ ] **Fiche d'état** : une mission sans récapitulatif affiche la carte d'état vide + bouton « Établir le récapitulatif » (c'était le cas de la page blanche ; titre de l'écran au pluriel « États de paiement »).
+- [ ] **Fiche d'état** : une mission sans récapitulatif affiche la carte d'état vide + bouton « Établir le récapitulatif des avances » (c'était le cas de la page blanche ; titre de l'écran au pluriel « États de paiement »).
 - [ ] **Filtre missions** : une mission dont le reliquat est « Visé DAF » (avance déjà validée) remonte bien sous le filtre **Visé DAF** (le filtre couvre désormais les deux tranches, cohérent avec les deux badges affichés).
 - [ ] **File de travail** : un Super Administrateur ouvre `/etats` sur « Tous », pas piégé sur une file vide (un acteur dédié — contrôleur / DAF / DG — atterrit toujours sur sa propre file).
 
@@ -125,6 +128,14 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Accès au PDF de l'OM** : la fiche d'un OM (`/ordres/:id`) propose le lien **« PDF de l'OM »** à côté de « Historique », y compris pour un OM validé. Il ouvre l'aperçu (`/ordres/:id/pdf`), et **Télécharger PDF** produit le document. « Télécharger le brouillon » n'apparaît plus une fois l'OM validé ou soldé.
 - [ ] **Fichiers retirés** : `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` ont été effacés du serveur, car l'envoi FTP ne les supprime pas (`docs/runbook-mise-a-jour-cron.md`, étape 4). S'ils restent, rien ne casse : ils ne sont jamais chargés.
 
+### Correctifs des 23 et 24/10/2026 (n° 17 à 28, code seul)
+
+Sans création de données :
+
+- [ ] **Menu latéral accentué** : « États de paiement », « Générer MTN », « Régularisations », « Barèmes », « Paramètres », « Système », et « Matrice des permissions » sous *Utilisateurs*. Des libellés sans accents = ancien bundle servi (section 04).
+- [ ] **Liste des OM, filtre « Soldé »** : un OM dont le trop-perçu a été recouvré **avant** la mise à jour reste `VALIDE` (le correctif s'applique aux recouvrements constatés ensuite) ; c'est attendu, il n'y a pas de reprise.
+- [ ] **Fiche d'un OM soldé** (`/ordres/:id`) : « Amender » est proposé si le reliquat n'est ni payé ni recouvré (part d'avance à 100 %), masqué sinon.
+
 #### Sur l'instance de recette uniquement
 
 - [ ] **Restauration** : créer une sauvegarde, modifier une donnée, puis **Restaurer** depuis `/admin/sauvegardes` (recopie du nom du fichier) → la donnée revient, une sauvegarde de sécurité supplémentaire (l'état d'avant la restauration) apparaît dans la liste, et l'audit trace `BACKUP_RESTORE`. En cas d'échec : `DB_RESTORE_BINARY`, `exec()` et `DEPLOY-CPANEL.md` §9.1.
@@ -133,6 +144,10 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Lot complémentaire** : après confirmation d'un lot, un versement devenu payable ensuite (par exemple un agent passé de Moov à MTN avant le paiement Moov, cf. `docs/SCENARIO-DEMO.md` §8) part dans un lot badgé **« complémentaire n° 2 »** (fichier `…_COMPL2`) ; le lot confirmé n'est pas réécrit.
 - [ ] **Gros lot** (plus de `PAIEMENT_ASYNC_SEUIL` bénéficiaires, 50 par défaut) : la génération affiche son suivi en cours, puis le fichier se télécharge automatiquement.
 - [ ] **Amendement** : refusé tant qu'un lot contenant l'OM est **généré** (en attente de dépôt) ; accepté une fois le lot confirmé ou passé en erreur.
+- [ ] **Lot complémentaire depuis l'écran** : après confirmation d'un lot, si l'aperçu liste encore un bénéficiaire, le bouton s'intitule **« Générer le lot complémentaire.txt »** (ou `.xlsx`) ; s'il ne reste personne, l'écran affiche « Lot confirmé — réinclusion bloquée » (n° 21).
+- [ ] **Solde** : avec une part d'avance à 100 %, l'OM passe `SOLDE` à la confirmation de son avance (n° 19) ; une rallonge le rouvre (`VALIDE`, reliquat payable après l'état des reliquats, n° 28) ; un trop-perçu marqué **recouvré** solde l'OM si l'avance est payée (n° 23) ; un OM exonéré validé par OM passe directement `SOLDE` (n° 24).
+- [ ] **Amendement d'un reliquat payé** (mission sans état) : refusé (n° 22) ; un amendement qui ramène le reliquat à 0, avance payée, solde l'OM (n° 26).
+- [ ] **Compte désactivé** : désactiver un compte d'agent financier, valider un état des avances → aucune notification ni e-mail pour ce compte (n° 27).
 - [ ] **PDF après amendement** : sur un OM dont l'avance est validée, télécharger le PDF, amender à la baisse jusqu'au trop-perçu, puis retélécharger → le nouveau PDF affiche « Avance engagée », « Trop-perçu (à recouvrer par retenue sur salaire) » avec un montant négatif, « Montant total dû », et l'encadré de l'amendement (date, jours avant → après, motif). Le premier PDF n'est plus servi.
 
 ---
