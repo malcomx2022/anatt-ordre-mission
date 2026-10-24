@@ -154,6 +154,10 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
 > (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
+> **Notifications** : adressées aux comptes **actifs** des profils système (`NotificationService::notifierRole`) —
+> un rôle personnalisé ou un droit accordé à titre individuel autorise l'action mais n'est pas notifié
+> (limite documentée dans `docs/rbac-flexible.md`).
+
 > **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `daf@`, `dg@`, `lecteur@anatt.bj`.
 
 ---
@@ -184,7 +188,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (578 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (580 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps

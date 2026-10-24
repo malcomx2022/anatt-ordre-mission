@@ -104,7 +104,8 @@ class NotificationService
     }
 
     /**
-     * Notifie tous les utilisateurs d'un rôle : dépose une notification in-app
+     * Notifie les utilisateurs ACTIFS d'un rôle (un compte désactivé ne reçoit
+     * plus rien) : dépose une notification in-app
      * (feed de la cloche) ET dispatche l'e-mail. Les deux partagent le même
      * sujet/corps (NotificationContenu), pour ne jamais diverger.
      *
@@ -112,7 +113,7 @@ class NotificationService
      */
     private function notifierRole(string $role, string $type, array $data): void
     {
-        User::where('role', $role)->get()->each(function (User $u) use ($type, $data) {
+        User::where('role', $role)->where('actif', true)->get()->each(function (User $u) use ($type, $data) {
             Notification::create([
                 'user_id' => $u->id,
                 'type' => $type,

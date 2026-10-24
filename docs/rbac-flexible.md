@@ -10,6 +10,11 @@
 >   personne** au-dessus de son profil (section « Overrides par utilisateur »).
 > - **Niveau 3 — rôles personnalisés** : créer de nouveaux profils au-delà des 8
 >   profils système (section « Rôles personnalisés »).
+>
+> *Révisé le 24/10/2026, confronté au code* : la portée des rôles personnalisés dans le circuit
+> de signature est corrigée (ils peuvent signer s'ils portent les clés, mais ne sont pas
+> notifiés), une section **Limites connues** est ajoutée, et les comptes désactivés ne reçoivent
+> plus de notifications (défaut n° 27).
 
 ## Principe
 
@@ -213,8 +218,15 @@ le front dérive `granted` (cochées hors base) et `revoked` (base décochées).
 - Les **rôles personnalisés** sont des données (table **`roles`**, `systeme = false`).
   Leur jeu de permissions vit dans `role_permissions` comme pour les profils système
   (aucun défaut de config : un rôle neuf part sans permission).
-- Un rôle personnalisé est un profil d'**accès** : il n'entre pas dans le circuit de
-  signature (réservé aux profils système qui en portent les clés).
+- **Circuit de signature** : l'autorisation se fait **par permission**. Un rôle personnalisé
+  qui porte `om.valider`, `om.viser` ou `om.approuver` peut donc contrôler, viser ou valider un
+  état, sous les mêmes garde-fous : séparation des tâches (un même compte ne signe pas deux
+  étapes) et séparation ordonnateur / payeur. Deux différences avec les profils système :
+  - il n'est **pas notifié** quand un état attend sa signature, car les notifications ciblent les
+    profils système (voir *Limites connues*) ;
+  - le nom et la fonction imprimés sur l'état viennent des **Paramètres** (titulaire du poste),
+    puis du compte. À défaut de fonction renseignée, aucun libellé de profil n'est repris pour
+    un rôle personnalisé.
 
 ## Composants
 
@@ -298,6 +310,24 @@ nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
 
 ---
 
+# Limites connues
+
+- **Notifications par profil, autorisations par permission.** Les notifications (état à signer,
+  OM validé ou rejeté, lot confirmé, trop-perçu…) sont adressées aux **profils système**
+  (`NotificationService::notifierRole`), alors que les droits suivent la matrice et les overrides.
+  Un rôle personnalisé, ou un utilisateur à qui l'on a accordé une permission du circuit à titre
+  individuel, peut agir mais **n'est pas notifié**. Inversement, un membre du profil à qui l'on a
+  retiré la permission reste notifié. Aligner les notifications sur les permissions effectives
+  changerait les destinataires de chaque notification : c'est une décision à prendre, non
+  appliquée à ce jour.
+- **Comptes désactivés** : ils ne reçoivent ni notification ni e-mail. Le filtre s'applique au
+  dépôt de la notification et à l'envoi de l'e-mail, au cas où le compte serait désactivé entre
+  les deux, en file d'attente. Avant le 24/10/2026, un compte désactivé recevait encore les
+  e-mails, avec montants et missions (défaut n° 27). La désactivation révoque aussi les sessions
+  actives (`UserController::setActif`), et la connexion est refusée (`AuthController`).
+
+---
+
 # Tests
 
 | Sujet | Fichier |
@@ -310,4 +340,5 @@ nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
 | Aucune route API sans permission | `tests/Feature/RoutesPermissionsTest.php` |
 | Permission annoncée (`x-permission`) = permission exigée, pour chaque route, dont `/admin/roles*` et `/admin/users/{user}/permissions` | `tests/Feature/OpenApiTest.php` (`backend/docs/openapi.yaml`) |
 | Purge de la matrice après `db:restore` | `tests/Feature/BackupControllerTest.php` |
+| Notifications : destinataires actifs seulement, e-mail non envoyé à un compte désactivé | `tests/Feature/NotificationTest.php` |
 | Cohérence menu ↔ routes ↔ API | `frontend/src/__tests__/navigation.spec.ts` |

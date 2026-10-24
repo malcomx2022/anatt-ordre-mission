@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 26 ne touchent que le code (`app/`, SPA) ;
+  les correctifs n° 10 à 27 ne touchent que le code (`app/`, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -44,6 +44,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 24 | Mineur | OM exonéré resté `VALIDE` après validation par OM | Corrigé (solde d'un OM, 23/10/2026) | #154 |
 | 25 | Majeur | OM soldé encore amendable (reliquat recréé impayable) | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
 | 26 | Mineur | OM jamais soldé quand l'amendement ramène le reliquat à 0 | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
+| 27 | Majeur | Notifications et e-mails envoyés aux comptes désactivés | Corrigé (notifications des comptes désactivés, 24/10/2026) | #156 |
 
 #### Corrigé (première passe)
 
@@ -269,6 +270,18 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Corrigé (notifications des comptes désactivés, 24/10/2026)
+
+- **Comptes désactivés encore notifiés.** `NotificationService::notifierRole` visait tous les comptes du
+  profil : un compte désactivé, qui ne peut plus se connecter, recevait encore la notification et l'e-mail
+  (montants, bénéficiaires, missions). Seuls les comptes actifs sont désormais retenus, et `SendNotification`
+  n'envoie pas l'e-mail d'un compte désactivé entre la notification et l'envoi (file d'attente). Deux tests
+  dans `NotificationTest` (Pest : 580 tests). Défaut n° 27.
+- Trouvé en mettant à jour **`docs/rbac-flexible.md`**, qui corrige aussi la portée des rôles personnalisés :
+  ils peuvent signer un état s'ils portent les clés du circuit (autorisation par permission), mais ne sont
+  pas notifiés. Nouvelle section *Limites connues* (notifications par profil, autorisations par permission ;
+  comptes désactivés). Mis à jour aussi : la revue (n° 27), `CLAUDE.md`, `README.md`, `AGENTS.md`.
+
 #### Corrigé (amendement d'un OM soldé, 23/10/2026)
 
 - **OM soldé encore amendable.** L'écran masquait « Amender » pour un OM `SOLDE`, pas l'API. Avec une part
@@ -451,7 +464,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 
 État au 23/10/2026, après les correctifs n° 17 à 22 (fin de revue du 22/10 entre parenthèses) :
 
-- **Pest** : 578 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
+- **Pest** : 580 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
 - **Vitest** : 121 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
 - **Recette sur l'API réelle** : 83 / 83 contrôles (76 / 76) et 9 / 9 sondes sur les correctifs
   n° 19 et 22 ; scénario de démo rejoué, §7 « avenant » et §8.2 « lot complémentaire » compris
