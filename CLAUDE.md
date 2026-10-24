@@ -96,7 +96,8 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     (`CONTROLE`/`VISA_DAF` → rejet guidé), si l'état des reliquats est **validé**, ou si un trop-perçu de l'OM
     a déjà été **`RECOUVRE`** (retenue soldée → avenant formel, hors périmètre), ou si le **reliquat** de l'OM est
     déjà `CONFIRME` (payé : avenant formel — garde utile surtout au circuit par OM, sans état des reliquats).
-    Un OM `SOLDE` n'est pas amendable (un reliquat recréé ne serait jamais payable).
+    Un OM `SOLDE` reste amendable hors reliquat payé / trop-perçu recouvré (avance à 100 % payée,
+    reliquat ramené à 0) : il **redevient `VALIDE`** si l'amendement recrée un montant à régler.
     Un trop-perçu encore `A_RECOUVRER` reste amendable (rien n'a été retenu). Le « dernier amendement » se départage
     par `id` quand deux portent le même horodatage.
   - **Garde supplémentaire** : amendement refusé tant qu'un versement de l'OM est `GENERE` (fichier en attente de dépôt :
@@ -177,7 +178,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
   Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` sont déclarés mais non importés)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (121 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (123 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -188,7 +189,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (580 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (581 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -980,8 +981,9 @@ HDR,SARALY,1,45000
 - Rejet d'un OM : ses versements `EN_ATTENTE` passent `ANNULE` ; la validation d'un état ne repropage jamais `VALIDE` à un OM `REJETE`.
 - Solde : un OM passe `SOLDE` quand tous ses versements non nuls sont `CONFIRME` ou `RECOUVRE` (confirmation d'un lot,
   constat d'un recouvrement) ; un OM exonéré est soldé à sa validation (état des avances ou validation par OM).
-- Amendement : refusé si le reliquat de l'OM est déjà `CONFIRME` ou si l'OM est `SOLDE` (avenant formel), en plus des gardes du §1 ;
-  un amendement qui ramène le reliquat à 0 (avance payée) solde l'OM.
+- Amendement : refusé si le reliquat de l'OM est déjà `CONFIRME` (avenant formel), en plus des gardes du §1 ;
+  le statut suit ce qui reste à régler — reliquat ramené à 0 (avance payée) → `SOLDE` ; OM soldé à qui
+  l'amendement recrée un montant à régler → `VALIDE`.
 
 ---
 

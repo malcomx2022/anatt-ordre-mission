@@ -34,7 +34,7 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~580 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, ~581 tests)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
@@ -70,7 +70,7 @@ High-signal notes for OpenCode sessions in this repo.
 - Files live on the `local` disk = `storage/app/private/`, one folder per mission: `paiements/{mission_id}/{slug}_{TRANCHE}[_COMPL{n}].{txt|xlsx}`. `lots_paiement.nom_fichier` stores that path (old lots keep their old path).
 - A lot is keyed by mission × tranche × operator × **`sequence`**. A CONFIRME lot is never rewritten: a versement that becomes payable later goes into the next sequence (complementary lot). `LotPaiementResource` must expose `sequence` (the UI badge depends on it).
 - `PaiementGeneration.vue` must **not** block generation just because the latest lot is CONFIRME. It blocks only when the preview has no payable line; otherwise it offers "Générer le lot complémentaire" (defect n° 21: the server supported complementary lots, the screen hid them). `GET /paiements/lots` orders by `created_at` then `id`.
-- An OM goes SOLDE when all its versements are settled — CONFIRME, or RECOUVRE for an overpayment — checked on lot confirmation, on `marquerRecouvre` and after an amendment that brings the reliquat to 0 (`OrdreMission::solderSiRegle`, n° 23 and 26). A SOLDE OM cannot be amended: a recreated reliquat would never be payable, since only VALIDE OMs are (n° 25). An exonerated OM (zero amount) is SOLDE as soon as it is validated, in both circuits (n° 24). Zero-amount versements (empty tranche, `partAvance` 0 or 100) are ignored there, since they never enter a file (n° 19). An `A_RECOUVRER` trop-perçu still holds the OM.
+- An OM goes SOLDE when all its versements are settled — CONFIRME, or RECOUVRE for an overpayment — checked on lot confirmation, on `marquerRecouvre` and after an amendment that brings the reliquat to 0 (`OrdreMission::solderSiRegle`, n° 23 and 26). Amending a SOLDE OM is allowed unless its reliquat is CONFIRME or its trop-perçu RECOUVRE (own guards); `amender` puts it back to VALIDE when a payable amount reappears (only VALIDE OMs enter files) and leaves it SOLDE otherwise (n° 25 revised by n° 28). The SPA shows « Amender » on such a SOLDE OM. An exonerated OM (zero amount) is SOLDE as soon as it is validated, in both circuits (n° 24). Zero-amount versements (empty tranche, `partAvance` 0 or 100) are ignored there, since they never enter a file (n° 19). An `A_RECOUVRER` trop-perçu still holds the OM.
 - Eligibility gate is `Versement::scopeEligiblesLot`: excludes CONFIRME, ANNULE, A_RECOUVRER, RECOUVRE, amounts ≤ 0, versements carried by a CONFIRME lot, and requires the OM VALIDE + the état OF ITS TRANCHE VALIDE. `FileGenerator::exigerEtatValide` is a second barrier — keep both.
 - Marking a lot ERREUR puts its versements back to EN_ATTENTE with the agent's CURRENT phone/operator.
 - A mission has TWO payment states (`etats_paiement`, one per tranche AVANCE/RELIQUAT), each with its own full validation circuit; reliquat état is refused until the avance état is VALIDÉ. A versement is eligible only when the état OF ITS TRANCHE is valid (missions without any état = legacy OM-level fallback, `/ordres/:id/valider|rejeter`).

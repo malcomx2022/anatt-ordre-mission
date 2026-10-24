@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 27 ne touchent que le code (`app/`, SPA) ;
+  les correctifs n° 10 à 28 ne touchent que le code (`app/`, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -45,6 +45,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 25 | Majeur | OM soldé encore amendable (reliquat recréé impayable) | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
 | 26 | Mineur | OM jamais soldé quand l'amendement ramène le reliquat à 0 | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
 | 27 | Majeur | Notifications et e-mails envoyés aux comptes désactivés | Corrigé (notifications des comptes désactivés, 24/10/2026) | #156 |
+| 28 | Majeur | Amendement d'un OM soldé refusé (régression du n° 25 : avenant impossible avec une avance à 100 %) | Corrigé (OM soldé de nouveau amendable, 24/10/2026) | #157 |
 
 #### Corrigé (première passe)
 
@@ -270,6 +271,22 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Corrigé (OM soldé de nouveau amendable, 24/10/2026)
+
+- **Régression du correctif n° 25.** Refuser tout amendement d'un OM `SOLDE` rendait l'avenant impossible
+  après paiement avec une part d'avance à 100 % (l'OM est soldé dès la confirmation de son avance), alors
+  que la même rallonge reste acceptée à 70 %. Le refus général est retiré : les gardes du reliquat payé et
+  du trop-perçu recouvré couvrent les cas où un amendement ferait diverger l'OM de ce qui a été versé ou
+  retenu. `MissionService::amender` remet l'OM soldé à `VALIDE` puis applique la règle du solde : il
+  redevient payable si l'amendement recrée un montant à régler, et reste soldé sinon. L'écran propose
+  « Amender » sur un OM soldé dont le reliquat n'est ni payé ni recouvré. Tests dans `AmendementOmTest`
+  (2, remplacent le test de refus) et `mission-detail.spec.ts` (2). Pest : 581 tests ; Vitest : 123.
+  Défaut n° 28.
+- Trouvé en mettant à jour **`docs/parametrage-part-avance.md`** : règle du solde sur le modèle, cas d'une
+  part à 0 % (état des avances à 0) et à 100 % (OM soldé puis rouvert par une rallonge), tests. Mis à jour
+  aussi : `docs/amendement-om.md`, `docs/circuits-validation.md`, `backend/docs/openapi.yaml`, la revue,
+  `CLAUDE.md`, `README.md`, `AGENTS.md` et le guide utilisateur (régénéré).
+
 #### Corrigé (notifications des comptes désactivés, 24/10/2026)
 
 - **Comptes désactivés encore notifiés.** `NotificationService::notifierRole` visait tous les comptes du
@@ -468,8 +485,8 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 
 État au 23/10/2026, après les correctifs n° 17 à 22 (fin de revue du 22/10 entre parenthèses) :
 
-- **Pest** : 580 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
-- **Vitest** : 121 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
+- **Pest** : 581 tests, 68 fichiers (552 / 65), suite exécutable sans `.env`.
+- **Vitest** : 123 tests, 27 fichiers (113) ; **Playwright** : parcours critique (3 tests, API mockée).
 - **Recette sur l'API réelle** : 83 / 83 contrôles (76 / 76) et 9 / 9 sondes sur les correctifs
   n° 19 et 22 ; scénario de démo rejoué, §7 « avenant » et §8.2 « lot complémentaire » compris
   (fichiers MTN/Moov réels).

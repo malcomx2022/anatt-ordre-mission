@@ -220,16 +220,35 @@ it('refuse l’amendement quand l’état des avances est en cours de signature'
         ->assertStatus(422)->assertJsonValidationErrors('etat');
 });
 
-it('refuse d’amender un OM soldé', function () {
-    // L'écran masque « Amender » pour un OM soldé ; l'API doit refuser aussi : un
-    // reliquat recréé sur un OM SOLDE ne serait jamais payable (périmètre VALIDE).
-    $this->om->update(['statut' => 'SOLDE']);
+it('rouvre un OM soldé par une avance à 100 % quand une rallonge recrée un reliquat', function () {
+    // Part d'avance à 100 % : l'OM est soldé dès le paiement de son avance (reliquat nul).
+    // Une rallonge reste le cas d'usage de l'avenant : le reliquat recréé doit être payable,
+    // donc l'OM repasse VALIDE (seul un OM VALIDE entre dans les fichiers).
+    $this->om->update([
+        'statut' => 'SOLDE', 'avance' => 270000, 'reliquat' => 0, 'avance_engagee' => 270000,
+    ]);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'AVANCE')->update(['montant' => 270000, 'statut' => 'CONFIRME']);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'RELIQUAT')->update(['montant' => 0]);
 
-    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Rallonge après solde de l’OM.'])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors('statut');
+    amenderOm($this, ['nb_jours' => 8, 'motif' => 'Rallonge après paiement intégral de l’avance.'])->assertOk();
 
-    expect($this->om->fresh()->nb_jours)->toBe(6);
+    $om = $this->om->fresh();
+    expect($om->statut)->toBe('VALIDE')
+        ->and($om->reliquat)->toBe(90000)
+        ->and(montantVersement($om->id, 'RELIQUAT'))->toBe(90000);
+});
+
+it('garde soldé un OM dont l’amendement ne laisse rien à régler', function () {
+    // OM soldé (avance à 100 % payée) : un amendement sans effet sur le reliquat ne le rouvre pas.
+    $this->om->update([
+        'statut' => 'SOLDE', 'avance' => 270000, 'reliquat' => 0, 'avance_engagee' => 270000,
+    ]);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'AVANCE')->update(['montant' => 270000, 'statut' => 'CONFIRME']);
+    Versement::where('ordre_mission_id', $this->om->id)->where('type', 'RELIQUAT')->update(['montant' => 0]);
+
+    amenderOm($this, ['nb_jours' => 6, 'motif' => 'Correction sans changement de durée.'])->assertOk();
+
+    expect($this->om->fresh()->statut)->toBe('SOLDE');
 });
 
 it('solde l’OM quand l’amendement ramène le reliquat à zéro (avance payée)', function () {

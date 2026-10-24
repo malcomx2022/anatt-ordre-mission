@@ -14,7 +14,7 @@
 >
 > **Relu le 24/10/2026 contre le code** : matrice identique à `config/profils.php` ; ajout de
 > la section *Qui est notifié* (§8), des règles de solde et d'amendement corrigées depuis
-> (défauts n° 19 et 22 à 27) et de la place des rôles personnalisés.
+> (défauts n° 19 et 22 à 28) et de la place des rôles personnalisés.
 
 ---
 
@@ -85,9 +85,10 @@ qui crée de la donnée métier.
 se calcule en temps réel → les OM naissent en `IMPORTE` → sur la mission, **Établir le
 récapitulatif** de l'état des avances, qui part au contrôle.
 
-**Amendement** : refusé pour un OM `SOLDE`, un reliquat déjà payé, un trop-perçu déjà recouvré
-(avenant formel, hors application), un état en cours de signature ou un fichier en attente de
-dépôt. Un amendement qui ramène le reliquat à 0, avance payée, solde l'OM (`docs/amendement-om.md`).
+**Amendement** : refusé pour un reliquat déjà payé ou un trop-perçu déjà recouvré (avenant formel,
+hors application), un état en cours de signature ou un fichier en attente de dépôt. Un amendement
+qui ramène le reliquat à 0, avance payée, solde l'OM ; une rallonge sur un OM soldé (avance versée à
+100 %) le rouvre (`docs/amendement-om.md`).
 Il est notifié du **rejet** d'un OM ou d'un état, et de chaque **lot confirmé**.
 
 ---

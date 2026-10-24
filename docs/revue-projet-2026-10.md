@@ -10,14 +10,16 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 
 > **État au 23/10/2026, fin de journée.** Les correctifs ont été livrés en trois passes (PR #125 à
 > #131), puis la documentation a été confrontée au code document par document (PR #132 à #152).
-> Cette seconde étape a fait apparaître dix-huit défauts de plus, tous corrigés avec un test :
+> Cette seconde étape a fait apparaître dix-neuf défauts de plus, tous corrigés avec un test :
 > - n° 10 à 16 lors de la relecture des documents ;
 > - n° 17 au rejeu de la recette et du scénario de démo ;
 > - n° 18 à la relecture du guide utilisateur ;
 > - n° 19 à 22 en confrontant les derniers documents à l'interface et aux gardes du serveur ;
 > - n° 23 et 24 (solde d'un OM) en relisant `docs/circuits-validation.md`, après la PR #153 ;
 > - n° 25 et 26 (OM soldé amendable, reliquat ramené à 0) en relisant `docs/amendement-om.md`, après la PR #154 ;
-> - n° 27 (notifications envoyées aux comptes désactivés) en relisant `docs/rbac-flexible.md`, après la PR #155.
+> - n° 27 (notifications envoyées aux comptes désactivés) en relisant `docs/rbac-flexible.md`, après la PR #155 ;
+> - n° 28 (révision du n° 25 : OM soldé de nouveau amendable, rouvert si un montant est à régler) en relisant
+>   `docs/parametrage-part-avance.md`.
 >
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
 > colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
@@ -29,7 +31,7 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 |----------|-------|----------------|--------------|-------|
 | Unitaires backend | Pest `tests/Unit` | 127 / 127 | 129 / 129 | 129 / 129 |
 | Intégrité backend | Pest `tests/Feature` | 408 / 408 | 423 / 423 | 444 / 444 |
-| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **573 / 573 (68 fichiers)** ; 580 après les n° 23 à 27 |
+| Total backend | Pest | 535 (65 fichiers) | 552 (65 fichiers) | **573 / 573 (68 fichiers)** ; 581 après les n° 23 à 28 |
 | Style backend | Pint `--test` | conforme | conforme | conforme |
 | Unitaires frontend | Vitest | 99 / 99, 23 fichiers | 113 / 113, 26 fichiers | **120 / 120, 27 fichiers** |
 | Statique frontend | `vue-tsc` + ESLint + oxlint | 0 erreur | 0 erreur | 0 erreur |
@@ -87,7 +89,8 @@ ajoutés avec les correctifs n° 10 à 22 (total 573) :
 | `AmendementOmTest` | 1 | n° 22 (amendement refusé quand le reliquat est déjà payé) |
 | `RegularisationTest` | 2 | n° 23 (OM soldé une fois son trop-perçu recouvré, pas avant le paiement de l'avance) |
 | `CircuitValidationTest` | 1 | n° 24 (OM exonéré soldé à la validation par OM) |
-| `AmendementOmTest` | 2 | n° 25 (OM soldé non amendable), n° 26 (OM soldé quand l'amendement ramène le reliquat à 0) |
+| `AmendementOmTest` | 2 | n° 25 (OM soldé non amendable, remplacé par le n° 28), n° 26 (OM soldé quand l'amendement ramène le reliquat à 0) |
+| `AmendementOmTest` | 2 − 1 | n° 28 (OM soldé par une avance à 100 % rouvert par une rallonge ; resté soldé sans montant à régler) — remplace le test de refus du n° 25 |
 | `NotificationTest` | 2 | n° 27 (compte désactivé : ni notification ni e-mail) |
 
 Côté frontend, 19 vues sur 50 sont montées par au moins un test Vitest (16 en première passe), et le
@@ -134,6 +137,7 @@ Chaque correctif a un test de non-régression, vérifié **rouge avant / vert ap
 | 25 | Majeur | *(trouvé en mettant à jour `docs/amendement-om.md`, le 23/10)* Un OM `SOLDE` restait amendable par l'API (l'écran masquait le bouton). Avec une part d'avance à 100 %, l'OM est soldé dès le paiement de l'avance ; une rallonge créait alors un reliquat positif `EN_ATTENTE` que rien ne pouvait payer, le périmètre payable exigeant un OM `VALIDE`. | `MissionService::exigerAmendementPossible` refuse un OM `SOLDE` (avenant formel), après les gardes plus précises (reliquat payé, trop-perçu recouvré). Test dans `AmendementOmTest`. |
 | 26 | Mineur | *(idem)* Un amendement qui ramenait le total à l'avance déjà payée (10 jours à 35 000 réduits à 7, avance 245 000) laissait l'OM `VALIDE` avec un reliquat nul : plus rien à régler, mais jamais soldé. | La règle du solde passe sur le modèle (`OrdreMission::solderSiRegle`) et s'applique aussi après un amendement. Test dans `AmendementOmTest` (Pest : 578 tests). |
 | 27 | Majeur | *(trouvé en mettant à jour `docs/rbac-flexible.md`, le 24/10)* Les notifications partaient vers **tous** les comptes du profil, désactivés compris : un compte désactivé, qui ne peut plus se connecter, recevait encore par e-mail les montants, bénéficiaires et missions. | `NotificationService::notifierRole` ne retient que les comptes actifs ; `SendNotification` n'envoie pas l'e-mail d'un compte désactivé entre-temps (file d'attente). Deux tests dans `NotificationTest` (Pest : 580 tests). |
+| 28 | Majeur | *(trouvé en mettant à jour `docs/parametrage-part-avance.md`, le 24/10)* Régression du correctif n° 25 : refuser tout amendement d'un OM `SOLDE` rendait l'avenant impossible après paiement avec une part d'avance à 100 % (l'OM est soldé dès la confirmation de son avance), alors que la même rallonge reste acceptée à 70 %. Même blocage pour un OM soldé par un amendement qui avait ramené le reliquat à 0 (n° 26). | Le refus général est retiré : les gardes du reliquat payé et du trop-perçu recouvré couvrent les cas dangereux. `MissionService::amender` remet un OM soldé à `VALIDE` avant la règle du solde, qui le resolde s'il ne reste rien à régler ; l'écran propose « Amender » sur un OM soldé dont le reliquat n'est ni payé ni recouvré. Tests dans `AmendementOmTest` et `mission-detail.spec.ts` (Pest : 581 tests ; Vitest : 123). |
 
 ## 4. Points restants — tous traités (seconde passe)
 

@@ -102,9 +102,12 @@
 >   soldé (défaut n° 22) ;
 > - **trop-perçu recouvré** : l'OM passe `SOLDE` au constat du recouvrement si son avance est
 >   payée ; il restait `VALIDE` (défaut n° 23, `docs/circuits-validation.md` §3) ;
-> - **OM soldé** : il n'est plus amendable. L'API acceptait une rallonge sur un OM `SOLDE` (avance
->   à 100 % payée, par exemple) ; le reliquat recréé n'était jamais payable, puisque seul un OM
->   `VALIDE` l'est. L'écran masquait déjà le bouton (défaut n° 25) ;
+> - **OM soldé** : une rallonge sur un OM `SOLDE` recréait un reliquat jamais payable, l'OM restant
+>   `SOLDE` alors que seul un OM `VALIDE` entre dans les fichiers (défaut n° 25). *Révisé le
+>   24/10/2026 (défaut n° 28)* : le premier correctif refusait tout amendement d'un OM soldé, ce qui
+>   rendait l'avenant impossible après paiement avec une part d'avance à 100 %. Désormais l'amendement
+>   d'un OM soldé est permis, sauf reliquat payé ou trop-perçu recouvré (gardes propres) ; l'OM
+>   **redevient `VALIDE`** si l'amendement recrée un montant à régler, et reste `SOLDE` sinon ;
 > - **reliquat ramené à 0** : un amendement qui ramène le total à l'avance déjà payée solde l'OM
 >   (par exemple 10 jours à 35 000 réduits à 7, avec une avance de 245 000). L'OM restait `VALIDE`
 >   sans rien à régler (défaut n° 26).
@@ -164,7 +167,7 @@ porter qu'un montant **strictement positif**.
 | État des reliquats en `CONTROLE` / `VISA_DAF` | Refusé avec **rejet guidé** : rejeter l'état, amender, puis le rétablir. |
 | État des reliquats `VALIDE` (scellé), ou trop-perçu déjà `RECOUVRE` | **Avenant formel** — hors périmètre v1, refusé par l'application. |
 | Mission **sans état**, reliquat déjà payé (`CONFIRME`) | **Avenant formel**, refusé : c'est l'équivalent, sur le circuit par OM, de l'état des reliquats validé. |
-| OM `SOLDE` (tout payé ou recouvré, avance à 100 % payée, OM exonéré) | **Avenant formel**, refusé : un reliquat recréé ne serait jamais payable (seul un OM `VALIDE` l'est). |
+| OM `SOLDE` sans reliquat payé ni trop-perçu recouvré (avance à 100 % payée, reliquat ramené à 0) | Autorisé : l'OM **redevient `VALIDE`** si l'amendement recrée un montant à régler (payable après l'état des reliquats), reste `SOLDE` sinon. |
 
 C'est le franchissement « avance figée » qui introduit la nouvelle règle.
 
@@ -221,9 +224,6 @@ Body: { nb_jours? , lignes? , motif }
     réécrit plus, et l'amendement ferait diverger le reliquat de l'OM de ce qui a été versé.
     C'est un avenant formel. Le cas ne se présente que sur une mission sans état, car
     ailleurs l'état des reliquats validé bloque déjà ;
-  - refus si l'OM est **`SOLDE`** par ailleurs (avance à 100 % payée, OM exonéré…) : un reliquat
-    recréé ne serait jamais payable, seul un OM `VALIDE` l'est → avenant formel. Les cas du reliquat
-    payé et du trop-perçu recouvré gardent leur message propre ;
   - refus tant qu'un versement de l'OM est **`GENERE`** (fichier en attente de dépôt) :
     confirmer le lot, ou le passer en `ERREUR` — ses versements redeviennent `EN_ATTENTE`.
     L'échec définitif d'une génération en file a le même effet (`GenererLotPaiementJob::failed`) ;
@@ -231,9 +231,12 @@ Body: { nb_jours? , lignes? , motif }
     l'amendement (`avance_engagee`), seul le reliquat absorbe l'écart ;
   - autorisé si l'état est en `BROUILLON` (le récapitulatif se rafraîchit) ou si les
     avances sont `VALIDE` (l'avance se fige, seul le reliquat bouge).
-- **Après l'amendement** : un OM `VALIDE` dont tous les versements sont réglés — avance payée et
-  reliquat ramené à 0 — passe `SOLDE` (`OrdreMission::solderSiRegle`, la règle de la confirmation
-  d'un lot).
+- **Après l'amendement**, le statut suit ce qui reste à régler (`OrdreMission::solderSiRegle`, la
+  règle de la confirmation d'un lot) : un OM `VALIDE` dont tous les versements sont réglés — avance
+  payée et reliquat ramené à 0 — passe `SOLDE` ; un OM `SOLDE` (avance à 100 % payée, reliquat
+  ramené à 0) à qui l'amendement recrée un reliquat positif ou un trop-perçu **redevient `VALIDE`**
+  (défaut n° 28). Un OM soldé dont le reliquat est payé ou le trop-perçu recouvré reste refusé
+  par les gardes ci-dessus.
 
 ### 4.4 Reliquat négatif — trop-perçu
 

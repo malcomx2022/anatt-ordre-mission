@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (580 tests, 68 fichiers) · Vitest (121 tests) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (581 tests, 68 fichiers) · Vitest (123 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -111,8 +111,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
   est figée et seul le **reliquat** absorbe l'écart. Un reliquat négatif est un **trop-perçu**, récupéré par
   retenue sur salaire (écran *Régularisations*, document de retenue PDF) — jamais par Mobile Money.
   L'amendement est refusé quand le reliquat est déjà payé, qu'un trop-perçu a été recouvré ou qu'un fichier
-  de l'OM attend son dépôt, ainsi que sur un OM soldé : ces cas relèvent d'un avenant formel ou d'une
-  action sur le lot d'abord. Un amendement qui ramène le reliquat à 0, avance payée, solde l'OM.
+  de l'OM attend son dépôt : ces cas relèvent d'un avenant formel ou d'une action sur le lot d'abord.
+  Un amendement qui ramène le reliquat à 0, avance payée, solde l'OM ; une rallonge sur un OM soldé
+  (avance à 100 % payée) le rouvre.
 
 ---
 
@@ -180,7 +181,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 580 tests (68 fichiers)
+.\vendor\bin\pest                 # 581 tests (68 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
