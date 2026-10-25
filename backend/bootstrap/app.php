@@ -34,8 +34,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->renderable(function (ValidationException $e, $request) {
-            if ($request->expectsJson()) {
+        // Toute route /api/* répond en JSON, même sans en-tête Accept (requête
+        // ouverte dans un navigateur, outil tiers) : sinon Laravel renvoie une
+        // page HTML (405, 404…) ou tente une redirection.
+        $enJson = fn (Request $request): bool => $request->expectsJson() || $request->is('api/*');
+
+        $exceptions->renderable(function (ValidationException $e, $request) use ($enJson) {
+            if ($enJson($request)) {
                 return response()->json([
                     'message' => 'Donnees invalides.',
                     'errors' => $e->errors(),
@@ -43,34 +48,34 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // Toute route /api/* répond en JSON, même sans en-tête Accept : sinon
-        // Laravel tente de rediriger vers une route « login » inexistante (500).
-        $exceptions->renderable(function (AuthenticationException $e, $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
+        // Sans ce rendu, Laravel tenterait de rediriger vers une route « login »
+        // inexistante (500).
+        $exceptions->renderable(function (AuthenticationException $e, $request) use ($enJson) {
+            if ($enJson($request)) {
                 return response()->json([
                     'message' => 'Non authentifie.',
                 ], 401);
             }
         });
 
-        $exceptions->renderable(function (ModelNotFoundException $e, $request) {
-            if ($request->expectsJson()) {
+        $exceptions->renderable(function (ModelNotFoundException $e, $request) use ($enJson) {
+            if ($enJson($request)) {
                 return response()->json([
                     'message' => 'Ressource introuvable.',
                 ], 404);
             }
         });
 
-        $exceptions->renderable(function (NotFoundHttpException $e, $request) {
-            if ($request->expectsJson()) {
+        $exceptions->renderable(function (NotFoundHttpException $e, $request) use ($enJson) {
+            if ($enJson($request)) {
                 return response()->json([
                     'message' => 'Route introuvable.',
                 ], 404);
             }
         });
 
-        $exceptions->renderable(function (AccessDeniedHttpException $e, $request) {
-            if ($request->expectsJson()) {
+        $exceptions->renderable(function (AccessDeniedHttpException $e, $request) use ($enJson) {
+            if ($enJson($request)) {
                 return response()->json([
                     'message' => 'Acces refuse.',
                 ], 403);
@@ -80,16 +85,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // Toute HttpException volontaire (abort(403), abort(422), abort(405)…) doit
         // conserver SON code de statut et son message, et non être avalée par le
         // catch-all \Throwable ci-dessous (qui renverrait un 500 trompeur).
-        $exceptions->renderable(function (HttpExceptionInterface $e, $request) {
-            if ($request->expectsJson()) {
+        $exceptions->renderable(function (HttpExceptionInterface $e, $request) use ($enJson) {
+            if ($enJson($request)) {
                 return response()->json([
                     'message' => $e->getMessage() ?: 'Requete non aboutie.',
                 ], $e->getStatusCode());
             }
         });
 
-        $exceptions->renderable(function (Throwable $e, $request) {
-            if ($request->expectsJson() && ! app()->hasDebugModeEnabled()) {
+        $exceptions->renderable(function (Throwable $e, $request) use ($enJson) {
+            if ($enJson($request) && ! app()->hasDebugModeEnabled()) {
                 return response()->json([
                     'message' => 'Erreur interne du serveur.',
                 ], 500);

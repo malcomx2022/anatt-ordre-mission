@@ -13,8 +13,8 @@
 > Sauf mention contraire, tout se vérifie **sans créer de données** en production : les contrôles
 > qui génèrent un lot ou restaurent une base se font sur une instance de **recette**.
 >
-> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 28 ajoutés (§06, *Correctifs
-> des 23 et 24/10*) — code seul, **aucune migration de plus** que celle de la 1.3.
+> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 29 ajoutés (§06, *Correctifs
+> des 23 au 25/10* ; n° 29 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
 
 ---
 
@@ -128,13 +128,14 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Accès au PDF de l'OM** : la fiche d'un OM (`/ordres/:id`) propose le lien **« PDF de l'OM »** à côté de « Historique », y compris pour un OM validé. Il ouvre l'aperçu (`/ordres/:id/pdf`), et **Télécharger PDF** produit le document. « Télécharger le brouillon » n'apparaît plus une fois l'OM validé ou soldé.
 - [ ] **Fichiers retirés** : `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` ont été effacés du serveur, car l'envoi FTP ne les supprime pas (`docs/runbook-mise-a-jour-cron.md`, étape 4). S'ils restent, rien ne casse : ils ne sont jamais chargés.
 
-### Correctifs des 23 et 24/10/2026 (n° 17 à 28, code seul)
+### Correctifs des 23 au 25/10/2026 (n° 17 à 29, code seul)
 
 Sans création de données :
 
 - [ ] **Menu latéral accentué** : « États de paiement », « Générer MTN », « Régularisations », « Barèmes », « Paramètres », « Système », et « Matrice des permissions » sous *Utilisateurs*. Des libellés sans accents = ancien bundle servi (section 04).
 - [ ] **Liste des OM, filtre « Soldé »** : un OM dont le trop-perçu a été recouvré **avant** la mise à jour reste `VALIDE` (le correctif s'applique aux recouvrements constatés ensuite) ; c'est attendu, il n'y a pas de reprise.
 - [ ] **Fiche d'un OM soldé** (`/ordres/:id`) : « Amender » est proposé si le reliquat n'est ni payé ni recouvré (part d'avance à 100 %), masqué sinon.
+- [ ] **Erreurs de l'API en JSON** (n° 29) : `https://api-omsemo.anatt.bj/api/auth/login` ouvert dans le navigateur répond **405 en JSON** (`{"message":"The GET method is not supported…"}`), et une route inconnue comme `/api/inexistante` répond `{"message":"Route introuvable."}`. Une page HTML = ancien `bootstrap/app.php` encore en place.
 
 #### Sur l'instance de recette uniquement
 

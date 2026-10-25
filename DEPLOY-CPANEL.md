@@ -6,6 +6,10 @@ Guide pas-à-pas pour déployer **sans accès SSH** (FTP + phpMyAdmin), avec :
 - **API Laravel** sur un sous-domaine — `https://api-omsemo.anatt.bj`
 
 > Compte cPanel : utilisateur système **`anatt`** (préfixe BDD `anatt_`, dossier `/home/anatt/`).
+>
+> *Relu le 25/10/2026 contre le code* : seeders, `.env.production.example`, `bootstrap/app.php`,
+> `routes/console.php`, `vendor/composer/platform_check.php`, 33 migrations. La version **1.3**
+> comprend les correctifs n° 1 à 29 (*Notes de version 1.3*).
 
 ```
 public_html/                 -> SPA Vue (contenu de frontend/dist/)
@@ -17,9 +21,14 @@ anatt-api/public/            -> racine du sous-domaine api-omsemo.anatt.bj
 
 ## 0. Prérequis (sur votre PC)
 
-**PHP 8.4+**, Composer et **Node 20.19+ ou 22.12+** (exigé par Vite 8 ; la CI utilise Node 22) installés en local (pour préparer les artefacts).
-Le serveur mutualisé n'aura besoin **ni de Composer ni de Node** : on y envoie le code déjà prêt,
-mais il devra lui aussi tourner en **PHP 8.4** (cf. §4).
+Il faut, installés en local pour préparer les artefacts :
+
+- **PHP 8.4.x, 64 bits**. Pas 8.5 : `composer install` y refuse le `composer.lock`, cf. §4 ;
+- Composer ;
+- **Node 20.19+ ou 22.12+**, exigé par Vite 8. La CI utilise Node 22.
+
+Le serveur mutualisé n'aura besoin **ni de Composer ni de Node** : on y envoie le code déjà prêt.
+Il devra lui aussi tourner en **PHP 8.4.x, 64 bits** (cf. §4).
 
 ---
 
@@ -73,6 +82,19 @@ Export SQL (adaptez le chemin de mysqldump si besoin) :
 
 > En Option A, pensez à supprimer les comptes de démo superflus une fois en ligne
 > (ne gardez que votre SUPER_ADMIN). Changez **tous** les mots de passe par défaut.
+
+**Comptes nominatifs du circuit (facultatif, recommandé)** : renseignez dans le `backend/.env` local
+les variables `CONTROLEUR_*`, `DAF_*` et `DG_*`, sur le modèle de `.env.production.example`. Lancez
+ensuite, sur la même base locale et avant l'export :
+
+```powershell
+php artisan db:seed --class=ComptesCircuitSeeder
+```
+
+Ce seeder ne se joue jamais seul : il faut l'appeler par `--class`. Il crée les trois signataires
+avec un mot de passe temporaire **affiché une seule fois** : notez-le. Le changement de mot de passe
+est imposé à la première connexion. Un poste non renseigné est ignoré, et relancer le seeder ne
+réinitialise aucun mot de passe. Détail : `docs/deploiement-circuit-validation.md` §3.3.
 
 ---
 
@@ -160,12 +182,19 @@ Copiez `backend/.env.production.example` en `anatt-api/.env` (via l'éditeur de 
 
 - `APP_KEY=` la clé générée en 1.2
 - `APP_URL=https://api-omsemo.anatt.bj`
+- `FRONTEND_URL=https://omsemo.anatt.bj` — racine du SPA. Elle sert aux liens des e-mails de
+  réinitialisation de mot de passe. Sans elle, ces liens pointent vers `APP_URL`, c'est-à-dire vers l'API.
 - `DB_DATABASE / DB_USERNAME / DB_PASSWORD` de l'étape 3
 - `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`
 - `DB_DUMP_BINARY=` chemin mysqldump de l'hébergeur si vous utilisez les sauvegardes (sinon laissez `mysqldump`)
 - `DB_RESTORE_BINARY=` chemin du client `mysql` de l'hébergeur, utilisé par la **restauration** d'une
   sauvegarde (écran *Sauvegardes* ou `artisan db:restore`) ; sinon laissez `mysql`
 - Bloc `MAIL_*` (SMTP de l'hébergeur)
+- `MTN_COMPTE` — compte payeur de l'en-tête `HDR` du fichier MTN. Le gabarit propose `SARALY` :
+  faites-le confirmer par la DAF.
+- `WORKFLOW_SEPARATION_TACHES=true` (valeur du gabarit) : le DAF ne vise pas un état qu'il a
+  contrôlé, et le DG ne valide pas un état qu'il a contrôlé ou visé. Passer à `false` est une
+  décision d'exploitation explicite.
 
 Rappels déjà positionnés pour le mutualisé : `APP_DEBUG=false`, `CACHE_STORE=file`,
 `SESSION_DRIVER=file`, `QUEUE_CONNECTION=sync` (aucun worker/Redis nécessaire).
@@ -182,7 +211,11 @@ Via FileZilla : clic droit > *Attributs de fichier* > 755, « Récursif dans les
 ### 5.3 Vérifier l'API
 
 Ouvrez `https://api-omsemo.anatt.bj/up` → doit afficher la page de santé Laravel (200).
-Puis `https://api-omsemo.anatt.bj/api/auth/login` (en POST) répondra ; un simple GET renverra une erreur JSON, c'est normal.
+Ouvrez ensuite `https://api-omsemo.anatt.bj/api/auth/login` dans le navigateur. Ce GET répond
+**405 en JSON** (`{"message":"The GET method is not supported…"}`) : c'est normal, la connexion se
+fait en POST. Ouvrez aussi `https://api-omsemo.anatt.bj/api/auth/me` : il répond **401 en JSON**
+(`{"message":"Non authentifie."}`). Toute route `/api/*` répond en JSON, même sans en-tête `Accept`.
+Une page HTML à cet endroit signale un `bootstrap/app.php` antérieur à la 1.3.
 
 ---
 
@@ -216,7 +249,9 @@ bloquera les appels mixtes).
 1. `https://omsemo.anatt.bj` → écran de connexion (logo, favicon).
 2. Connexion avec le SUPER_ADMIN.
 3. Le tableau de bord charge les KPIs (preuve que le SPA atteint l'API en HTTPS).
-4. Testez une génération de fichier MTN/Moov et un export PDF.
+4. Testez une génération de fichier MTN/Moov et un export PDF. Avec une base propre (Option A),
+   ce test attend la première mission retranscrite et son état des avances validé : aucun lot n'est
+   générable avant.
 
 ---
 
@@ -357,8 +392,9 @@ ne l'offrent pas.
 > section explique *pourquoi* chaque étape est là.
 
 **1. Trouvez le vrai binaire PHP.** `/usr/local/bin/php` est un alias qui pointe souvent vers une
-version **différente** de celle choisie dans « Select PHP Version » — une migration lancée avec
-PHP 8.3 échouera sur le contrôle de plate-forme de Composer (cf. §4). Utilisez le chemin explicite de la version sélectionnée :
+version **différente** de celle choisie dans « Select PHP Version ». Une migration lancée avec
+PHP 8.3 échouera sur le contrôle de plate-forme de Composer ; une migration lancée avec PHP 8.5
+sortira de la plage supportée (cf. §4). Utilisez le chemin explicite de la version sélectionnée :
 
 ```
 /opt/cpanel/ea-php84/root/usr/bin/php     (PHP 8.4 — la version exigée, cf. §4)
@@ -371,7 +407,8 @@ five minutes » le temps du test) :
 /opt/cpanel/ea-php84/root/usr/bin/php -v > /home/anatt/migration.log 2>&1
 ```
 
-Ouvrez `/home/anatt/migration.log` dans le Gestionnaire de fichiers : il doit afficher `PHP 8.4.x`.
+Ouvrez `/home/anatt/migration.log` dans le Gestionnaire de fichiers : il doit afficher `PHP 8.4.x`
+(ni 8.3, ni 8.5).
 
 **2. Listez d'abord, migrez ensuite.** Jamais l'inverse — `migrate:status` ne modifie rien et
 confirme la liste établie en **B** :
@@ -512,6 +549,7 @@ Ce qui change pour la mise à jour d'une instance en 1.2 (revue d'octobre 2026) 
 | **Code seul, sans action** | Un échec définitif de génération en file remet les versements `EN_ATTENTE` ; la liste des sauvegardes est triée de la plus récente à la plus ancienne ; `backend/docs/openapi.yaml` décrit l'API réelle. |
 | **Fichiers supprimés** | `app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` (inutilisés). Un envoi FTP ne supprime rien sur le serveur : effacez-les de `anatt-api/` par le Gestionnaire de fichiers. Laissés en place, ils restent inertes (jamais chargés). |
 | **Restauration** | `db:restore` purge la matrice des permissions : plus besoin de vider `storage/framework/cache/data/` après une restauration. |
+| **Correctifs des 23 au 25/10 (n° 17 à 29)** | Code seul (`app/`, `bootstrap/app.php`, SPA) : **aucune migration** de plus, `vendor/` inchangé. Le SPA est à redéployer : menu latéral accentué, « Amender » sur un OM soldé dont le reliquat n'est pas payé. Ils ne reprennent pas les données : un OM dont le trop-perçu a été recouvré **avant** la mise à jour reste `VALIDE`. Les comptes désactivés ne reçoivent plus de notification ni d'e-mail. Les erreurs de l'API (405, 404, 403, 422, 500) répondent en JSON même sans en-tête `Accept` (n° 29). Contrôles : `docs/checklist-post-deploiement.md` §06. |
 
 ### G. Vérification
 
@@ -547,7 +585,7 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 | Restauration « Échec » … *client mysql introuvable* | `mysql` hors du PATH | Renseigner `DB_RESTORE_BINARY` (ex. `/usr/bin/mysql`) |
 | Restauration « Sauvegarde de sécurité impossible » | `mysqldump` ou `exec()` indisponible | Corriger `DB_DUMP_BINARY` ; à défaut, restaurer par import phpMyAdmin (§ Mise à jour, H) |
 | Restauration interrompue (timeout, page d'erreur) | base volumineuse, `max_execution_time` | Relancer par tâche Cron `artisan db:restore <fichier> --force` (§ 9.1) |
-| Lenteur 1er chargement | config non cachée | (Optionnel, si Terminal cPanel dispo) `php artisan config:cache route:cache` |
+| Lenteur 1er chargement | config non cachée | (Optionnel) `php artisan optimize`, par Terminal ou tâche Cron ponctuelle : il met en cache la configuration, les routes, les événements et les vues. Une fois la configuration en cache, une modification du `.env` reste **sans effet** jusqu'au prochain `optimize:clear` (§ Mise à jour, E). |
 
 ### Spécifique à la mise à jour (migrations sans SSH)
 
