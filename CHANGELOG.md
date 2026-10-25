@@ -46,7 +46,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 26 | Mineur | OM jamais soldé quand l'amendement ramène le reliquat à 0 | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
 | 27 | Majeur | Notifications et e-mails envoyés aux comptes désactivés | Corrigé (notifications des comptes désactivés, 24/10/2026) | #156 |
 | 28 | Majeur | Amendement d'un OM soldé refusé (régression du n° 25 : avenant impossible avec une avance à 100 %) | Corrigé (OM soldé de nouveau amendable, 24/10/2026) | #157 |
-| 29 | Mineur | Erreurs de l'API hors 401 (405, 404, 403, 422, 500) rendues en page HTML sans en-tête `Accept` | Corrigé (erreurs de l'API en JSON, 25/10/2026) | #158 |
+| 29 | Mineur | Erreurs de l'API hors 401 (405, 404, 403, 422, 500) rendues en page HTML sans en-tête `Accept` | Corrigé (erreurs de l'API en JSON, 25/10/2026) | #159 |
 
 #### Corrigé (première passe)
 
