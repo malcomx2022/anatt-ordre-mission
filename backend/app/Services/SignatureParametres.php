@@ -45,7 +45,10 @@ class SignatureParametres
     /**
      * Identité et signature d'un poste.
      *
-     * @return array{nom:string, prenoms:string, nom_complet:string, fonction:string, image:?string}
+     * `fonction` porte toujours un libellé (celui des Paramètres, sinon le défaut du
+     * poste) ; `fonction_saisie` ne porte que la saisie des Paramètres, vide sinon.
+     *
+     * @return array{nom:string, prenoms:string, nom_complet:string, fonction:string, fonction_saisie:string, image:?string}
      */
     public static function pour(string $poste): array
     {
@@ -64,6 +67,7 @@ class SignatureParametres
             'prenoms' => $prenoms,
             'nom_complet' => $nomComplet,
             'fonction' => $fonction !== '' ? $fonction : (self::FONCTIONS_PAR_DEFAUT[$poste] ?? ''),
+            'fonction_saisie' => $fonction,
             'image' => PdfAssets::signatureDataUri(self::cheminImage($poste)),
         ];
     }

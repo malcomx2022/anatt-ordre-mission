@@ -436,3 +436,32 @@ it('journalise le récapitulatif et les trois étapes', function () {
         expect($actions)->toContain($attendue);
     }
 });
+
+it('imprime la fonction du compte signataire quand les Paramètres ne la renseignent pas', function () {
+    // ComptesCircuitSeeder enregistre DG_FONCTION sur le compte : le libellé par
+    // défaut des Paramètres la masquait, et elle n'était jamais imprimée.
+    $settings = storage_path('app/settings.json');
+    @unlink($settings);
+    $this->dg->forceFill(['fonction' => 'Directeur Général par intérim'])->save();
+
+    expect(conduire($this, 'VALIDE')->valide_dg_fonction)->toBe('Directeur Général par intérim');
+});
+
+it('donne la priorité à la fonction saisie dans les Paramètres', function () {
+    $settings = storage_path('app/settings.json');
+    file_put_contents($settings, json_encode(['dgFonction' => 'Le Directeur Général p.i.']));
+    $this->dg->forceFill(['fonction' => 'Directeur Général par intérim'])->save();
+
+    try {
+        expect(conduire($this, 'VALIDE')->valide_dg_fonction)->toBe('Le Directeur Général p.i.');
+    } finally {
+        @unlink($settings);
+    }
+});
+
+it('retombe sur le libellé par défaut sans fonction ni dans les Paramètres ni sur le compte', function () {
+    @unlink(storage_path('app/settings.json'));
+    $this->dg->forceFill(['fonction' => null])->save();
+
+    expect(conduire($this, 'VALIDE')->valide_dg_fonction)->toBe('Le Directeur Général');
+});

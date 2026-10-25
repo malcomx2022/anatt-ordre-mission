@@ -6,7 +6,6 @@ use App\Models\EtatPaiement;
 use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
-use App\Support\Permissions;
 use App\Support\Workflow;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -476,7 +475,9 @@ class EtatPaiementService
             // « Prénoms NOM », et non le seul patronyme : les prénoms sont saisis
             // dans les paramètres justement pour figurer sous la signature.
             "{$champ}_nom" => $signataire['nom_complet'] ?: $user->name,
-            "{$champ}_fonction" => $signataire['fonction'] ?: ($user->fonction ?: Permissions::LIBELLES[$user->role] ?? null),
+            // Le libellé par défaut du poste ne passe qu'en dernier : il masquait la
+            // fonction du compte (DG_FONCTION… posée par ComptesCircuitSeeder).
+            "{$champ}_fonction" => $signataire['fonction_saisie'] ?: ($user->fonction ?: $signataire['fonction']),
             $champHash => $this->sceller($etat, $user, $etape, $maintenant->toISOString()),
             $champImage => SignatureParametres::archiverPour($etat, $posteParametre),
         ];

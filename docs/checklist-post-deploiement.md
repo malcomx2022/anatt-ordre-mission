@@ -13,8 +13,8 @@
 > Sauf mention contraire, tout se vérifie **sans créer de données** en production : les contrôles
 > qui génèrent un lot ou restaurent une base se font sur une instance de **recette**.
 >
-> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 29 ajoutés (§06, *Correctifs
-> des 23 au 25/10* ; n° 29 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
+> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 31 ajoutés (§06, *Correctifs
+> des 23 au 25/10* ; n° 29 à 31 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
 
 ---
 
@@ -128,7 +128,7 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Accès au PDF de l'OM** : la fiche d'un OM (`/ordres/:id`) propose le lien **« PDF de l'OM »** à côté de « Historique », y compris pour un OM validé. Il ouvre l'aperçu (`/ordres/:id/pdf`), et **Télécharger PDF** produit le document. « Télécharger le brouillon » n'apparaît plus une fois l'OM validé ou soldé.
 - [ ] **Fichiers retirés** : `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` ont été effacés du serveur, car l'envoi FTP ne les supprime pas (`docs/runbook-mise-a-jour-cron.md`, étape 4). S'ils restent, rien ne casse : ils ne sont jamais chargés.
 
-### Correctifs des 23 au 25/10/2026 (n° 17 à 29, code seul)
+### Correctifs des 23 au 25/10/2026 (n° 17 à 31, code seul)
 
 Sans création de données :
 
@@ -148,6 +148,8 @@ Sans création de données :
 - [ ] **Lot complémentaire depuis l'écran** : après confirmation d'un lot, si l'aperçu liste encore un bénéficiaire, le bouton s'intitule **« Générer le lot complémentaire.txt »** (ou `.xlsx`) ; s'il ne reste personne, l'écran affiche « Lot confirmé — réinclusion bloquée » (n° 21).
 - [ ] **Solde** : avec une part d'avance à 100 %, l'OM passe `SOLDE` à la confirmation de son avance (n° 19) ; une rallonge le rouvre (`VALIDE`, reliquat payable après l'état des reliquats, n° 28) ; un trop-perçu marqué **recouvré** solde l'OM si l'avance est payée (n° 23) ; un OM exonéré validé par OM passe directement `SOLDE` (n° 24).
 - [ ] **Amendement d'un reliquat payé** (mission sans état) : refusé (n° 22) ; un amendement qui ramène le reliquat à 0, avance payée, solde l'OM (n° 26).
+- [ ] **Fonction imprimée** (n° 30) : *Paramètres › Signatures* sans fonction pour le DG, compte du DG portant une fonction (par `DG_FONCTION` et `ComptesCircuitSeeder`) → l'état validé imprime cette fonction, et non « Le Directeur Général ». Une fonction saisie dans les Paramètres reste prioritaire.
+- [ ] **Super administrateur protégé** (n° 31) : `DG_EMAIL` égal à l'e-mail d'un super administrateur → après `ComptesCircuitSeeder`, ce compte reste `SUPER_ADMIN` et le seeder signale le poste non attribué.
 - [ ] **Compte désactivé** : désactiver un compte d'agent financier, valider un état des avances → aucune notification ni e-mail pour ce compte (n° 27).
 - [ ] **PDF après amendement** : sur un OM dont l'avance est validée, télécharger le PDF, amender à la baisse jusqu'au trop-perçu, puis retélécharger → le nouveau PDF affiche « Avance engagée », « Trop-perçu (à recouvrer par retenue sur salaire) » avec un montant négatif, « Montant total dû », et l'encadré de l'amendement (date, jours avant → après, motif). Le premier PDF n'est plus servi.
 
