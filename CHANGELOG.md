@@ -271,6 +271,18 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
 
+#### Documentation — runbook de mise à jour par Cron (24/10/2026)
+
+- **`docs/runbook-mise-a-jour-cron.md`** relu contre le code. Restent exacts : les 33 migrations (toutes
+  avec `down()`), le planificateur de `routes/console.php` et le 401 JSON de `bootstrap/app.php`.
+  Ajouté :
+  - PHP **8.4.x 64 bits, ni 8.3 ni 8.5**, avec le message 500 « 64-bit build » de
+    `platform_check.php` ;
+  - un encadré sur les correctifs n° 17 à 28, qui sont du code seul : aucune migration de plus,
+    `vendor/` inchangé, SPA à redéployer ;
+  - à l'étape 8, deux contrôles en lecture seule : le menu accentué, et « Amender » sur un OM soldé
+    au reliquat impayé.
+
 #### Documentation — checklist post-déploiement (24/10/2026)
 
 - **`docs/checklist-post-deploiement.md`** relu contre le code : route de santé `/up`, 401 JSON, CORS,

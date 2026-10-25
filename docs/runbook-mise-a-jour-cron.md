@@ -12,13 +12,23 @@
 > (`2026_10_22_090000_add_sequence_to_lots_paiement`), `vendor/` **inchangé**, SPA **à redéployer**.
 > Les encadrés « 1.3 » ci-dessous donnent ce qui est propre à cette version ; le détail est dans les
 > *Notes de version 1.3* de `DEPLOY-CPANEL.md`.
+>
+> **Correctifs des 23 et 24/10/2026 (n° 17 à 28)** : ils font partie de la 1.3 et ne touchent que le
+> code (`app/`, SPA). Ils n'ajoutent **aucune migration** et ne changent pas `vendor/`. Le SPA reste à
+> redéployer : le menu latéral et la fiche OM ont changé. Leurs contrôles sont listés à l'étape 8.
+>
+> *Relu le 24/10/2026 contre le code* : 33 migrations, `routes/console.php`, `bootstrap/app.php`,
+> `vendor/composer/platform_check.php`.
 
 ---
 
 ## Avant de commencer
 
-- [ ] **PHP 8.4** sélectionné dans *Select PHP Version* — **minimum imposé**, pas une préférence :
-      sous PHP 8.3 l'API renvoie 500 sur tous les appels (`DEPLOY-CPANEL.md` §4).
+- [ ] **PHP 8.4.x, 64 bits** sélectionné dans *Select PHP Version*. Ce n'est pas une préférence,
+      c'est imposé : sous PHP 8.3 ou en 32 bits, l'API renvoie 500 sur tous les appels. **Ne prenez pas
+      non plus 8.5** : `phpoffice/phpspreadsheet` (fichiers Moov, imports, exports) déclare
+      `php <8.5.0`. Le site démarrerait quand même, mais hors de la plage supportée
+      (`DEPLOY-CPANEL.md` §4).
 - [ ] Nouveau `frontend/dist/` récupéré : artefact CI **`frontend-dist`** du run `main`, ou build local
       (`npm ci && npm run build`, **Node 20.19+ ou 22.12+** exigé par Vite 8).
 - [ ] Nouveau code backend prêt à envoyer.
@@ -87,7 +97,8 @@ SELECT migration, batch FROM migrations ORDER BY id;
 /opt/cpanel/ea-php84/root/usr/bin/php -v > /home/anatt/php-version.log 2>&1
 ```
 
-- [ ] Attendre un passage, ouvrir `/home/anatt/php-version.log` : il doit afficher **`PHP 8.4.x`**.
+- [ ] Attendre un passage, ouvrir `/home/anatt/php-version.log` : il doit afficher **`PHP 8.4.x`**
+      (ni 8.3, ni 8.5).
 - [ ] **Supprimer cette tâche** avant de passer à la suite.
 
 > Log vide ou absent → le chemin PHP est faux. Renseignez l'adresse e-mail du Cron Job : cPanel
@@ -164,6 +175,8 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 
 > **500 partout** avec « Your Composer dependencies require a PHP version ">= 8.4.0" » → la
 > version PHP du **site** (pas celle du Cron) est trop basse : *Select PHP Version* → 8.4.
+> Avec « … require a 64-bit build of PHP » → le PHP choisi est en 32 bits : choisissez un PHP 8.4
+> en 64 bits.
 >
 > **500** sans ce message → caches encore compilés sur l'ancien code. Si `optimize:clear` n'a pas
 > tourné, videz à la main (en gardant les dossiers et leur `.gitignore`) :
@@ -203,6 +216,16 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 - [ ] **1.3** : ouvrir la fiche d'un OM existant. Le lien **« PDF de l'OM »** apparaît dans l'en-tête,
       à côté de « Historique », et ouvre l'aperçu. **Télécharger PDF** produit le document, régénéré
       puisque le cache a été vidé à l'étape 6. Ce contrôle ne modifie aucune donnée.
+- [ ] **Correctifs n° 17 à 28** (contrôles en lecture seule) :
+      - le menu latéral affiche ses libellés **accentués** (« États de paiement », « Générer MTN »,
+        « Régularisations », « Barèmes », « Paramètres »). Sans accents, c'est l'ancien bundle qui
+        est servi : reprendre l'étape 7 ;
+      - sur la fiche d'un OM **soldé** dont le reliquat n'est ni payé ni recouvré (part d'avance à
+        100 %), **« Amender »** est proposé. Il est masqué sinon.
+
+      N'amendez rien pour tester. Le détail des contrôles se trouve dans la section *06 › Correctifs
+      des 23 et 24/10/2026* de la checklist, et ceux qui créent des données dans sa sous-section
+      *Sur l'instance de recette uniquement*.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu
       (version 1.3 : voir la section *06* de la checklist et les *Notes de version 1.3* de
