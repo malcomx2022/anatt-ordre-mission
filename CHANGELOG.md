@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 31 ne touchent que le code (`app/`, seeders, SPA) ;
+  les correctifs n° 10 à 32 ne touchent que le code (`app/`, seeders, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -49,6 +49,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 29 | Mineur | Erreurs de l'API hors 401 (405, 404, 403, 422, 500) rendues en page HTML sans en-tête `Accept` | Corrigé (erreurs de l'API en JSON, 25/10/2026) | #159 |
 | 30 | Mineur | Fonction du compte signataire (`*_FONCTION` de `ComptesCircuitSeeder`) jamais imprimée sur l'état | Corrigé (comptes du circuit, 25/10/2026) | #160 |
 | 31 | Majeur | `ComptesCircuitSeeder` rétrogradait un super administrateur dont l'e-mail était celui d'un poste | Corrigé (comptes du circuit, 25/10/2026) | #160 |
+| 32 | Mineur | `GET/PUT /admin/settings` renvoyait `"data": []` (tableau) sans réglage, au lieu d'un objet | Corrigé (description OpenAPI confrontée aux réponses, 25/10/2026) | #161 |
 
 #### Corrigé (première passe)
 
@@ -290,6 +291,35 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   attribué.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
+
+#### Corrigé (description OpenAPI confrontée aux réponses, 25/10/2026)
+
+- **`GET`/`PUT /admin/settings` renvoyaient un tableau** (n° 32). Sans réglage enregistré, le tableau PHP
+  vide sortait en `"data": []` au lieu de l'objet décrit. Une écriture sans clé autorisée gravait aussi
+  `[]` dans `settings.json`. `SettingsController` renvoie et écrit désormais un objet (`{}`). Test dans
+  `SettingsControllerTest`, vu en échec sans le correctif. Pest : 589 tests.
+
+#### Documentation — description OpenAPI (25/10/2026)
+
+- **`backend/docs/openapi.yaml`** relu contre le code. Le document est validé OpenAPI 3.0.3
+  (`openapi-spec-validator`), et les **réponses réelles** sont contrôlées contre les schémas
+  (`openapi-core`) sur une base de démonstration :
+  - les 38 routes `GET` sans fichier ;
+  - un parcours d'écriture complet : récapitulatif, contrôle, visa, numéro, validation, aperçus,
+    génération et confirmation MTN/Moov, amendement, régularisations, recouvrement.
+- Corrigé :
+  - `MissionLigne.etat_statut` / `etat_reliquat_statut` et `data.avance` / `data.reliquat` de
+    `GET /missions/{id}/etat` refusaient `null`. En OpenAPI 3.0, `nullable` est sans effet à côté
+    d'un `allOf`/`$ref`. Ils passent par une énumération en ligne et une branche `enum: [null]` ;
+  - le schéma `Settings` (n° 32).
+- Ajouté :
+  - erreurs JSON sur toute route `/api/*` (n° 29) ;
+  - en `sync`, `POST /paiements/lots/generer` répond 202 seulement si la génération réussit ;
+  - solde à la confirmation d'un lot et au recouvrement (n° 23) ;
+  - OM exonéré soldé à la validation par OM (n° 24) ;
+  - priorité du nom et de la fonction imprimés (n° 30) et notification des seuls comptes actifs
+    (n° 27) ;
+  - `export-async` n'est employé par aucun écran.
 
 #### Documentation — files d'attente (25/10/2026)
 

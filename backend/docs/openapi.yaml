@@ -13,7 +13,8 @@ info:
 
     **Authentification** : jeton Sanctum (`Authorization: Bearer <token>`) obtenu par
     `POST /auth/login`. Toute route non publique répond **401 JSON** sans jeton, même
-    sans en-tête `Accept`.
+    sans en-tête `Accept`. Il en va de même de toutes les erreurs (405, 404, 403, 422, 500) :
+    une route `/api/*` répond toujours en JSON (correctif n° 29).
 
     **Autorisation** : par clé de permission (extension `x-permission` de chaque
     opération ; absente = tout compte authentifié). Le `SUPER_ADMIN` passe toute
@@ -33,7 +34,10 @@ info:
 
     Cette description est **verrouillée par un test** (`tests/Feature/OpenApiTest.php`) :
     chaque route de `routes/api.php` y figure, avec la même permission, et
-    réciproquement.
+    réciproquement. Relue le 25/10/2026 : document valide OpenAPI 3.0.3, et réponses réelles
+    conformes aux schémas, vérifiées sur une base de démonstration pour toutes les routes `GET`
+    sans fichier et sur un parcours complet (circuit d'un état, lots MTN/Moov, amendement,
+    recouvrement).
   contact:
     name: Équipe ANaTT
     email: support@anatt.bj
@@ -382,9 +386,11 @@ components:
         prise_en_charge_tiers: { type: boolean }
         nb_ordres: { type: integer, description: "Hors OM rejetés/annulés." }
         montant_total: { type: integer, description: "Hors OM rejetés/annulés." }
-        etat_statut: { allOf: [{ $ref: '#/components/schemas/StatutEtat' }], nullable: true, description: "État des avances ; null tant que le récapitulatif n'est pas établi." }
+        # OpenAPI 3.0 : `nullable` n'agit pas à côté d'un seul `allOf`/`$ref` ; l'énumération
+        # est donc reprise en ligne, `null` compris (vérifié contre les réponses réelles).
+        etat_statut: { type: string, nullable: true, enum: [BROUILLON, CONTROLE, VISA_DAF, VALIDE, REJETE, null], description: "État des avances ; null tant que le récapitulatif n'est pas établi." }
         etat_numero: { type: string, nullable: true }
-        etat_reliquat_statut: { allOf: [{ $ref: '#/components/schemas/StatutEtat' }], nullable: true }
+        etat_reliquat_statut: { type: string, nullable: true, enum: [BROUILLON, CONTROLE, VISA_DAF, VALIDE, REJETE, null], description: "État des reliquats ; null tant qu'il n'est pas établi." }
         etat_reliquat_numero: { type: string, nullable: true }
 
     LignePerDiem:
@@ -637,6 +643,7 @@ components:
         Écriture par liste blanche ; clés inconnues ignorées ; fusion avec l'existant.
         `smtpPassword` est chiffré au repos et renvoyé masqué (`********`) ; envoyer
         `""` ou `********` le laisse inchangé.
+        Toujours un objet JSON, `{}` quand rien n'est enregistré (correctif n° 32).
       properties:
         appName: { type: string }
         appVersion: { type: string }
@@ -1291,7 +1298,7 @@ paths:
     post:
       tags: [Validation OM]
       summary: IMPORTE → VALIDE (circuit par OM)
-      description: Réservé aux missions SANS état de paiement (422 sinon — `MissionService::exigerAbsenceDEtat`). Référence `docs/circuits-validation.md`.
+      description: Réservé aux missions SANS état de paiement (422 sinon — `MissionService::exigerAbsenceDEtat`). Un OM exonéré (montant nul) passe directement `SOLDE` (correctif n° 24). Référence `docs/circuits-validation.md`.
       x-permission: om.valider
       parameters: [{ $ref: '#/components/parameters/ordre' }]
       requestBody:
@@ -1358,8 +1365,9 @@ paths:
                     type: object
                     nullable: true
                     properties:
-                      avance: { allOf: [{ $ref: '#/components/schemas/EtatPaiement' }], nullable: true }
-                      reliquat: { allOf: [{ $ref: '#/components/schemas/EtatPaiement' }], nullable: true }
+                      # OpenAPI 3.0 : `null` s'exprime par une branche `enum: [null]` (cf. MissionLigne).
+                      avance: { oneOf: [{ $ref: '#/components/schemas/EtatPaiement' }, { type: object, nullable: true, enum: [null] }] }
+                      reliquat: { oneOf: [{ $ref: '#/components/schemas/EtatPaiement' }, { type: object, nullable: true, enum: [null] }], description: "null tant que l'état des reliquats n'est pas établi." }
 
   /missions/{mission}/etat/recapituler:
     post:
@@ -1517,6 +1525,9 @@ paths:
         Exige un numéro. Séparation des tâches : 422 si le DG a contrôlé ou visé l'état.
         Avances : les OM passent `VALIDE` (jamais un OM `REJETE`) et l'avance est engagée
         (`avance_engagee`) ; ouvre les fichiers avance. Reliquats : ouvre les fichiers reliquat.
+        Nom et fonction figés à chaque signature (contrôle, visa, validation) : *Paramètres ›
+        Signatures*, sinon le compte du signataire, sinon le libellé du poste (correctif n° 30).
+        Notifications aux comptes **actifs** des profils système (correctif n° 27).
       x-permission: om.approuver
       parameters: [{ $ref: '#/components/parameters/etat' }]
       responses:
@@ -1610,7 +1621,9 @@ paths:
         Un fichier = 1 mission × 1 tranche × 1 opérateur. MTN → `.txt`, Moov → `.xlsx`.
         Un lot CONFIRME n'est jamais réécrit : les versements devenus payables partent dans
         un lot complémentaire (`sequence` suivante). Au-delà de `PAIEMENT_ASYNC_SEUIL`
-        (défaut 50) bénéficiaires : 202 et génération en file (`docs/queues.md`).
+        (défaut 50) bénéficiaires : 202 et génération en file (`docs/queues.md`). En
+        `QUEUE_CONNECTION=sync` (production cPanel), le job tourne dans la requête : 202 si la
+        génération réussit, sinon l'erreur revient dans cette réponse même, sans 202.
         422 si l'état de la tranche n'est pas VALIDE ou si aucun versement n'est éligible.
         Audit `GENERATE_LOT`.
       x-permission: paiements.generer
@@ -1682,7 +1695,7 @@ paths:
     post:
       tags: [Paiements]
       summary: Confirmer le lot après dépôt réussi (manuel)
-      description: Lot et versements → CONFIRME, horodatés. Audit, notification.
+      description: Lot et versements → CONFIRME, horodatés. Un OM dont tous les versements non nuls sont réglés passe `SOLDE` (`OrdreMission::solderSiRegle`). Audit, notification.
       x-permission: paiements.confirmer
       parameters: [{ $ref: '#/components/parameters/lot' }]
       responses:
@@ -1805,7 +1818,7 @@ paths:
     post:
       tags: [Paiements]
       summary: Constater le recouvrement (A_RECOUVRER → RECOUVRE)
-      description: Retenue appliquée par la RH, hors application. Un OM dont un trop-perçu est RECOUVRE n'est plus amendable.
+      description: Retenue appliquée par la RH, hors application. Un OM dont un trop-perçu est RECOUVRE n'est plus amendable ; il passe `SOLDE` si tous ses autres versements non nuls sont réglés (correctif n° 23).
       x-permission: paiements.confirmer
       parameters: [{ $ref: '#/components/parameters/versement' }]
       responses:
@@ -2052,7 +2065,7 @@ paths:
     post:
       tags: [Rapports]
       summary: Produire un export en file
-      description: Job `GenererEtatJob` sur la file `etats` (`docs/queues.md`).
+      description: Job `GenererEtatJob` sur la file `etats` (`docs/queues.md`). Aucun écran du SPA ne l'emploie (l'écran *Rapports › Export* appelle `GET /rapports/export`).
       x-permission: rapports.consulter
       requestBody:
         content:
