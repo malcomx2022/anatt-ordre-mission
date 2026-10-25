@@ -46,7 +46,8 @@ class SettingsController extends Controller
     /** Réglages courants (secret SMTP masqué). */
     public function show(): JsonResponse
     {
-        return $this->success($this->masquer($this->lire()));
+        // (object) : sans réglage, un tableau PHP vide sortirait en `[]` au lieu de `{}`.
+        return $this->success((object) $this->masquer($this->lire()));
     }
 
     /** Écrit une liste blanche stricte de clés (fusion avec l'existant). */
@@ -123,7 +124,7 @@ class SettingsController extends Controller
 
         $settings = array_merge($existant, $entrant);
 
-        file_put_contents($this->chemin(), json_encode($settings, JSON_PRETTY_PRINT));
+        file_put_contents($this->chemin(), json_encode((object) $settings, JSON_PRETTY_PRINT));
 
         // Invalidation du cache de lecture du pourcentage d'avance.
         if (array_key_exists('partAvance', $entrant)) {
@@ -136,7 +137,7 @@ class SettingsController extends Controller
         }
 
         // Réponse masquée : ne jamais renvoyer le secret au client.
-        return $this->success($this->masquer($settings), 'Parametres enregistres.');
+        return $this->success((object) $this->masquer($settings), 'Parametres enregistres.');
     }
 
     /** Convertit un entier ou une chaîne numérique en int ; null sinon. */

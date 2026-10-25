@@ -13,8 +13,8 @@
 > Sauf mention contraire, tout se vérifie **sans créer de données** en production : les contrôles
 > qui génèrent un lot ou restaurent une base se font sur une instance de **recette**.
 >
-> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 31 ajoutés (§06, *Correctifs
-> des 23 au 25/10* ; n° 29 à 31 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
+> *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 32 ajoutés (§06, *Correctifs
+> des 23 au 25/10* ; n° 29 à 32 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
 
 ---
 
@@ -128,7 +128,7 @@ Vérifier ce qui a changé dans ce build.
 - [ ] **Accès au PDF de l'OM** : la fiche d'un OM (`/ordres/:id`) propose le lien **« PDF de l'OM »** à côté de « Historique », y compris pour un OM validé. Il ouvre l'aperçu (`/ordres/:id/pdf`), et **Télécharger PDF** produit le document. « Télécharger le brouillon » n'apparaît plus une fois l'OM validé ou soldé.
 - [ ] **Fichiers retirés** : `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` ont été effacés du serveur, car l'envoi FTP ne les supprime pas (`docs/runbook-mise-a-jour-cron.md`, étape 4). S'ils restent, rien ne casse : ils ne sont jamais chargés.
 
-### Correctifs des 23 au 25/10/2026 (n° 17 à 31, code seul)
+### Correctifs des 23 au 25/10/2026 (n° 17 à 32, code seul)
 
 Sans création de données :
 

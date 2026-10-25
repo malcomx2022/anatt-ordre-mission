@@ -99,3 +99,16 @@ it('invalide le cache de la part d’avance après écriture', function () {
 
     expect(Parametres::partAvance())->toBe(60);
 });
+
+it('renvoie un objet JSON, et non un tableau, quand aucun réglage n’est enregistré', function () {
+    // docs/openapi.yaml décrit `data` comme un objet : un tableau PHP vide sortait en `[]`.
+    @unlink(storage_path('app/settings.json'));
+
+    $lecture = $this->actingAs($this->su)->getJson('/api/admin/settings')->assertOk();
+    expect(json_decode($lecture->getContent())->data)->toBeObject();
+
+    // Une écriture sans clé autorisée ne fait rien de plus, et ne doit pas en écrire un.
+    $ecriture = $this->actingAs($this->su)->putJson('/api/admin/settings', ['inconnue' => 1])->assertOk();
+    expect(json_decode($ecriture->getContent())->data)->toBeObject()
+        ->and(file_get_contents(storage_path('app/settings.json')))->toStartWith('{');
+});
