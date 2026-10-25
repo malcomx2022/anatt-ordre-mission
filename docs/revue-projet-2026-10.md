@@ -21,6 +21,13 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > - n° 28 (révision du n° 25 : OM soldé de nouveau amendable, rouvert si un montant est à régler) en relisant
 >   `docs/parametrage-part-avance.md`.
 >
+> **Mise à jour du 25/10/2026.** La relecture document par document s'est poursuivie (PR #153 à #162) :
+> - n° 29 en relisant `DEPLOY-CPANEL.md` ;
+> - n° 30 et 31 en relisant `docs/deploiement-circuit-validation.md` ;
+> - n° 32 en confrontant `backend/docs/openapi.yaml` aux réponses réelles de l'API.
+>
+> Pest compte 589 tests, Vitest 123. Le §7 dresse le point de ce qui reste.
+>
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
 > colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
 > état, avec 9 sondes supplémentaires sur les correctifs n° 19 et 22.
@@ -281,13 +288,22 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #150 | OM soldé malgré une tranche nulle (n° 19), exercice proposé déterminé (n° 20) |
 | #151 | Catégories d'indice |
 | #152 | Lot complémentaire depuis l'écran (n° 21), amendement d'un reliquat payé refusé (n° 22) |
+| #153 | README, `CLAUDE.md`, `AGENTS.md`, rapport et CHANGELOG au 23/10 |
+| #154 | Solde après recouvrement et OM exonéré validé par OM (n° 23, 24) ; menu accentué ; démo rejouée |
+| #155 | OM soldé et amendement (n° 25, 26) |
+| #156 – #157 | Notifications des comptes désactivés (n° 27) ; OM soldé de nouveau amendable (n° 28) ; workflows, part d'avance, exercice, catégories, checklist |
+| #158 | Runbook de mise à jour par Cron |
+| #159 | Erreurs de l'API en JSON (n° 29) ; `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` |
+| #160 | Fonction imprimée et super administrateur protégé (n° 30, 31) ; circuit historique, files d'attente |
+| #161 | `/admin/settings` en objet (n° 32) ; `openapi.yaml` confronté aux réponses |
+| #162 | `AGENTS.md` ; §7 de ce rapport (point restant et cartographie) |
 
 ### À faire côté exploitation
 
 1. **Mettre à jour l'instance en ligne** en suivant `docs/runbook-mise-a-jour-cron.md` : une seule
    migration (`2026_10_22_090000_add_sequence_to_lots_paiement`), `vendor/` inchangé, SPA à
-   redéployer. Contrôler ensuite avec `docs/checklist-post-deploiement.md`. Les correctifs n° 17 à 22
-   ne portent que sur le code (`app/`, SPA) : aucune migration de plus.
+   redéployer. Contrôler ensuite avec `docs/checklist-post-deploiement.md`. Les correctifs n° 17 à 32
+   ne portent que sur le code (`app/`, `bootstrap/app.php`, seeders, SPA) : aucune migration de plus.
 2. **Éprouver la restauration sur une base MySQL de recette** : `db:restore` n'est exercé qu'en
    simulation dans la CI (§4, *Fonctionnalités annoncées*). Les contrôles qui créent des données
    (lot en erreur, lot complémentaire, gros lot) se font aussi en recette.
@@ -322,3 +338,63 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 - Non rejouables sans MySQL, et couverts seulement par Pest : restauration (n° 10), tri des
   sauvegardes (n° 14, `db:backup` exige `mysqldump`). L'échec d'une génération en file (n° 12) n'est
   pas reproductible en `QUEUE_CONNECTION=sync` sans provoquer une panne ; il est couvert par Pest.
+
+## 7. Point restant et cartographie du restant (25/10/2026)
+
+État : les 32 défauts relevés sont corrigés et testés. Il reste quatre décisions à prendre, une
+dette technique connue, des documents non encore confrontés au code et les gestes d'exploitation
+du §6.
+
+### 7.1 Décisions en attente (côté ANaTT)
+
+Rien n'est implémenté tant que la décision n'est pas prise.
+
+| # | Sujet | Constat dans le code | Options | Impact |
+|---|-------|----------------------|---------|--------|
+| D1 | **Destinataires des notifications** | `NotificationService::notifierRole` vise les comptes actifs des **profils système**. Un rôle personnalisé, ou un droit accordé individuellement (`user_permissions`), autorise l'action sans être notifié (`docs/rbac-flexible.md`, *Limites connues*). | (a) statu quo documenté ; (b) notifier selon les **droits effectifs** (`User::permissions()`). | (b) : requête par permission, et tests à revoir dans `NotificationTest`. |
+| D2 | **Fuseau horaire du serveur** | `config/app.php` est en UTC ; l'écran calcule à l'heure du Bénin (UTC+1). Un paiement confirmé entre 23 h et minuit, heure du Bénin, tombe le lendemain dans les rapports par mois et dans `date_paiement` (`docs/annee-fiscale.md`, *Fuseau horaire*). | (a) statu quo ; (b) passer à `Africa/Porto-Novo`. | (b) : reprise des horodatages existants (décalage d'une heure) et revue des tests de dates. |
+| D3 | **Dépendances frontend inutilisées** | `vue-pdf-embed`, `lucide-vue-next` et `@vueuse/core` sont déclarées dans `package.json`, mais aucun fichier ne les importe. | (a) les garder ; (b) les retirer (`npm uninstall`, nouveau `package-lock.json`). | (b) : build plus léger ; CI à rejouer, la bêta Vue étant figée par le lock. |
+| D4 | **Rafraîchir l'écran après l'échec d'un gros lot en `sync`** | Si un lot `GENERE` existait déjà pour la même clé, `failed()` le passe en `ERREUR`, mais `PaiementGeneration.vue` ne recharge pas la liste. « Confirmer » reste alors affiché à tort (`backend/docs/queues.md`). | (a) consigne « recharger la page » (actuelle) ; (b) rafraîchir dans le `catch`. | (b) : une ligne et un test Vitest. |
+
+### 7.2 Dette technique connue
+
+Ces points reprennent le §6, *Dette restante*, complété le 25/10.
+
+- **Tests frontend manquants** : `MissionCreateView`, `EtatDetailView`, `SignaturesView`, `RolesView`.
+- **Correctifs sans test automatisé** : minuteurs, page de maintenance, garde de route au
+  rechargement, `lockForUpdate` sous MySQL.
+- **Non exercé sur un vrai MySQL** : restauration (n° 10) et tri des sauvegardes (n° 14) ne sont
+  couverts que par Pest, sur SQLite ou par simulation.
+- **Forme des réponses non vérifiée en CI** : `OpenApiTest` contrôle les routes et les permissions.
+  La conformité des réponses aux schémas n'a été vérifiée qu'à la main, le 25/10, avec
+  `openapi-core`. Une vérification en CI (test Pest qui valide les réponses, ou étape Python)
+  éviterait une nouvelle dérive.
+- **Recette et rejeu de la démo hors dépôt** : les scripts de recette (83 contrôles) et de rejeu
+  ne sont pas versionnés. Seuls Pest, Vitest et Playwright tournent en CI.
+
+### 7.3 Cartographie de la documentation
+
+« Confronté au code » : relu contre les routes, les services, la configuration et les tests, avec
+correction des écarts. La date et la PR sont celles de la dernière relecture.
+
+| Document | État | Dernière relecture | Reste à faire |
+|----------|------|--------------------|---------------|
+| `README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | Confrontés | 23-25/10 (#153, #162) | — |
+| `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | Confrontés | 24-25/10 (#157 à #161) | — |
+| `docs/circuits-validation.md`, `docs/amendement-om.md`, `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Confrontés | 23-24/10 (#154 à #157) | — |
+| `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Confrontés | 24/10 (#157) | — |
+| `docs/SCENARIO-DEMO.md` | Rejoué sur l'API | 23/10 (#154) | — |
+| `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Confrontés ; réponses validées | 25/10 (#160, #161) | Validation des réponses en CI (§7.2) |
+| `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | **Historiques**, marqués comme tels | 25/10 et 23/10 | Rien, sauf décision de les archiver |
+| `docs/Guide-Utilisateur-ANaTT.docx` | Régénéré | 24/10 (n° 28 compris) | Rien d'utilisateur dans les n° 29 à 32, sauf la fonction imprimée (n° 30) : une phrase à ajouter au §7.4 *Signatures des titulaires* |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée | 23/10 (jusqu'au n° 22) | **À reprendre** : solde (n° 23, 24, 26), amendement d'un OM soldé (n° 28), notifications (n° 27), erreurs JSON (n° 29), signatures (n° 30, 31), `sync` des gros lots |
+| `docs/00_galerie_index.html` … `41_page_maintenance.html` (42 maquettes) | **Jamais confrontées** | août 2026 | Antérieures au circuit par état : interrupteur « Double validation » (`34_parametres.html`), bouton « Soumettre pour validation » (`14_om_creation_etape3.html`), aucun écran des états de paiement. À marquer *maquettes d'origine, non tenues à jour*, ou à refaire |
+| `backend/README.md`, `frontend/README.md` | Gabarits Laravel / Vite d'origine | — | À remplacer par un renvoi au `README.md` racine, ou à supprimer |
+| `backend/.env.example`, `backend/.env.production.example` | Relu pour le déploiement | 25/10 (#159) | — |
+| `.github/workflows/ci.yml` | Exécuté sur chaque PR | — | — |
+
+### 7.4 Exploitation
+
+Les six gestes du §6, *À faire côté exploitation*, restent à faire sur l'instance en ligne. La
+mise à jour couvre désormais les correctifs n° 1 à 32, sans autre migration que celle de la 1.3.
+

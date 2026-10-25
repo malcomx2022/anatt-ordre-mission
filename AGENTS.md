@@ -5,7 +5,7 @@ High-signal notes for OpenCode sessions in this repo.
 ## First reads
 - Read `CLAUDE.md` first for business constraints and design-system rules; then verify against executable sources when in doubt.
 - Treat code/config as source of truth over prose. Example: the avance/reliquat split is NOT a hard-coded 70/30 — it reads `Parametres::partAvance()` (default 70) in `backend/app/Services/CalculIndemniteService.php`.
-- `docs/revue-projet-2026-10.md` lists what the October 2026 review fixed and why; read it before touching payments, états or amendments.
+- `docs/revue-projet-2026-10.md` lists what the October 2026 review fixed and why (defects n° 1–32), and §7 maps what is still open; read it before touching payments, états or amendments.
 - Repo language is French: user-facing text, code comments, commit messages, CHANGELOG entries and docs are written in French.
 
 ## Repo shape (easy to guess wrong)
@@ -54,7 +54,8 @@ High-signal notes for OpenCode sessions in this repo.
 - Auth flow includes forced password change lock:
   - backend middleware returns HTTP 423: `backend/app/Http/Middleware/ForcePasswordChange.php`
   - frontend handles 423 and redirects in `frontend/src/composables/useApi.ts`; the router guard must also redirect after a page reload (`router/index.ts`).
-- Unauthenticated `/api/*` requests always get a 401 JSON, even without an `Accept` header (`bootstrap/app.php` — there is no `login` route).
+- Every `/api/*` error is JSON, even without an `Accept` header: 401 (there is no `login` route), and also 405, 404, 403, 422 and 500 (n° 29). All renderers in `bootstrap/app.php` share one predicate, `$enJson` (`expectsJson()` or path `api/*`); a new renderer must use it too.
+- A controller returning a PHP associative array that may be empty must cast it (`(object) $array`), or it serializes as `[]` instead of `{}` (n° 32, `SettingsController`).
 - API base URL precedence is runtime-first: `window.__ANATT_CONFIG__.apiUrl` from `frontend/public/runtime-config.js` overrides `VITE_API_URL`.
 - The axios instance sends `Content-Type: application/json` by default: any `FormData` upload must pass `headers: { 'Content-Type': 'multipart/form-data' }` or axios serializes the file to `{}`.
 - Pagination: use `$this->getPerPage($request[, $default])` (bounded 5–100), never a raw `per_page`.
@@ -65,7 +66,8 @@ High-signal notes for OpenCode sessions in this repo.
 
 ## Payments/async gotchas
 - Async generation threshold is `config('paiement.async_seuil')` (default 50) in `backend/config/paiement.php`; above it `POST /paiements/lots/generer` returns 202 + `tracking_id` and the SPA polls `/paiements/lots/job/:id`.
-- Async jobs only progress if worker is running; local default queue connection is `database` (`backend/config/queue.php`, `backend/.env`). Production on cPanel runs `QUEUE_CONNECTION=sync` (`backend/.env.production.example`), so jobs run inside the request.
+- Async jobs only progress if worker is running; local default queue connection is `database` (`backend/config/queue.php`, `backend/.env.example`). Production on cPanel runs `QUEUE_CONNECTION=sync` (`backend/.env.production.example`), so jobs run inside the request: a large lot answers 202 only if generation **succeeds**; on failure the exception comes back in the POST itself, after `failed()` ran (locked by `AsyncGenerationTest`, see `backend/docs/queues.md`). Tests also run in `sync` (`phpunit.xml`).
+- `POST /rapports/export-async` and `GenererEtatJob` are API-only: no screen calls them (the export screen uses `GET /rapports/export`).
 - Payment file formats are strict (`.txt` MTN, `.xlsx` Moov); avoid "cleanup" edits to generators without running payment tests.
 - Files live on the `local` disk = `storage/app/private/`, one folder per mission: `paiements/{mission_id}/{slug}_{TRANCHE}[_COMPL{n}].{txt|xlsx}`. `lots_paiement.nom_fichier` stores that path (old lots keep their old path).
 - A lot is keyed by mission × tranche × operator × **`sequence`**. A CONFIRME lot is never rewritten: a versement that becomes payable later goes into the next sequence (complementary lot). `LotPaiementResource` must expose `sequence` (the UI badge depends on it).
@@ -84,10 +86,16 @@ High-signal notes for OpenCode sessions in this repo.
 ## Amendments (avenants)
 - `MissionService::amender`: refused if the OM has a GENERE versement (file awaiting deposit), if an état is CONTROLE/VISA_DAF, if the reliquat état is VALIDE, if the RELIQUAT versement is already CONFIRME, or if a trop-perçu is RECOUVRE. États are read with `lockForUpdate`.
   - The CONFIRME-reliquat case only arises on missions without état (n° 22). `reventilerVersements` never rewrites a CONFIRME versement, so amending would desync the OM from what was paid.
-  - The SPA hides "Amender" for a SOLDE OM, but the server guard is what counts.
+  - The SPA shows "Amender" on a SOLDE OM whose reliquat is neither CONFIRME nor RECOUVRE (n° 28); the server guards are what count.
 - "Last amendment" = order by `amende_le` then `id` (two amendments can share a second). The same order applies to the OM PDF box, the retenue document motif and the fiche journal (n° 17).
 - Once `avance_engagee` is set, only the reliquat moves (`reliquat = total − avance_engagee`, may go negative → versement A_RECOUVRER). On the per-OM circuit, a CONFIRME avance is engaged at amendment time.
 - Per diem with zero billed days keeps the transport; only `prise_en_charge_tiers` (exonération) zeroes everything.
+
+## Signatures and circuit accounts
+- The name and function frozen at each état signature come from *Paramètres › Signatures* first, then from the signer's account, then from the post's default label (`EtatPaiementService::empreinte`, using `SignatureParametres::pour()['fonction_saisie']`, n° 30). `pour()['fonction']` is never empty (it carries the default), so do not use it as the "is it configured?" test.
+- `fonction` is not mass-assignable on `User`: in tests use `forceFill([...])->save()`. Seeders run unguarded.
+- `ComptesCircuitSeeder` aligns role and function of existing accounts but never touches a `SUPER_ADMIN` (n° 31), never resets a password and never reactivates an account. Its temporary passwords are printed once.
+- Notifications go to **active** accounts of system profiles only (`NotificationService::notifierRole`, n° 27); `SendNotification` also skips an account deactivated in between.
 
 ## Backups
 - `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`, together with `sanctum:prune-expired`; on cPanel the recommended Cron line is `schedule:run` every minute) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.
@@ -100,7 +108,10 @@ High-signal notes for OpenCode sessions in this repo.
 - Demo accounts (password `password`, local only): `superadmin@ admin@ gestion@ finance@ controle@ daf@ dg@ lecteur@anatt.bj`.
 
 ## Docs that must follow functional changes
-- `CHANGELOG.md` (French, Keep a Changelog), `CLAUDE.md`, `README.md`.
+- `CHANGELOG.md` (French, Keep a Changelog), `CLAUDE.md`, `README.md`, `AGENTS.md`; a new defect gets the next number in the CHANGELOG index and in `docs/revue-projet-2026-10.md` §3.
+- `backend/docs/openapi.yaml`: `OpenApiTest` checks routes and permissions only, not response shapes. In OpenAPI 3.0, `nullable` next to a lone `$ref`/`allOf` has no effect: express null with an inline enum including `null`, or `oneOf: [{ $ref }, { type: object, nullable: true, enum: [null] }]`. `backend/docs/queues.md` for job behaviour.
+- Live checks against `php artisan serve`: the `login` limiter allows 5 attempts per minute per IP; reuse tokens, or `php artisan cache:clear` on the scratch DB between runs.
+- Tests that write `storage/app/settings.json` must delete it afterwards (other tests assume it is absent).
 - Generated Word docs: run `python docs/generer_guide_utilisateur.py` and `python docs/generer_documentation_technique.py` (python-docx) after editing the scripts — never edit the `.docx` by hand.
 - `docs/SCENARIO-DEMO.md` claims its amounts/files are real: replay changed flows against the API before editing it.
 - Deployment notes: `DEPLOY-CPANEL.md` (incl. per-version notes), `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md`.

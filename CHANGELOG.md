@@ -292,6 +292,29 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
 
+#### Documentation — AGENTS.md et point restant (25/10/2026)
+
+- **`AGENTS.md`** relu contre le code. Deux affirmations étaient fausses :
+  - « le SPA masque *Amender* sur un OM soldé » : il le propose depuis le n° 28 ;
+  - « seul le 401 est en JSON » : toutes les erreurs le sont depuis le n° 29.
+- Ajouté à `AGENTS.md` :
+  - prédicat `$enJson` de `bootstrap/app.php` ;
+  - cast `(object)` des tableaux possiblement vides (n° 32) ;
+  - comportement des gros lots en `sync` ; `export-async` réservé à l'API ;
+  - nouvelle section *Signatures and circuit accounts* (n° 27, 30, 31 ; `fonction` non assignable
+    en masse) ;
+  - piège `nullable` d'OpenAPI 3.0 ;
+  - limite de 5 connexions par minute lors des vérifications sur l'API réelle ;
+  - nettoyage de `settings.json` dans les tests.
+- **`docs/revue-projet-2026-10.md`** : en-tête et §6 mis au 25/10 (PR #153 à #162). Nouveau §7
+  *Point restant et cartographie du restant* :
+  - quatre décisions en attente (destinataires des notifications, fuseau horaire, dépendances
+    inutilisées, rafraîchissement après l'échec d'un gros lot) ;
+  - dette technique ;
+  - cartographie de toute la documentation, dont la documentation technique `.docx` à reprendre
+    (n° 23 à 32), les 42 maquettes HTML jamais confrontées et les `README` de gabarit ;
+  - exploitation.
+
 #### Corrigé (description OpenAPI confrontée aux réponses, 25/10/2026)
 
 - **`GET`/`PUT /admin/settings` renvoyaient un tableau** (n° 32). Sans réglage enregistré, le tableau PHP
