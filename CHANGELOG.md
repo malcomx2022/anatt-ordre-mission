@@ -283,6 +283,19 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
   désormais le même critère : `expectsJson()` **ou** chemin `api/*`. Test dans `AuthTest`, vu en échec
   sans le correctif (Pest : 582 tests).
 
+#### Documentation — envoi de `vendor/` (25/10/2026)
+
+- **`UPLOAD-VENDOR.md`** relu contre le code. Les comptes de paquets (95 de production, 51 de
+  développement) et les bornes PHP (minimum 8.4 pour Symfony 8 et activitylog, `<8.5.0` pour
+  PhpSpreadsheet) sont exacts. Un `vendor/` construit avec `--no-dev` a été démarré en production :
+  migration et seeders, `/up`, connexion, exports `.xlsx` et `.pdf` fonctionnent.
+- Ajouté :
+  - le contrôle du 64 bits en local (`php -r "echo PHP_INT_SIZE;"`) ;
+  - la vérification du zip, devenue **obligatoire**. Une archive écrite avec des `\` par une
+    ancienne version de `Compress-Archive` s'extrait sous Linux en fichiers nommés `vendor\…` à la
+    racine de `anatt-api/`. Elle se recrée avec le `tar` de Windows ;
+  - le message 500 « 64-bit build » et le symptôme des fichiers `vendor\…` au §5.
+
 #### Documentation — déploiement cPanel (25/10/2026)
 
 - **`DEPLOY-CPANEL.md`** relu contre le code. Restent exacts : les seeders, les extensions PHP, le
