@@ -7,6 +7,7 @@ use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Services\LotPaiementService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -110,4 +111,31 @@ it('ne touche jamais un lot confirmé quand le job échoue', function () {
 
     expect($lot->fresh()->statut)->toBe('CONFIRME')
         ->and(Versement::first()->statut)->toBe('CONFIRME');
+});
+
+it('en mode sync, un gros lot réussi répond 202 et son suivi est déjà TERMINE', function () {
+    config(['paiement.async_seuil' => 0]); // file réelle : QUEUE_CONNECTION=sync (phpunit.xml)
+
+    $trackingId = $this->actingAs($this->finance)
+        ->postJson('/api/paiements/lots/generer', $this->selection)
+        ->assertStatus(202)
+        ->json('tracking_id');
+
+    $this->actingAs($this->finance)->getJson("/api/paiements/lots/job/{$trackingId}")
+        ->assertOk()
+        ->assertJsonPath('data.statut', 'TERMINE');
+});
+
+it('en mode sync, l’échec d’un gros lot remonte dans la réponse même, sans 202', function () {
+    // docs/queues.md : en sync, aucun 202 n'est renvoyé pour un job qui échoue ;
+    // l'erreur revient dans la réponse du POST (failed() a déjà tourné).
+    config(['paiement.async_seuil' => 0]);
+    app()->instance(LotPaiementService::class, Mockery::mock(LotPaiementService::class, function ($m) {
+        $m->shouldReceive('previsualiser')->passthru();
+        $m->shouldReceive('generer')->andThrow(new RuntimeException('disque plein'));
+    })->makePartial());
+
+    $this->actingAs($this->finance)
+        ->postJson('/api/paiements/lots/generer', $this->selection)
+        ->assertStatus(500);
 });

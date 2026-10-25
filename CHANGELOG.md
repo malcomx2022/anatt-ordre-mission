@@ -291,6 +291,22 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
 
+#### Documentation — files d'attente (25/10/2026)
+
+- **`backend/docs/queues.md`** relu contre le code (jobs, `PaiementController`, `RapportController`,
+  `PaiementGeneration.vue`). Corrigé : en `sync`, un gros lot en **échec** ne répond pas `202`.
+  L'exception remonte dans la réponse du `POST`, après `failed()`. Seule une réussite répond `202`,
+  avec un suivi déjà `TERMINE`. Ce comportement est verrouillé par deux tests de
+  `AsyncGenerationTest` (Pest : 588 tests).
+- Ajouté :
+  - `export-async` et `GenererEtatJob` ne sont appelés par aucun écran (l'export du SPA est
+    synchrone) ;
+  - `SendNotification` intercepte les erreurs SMTP, et en `sync` l'envoi ralentit l'action qui
+    notifie ;
+  - les comptes désactivés ne reçoivent pas d'e-mail (n° 27) ;
+  - les tables `jobs` et `failed_jobs` existent déjà pour `QUEUE_CONNECTION=database` ;
+  - après l'échec d'un gros lot en `sync`, l'écran n'est pas rafraîchi.
+
 #### Documentation — circuit de validation, document historique (25/10/2026)
 
 - **`docs/deploiement-circuit-validation.md`** relu contre le code. Le tableau des statuts est

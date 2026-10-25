@@ -11,9 +11,18 @@ sur l'hébergement mutualisé (`backend/.env.production.example`).
 | `database` | worker (`queue:work`, table `jobs`) | 3 tentatives, backoff `[10, 30, 60]` s | mutualisé à gros volumes (Cron chaque minute) |
 | `redis` | worker (`queue:work redis`) | idem | serveur dédié avec Redis |
 
-> Les échanges avec l'API ne changent pas d'un mode à l'autre : un gros lot répond
-> toujours `202 + tracking_id` et le SPA sonde le suivi. En `sync`, le job est déjà
-> terminé quand le 202 part : le premier sondage renvoie `TERMINE` (ou `ERREUR`).
+> *Relu le 25/10/2026 contre le code* : jobs, contrôleurs, `PaiementGeneration.vue` et
+> `AsyncGenerationTest`. Le comportement en `sync` décrit ci-dessous est verrouillé par deux tests.
+>
+> **En `sync`**, le job tourne pendant le `POST` lui-même.
+> - **S'il réussit**, le gros lot répond `202 + tracking_id` comme avec un worker. Le premier
+>   sondage du SPA renvoie alors directement `TERMINE`.
+> - **S'il échoue**, aucun `202` ne part : l'exception remonte dans la réponse du `POST`. Son code
+>   est celui de l'erreur, souvent un 500 JSON « Erreur interne du serveur. ». `failed()` a déjà
+>   tourné (suivi `ERREUR`, dernier lot non confirmé en `ERREUR`, cf. *Échec définitif*). L'écran
+>   affiche l'erreur sans sonder. C'est le même comportement qu'un petit lot en échec, à une
+>   différence près : si un lot `GENERE` existait déjà pour cette clé, il vient de passer en
+>   `ERREUR` sans que l'écran se rafraîchisse. Rechargez la page avant toute autre action.
 
 ## Jobs
 
@@ -21,12 +30,16 @@ sur l'hébergement mutualisé (`backend/.env.production.example`).
 |-----|------|------|
 | `App\Jobs\GenererLotPaiementJob` | `paiements` | Génère un **gros lot** de paiement (.txt MTN / .xlsx Moov) |
 | `App\Jobs\GenererEtatJob` | `etats` | Produit un **export de rapport** (xlsx/pdf) — sans lien avec le circuit des états de paiement, malgré son nom |
-| `App\Jobs\SendNotification` | `default` | Envoie l'e-mail d'une notification (la notification en base est créée avant, hors job) |
+| `App\Jobs\SendNotification` | `default` | Envoie l'e-mail d'une notification. La notification en base est créée avant, hors job. Aucun e-mail n'est envoyé à un compte désactivé entre-temps (correctif n° 27). |
 
 `GenererLotPaiementJob` et `GenererEtatJob` : `$tries = 3`, `$backoff = [10, 30, 60]`,
 suivi par `tracking_id` dans le **cache** (clés `lot_job:{id}` / `etat_job:{id}` ;
-`EN_COURS` 1 h, résultat 24 h). `SendNotification` n'a pas de suivi : un échec est
-journalisé (`storage/logs`).
+`EN_COURS` 1 h, résultat 24 h). `SendNotification` n'a pas de suivi. Une erreur d'envoi SMTP est
+interceptée dans le job et journalisée (`storage/logs`) : le job ne la fait jamais échouer, et elle
+n'est pas rejouée.
+
+> En `sync`, l'e-mail part **pendant** la requête qui notifie, par exemple la validation d'un état
+> par le DG. Un serveur SMTP lent ralentit donc cette action, sans jamais la faire échouer.
 
 ### Génération d'un lot (`GenererLotPaiementJob`)
 
@@ -69,6 +82,10 @@ Exports de rapports : `POST /api/rapports/export-async` (`dimension`, `format`,
 `GET /api/rapports/export/job/{trackingId}` ; téléchargement
 `GET /api/rapports/export/download?fichier=...`.
 
+> **Le SPA n'emploie pas cette voie.** L'écran *Rapports › Export* appelle l'export synchrone
+> `GET /api/rapports/export` (`services/rapports.ts`). `export-async` et `GenererEtatJob` ne servent
+> qu'à un appel direct de l'API : aucun écran ne les déclenche ni ne sonde leur suivi.
+
 ## Configuration (.env)
 
 ```env
@@ -87,6 +104,10 @@ PAIEMENT_ASYNC_SEUIL=50  # seuil de bascule en file (nb de bénéficiaires)
 
 Le suivi par `tracking_id` exige un cache **partagé** entre l'API et le worker :
 `file`, `database` ou `redis` conviennent ; `array` ne convient pas (perdu à chaque processus).
+
+`QUEUE_CONNECTION=database` s'appuie sur les tables `jobs` et `failed_jobs`. Elles sont créées par
+la migration `0001_01_01_000002_create_jobs_table`, déjà jouée à l'installation : rien à ajouter
+pour basculer.
 
 ## Lancer le worker
 
@@ -123,4 +144,5 @@ php artisan queue:retry all    # rejoue
 
 `tests/Feature/Paiement/AsyncGenerationTest.php` : bascule 202 au-delà du seuil,
 téléchargement direct en deçà, exécution du job et suivi, échec (suivi `ERREUR`,
-versements remis `EN_ATTENTE`), lot confirmé jamais modifié, endpoint de suivi.
+versements remis `EN_ATTENTE`), lot confirmé jamais modifié, endpoint de suivi, et en `sync` :
+réussite en 202 avec un suivi déjà `TERMINE`, échec remonté dans la réponse sans 202.
