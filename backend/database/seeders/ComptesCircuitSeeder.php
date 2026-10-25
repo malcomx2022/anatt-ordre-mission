@@ -38,6 +38,7 @@ class ComptesCircuitSeeder extends Seeder
         $crees = [];
         $existants = [];
         $ignores = [];
+        $proteges = [];
 
         foreach (self::PROFILS as $cle => $profil) {
             $poste = $postes[$cle] ?? [];
@@ -53,6 +54,14 @@ class ComptesCircuitSeeder extends Seeder
             }
 
             $existant = User::where('email', $email)->first();
+
+            if ($existant && $existant->role === Permissions::SUPER_ADMIN) {
+                // Un super administrateur n'est jamais rétrogradé par ce seeder :
+                // il peut être le dernier (il en faut toujours un actif).
+                $proteges[] = "{$email} (SUPER_ADMIN conservé, poste ".strtoupper($cle).' non attribué)';
+
+                continue;
+            }
 
             if ($existant) {
                 // Compte déjà présent : on aligne le rôle et la fonction, sans
@@ -82,7 +91,7 @@ class ComptesCircuitSeeder extends Seeder
             $crees[] = [$profil, $nom, $email, $motDePasse];
         }
 
-        $this->rapporter($crees, $existants, $ignores);
+        $this->rapporter($crees, $existants, $ignores, $proteges);
     }
 
     /**
@@ -98,8 +107,9 @@ class ComptesCircuitSeeder extends Seeder
      * @param  array<int,array{0:string,1:string,2:string,3:string}>  $crees
      * @param  array<int,string>  $existants
      * @param  array<int,string>  $ignores
+     * @param  array<int,string>  $proteges
      */
-    private function rapporter(array $crees, array $existants, array $ignores): void
+    private function rapporter(array $crees, array $existants, array $ignores, array $proteges = []): void
     {
         if ($crees !== []) {
             $this->command?->newLine();
@@ -115,11 +125,15 @@ class ComptesCircuitSeeder extends Seeder
             $this->command?->info("Compte déjà existant, rôle et fonction alignés : {$ligne}");
         }
 
+        foreach ($proteges as $ligne) {
+            $this->command?->warn("Compte super administrateur laissé tel quel : {$ligne}. Choisissez une autre adresse pour ce poste.");
+        }
+
         foreach ($ignores as $poste) {
             $this->command?->comment("Poste {$poste} ignoré : renseignez {$poste}_NAME et {$poste}_EMAIL dans le .env.");
         }
 
-        if ($crees === [] && $existants === []) {
+        if ($crees === [] && $existants === [] && $proteges === []) {
             $this->command?->comment('Aucun compte de circuit à créer.');
         }
     }

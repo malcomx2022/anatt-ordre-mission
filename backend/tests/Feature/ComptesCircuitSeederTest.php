@@ -90,3 +90,15 @@ it('ignore un poste non renseigné plutôt que d’inventer un compte', function
         ->and(User::where('role', 'DG')->count())->toBe(0)
         ->and(User::where('role', 'CONTROLEUR')->count())->toBe(0);
 });
+
+it('ne rétrograde jamais un super administrateur dont l’e-mail est celui d’un poste', function () {
+    // Le seeder alignait le rôle de tout compte existant : un DG_EMAIL égal à
+    // celui du super administrateur (souvent le seul) lui retirait tout accès.
+    $superAdmin = User::factory()->superAdmin()->create(['email' => 'r.dada@anatt.bj']);
+
+    $this->seed(ComptesCircuitSeeder::class);
+
+    expect($superAdmin->fresh()->role)->toBe('SUPER_ADMIN')
+        ->and(User::where('role', 'DG')->count())->toBe(0)
+        ->and(User::where('role', 'DAF')->count())->toBe(1);
+});

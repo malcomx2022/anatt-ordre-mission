@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 29 ne touchent que le code (`app/`, SPA) ;
+  les correctifs n° 10 à 31 ne touchent que le code (`app/`, seeders, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -47,6 +47,8 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 27 | Majeur | Notifications et e-mails envoyés aux comptes désactivés | Corrigé (notifications des comptes désactivés, 24/10/2026) | #156 |
 | 28 | Majeur | Amendement d'un OM soldé refusé (régression du n° 25 : avenant impossible avec une avance à 100 %) | Corrigé (OM soldé de nouveau amendable, 24/10/2026) | #157 |
 | 29 | Mineur | Erreurs de l'API hors 401 (405, 404, 403, 422, 500) rendues en page HTML sans en-tête `Accept` | Corrigé (erreurs de l'API en JSON, 25/10/2026) | #159 |
+| 30 | Mineur | Fonction du compte signataire (`*_FONCTION` de `ComptesCircuitSeeder`) jamais imprimée sur l'état | Corrigé (comptes du circuit, 25/10/2026) | #160 |
+| 31 | Majeur | `ComptesCircuitSeeder` rétrogradait un super administrateur dont l'e-mail était celui d'un poste | Corrigé (comptes du circuit, 25/10/2026) | #160 |
 
 #### Corrigé (première passe)
 
@@ -271,6 +273,39 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
     chiffres du 22/10 ;
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
+
+#### Corrigé (comptes du circuit, 25/10/2026)
+
+- **Fonction imprimée sous la signature d'un état** (n° 30). Sans fonction saisie dans
+  *Paramètres › Signatures*, le libellé par défaut du poste (« Le Directeur Général »…) passait
+  avant la fonction du compte signataire. Le repli prévu sur le compte ne jouait donc jamais, et la
+  fonction posée par `ComptesCircuitSeeder` (`DG_FONCTION`…) n'était jamais imprimée. Ordre
+  rétabli dans `EtatPaiementService::empreinte` : Paramètres, puis compte, puis libellé par défaut.
+  `SignatureParametres::pour()` expose la saisie brute (`fonction_saisie`). Les états déjà signés
+  gardent leur instantané.
+- **Super administrateur protégé par `ComptesCircuitSeeder`** (n° 31). Le seeder alignait le rôle de
+  tout compte existant portant l'e-mail d'un poste. Un `DG_EMAIL` égal à celui du super
+  administrateur, souvent le seul, le rétrogradait en `DG`, au mépris de la règle « toujours un
+  `SUPER_ADMIN` actif ». Un tel compte est désormais laissé tel quel, et le poste est signalé non
+  attribué.
+- Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
+  sans correctif. Pest : 586 tests.
+
+#### Documentation — circuit de validation, document historique (25/10/2026)
+
+- **`docs/deploiement-circuit-validation.md`** relu contre le code. Le tableau des statuts est
+  complété :
+  - `users.role` n'est plus un ENUM, depuis la migration du 02/09 ;
+  - la procédure par SSH (§3.1-3.2) est inadaptée à cPanel ;
+  - l'interrupteur « Double validation » a disparu ;
+  - le §6 est **dangereux** : `migrate:rollback --step=3` annulerait aujourd'hui les trois
+    dernières migrations.
+- Le §3.3, toujours valable, est mis à jour :
+  - variables `*_FONCTION` ;
+  - lancement par tâche Cron, précédé d'`optimize:clear`, avec suppression du log qui contient les
+    mots de passe temporaires ;
+  - priorité du nom et de la fonction imprimés (n° 30) et super administrateur protégé (n° 31).
+- Contrôles n° 30 et 31 ajoutés à la checklist.
 
 #### Corrigé (erreurs de l'API en JSON, 25/10/2026)
 

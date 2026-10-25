@@ -13,7 +13,7 @@
 > Les encadrés « 1.3 » ci-dessous donnent ce qui est propre à cette version ; le détail est dans les
 > *Notes de version 1.3* de `DEPLOY-CPANEL.md`.
 >
-> **Correctifs des 23 au 25/10/2026 (n° 17 à 29)** : ils font partie de la 1.3 et ne touchent que le
+> **Correctifs des 23 au 25/10/2026 (n° 17 à 31)** : ils font partie de la 1.3 et ne touchent que le
 > code (`app/`, `bootstrap/app.php`, SPA). Ils n'ajoutent **aucune migration** et ne changent pas `vendor/`. Le SPA reste à
 > redéployer : le menu latéral et la fiche OM ont changé. Leurs contrôles sont listés à l'étape 8.
 >
@@ -216,7 +216,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 - [ ] **1.3** : ouvrir la fiche d'un OM existant. Le lien **« PDF de l'OM »** apparaît dans l'en-tête,
       à côté de « Historique », et ouvre l'aperçu. **Télécharger PDF** produit le document, régénéré
       puisque le cache a été vidé à l'étape 6. Ce contrôle ne modifie aucune donnée.
-- [ ] **Correctifs n° 17 à 29** (contrôles en lecture seule) :
+- [ ] **Correctifs n° 17 à 31** (contrôles en lecture seule) :
       - le menu latéral affiche ses libellés **accentués** (« États de paiement », « Générer MTN »,
         « Régularisations », « Barèmes », « Paramètres »). Sans accents, c'est l'ancien bundle qui
         est servi : reprendre l'étape 7 ;

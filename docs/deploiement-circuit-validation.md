@@ -4,14 +4,16 @@
 > passage au circuit à trois signatures **par OM**, piloté par le drapeau
 > `WORKFLOW_DOUBLE_VALIDATION`. Ce circuit a été retiré : les trois signatures se jouent
 > désormais sur l'**état de paiement** de la mission, et le circuit par OM n'a plus qu'une étape
-> (`docs/circuits-validation.md` §4). Vérifié contre le code le 23/10/2026 :
+> (`docs/circuits-validation.md` §4). Vérifié contre le code le 23/10/2026, puis le 25/10/2026 :
 >
 > | Section | Statut |
 > |---|---|
-> | §1-2 Migrations du 27/07/2026 | Toujours présentes ; elles s'exécutent avec les autres à toute installation ou mise à jour (`php artisan migrate`). Les statuts `VERIFIE` / `VISA_DAF` restent acceptés en base mais ne sont plus produits. |
-> | §3.3 Comptes du circuit (`ComptesCircuitSeeder`) | **Toujours valable** : variables `CONTROLEUR_*`, `DAF_*`, `DG_*` du `.env`, mot de passe temporaire affiché une fois, changement imposé à la première connexion. |
-> | §3.4 Bascule `WORKFLOW_DOUBLE_VALIDATION`, §4 interrupteur « Double validation », §6 désactivation | **Obsolètes** : le drapeau n'existe plus ; seul `WORKFLOW_SEPARATION_TACHES` subsiste dans `config/workflow.php`. |
+> | §1-2 Migrations du 27/07/2026 | Toujours présentes ; elles s'exécutent avec les autres à toute installation ou mise à jour (`php artisan migrate`). Les statuts `VERIFIE` / `VISA_DAF` restent acceptés en base mais ne sont plus produits. **`users.role` n'est plus un ENUM** : `2026_09_02_150000_change_users_role_to_string` en a fait une chaîne libre (rôles personnalisés). Le SQL du §2.1 pour `users` est donc dépassé. |
+> | §3.1-3.2 Procédure par SSH (`git pull`, `composer install` sur le serveur) | **Inadaptée** à l'hébergement cPanel sans SSH : suivre `DEPLOY-CPANEL.md`. |
+> | §3.3 Comptes du circuit (`ComptesCircuitSeeder`) | **Toujours valable**, complété le 25/10 : lancement par tâche Cron, fonction imprimée (n° 30) et super administrateur protégé (n° 31). Voir le §3.3. |
+> | §3.4 Bascule `WORKFLOW_DOUBLE_VALIDATION`, §4 interrupteur « Double validation » | **Obsolètes** : le drapeau n'existe plus, et l'interrupteur a disparu de l'écran *Paramètres*. Seul `WORKFLOW_SEPARATION_TACHES` subsiste dans `config/workflow.php`. |
 > | §5 Contrôle fonctionnel (boutons Vérifier / Viser / Valider sur l'OM) | **Obsolète** : le contrôle se fait sur l'état (`docs/checklist-post-deploiement.md`, `docs/workflows-par-profil.md`). |
+> | §6 Retour arrière | **Obsolète et dangereux** : 33 migrations existent aujourd'hui, et `migrate:rollback --step=3` annulerait les **trois dernières**, pas celles du 27/07. Revenir en arrière par la restauration d'une sauvegarde (`DEPLOY-CPANEL.md` § *Mise à jour*, H). |
 >
 > Pour une mise à jour d'aujourd'hui, suivre `DEPLOY-CPANEL.md` et `docs/runbook-mise-a-jour-cron.md`.
 
@@ -149,20 +151,40 @@ colonnes sont en place, inutilisées, et n'affectent rien.
 
 ### 3.3 Créer les comptes du circuit
 
-Renseignez le `.env` de production :
+> *Section à jour au 25/10/2026.*
+
+Renseignez le `.env` de production. Les variables `*_FONCTION` sont facultatives ; leurs défauts
+viennent de `config/profils.php` :
 
 ```env
 CONTROLEUR_NAME="Paul AGBO"
 CONTROLEUR_EMAIL=p.agbo@anatt.bj
+CONTROLEUR_FONCTION="Contrôleur"
 DAF_NAME="Euloge D. ATOHOUN"
 DAF_EMAIL=e.atohoun@anatt.bj
+DAF_FONCTION="Directeur de l'Administration et des Finances"
 DG_NAME="Richard DADA"
 DG_EMAIL=r.dada@anatt.bj
+DG_FONCTION="Directeur Général"
 ```
 
 ```bash
 php artisan db:seed --class=ComptesCircuitSeeder --force
 ```
+
+**Sur cPanel, sans SSH**, il y a deux voies :
+
+- **à la première installation** : jouez le seeder en local, sur la base à exporter (`DEPLOY-CPANEL.md` §1.3) ;
+- **sur une instance en ligne** : passez par une tâche Cron ponctuelle (même méthode que
+  `DEPLOY-CPANEL.md` § *Mise à jour*, D) :
+
+  ```bash
+  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/comptes-circuit.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan db:seed --class=ComptesCircuitSeeder --force >> /home/anatt/comptes-circuit.log 2>&1
+  ```
+
+  `optimize:clear` vient d'abord : si la configuration est en cache, les variables que vous venez
+  d'ajouter au `.env` resteraient invisibles. Le log contient les **mots de passe temporaires** en
+  clair. Lisez-le, puis **supprimez la tâche et le fichier `comptes-circuit.log`** aussitôt.
 
 Le seeder affiche **une seule fois** un mot de passe temporaire aléatoire par
 compte :
@@ -185,7 +207,19 @@ Garanties du seeder, verrouillées par tests :
 - **relançable sans risque** : sur un compte existant il aligne le rôle et la
   fonction, et ne réinitialise **jamais** le mot de passe ;
 - **aucun mot de passe en dur** ni dérivé de l'email ;
-- un poste laissé vide dans le `.env` est **ignoré**, jamais deviné.
+- un poste laissé vide dans le `.env` est **ignoré**, jamais deviné ;
+- **un super administrateur n'est jamais rétrogradé** (n° 31). Si l'e-mail d'un poste est celui
+  d'un compte `SUPER_ADMIN`, ce compte reste tel quel et le poste n'est pas attribué ; le seeder
+  le signale. Donnez au titulaire une adresse distincte de celle de son compte d'administration.
+
+**Nom et fonction imprimés sous la signature d'un état.** Ils sont figés au moment de la signature,
+dans cet ordre de priorité :
+
+1. **Paramètres › Signatures** (écran du super administrateur) : nom, prénoms, fonction et paraphe
+   du titulaire en poste ;
+2. à défaut, le **compte** du signataire : son nom, et la fonction posée par ce seeder
+   (`*_FONCTION`). Avant le correctif n° 30, cette fonction n'était jamais imprimée ;
+3. à défaut, le libellé du poste (« Le Directeur Général »…).
 
 > Les comptes de démonstration (`daf@anatt.bj`, `dg@anatt.bj`, mot de passe
 > `password`) appartiennent à `UserSeeder` et ne sont créés qu'en `local` et
@@ -250,6 +284,11 @@ Contrôle fonctionnel, dans cet ordre :
 ---
 
 ## 6. Retour arrière
+
+> ⚠️ **Ne plus exécuter cette section.** Le drapeau qu'elle désactive n'existe plus. Surtout,
+> `migrate:rollback --step=3` annule aujourd'hui les **trois dernières** migrations : la séquence
+> des lots de paiement, le renommage des catégories et les notifications. Ce ne sont pas celles du
+> circuit. Pour revenir en arrière, restaurez une sauvegarde (`DEPLOY-CPANEL.md` § *Mise à jour*, H).
 
 ### Désactiver sans rien défaire — à privilégier
 
