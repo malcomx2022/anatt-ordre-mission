@@ -189,7 +189,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (581 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (582 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -744,7 +744,8 @@ POST   /api/notifications/lues      → Tout marquer lu
 POST   /api/notifications/:id/lu    → Marquer une notification lue
 ```
 > Le login renvoie `{ token, user, permissions[] }` et met à jour `derniere_connexion`.
-> Toute route `/api/*` non authentifiée répond **401 en JSON**, même sans en-tête `Accept` (aucune redirection vers une page de login).
+> Toute route `/api/*` non authentifiée répond **401 en JSON**, même sans en-tête `Accept` (aucune redirection vers une page de login) ;
+> il en va de même de ses autres erreurs (405, 404, 403, 422, 500 — correctif n° 29, `bootstrap/app.php`).
 
 ### Utilisateurs (administration — `utilisateurs.gerer`)
 ```

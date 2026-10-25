@@ -6,6 +6,12 @@ puis on l'extrait directement dans cPanel.
 
 > `vendor/` n'est pas versionné (régénérable). À refaire après chaque changement de
 > dépendances backend (`composer.json` / `composer.lock`).
+>
+> *Relu le 25/10/2026 contre le code.* Les chiffres viennent de `composer.lock` : 95 paquets de
+> production, 51 de développement, et les bornes PHP. Un `vendor/` construit par la commande du §1
+> a été démarré avec `APP_ENV=production`. La migration et les seeders de production passent ; la
+> santé `/up`, la connexion et les exports de rapports en `.xlsx` (PhpSpreadsheet) et `.pdf`
+> (DomPDF) répondent.
 
 ---
 
@@ -22,8 +28,9 @@ git diff --stat <commit-deploye> HEAD -- backend/composer.lock
 Aucune ligne affichée → `vendor/` est inchangé : **ne rien envoyer**, passez directement au
 déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 
-> **Version 1.3** (revue d'octobre 2026) : `composer.lock` n'a pas changé depuis la 1.2 →
-> **pas de ré-upload de `vendor/`** (cf. *Notes de version 1.3* de `DEPLOY-CPANEL.md`).
+> **Version 1.3** (revue d'octobre 2026, correctifs n° 1 à 29 compris) : `composer.lock` n'a pas
+> changé depuis la 1.2 → **pas de ré-upload de `vendor/`** (cf. *Notes de version 1.3* de
+> `DEPLOY-CPANEL.md`).
 
 ---
 
@@ -50,7 +57,8 @@ déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 
 ```powershell
 cd C:\wamp64\www\anatt-ordre-mission\backend
-php -v   # doit afficher PHP 8.4.x
+php -v                          # doit afficher PHP 8.4.x
+php -r "echo PHP_INT_SIZE;"     # doit afficher 8 (PHP 64 bits)
 php C:\composer\composer.phar install --no-dev --optimize-autoloader --prefer-dist
 ```
 
@@ -84,13 +92,24 @@ Compress-Archive -Path vendor -DestinationPath vendor.zip -CompressionLevel Opti
 Résultat : `backend\vendor.zip`. L'archive contient `vendor/` à sa racine,
 donc l'extraction recrée correctement `anatt-api/vendor/`.
 
-Vérifier rapidement le contenu (facultatif) :
+**Vérifiez le contenu avant l'envoi** (obligatoire) :
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 ([System.IO.Compression.ZipFile]::OpenRead("$PWD\vendor.zip")).Entries |
   Where-Object FullName -eq 'vendor/autoload.php' | Select-Object FullName
 ```
-Doit afficher `vendor/autoload.php`.
+Doit afficher `vendor/autoload.php`, avec une barre **oblique** (`/`).
+
+Si rien ne s'affiche, l'archive est inutilisable sur le serveur. Les anciennes versions du module
+d'archive de Windows PowerShell 5.1 écrivent les chemins avec des barres obliques inverses
+(`vendor\autoload.php`). L'extraction cPanel, sous Linux, produit alors des fichiers nommés
+littéralement `vendor\autoload.php` à la racine de `anatt-api/`, et l'API casse. Recréez l'archive
+avec le `tar` intégré à Windows 10 et 11, qui écrit des `/`, puis refaites la vérification :
+
+```powershell
+Remove-Item vendor.zip -Force
+tar -a -c -f vendor.zip vendor
+```
 
 ---
 
@@ -124,6 +143,10 @@ Ouvrez `https://api-omsemo.anatt.bj/up` → page de santé (200), puis connectez
   et vérifiez que l'étape 4.5 a bien été faite.
 - `Your Composer dependencies require a PHP version ">= 8.4.0"` → la version PHP du **site** est
   trop basse : *Select PHP Version* → 8.4.
+- `Your Composer dependencies require a 64-bit build of PHP` → le PHP du site est en 32 bits :
+  choisissez un PHP 8.4 en 64 bits.
+- Des fichiers nommés `vendor\…` apparaissent à la racine de `anatt-api/` → l'archive a été écrite
+  avec des `\` (§2) : supprimez-les, recréez l'archive avec `tar`, puis réextrayez.
 - Impossible de corriger tout de suite → **retour arrière** : supprimez `vendor/`, renommez
   `vendor_old/` en `vendor/`, videz de nouveau `bootstrap/cache/packages.php` et `services.php`.
 

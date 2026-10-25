@@ -13,8 +13,8 @@
 > Les encadrés « 1.3 » ci-dessous donnent ce qui est propre à cette version ; le détail est dans les
 > *Notes de version 1.3* de `DEPLOY-CPANEL.md`.
 >
-> **Correctifs des 23 et 24/10/2026 (n° 17 à 28)** : ils font partie de la 1.3 et ne touchent que le
-> code (`app/`, SPA). Ils n'ajoutent **aucune migration** et ne changent pas `vendor/`. Le SPA reste à
+> **Correctifs des 23 au 25/10/2026 (n° 17 à 29)** : ils font partie de la 1.3 et ne touchent que le
+> code (`app/`, `bootstrap/app.php`, SPA). Ils n'ajoutent **aucune migration** et ne changent pas `vendor/`. Le SPA reste à
 > redéployer : le menu latéral et la fiche OM ont changé. Leurs contrôles sont listés à l'étape 8.
 >
 > *Relu le 24/10/2026 contre le code* : 33 migrations, `routes/console.php`, `bootstrap/app.php`,
@@ -216,7 +216,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 - [ ] **1.3** : ouvrir la fiche d'un OM existant. Le lien **« PDF de l'OM »** apparaît dans l'en-tête,
       à côté de « Historique », et ouvre l'aperçu. **Télécharger PDF** produit le document, régénéré
       puisque le cache a été vidé à l'étape 6. Ce contrôle ne modifie aucune donnée.
-- [ ] **Correctifs n° 17 à 28** (contrôles en lecture seule) :
+- [ ] **Correctifs n° 17 à 29** (contrôles en lecture seule) :
       - le menu latéral affiche ses libellés **accentués** (« États de paiement », « Générer MTN »,
         « Régularisations », « Barèmes », « Paramètres »). Sans accents, c'est l'ancien bundle qui
         est servi : reprendre l'étape 7 ;
@@ -224,7 +224,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
         100 %), **« Amender »** est proposé. Il est masqué sinon.
 
       N'amendez rien pour tester. Le détail des contrôles se trouve dans la section *06 › Correctifs
-      des 23 et 24/10/2026* de la checklist, et ceux qui créent des données dans sa sous-section
+      des 23 au 25/10/2026* de la checklist, et ceux qui créent des données dans sa sous-section
       *Sur l'instance de recette uniquement*.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu

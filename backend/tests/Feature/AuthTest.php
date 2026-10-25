@@ -15,6 +15,19 @@ it('répond 401 en JSON à une requête API non authentifiée, même sans en-tê
         ->assertJsonPath('message', 'Non authentifie.');
 });
 
+it('répond en JSON aux autres erreurs HTTP de l’API, même sans en-tête Accept', function () {
+    // DEPLOY-CPANEL.md §5.3 fait ouvrir /api/auth/login dans un navigateur : le
+    // 405 revenait en page HTML, comme toute route /api/* inconnue en 404.
+    $this->get('/api/auth/login')
+        ->assertStatus(405)
+        ->assertHeader('Content-Type', 'application/json')
+        ->assertJsonStructure(['message']);
+
+    $this->get('/api/route-inexistante')
+        ->assertNotFound()
+        ->assertJsonPath('message', 'Route introuvable.');
+});
+
 it('authentifie un utilisateur avec identifiants valides', function () {
     $user = User::factory()->admin()->create(['password' => bcrypt('secret123')]);
 

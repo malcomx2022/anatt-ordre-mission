@@ -13,7 +13,7 @@ Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tê
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :
 - une seule migration, `2026_10_22_090000_add_sequence_to_lots_paiement` (33 migrations en tout) ;
-  les correctifs n° 10 à 28 ne touchent que le code (`app/`, SPA) ;
+  les correctifs n° 10 à 29 ne touchent que le code (`app/`, SPA) ;
 - `vendor/` inchangé (même `composer.lock`), SPA à redéployer ;
 - vider `storage/app/private/ordres/` (PDF d'OM en cache) et supprimer sur le serveur les deux
   Form Requests retirées (voir *Supprimé*).
@@ -46,6 +46,7 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 | 26 | Mineur | OM jamais soldé quand l'amendement ramène le reliquat à 0 | Corrigé (amendement d'un OM soldé, 23/10/2026) | #155 |
 | 27 | Majeur | Notifications et e-mails envoyés aux comptes désactivés | Corrigé (notifications des comptes désactivés, 24/10/2026) | #156 |
 | 28 | Majeur | Amendement d'un OM soldé refusé (régression du n° 25 : avenant impossible avec une avance à 100 %) | Corrigé (OM soldé de nouveau amendable, 24/10/2026) | #157 |
+| 29 | Mineur | Erreurs de l'API hors 401 (405, 404, 403, 422, 500) rendues en page HTML sans en-tête `Accept` | Corrigé (erreurs de l'API en JSON, 25/10/2026) | #159 |
 
 #### Corrigé (première passe)
 
@@ -270,6 +271,46 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
     chiffres du 22/10 ;
   - rubrique « Documentation technique (23/10) » renommée : elle couvre tous les documents
     confrontés au code ce jour-là.
+
+#### Corrigé (erreurs de l'API en JSON, 25/10/2026)
+
+- **Erreurs de l'API en JSON, même sans en-tête `Accept`** (n° 29). Le correctif n° 4 ne couvrait que
+  le 401. Une requête `/api/*` sans `Accept: application/json` recevait encore une page HTML pour une
+  méthode refusée (405), une route inconnue (404), un accès refusé (403) ou une erreur interne (500),
+  et une redirection pour une validation (422). C'est le cas d'un GET sur `/api/auth/login` ouvert dans
+  un navigateur, test que fait faire `DEPLOY-CPANEL.md` §5.3, ou d'un outil tiers. Le SPA n'était pas
+  touché : axios envoie l'en-tête. Dans `bootstrap/app.php`, tous les rendus d'exception partagent
+  désormais le même critère : `expectsJson()` **ou** chemin `api/*`. Test dans `AuthTest`, vu en échec
+  sans le correctif (Pest : 582 tests).
+
+#### Documentation — envoi de `vendor/` (25/10/2026)
+
+- **`UPLOAD-VENDOR.md`** relu contre le code. Les comptes de paquets (95 de production, 51 de
+  développement) et les bornes PHP (minimum 8.4 pour Symfony 8 et activitylog, `<8.5.0` pour
+  PhpSpreadsheet) sont exacts. Un `vendor/` construit avec `--no-dev` a été démarré en production :
+  migration et seeders, `/up`, connexion, exports `.xlsx` et `.pdf` fonctionnent.
+- Ajouté :
+  - le contrôle du 64 bits en local (`php -r "echo PHP_INT_SIZE;"`) ;
+  - la vérification du zip, devenue **obligatoire**. Une archive écrite avec des `\` par une
+    ancienne version de `Compress-Archive` s'extrait sous Linux en fichiers nommés `vendor\…` à la
+    racine de `anatt-api/`. Elle se recrée avec le `tar` de Windows ;
+  - le message 500 « 64-bit build » et le symptôme des fichiers `vendor\…` au §5.
+
+#### Documentation — déploiement cPanel (25/10/2026)
+
+- **`DEPLOY-CPANEL.md`** relu contre le code. Restent exacts : les seeders, les extensions PHP, le
+  planificateur, la rétention de 30 jours des sauvegardes, les 33 migrations et les caches de
+  `bootstrap/cache/`.
+- Corrigé :
+  - la commande de dépannage `php artisan config:cache route:cache` échouait (« No arguments
+    expected ») : elle est remplacée par `php artisan optimize`, avec l'avertissement sur le `.env` ;
+  - le GET sur `/api/auth/login` est décrit tel qu'il répond désormais (405 JSON, n° 29).
+- Ajouté :
+  - PHP **8.4.x 64 bits** aussi en local (§0), ni 8.3 ni 8.5 pour le binaire Cron ;
+  - les comptes nominatifs du circuit (`ComptesCircuitSeeder`, Option A) ;
+  - `FRONTEND_URL`, `MTN_COMPTE` et `WORKFLOW_SEPARATION_TACHES` au §5.1 ;
+  - la vérification de génération décalée sur une base propre ;
+  - une ligne *Correctifs n° 17 à 29* dans les *Notes de version 1.3*.
 
 #### Documentation — runbook de mise à jour par Cron (24/10/2026)
 
