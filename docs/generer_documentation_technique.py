@@ -244,6 +244,14 @@ tableau(
         ["Amendement", "Deux amendements dans la même seconde : le dernier est départagé par l'id (PDF, document de retenue, journal de la fiche).", "§4.4"],
         ["Fiche de l'OM", "Lien « PDF de l'OM » vers l'écran du PDF officiel (OM-07), seul accès depuis l'interface une fois l'OM validé.", "§4.4"],
         ["Code mort", "Form Requests StoreOrdreMissionRequest / UpdateOrdreMissionRequest supprimées (les OM ne se créent que via /missions).", "§2.3, §9.5"],
+        ["Solde d'un OM", "SOLDE quand tous les versements NON NULS sont réglés (CONFIRME, ou RECOUVRE pour un trop-perçu) : à la confirmation d'un lot, au constat d'un recouvrement et après un amendement qui ramène le reliquat à 0. Une tranche nulle (part d'avance 0 ou 100 %) ne retient pas l'OM. Un OM exonéré est soldé dès sa validation, dans les deux circuits (n° 19, 23, 24, 26).", "§4.3, §4.6"],
+        ["Exercice", "L'écran Paramètres propose l'exercice déterminé par le mois de début, et non l'année civile (n° 20).", "§9.2"],
+        ["Lot complémentaire", "L'écran de génération propose « Générer le lot complémentaire » quand l'aperçu d'un lot confirmé compte encore des bénéficiaires (n° 21).", "§4.3"],
+        ["Amendement", "Refusé si le reliquat de l'OM est déjà CONFIRME (n° 22). Un OM SOLDE reste amendable hors reliquat payé ou trop-perçu recouvré ; il redevient VALIDE si un montant est de nouveau à régler (n° 28).", "§4.6"],
+        ["Notifications", "Adressées aux seuls comptes ACTIFS des profils système ; aucun e-mail vers un compte désactivé entre-temps (n° 27).", "§4.2, §6.3"],
+        ["API", "Toute erreur d'une route /api/* répond en JSON, même sans en-tête Accept : 405, 404, 403, 422 et 500, comme le 401 (n° 29). GET/PUT /admin/settings renvoient toujours un objet (n° 32).", "§6.3, §7.6"],
+        ["Signatures", "Nom et fonction figés à la signature : Paramètres › Signatures, sinon le compte du signataire (fonction posée par ComptesCircuitSeeder), sinon le libellé du poste (n° 30). ComptesCircuitSeeder ne rétrograde jamais un super administrateur (n° 31).", "§3.5, §9.4"],
+        ["Référence API", "openapi.yaml validée OpenAPI 3.0.3 et confrontée aux réponses réelles (routes GET et parcours d'écriture complet) le 25/10/2026.", "§7.1"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -332,7 +340,7 @@ h3("2.2.1 Frontend (interface utilisateur)")
 tableau(
     ["Technologie", "Version", "Usage"],
     [
-        ["Vue.js", "3.x (Composition API)", "Framework JavaScript principal"],
+        ["Vue.js", "3.6 bêta (Composition API)", "Framework JavaScript principal — version figée par package-lock.json (3.6.0-beta.9) : installer avec npm ci"],
         ["TypeScript", "6.x", "Typage statique strict (vue-tsc)"],
         ["Vite", "8.x", "Build et serveur de développement"],
         ["Tailwind CSS", "3.4+", "Framework CSS utilitaire (charte ANaTT)"],
@@ -340,7 +348,6 @@ tableau(
         ["Vue Router", "5.x", "Navigation SPA + guards d'authentification/permissions"],
         ["Axios", "1.x", "Client HTTP avec intercepteurs (token Bearer)"],
         ["Chart.js", "4.x", "Graphiques du tableau de bord et des rapports"],
-        ["VuePDF", "—", "Aperçu PDF dans le navigateur"],
         ["Vitest", "4.x", "Tests unitaires et de composants (Vue Test Utils, jsdom)"],
         ["Playwright", "1.5x", "Test e2e du parcours critique (Chromium)"],
     ],
@@ -351,7 +358,7 @@ tableau(
     ["Technologie", "Version", "Usage"],
     [
         ["Laravel", "12.x", "Framework PHP principal"],
-        ["PHP", "8.4+", "Langage backend (minimum imposé par composer.lock : Symfony 8)"],
+        ["PHP", "8.4.x, 64 bits", "Langage backend : minimum imposé par composer.lock (Symfony 8, activitylog) ; 8.5 non pris en charge (PhpSpreadsheet déclare < 8.5.0)"],
         ["Laravel Sanctum", "4.x", "Authentification API par tokens"],
         ["MySQL", "8.0", "Base de données (SQLite en tests)"],
         ["Redis", "7.x (optionnel)", "Cache et files (driver « database » utilisable sans Redis)"],
@@ -503,7 +510,9 @@ bullet("Détail de l'état : onglets Avances / Reliquats, montants de la tranche
        "circuit, numérotation manuelle, actions (contrôler / viser / valider / rejeter / rafraîchir).")
 bullet("Brouillon PDF (filigrané, sans signature) puis état définitif PDF (signatures DAF + DG), paysage A4. "
        "Un « état général » consolidé (avances + reliquats) est disponible une fois les deux états validés.")
-bullet("Signatures (SUPER_ADMIN) : identités et paraphes scannés des titulaires imprimés sur l'état.")
+bullet("Signatures (SUPER_ADMIN) : identités et paraphes scannés des titulaires imprimés sur l'état. Nom et "
+       "fonction sont figés à chaque signature, dans cet ordre : Paramètres › Signatures, sinon le compte du "
+       "signataire, sinon le libellé du poste (« Le Directeur Général »…).")
 
 h2("3.6 Module Paiements")
 para("Génère les fichiers de virement Mobile Money et assure le suivi des versements. Aucun appel aux API "
@@ -515,7 +524,8 @@ bullet("PAY-05 — Réconciliation : écran d'information (modèle manuel, aucun
 bullet("PAY-06 — Historique des versements confirmés (avec bénéficiaire) par période.")
 bullet("Génération asynchrone : au-delà de config('paiement.async_seuil') (50 lignes), l'API répond 202 + "
        "tracking_id ; l'écran interroge /lots/job/:id puis télécharge le lot à la fin.")
-bullet("Lots complémentaires signalés par un badge « complémentaire n° N » dans la liste.")
+bullet("Lots complémentaires signalés par un badge « complémentaire n° N » dans la liste ; après confirmation "
+       "d'un lot, le bouton devient « Générer le lot complémentaire » tant que l'aperçu compte un bénéficiaire.")
 
 h2("3.7 Module Régularisations (trop-perçus)")
 para("Un amendement à la baisse après paiement de l'avance peut rendre le reliquat négatif (trop-perçu). "
@@ -576,8 +586,13 @@ encadre("Deux barrières avant paiement",
 para("Circuit OM par OM (reprise de données) : POST /api/ordres/:id/valider (om.valider) et "
      "/api/ordres/:id/rejeter (om.rejeter) subsistent pour une mission dépourvue d'état ; ils sont refusés dès "
      "qu'un état existe (MissionService::exigerAbsenceDEtat). Le rejet annule les versements EN_ATTENTE de "
-     "l'OM. La validation de l'état des avances ne repropage jamais VALIDE à un OM REJETE.",
+     "l'OM. La validation de l'état des avances ne repropage jamais VALIDE à un OM REJETE. Sur ce circuit, un "
+     "OM exonéré (montant nul) passe directement SOLDE.",
      italic=True, color=GRIS)
+bullet("Notifications (cloche + e-mail, NotificationService::notifierRole), adressées aux seuls comptes ACTIFS "
+       "du profil système concerné : le signataire de l'étape suivante, l'agent financier à la validation finale, "
+       "le gestionnaire au rejet. Un rôle personnalisé ou un droit accordé individuellement autorise l'action "
+       "sans être notifié.")
 
 h2("4.3 Génération et confirmation des paiements")
 para("Acteur : AGENT_FINANCIER (permissions paiements.generer / paiements.confirmer).")
@@ -588,7 +603,7 @@ tableau(
         ["2", "Agent financier", "Clique « Générer le fichier ».", ".txt (MTN) ou .xlsx (Moov) produit ; lot → GENERE ; versements → GENERE"],
         ["3", "Système", "Petit lot : téléchargement direct. Gros lot : traitement en file (202 + tracking_id).", "Fichier disponible / suivi de job"],
         ["4", "Agent financier", "Dépose le fichier sur la plateforme de l'opérateur (hors application).", "Virements exécutés côté opérateur"],
-        ["5", "Agent financier", "Revient dans l'application et confirme le lot (statut GENERE requis).", "Lot + versements → CONFIRME (horodatés) ; OM soldé → SOLDE"],
+        ["5", "Agent financier", "Revient dans l'application et confirme le lot (statut GENERE requis).", "Lot + versements → CONFIRME (horodatés) ; OM dont tous les versements non nuls sont réglés → SOLDE"],
         ["6", "Agent financier", "En cas de problème : marque le lot « en erreur », corrige au besoin l'agent, puis régénère.", "Lot → ERREUR ; versements → EN_ATTENTE (coordonnées agent rafraîchies) → régénération → GENERE"],
         ["7", "Agent financier", "Un versement devient payable après la confirmation du lot (OM validé tard, changement d'opérateur…).", "Nouvelle génération → lot COMPLÉMENTAIRE (sequence + 1, fichier …_COMPL{n})"],
     ],
@@ -607,6 +622,9 @@ bullet("Gros lot en file (GenererLotPaiementJob, file « paiements ») : mêmes 
        "QUEUE_CONNECTION=sync), le suivi passe ERREUR et le dernier lot GENERE/ERREUR de la clé passe en ERREUR "
        "par LotPaiementService::marquerErreur, comme l'action manuelle : versements EN_ATTENTE, coordonnées "
        "rafraîchies, audit ERROR_LOT. Un lot CONFIRME n'est jamais touché. Détail : backend/docs/queues.md.")
+bullet("En QUEUE_CONNECTION=sync (production cPanel), le job tourne dans la requête : le gros lot répond 202 "
+       "seulement si la génération réussit ; sinon l'erreur revient dans la réponse même (après failed()). "
+       "L'écran ne se rafraîchit pas alors : recharger la page avant toute autre action.")
 
 h2("4.4 Génération de l'ordre de mission en PDF")
 tableau(
@@ -652,13 +670,16 @@ tableau(
     [
         ["1", "Gardes", "Refus si OM REJETE/ANNULE ; si un versement de l'OM est GENERE (fichier en attente de dépôt) ; "
                         "si un état de tranche est CONTROLE/VISA_DAF (rejet guidé) ; si l'état des reliquats est VALIDE ; "
-                        "si un trop-perçu est déjà RECOUVRE."],
+                        "si le reliquat est déjà CONFIRME (payé : avenant formel) ; si un trop-perçu est déjà RECOUVRE. "
+                        "Un OM SOLDE reste amendable hors ces deux derniers cas."],
         ["2", "Engagement", "Circuit par OM : une avance CONFIRME sans avance_engagee est engagée à ce moment."],
         ["3", "Recalcul", "Montant au barème (lignes détaillées ou type × jours, transport conservé). Avant engagement : "
                           "répartition 70/30 ; après : reliquat = total − avance_engagee (peut être négatif)."],
         ["4", "Versements", "RELIQUAT non GENERE/CONFIRME réécrit ; négatif → A_RECOUVRER, sinon EN_ATTENTE. AVANCE "
                             "réécrite seulement tant qu'elle n'est pas engagée."],
-        ["5", "Traçabilité", "Ligne om_amendements (avant / après, delta, motif, auteur) + audit AMEND_OM ; "
+        ["5", "Statut", "Un OM SOLDE à qui l'amendement recrée un montant à régler redevient VALIDE ; un reliquat "
+                        "ramené à 0, avance payée, solde l'OM (OrdreMission::solderSiRegle)."],
+        ["6", "Traçabilité", "Ligne om_amendements (avant / après, delta, motif, auteur) + audit AMEND_OM ; "
                              "notification « trop-perçu » à l'agent financier si reliquat < 0."],
     ],
     largeurs=[0.8, 2.8, 13.2],
@@ -724,7 +745,8 @@ tableau(
         ["Idempotence paiement", "Un versement CONFIRME, ou porté par un lot CONFIRME, n'est jamais réinclus.", "Paiement"],
         ["Un agent par mission", "ordres.*.agent_id distinct à la retranscription (1 OM = 1 bénéficiaire).", "API"],
         ["OM rejeté", "Versements EN_ATTENTE → ANNULE ; jamais repris par la validation de l'état.", "API"],
-        ["Amendement", "Refusé tant qu'un versement de l'OM est GENERE (cf. §4.6).", "API"],
+        ["Amendement", "Refusé tant qu'un versement de l'OM est GENERE, ou si son reliquat est CONFIRME (cf. §4.6).", "API"],
+        ["Solde", "OM SOLDE quand tous ses versements non nuls sont CONFIRME ou RECOUVRE ; OM exonéré soldé à sa validation.", "API"],
     ],
     largeurs=[3.6, 9.6, 3.6],
 )
@@ -800,7 +822,9 @@ bullet("Injection de formule neutralisée dans les exports tableurs ; garde anti
 bullet("Secret SMTP chiffré au repos et jamais réaffiché en clair (masque ********).")
 bullet("Super admin protégé : il existe toujours ≥ 1 SUPER_ADMIN actif ; le dernier ne peut être supprimé, désactivé ni rétrogradé.")
 bullet("Injection SQL : prévenue par l'ORM Eloquent (requêtes préparées).")
-bullet("Toute route /api/* non authentifiée répond 401 JSON, même sans en-tête Accept (aucune redirection vers une page de login).")
+bullet("Toute erreur d'une route /api/* répond en JSON, même sans en-tête Accept : 401 (aucune redirection vers "
+       "une page de login), 405, 404, 403, 422 et 500 (bootstrap/app.php).")
+bullet("Notifications et e-mails réservés aux comptes actifs ; un compte désactivé n'en reçoit plus.")
 bullet("Téléchargements (sauvegardes, exports) : basename + extension imposée, anti-traversée de répertoire ; "
        "restauration conditionnée à la recopie du nom du fichier.")
 bullet("Pagination bornée (per_page 5-100) sur les listes.")
@@ -837,7 +861,9 @@ encadre("Conventions",
         "Autorisation par middleware permission:{clé}. Throttling sur login, API, paiement et export. "
         "Référence exhaustive : backend/docs/openapi.yaml (OpenAPI 3, 96 opérations, chacune avec sa clé "
         "x-permission) ; OpenApiTest vérifie que chaque route y figure, sans opération en trop, avec la "
-        "permission exigée par le middleware. Les tableaux ci-dessous en sont un résumé.",
+        "permission exigée par le middleware. Le 25/10/2026, le document a été validé OpenAPI 3.0.3 et les "
+        "réponses réelles confrontées aux schémas (routes GET et parcours d'écriture complet). Les tableaux "
+        "ci-dessous en sont un résumé.",
         fond="EDFAF2")
 
 h2("7.2 Authentification & compte")
@@ -936,7 +962,7 @@ tableau(
         ["200 / 201 / 204", "Succès / créé / sans contenu", "GET-PUT / POST création / suppression"],
         ["202 Accepted", "Traitement asynchrone", "Génération de gros lot / export (tracking_id)"],
         ["401 / 403", "Non authentifié / interdit", "Token absent ou expiré (toujours en JSON sur /api/*) / permission insuffisante"],
-        ["404", "Introuvable", "Ressource inexistante"],
+        ["404 / 405", "Introuvable / méthode non permise", "Ressource ou route inexistante / ex. GET sur /api/auth/login (toujours en JSON)"],
         ["422", "Erreur de validation", "Champ requis manquant, données invalides"],
         ["423 Locked", "Changement de mot de passe requis", "Compte en must_change_password"],
         ["429", "Trop de requêtes", "Dépassement du rate limiting"],
@@ -998,7 +1024,11 @@ tableau(
         ["MAIL_MAILER / MAIL_HOST / MAIL_FROM_ADDRESS", "Configuration SMTP"],
         ["APP_KEY", "Chiffrement et scellés HMAC des états — ne jamais régénérer en production"],
         ["DB_DUMP_BINARY / DB_RESTORE_BINARY", "Binaires mysqldump / mysql utilisés par db:backup / db:restore"],
-        ["SANCTUM_STATEFUL_DOMAINS", "Domaines SPA autorisés"],
+        ["SANCTUM_STATEFUL_DOMAINS", "Laissée vide : authentification par jeton Bearer, sans cookie inter-domaines"],
+        ["FRONTEND_URL / CORS_ALLOWED_ORIGINS", "Racine du SPA (liens des e-mails de réinitialisation) / origine autorisée"],
+        ["MTN_COMPTE / PAIEMENT_ASYNC_SEUIL", "Compte payeur de l'en-tête MTN (HDR) / seuil de bascule en file (50)"],
+        ["WORKFLOW_SEPARATION_TACHES", "Séparation des tâches du circuit (true par défaut)"],
+        ["CONTROLEUR_* / DAF_* / DG_*", "Comptes nominatifs créés par ComptesCircuitSeeder (NAME, EMAIL, FONCTION)"],
     ],
     largeurs=[7.2, 9.6],
 )
@@ -1026,11 +1056,16 @@ h2("9.4 Comptes de démonstration (local uniquement)")
 para("En environnement local/testing, le seeder crée un compte par profil (mot de passe « password ») : "
      "superadmin@, admin@, gestion@, finance@, controle@, daf@, dg@, lecteur@anatt.bj. Ces comptes ne sont JAMAIS "
      "créés en production.", italic=True, color=GRIS)
+para("En production, les signataires du circuit se créent par php artisan db:seed --class=ComptesCircuitSeeder "
+     "--force : mot de passe temporaire affiché une seule fois, changement imposé à la première connexion. Le "
+     "seeder ne réinitialise aucun mot de passe et ne rétrograde jamais un super administrateur.")
 
 h2("9.5 Mise à jour d'une instance (version 1.3)")
 bullet("Migration à jouer : 2026_10_22_090000_add_sequence_to_lots_paiement (colonne sequence, nouvelle clé "
        "unique créée avant la suppression de l'ancienne — compatible MySQL / clé étrangère).")
-bullet("Procédure sans SSH : DEPLOY-CPANEL.md et docs/runbook-mise-a-jour-cron.md (PHP 8.4 obligatoire).")
+bullet("Procédure sans SSH : DEPLOY-CPANEL.md et docs/runbook-mise-a-jour-cron.md (PHP 8.4.x 64 bits "
+       "obligatoire, ni 8.3 ni 8.5). Les correctifs n° 17 à 32 ne portent que sur le code : aucune autre "
+       "migration, vendor/ inchangé, SPA à redéployer.")
 bullet("Tester une restauration (db:restore) sur un environnement de recette MySQL avant la production.")
 bullet("Après la mise à jour, vider storage/app/private/ordres/ : un OM sans état ni amendement garde la même "
        "clé de cache et son ancien PDF afficherait le taux journalier transport compris. Les PDF se régénèrent "
@@ -1047,9 +1082,9 @@ h1("10. Qualité et tests")
 tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
-        ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "≈ 130 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "573 tests au total (68 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "120 tests / 27 fichiers"],
+        ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "589 tests au total (68 fichiers)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "123 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
@@ -1058,7 +1093,10 @@ tableau(
 bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permission), OpenApiTest "
        "(openapi.yaml ↔ routes ↔ permissions) et navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
 bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
-       "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme.")
+       "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme. Le 25/10, réponses "
+       "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32.")
+bullet("Défauts relevés par la revue d'octobre 2026 : 32, tous corrigés avec un test vu en échec sans le "
+       "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Points ouverts : §7 du rapport.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
        "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
 bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")
