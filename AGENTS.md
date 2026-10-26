@@ -114,4 +114,5 @@ High-signal notes for OpenCode sessions in this repo.
 - Tests that write `storage/app/settings.json` must delete it afterwards (other tests assume it is absent).
 - Generated Word docs: run `python docs/generer_guide_utilisateur.py` and `python docs/generer_documentation_technique.py` (python-docx) after editing the scripts — never edit the `.docx` by hand.
 - `docs/SCENARIO-DEMO.md` claims its amounts/files are real: replay changed flows against the API before editing it.
+- The HTML mockups (`docs/00_galerie_index.html` … `41_*.html`) predate SEMO transcription and the état circuit; they are annotated, not redrawn. When a screen changes, update its row in `docs/annoter_maquettes.py` and rerun it (idempotent); never treat a mockup as a spec.
 - Deployment notes: `DEPLOY-CPANEL.md` (incl. per-version notes), `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md`.

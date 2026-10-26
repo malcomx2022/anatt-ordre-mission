@@ -286,7 +286,8 @@ anatt-ordre-mission/
     ├── circuits-validation.md · amendement-om.md · rbac-flexible.md · workflows-par-profil.md
     ├── parametrage-part-avance.md · annee-fiscale.md · categories-indice.md
     ├── checklist-post-deploiement.md · runbook-mise-a-jour-cron.md
-    └── 00_galerie_index.html … 41_page_maintenance.html  ← maquettes HTML des écrans
+    └── 00_galerie_index.html … 41_page_maintenance.html  ← maquettes d'origine (août 2026), annotées par
+                                                             annoter_maquettes.py : l'application fait foi
 ```
 
 ---

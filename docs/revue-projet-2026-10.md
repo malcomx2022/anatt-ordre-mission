@@ -389,7 +389,7 @@ correction des écarts. La date et la PR sont celles de la dernière relecture.
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | **Historiques**, marqués comme tels | 25/10 et 23/10 | Rien, sauf décision de les archiver |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Confronté à l’interface, régénéré | 26/10 (#163, n° 1 à 32) | — |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Confrontée, régénérée | 26/10 (#162, n° 1 à 32) | — |
-| `docs/00_galerie_index.html` … `41_page_maintenance.html` (42 maquettes) | **Jamais confrontées** | août 2026 | Antérieures au circuit par état : interrupteur « Double validation » (`34_parametres.html`), bouton « Soumettre pour validation » (`14_om_creation_etape3.html`), aucun écran des états de paiement. À marquer *maquettes d'origine, non tenues à jour*, ou à refaire |
+| `docs/00_galerie_index.html` … `41_page_maintenance.html` (42 maquettes) | Confrontées, **annotées** (non redessinées) | 26/10 (`docs/annoter_maquettes.py`) | Sur 41 maquettes : 16 fidèles dans l'esprit, 19 avec écarts, 6 obsolètes. 14 écrans réels n'ont pas de maquette. Un nouveau dessin, s'il est voulu, est un chantier à part |
 | `backend/README.md`, `frontend/README.md` | Gabarits Laravel / Vite d'origine | — | À remplacer par un renvoi au `README.md` racine, ou à supprimer |
 | `backend/.env.example`, `backend/.env.production.example` | Relu pour le déploiement | 25/10 (#159) | — |
 | `.github/workflows/ci.yml` | Exécuté sur chaque PR | — | — |
