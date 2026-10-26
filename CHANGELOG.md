@@ -292,6 +292,26 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
 
+#### Documentation — guide utilisateur (26/10/2026)
+
+- **`docs/Guide-Utilisateur-ANaTT.docx`** confronté aux libellés réels de l'interface (`navigation.ts`,
+  `PaiementGeneration.vue`, écran Régularisations), puis régénéré par `generer_guide_utilisateur.py`.
+- Corrigé au chapitre 9 :
+  - menus « Générer MTN » / « Générer Moov », au lieu de « Paiements MTN / Moov » ;
+  - aucun bouton « Prévisualiser » : l'aperçu s'affiche dès la sélection ;
+  - boutons « Générer le fichier.txt / .xlsx », « Régénérer le fichier », « Marquer en erreur » et
+    « Confirmer le paiement ».
+- Corrigé à l'annexe A : `VERIFIE` / `VISA_DAF` sont des valeurs héritées, et non une option
+  activable.
+- Ajouté :
+  - nouveautés (OM soldé, OM soldé amendable, lot complémentaire depuis l'écran, notifications des
+    seuls comptes actifs, fonction imprimée, menu accentué) ;
+  - solde au recouvrement et à la validation d'un OM exonéré ;
+  - destinataires des notifications ;
+  - priorité du nom et de la fonction imprimés (§7.4) ;
+  - consigne de rechargement après une erreur de génération en production.
+- `docs/revue-projet-2026-10.md` §7.3 : le guide n'est plus à reprendre.
+
 #### Documentation — documentation technique (26/10/2026)
 
 - **`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`** confrontée au code, puis régénérée par
