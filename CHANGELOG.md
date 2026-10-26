@@ -292,6 +292,20 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
 
+#### Documentation — README du backend et du frontend (26/10/2026)
+
+- **`backend/README.md`** et **`frontend/README.md`** : les gabarits d'origine (Laravel, Vite) sont
+  remplacés par des README propres au projet, en français. Ils renvoient au `README.md` racine, à
+  `CLAUDE.md` et à `AGENTS.md`, et ne gardent que ce qui est spécifique à chaque paquet.
+- Contenu, vérifié dans le code :
+  - prérequis : PHP 8.4.x 64 bits ; Node 20.19+ ou 22.12+ ; `npm ci` pour la bêta Vue figée ;
+  - démarrage et commandes de vérification : Pest (589 tests), Pint, filets RBAC et OpenAPI ; type-check,
+    lint, Vitest (123 tests), build, Playwright avec `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ;
+  - repères dans le code ;
+  - points d'attention (retranscription et génération seules, erreurs JSON, `runtime-config.js` lu par
+    `useApi`, alignement menu ↔ routes ↔ API, `moisLocal`, `FormData`, charte).
+- `docs/revue-projet-2026-10.md` §7.3 : les deux README ne sont plus à reprendre.
+
 #### Documentation — maquettes HTML (26/10/2026)
 
 - **Les 42 maquettes HTML** (`docs/00_galerie_index.html` … `41_page_maintenance.html`, août 2026) sont
