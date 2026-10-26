@@ -298,6 +298,8 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #161 | `/admin/settings` en objet (n° 32) ; `openapi.yaml` confronté aux réponses |
 | #162 | `AGENTS.md` ; §7 de ce rapport (point restant et cartographie) ; documentation technique |
 | #163 | Guide utilisateur |
+| #164 | Maquettes HTML annotées (`docs/annoter_maquettes.py`) |
+| #165 | README du backend et du frontend |
 
 ### À faire côté exploitation
 
@@ -390,7 +392,7 @@ correction des écarts. La date et la PR sont celles de la dernière relecture.
 | `docs/Guide-Utilisateur-ANaTT.docx` | Confronté à l’interface, régénéré | 26/10 (#163, n° 1 à 32) | — |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Confrontée, régénérée | 26/10 (#162, n° 1 à 32) | — |
 | `docs/00_galerie_index.html` … `41_page_maintenance.html` (42 maquettes) | Confrontées, **annotées** (non redessinées) | 26/10 (`docs/annoter_maquettes.py`) | Sur 41 maquettes : 16 fidèles dans l'esprit, 19 avec écarts, 6 obsolètes. 14 écrans réels n'ont pas de maquette. Un nouveau dessin, s'il est voulu, est un chantier à part |
-| `backend/README.md`, `frontend/README.md` | Gabarits Laravel / Vite d'origine | — | À remplacer par un renvoi au `README.md` racine, ou à supprimer |
+| `backend/README.md`, `frontend/README.md` | Réécrits pour le projet, confrontés au code | 26/10 (#165) | — |
 | `backend/.env.example`, `backend/.env.production.example` | Relu pour le déploiement | 25/10 (#159) | — |
 | `.github/workflows/ci.yml` | Exécuté sur chaque PR | — | — |
 

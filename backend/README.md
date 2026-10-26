@@ -1,59 +1,73 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ANaTT — API Laravel (`backend/`)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API de l'application de suivi des ordres de mission SEMO et de génération des fichiers de paiement
+Mobile Money (MTN `.txt`, Moov `.xlsx`). Le SPA qui la consomme est dans `../frontend/`.
 
-## About Laravel
+> Vue d'ensemble, règles métier et installation complète : [`../README.md`](../README.md) et
+> [`../CLAUDE.md`](../CLAUDE.md). Notes pour les agents de code : [`../AGENTS.md`](../AGENTS.md).
+> Ce fichier ne reprend que ce qui est propre à l'API.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Prérequis
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **PHP 8.4.x, 64 bits** — ni 8.3 (le `composer.lock` exige Symfony 8, l'API répond 500 partout), ni
+  8.5 (`phpoffice/phpspreadsheet` déclare `<8.5.0`).
+- Composer 2 ; MySQL 8 en production, SQLite pour les tests.
+- Redis facultatif : en hébergement mutualisé, `CACHE_STORE=file` et `QUEUE_CONNECTION=sync`.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Démarrer en local
 
-## Learning Laravel
+```bash
+composer install
+cp .env.example .env          # puis renseigner DB_*, SUPERADMIN_* si besoin
+php artisan key:generate
+php artisan migrate --seed    # socle (zones, barème, super admin) + données de démo en local
+php artisan serve             # http://localhost:8000
+php artisan queue:work --queue=paiements,etats,default --tries=3   # si QUEUE_CONNECTION ≠ sync
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Sous Windows, `..\start-dev.ps1` lance l'API, le worker et le SPA ensemble.
+Comptes de démonstration (local et tests uniquement, mot de passe `password`) : `superadmin@`, `admin@`,
+`gestion@`, `finance@`, `controle@`, `daf@`, `dg@`, `lecteur@anatt.bj`.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Vérifier
 
-## Laravel Sponsors
+```bash
+./vendor/bin/pest                                   # 589 tests, 68 fichiers — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
+./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php   # filets RBAC et OpenAPI
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Un test de régression doit échouer sans le correctif avant d'être retenu.
 
-### Premium Partners
+## Repères dans le code
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Dossier | Contenu |
+|---------|---------|
+| `app/Http/Controllers/Api/` | Contrôleurs (missions et OM, états de paiement, lots, barème, rapports, administration) |
+| `app/Services/` | Logique métier : `MissionService` (retranscription, amendement), `EtatPaiementService` (circuit), `LotPaiementService`, `CalculIndemniteService`, `Paiement/` (fichiers MTN / Moov) |
+| `app/Support/` | `Permissions`, `PermissionRepository` (matrice RBAC en cache), `CategorieIndice`, `Parametres`, `Workflow` |
+| `app/Jobs/` | `GenererLotPaiementJob` (file `paiements`), `GenererEtatJob` (file `etats`), `SendNotification` |
+| `app/Console/Commands/` | `db:backup`, `db:restore` |
+| `routes/api.php` | Routes, chacune protégée par `permission:{clé}` (verrouillé par `RoutesPermissionsTest`) |
+| `routes/console.php` | Planification : `db:backup` à 02:00, purge des jetons Sanctum |
+| `database/seeders/` | Socle toujours seedé ; démo en `local`/`testing` ; `ComptesCircuitSeeder` pour les signataires en production |
+| `tests/Feature`, `tests/Unit` | Pest |
 
-## Contributing
+## Documentation de l'API
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- [`docs/openapi.yaml`](docs/openapi.yaml) — description OpenAPI 3.0.3 des routes réelles, avec la
+  permission de chacune (`x-permission`). Toute nouvelle route doit y figurer : `OpenApiTest` échoue sinon.
+- [`docs/queues.md`](docs/queues.md) — files d'attente, modes `sync` / `database` / `redis`, comportement
+  à l'échec.
+- Déploiement sur cPanel (sans SSH) : [`../DEPLOY-CPANEL.md`](../DEPLOY-CPANEL.md),
+  [`../UPLOAD-VENDOR.md`](../UPLOAD-VENDOR.md), [`../docs/runbook-mise-a-jour-cron.md`](../docs/runbook-mise-a-jour-cron.md).
 
-## Code of Conduct
+## Points d'attention
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- L'API ne crée pas les OM (elle les **retranscrit** depuis SEMO) et ne paie rien : elle **génère** des
+  fichiers, déposés à la main sur les plateformes MTN / Moov, puis confirmés manuellement.
+- Toute erreur d'une route `/api/*` répond en JSON, même sans en-tête `Accept`.
+- `storage/app/settings.json` (part d'avance, exercice, SMTP, signataires), les paraphes et les fichiers
+  produits vivent sur le disque : `db:backup` ne les inclut pas.
+- `package.json` et `vite.config.js` de ce dossier sont ceux du gabarit Laravel ; l'interface de
+  l'application est le SPA de `../frontend/`.

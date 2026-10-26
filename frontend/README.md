@@ -1,73 +1,64 @@
-# frontend
+# ANaTT — SPA Vue (`frontend/`)
 
-This template should help get you started developing with Vue 3 in Vite.
+Interface de l'application de suivi des ordres de mission SEMO et de génération des fichiers de
+paiement Mobile Money. Elle consomme l'API Laravel de `../backend/`.
 
-## Recommended IDE Setup
+> Vue d'ensemble, règles métier et installation complète : [`../README.md`](../README.md) et
+> [`../CLAUDE.md`](../CLAUDE.md) (charte graphique au §4, registre des écrans au §5). Notes pour les
+> agents de code : [`../AGENTS.md`](../AGENTS.md). Ce fichier ne reprend que ce qui est propre au SPA.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Prérequis
 
-## Recommended Browser Setup
+- **Node 20.19+ ou 22.12+** (exigé par Vite 8 ; la CI utilise Node 22).
+- Vue **3.6 bêta**, figée par `package-lock.json` : installez avec `npm ci`, pas `npm install`, pour ne
+  pas changer de bêta.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## Démarrer en local
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+```bash
+npm ci
+npm run dev        # http://localhost:5173 — l'API est attendue sur http://localhost:8000
 ```
 
-### Compile and Hot-Reload for Development
+L'URL de l'API se règle **après build**, sans recompiler, dans `public/runtime-config.js`
+(`window.__ANATT_CONFIG__.apiUrl`). Vide en développement : `VITE_API_URL` s'applique, ou
+`http://localhost:8000` par défaut. En production, ne pas écraser le `runtime-config.js` déployé
+(`../DEPLOY-CPANEL.md` §6).
 
-```sh
-npm run dev
+## Vérifier
+
+```bash
+npm run type-check        # vue-tsc
+npm run lint:check        # oxlint + ESLint, en vérification (npm run lint corrige)
+npx vitest run            # 123 tests ; « npm run test:unit » seul reste en mode surveillance
+npm run build             # type-check + build de production dans dist/
+npm run test:e2e          # Playwright, parcours critique (e2e/parcours-critique.spec.ts), API simulée
 ```
 
-### Type-Check, Compile and Minify for Production
+Playwright avec un Chromium déjà installé : `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/chromium npm run test:e2e`.
+Sans écran, pointez sur le binaire *headless shell* et ajoutez `--project=chromium`, comme la CI.
 
-```sh
-npm run build
-```
+## Repères dans le code
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+| Dossier | Contenu |
+|---------|---------|
+| `src/views/` | Écrans (registre de `../CLAUDE.md` §5, plus les écrans ajoutés : états de paiement, régularisations, signatures, permissions par utilisateur…) |
+| `src/components/shared/` | Composants communs (`AppLayout`, `AppButton`, `AppTable`…) et `navigation.ts`, le menu latéral |
+| `src/components/paiements/PaiementGeneration.vue` | Génération MTN / Moov, lots complémentaires, suivi des gros lots |
+| `src/router/index.ts` | Routes et `meta.permission` |
+| `src/services/` | Un client par domaine ; `http.ts` partage l'instance axios et normalise la pagination |
+| `src/stores/`, `src/composables/` | Pinia (`auth`, `notifications`, `ordres-mission`) ; `useApi` (instance axios : URL de l'API, jeton Bearer, verrou 423), `useAuth`, `usePartAvance`, `useSearch`, `useToast` |
+| `src/utils/` | `benin.ts` (téléphone, catégorie, `moisLocal`), `permissions.ts`, `roles.ts`, `etats.ts`, `exercice.ts` |
+| `src/__tests__/`, `e2e/` | Vitest ; Playwright |
 
-```sh
-npm run test:unit
-```
+## Points d'attention
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
-
-```sh
-# Install browsers for the first run
-npx playwright install
-
-# When testing on CI, must build the project first
-npm run build
-
-# Runs the end-to-end tests
-npm run test:e2e
-# Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
-# Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
-# Runs the tests in debug mode
-npm run test:e2e -- --debug
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+- **Trois niveaux alignés** : une entrée de menu (`navigation.ts`) porte la même clé de permission que sa
+  route (`router/index.ts`), qui porte celle exigée par l'API. `src/__tests__/navigation.spec.ts` le
+  vérifie : aucun lien mort, aucun écran hors menu, aucun 403 après un clic.
+- **Dates** : construisez un mois `YYYY-MM` avec `moisLocal()`, jamais `toISOString()` (décalage UTC au Bénin).
+- **Téléversement** : un envoi `FormData` doit passer `headers: { 'Content-Type': 'multipart/form-data' }`,
+  sinon axios sérialise le fichier en `{}`.
+- **Charte** : Sora pour les titres et libellés, DM Sans pour le texte, icônes SVG en ligne
+  uniquement, `flag-bar` avant chaque pied de page.
+- Les maquettes HTML de `../docs/` sont celles d'origine (août 2026) : l'application fait foi.
