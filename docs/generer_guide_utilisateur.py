@@ -250,6 +250,19 @@ tableau(
          "accessible une fois l'OM validé.", "6.2"],
         ["Restauration", "Les droits d'accès sauvegardés reprennent effet immédiatement ; les réglages de "
          "« Paramètres » et les paraphes ne font pas partie de la sauvegarde.", "13.3"],
+        ["OM soldé", "Un OM passe SOLDÉ quand tout ce qui lui est dû est réglé : versements confirmés, ou "
+         "trop-perçu recouvré. Une tranche à 0 (part d'avance de 0 ou 100 %) ne le retient pas, et un OM "
+         "exonéré est soldé dès sa validation.", "9.2, 9.5"],
+        ["Amendement d'un OM soldé", "« Amender » reste proposé sur un OM soldé dont le reliquat n'est ni payé ni "
+         "recouvré : une rallonge le rouvre, une réduction à zéro le solde.", "6.3"],
+        ["Lot complémentaire", "Sur l'écran de génération, le bouton devient « Générer le lot complémentaire » "
+         "dès qu'un lot confirmé laisse des bénéficiaires à payer.", "9.3"],
+        ["Notifications", "Seuls les comptes actifs reçoivent la cloche et l'e-mail ; un compte désactivé "
+         "n'est plus prévenu.", "7.2"],
+        ["Fonction imprimée", "Sans fonction saisie dans « Signatures », l'état imprime celle du compte du "
+         "signataire, puis le libellé du poste.", "7.4"],
+        ["Menu", "Libellés accentués : « États de paiement », « Générer MTN », « Générer Moov », "
+         "« Régularisations », « Barèmes », « Paramètres », « Matrice des permissions ».", "—"],
     ],
     largeurs=[3.6, 11.0, 2.2],
 )
@@ -502,7 +515,7 @@ encadre("Exception : mission sans état de paiement (reprise de données)",
         "propose les boutons « Valider » (CONTROLEUR) et « Rejeter » (motif d'au moins 10 caractères). "
         "Dès qu'un état existe pour la mission, ces boutons disparaissent : la validation passe alors "
         "obligatoirement par l'état. Un OM rejeté voit ses versements en attente ANNULÉS : il ne sera "
-        "jamais payé.")
+        "jamais payé. Un OM exonéré (prise en charge par un tiers) validé ainsi passe directement SOLDÉ.")
 
 h2("6.3 Amender un ordre de mission (avenant)")
 para("Il arrive qu'une mission soit rallongée ou écourtée après le paiement de l'avance. L'application "
@@ -577,6 +590,9 @@ bullet("Validation de l'état des AVANCES : elle arrête l'état, fait passer le
        "statut VALIDE (un OM rejeté auparavant reste rejeté), fige l'avance de chacun et ouvre les "
        "fichiers d'avance.")
 bullet("Validation de l'état des RELIQUATS : elle ouvre les fichiers de reliquat (les OM sont déjà VALIDE).")
+bullet("Notifications : à chaque étape, les comptes actifs du profil attendu reçoivent une notification "
+       "(cloche et e-mail) ; à la validation finale, l'agent financier est prévenu ; en cas de rejet, le "
+       "gestionnaire. Un compte désactivé n'est jamais notifié.")
 encadre("Rejet possible à chaque étape",
         "Le contrôleur, le DAF ou le DG peuvent rejeter l'état avec un motif (≥ 10 caractères). Le rejet "
         "efface les signatures déjà apposées et renvoie l'état en correction ; les ordres de mission "
@@ -603,6 +619,9 @@ encadre("Titulaire en poste ≠ compte connecté",
         "Les identités imprimées sur l'état sont celles des titulaires en poste, indépendamment du compte "
         "qui effectue la validation (utile en cas d'intérim). Le compte réellement utilisé reste, lui, "
         "tracé au journal d'audit. Sans signature enregistrée, l'état sort sans paraphe.")
+bullet("Si l'écran « Signatures » ne renseigne pas un poste, l'état imprime le nom du compte qui signe ; "
+       "pour la fonction, celle enregistrée sur ce compte, à défaut le libellé du poste (« Le Directeur "
+       "Général »…). Nom et fonction sont figés au moment de la signature.")
 
 # =========================================================================
 # 8. CALCUL DU PER DIEM
@@ -637,23 +656,23 @@ encadre("Préalable — éligibilité par tranche",
         "(protection anti-double-paiement).")
 
 h2("9.1 Générer un fichier de paiement (MTN ou Moov)")
-etape("Ouvrez « Paiements MTN » ou « Paiements Moov ».")
-etape("Sélectionnez la mission, la tranche (AVANCE ou RELIQUAT) et l'opérateur.")
-etape("Cliquez sur « Prévisualiser » : la liste des bénéficiaires éligibles s'affiche.")
-etape("Cliquez sur « Générer » : le fichier (.txt pour MTN, .xlsx pour Moov) est téléchargé. Le lot passe au statut GÉNÉRÉ.")
-para("Pour un volume important (plus de 50 bénéficiaires), la génération se fait en arrière-plan : une "
-     "barre de progression s'affiche et le fichier se télécharge automatiquement dès qu'il est prêt. "
-     "Restez sur l'écran pendant le traitement ; le lot reste ensuite re-téléchargeable depuis la liste "
-     "des lots.")
+etape("Dans le menu Paiements, ouvrez « Générer MTN » ou « Générer Moov ».")
+etape("Sélectionnez la mission et la tranche (AVANCE ou RELIQUAT) : l'« Aperçu des bénéficiaires » éligibles s'affiche aussitôt.")
+etape("Cliquez sur « Générer le fichier.txt » (MTN) ou « Générer le fichier.xlsx » (Moov) : le fichier est téléchargé et le lot passe au statut GÉNÉRÉ.")
+para("Pour un volume important (plus de 50 bénéficiaires), la génération peut se faire en arrière-plan : "
+     "un bandeau de suivi s'affiche et le fichier se télécharge automatiquement dès qu'il est prêt. Restez "
+     "sur l'écran pendant le traitement ; le lot reste ensuite re-téléchargeable depuis la liste des lots. "
+     "Sur l'hébergement de production, le traitement se fait d'un seul tenant : si une erreur s'affiche, "
+     "rechargez la page avant toute autre action, car un lot précédemment généré peut être passé en erreur.")
 
 h2("9.2 Déposer puis confirmer")
 etape("Déposez le fichier généré sur la plateforme de l'opérateur (hors application).")
-etape("Une fois le dépôt réussi, revenez dans l'application et cliquez sur « Confirmer » pour le lot.")
-etape("Le lot et ses versements passent au statut CONFIRMÉ et sont horodatés. L'OM dont tous les versements sont confirmés passe au statut SOLDÉ.")
+etape("Une fois le dépôt réussi, revenez sur l'écran de génération et cliquez sur « Confirmer le paiement ».")
+etape("Le lot et ses versements passent au statut CONFIRMÉ et sont horodatés. L'OM dont tout ce qui est dû est réglé passe au statut SOLDÉ (une tranche à 0 ne compte pas).")
 
 h2("9.3 Régénérer ou signaler une erreur")
-bullet("Tant qu'un lot n'est pas confirmé, vous pouvez le régénérer.")
-bullet("En cas de problème de dépôt, marquez le lot « en erreur » : cela réautorise une nouvelle génération. "
+bullet("Tant qu'un lot n'est pas confirmé, vous pouvez le régénérer (« Régénérer le fichier »).")
+bullet("En cas de problème de dépôt, cliquez sur « Marquer en erreur » : cela réautorise une nouvelle génération. "
        "Ses versements redeviennent EN ATTENTE et reprennent le téléphone et l'opérateur ACTUELS de "
        "l'agent : si le dépôt a échoué à cause d'un mauvais numéro, corrigez la fiche de l'agent, puis "
        "régénérez.")
@@ -679,7 +698,7 @@ para("Quand un OM est amendé à la baisse après paiement de l'avance, son reli
 bullet("Le versement concerné bascule automatiquement au statut À RECOUVRER et sort du périmètre payable.")
 etape("Ouvrez « Régularisations » : la liste des trop-perçus (à recouvrer / recouvrés) s'affiche, filtrable et paginée.")
 etape("Cliquez sur « Document » pour télécharger le « document de retenue sur salaire » (PDF) à remettre à la RH ; il porte le montant à retenir, en chiffres et en toutes lettres, et le motif du dernier amendement.")
-etape("Une fois la retenue appliquée par la RH, cliquez sur « Marquer recouvré » : le versement passe au statut RECOUVRÉ.")
+etape("Une fois la retenue appliquée par la RH, cliquez sur « Marquer recouvré » : le versement passe au statut RECOUVRÉ. Si l'avance de l'OM est payée, l'OM passe SOLDÉ.")
 para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montants à recouvrer et déjà recouvrés. "
      "La consultation est ouverte aux profils disposant de « Paiements — consulter » ; le constat de "
      "recouvrement requiert « Paiements — confirmer ».")
@@ -787,10 +806,10 @@ tableau(["Statut", "Signification"],
 h2("Ordre de mission")
 tableau(["Statut", "Signification"],
         [["IMPORTE", "Retranscrit depuis SEMO ; statut conservé jusqu'à la validation de l'état des avances."],
-         ["VERIFIE / VISA_DAF", "Étapes intermédiaires du circuit par OM (validation directe, activée en option)."],
+         ["VERIFIE / VISA_DAF", "Valeurs héritées de l'ancien circuit par OM, qui n'existe plus : elles ne sont plus produites."],
          ["VALIDE", "L'état des avances de sa mission a été validé par le DG — payable."],
          ["REJETE", "Rejeté individuellement (reprise de données ; motif requis) ; ses versements sont annulés."],
-         ["SOLDE", "Tous les versements de l'OM ont été confirmés, ou le trop-perçu recouvré (ou OM exonéré)."]],
+         ["SOLDE", "Tout ce qui est dû est réglé : versements non nuls confirmés, trop-perçu recouvré, ou OM exonéré validé. Encore amendable si le reliquat n'est ni payé ni recouvré."]],
         largeurs=[4.0, 12.8])
 h2("Versement")
 tableau(["Statut", "Signification"],
