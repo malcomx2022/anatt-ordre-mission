@@ -34,7 +34,7 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~589 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, ~598 tests)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
@@ -95,7 +95,8 @@ High-signal notes for OpenCode sessions in this repo.
 - The name and function frozen at each état signature come from *Paramètres › Signatures* first, then from the signer's account, then from the post's default label (`EtatPaiementService::empreinte`, using `SignatureParametres::pour()['fonction_saisie']`, n° 30). `pour()['fonction']` is never empty (it carries the default), so do not use it as the "is it configured?" test.
 - `fonction` is not mass-assignable on `User`: in tests use `forceFill([...])->save()`. Seeders run unguarded.
 - `ComptesCircuitSeeder` aligns role and function of existing accounts but never touches a `SUPER_ADMIN` (n° 31), never resets a password and never reactivates an account. Its temporary passwords are printed once.
-- Notifications go to **active** accounts of system profiles only (`NotificationService::notifierRole`, n° 27); `SendNotification` also skips an account deactivated in between.
+- Notifications go to **active** accounts whose **effective** permissions hold the next step's key (`NotificationService::notifier`, decision D1: custom roles and individual grants included, revocations honoured, SUPER_ADMIN excluded, one notification per account); `SendNotification` also skips an account deactivated in between.
+- Server timezone is `Africa/Porto-Novo` (`APP_TIMEZONE`, decision D2); the API still serialises dates in UTC (`…Z`).
 
 ## Backups
 - `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`, together with `sanctum:prune-expired`; on cPanel the recommended Cron line is `schedule:run` every minute) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.

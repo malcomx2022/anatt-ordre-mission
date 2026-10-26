@@ -17,7 +17,7 @@
 > code (`app/`, `bootstrap/app.php`, SPA). Ils n'ajoutent **aucune migration** et ne changent pas `vendor/`. Le SPA reste à
 > redéployer : le menu latéral et la fiche OM ont changé. Leurs contrôles sont listés à l'étape 8.
 >
-> *Relu le 24/10/2026 contre le code* : 33 migrations, `routes/console.php`, `bootstrap/app.php`,
+> *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
 > `vendor/composer/platform_check.php`.
 
 ---
@@ -152,15 +152,19 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 ### 5b · Migrer et purger les caches
 
 ```bash
-/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
 ```
 
 - [ ] `/home/anatt/migration-run.log` : chaque migration attendue affiche **`DONE`**
       (**1.3** : `2026_10_22_090000_add_sequence_to_lots_paiement … DONE`, quelques secondes, aucune
-      donnée transformée — les lots existants prennent `sequence = 1`).
+      donnée transformée — les lots existants prennent `sequence = 1` ; **1.4** :
+      `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif … DONE`, qui décale d'une heure
+      les horodatages existants — application **en maintenance** pendant l'envoi du code et la
+      migration, cf. `DEPLOY-CPANEL.md`, *Notes de version 1.4*).
 - [ ] **Tâche supprimée** — sinon elle se rejoue toutes les cinq minutes et **écrase le log**.
 
-> `--force` remplace la confirmation interactive, impossible en Cron.
+> `--force` remplace la confirmation interactive, impossible en Cron. La purge **avant** `migrate`
+> fait lire la configuration à jour (fuseau de la 1.4 compris) même si elle était en cache.
 > **Aucun `%` dans la commande** : Cron l'interprète comme un saut de ligne et tronque la tâche.
 
 ---
@@ -258,7 +262,7 @@ Si la recette échoue et que le correctif n'est pas immédiat :
    actuel sans intervention manuelle).
 3. **Code API** — réenvoyer le `anatt-api/` de la version précédente.
 
-> `migrate:rollback --step=1` existe (les 33 migrations implémentent toutes `down()`), mais
+> `migrate:rollback --step=1` existe (les 34 migrations implémentent toutes `down()`), mais
 > restaurer le dump reste plus sûr : un rollback ne rend pas les données qu'une migration a
 > transformées.
 >

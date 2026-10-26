@@ -9,6 +9,33 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Version 1.4 — décisions D1 à D4 (26/10/2026)
+
+Mise à jour d'une instance : *Notes de version 1.4* de `DEPLOY-CPANEL.md` (maintenance obligatoire
+pour la migration du fuseau).
+
+- **D1 — Notifications selon les droits effectifs.** `NotificationService::notifier` remplace
+  `notifierRole` : une notification vise les comptes actifs dont les permissions effectives portent
+  la clé de l'étape (`om.valider` / `om.viser` / `om.approuver`, `paiements.generer`,
+  `paiements.confirmer`, `om.retranscrire`, `utilisateurs.gerer`). Rôles personnalisés et droits
+  accordés individuellement sont notifiés, un droit retiré ne l'est plus, le SUPER_ADMIN n'est pas
+  visé, un compte visé à deux titres n'est notifié qu'une fois. 5 tests (`NotificationTest`).
+- **D2 — Heure du Bénin.** `config/app.php` : `timezone` = `APP_TIMEZONE`, défaut
+  `Africa/Porto-Novo`. Migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` :
+  +1 h sur toutes les colonnes date-heure existantes (même instant, scellés inchangés ; dates seules
+  intactes), réversible. Un paiement confirmé le 1er du mois entre 0 h et 1 h compte désormais dans
+  ce mois. L'API sérialise toujours en UTC. Procédures de migration : `optimize:clear` **avant**
+  `migrate`. 4 tests (`FuseauHoraireTest`) ; migration éprouvée sur MariaDB.
+- **D3 — Dépendances frontend inutilisées retirées** : `@vueuse/core`, `lucide-vue-next`,
+  `vue-pdf-embed` (et leurs dépendances `pdfjs-dist`, `@napi-rs/canvas`). Vue reste figée en
+  `3.6.0-beta.9`.
+- **D4 — Écran de génération rechargé après un échec** (`PaiementGeneration.vue`) : un lot passé en
+  `ERREUR` par `failed()` n'affiche plus « Confirmer ». 1 test Vitest.
+- Documentation : CLAUDE.md, AGENTS.md, README, `docs/rbac-flexible.md`, `docs/annee-fiscale.md`,
+  `backend/docs/queues.md`, `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`,
+  `docs/checklist-post-deploiement.md`, `docs/revue-projet-2026-10.md` §7.1, documentation technique.
+
+
 Contenu de la **version 1.3** (revue d'octobre 2026, du 22 au 23/10/2026) en tête ; les entrées
 plus anciennes suivent. Rapport détaillé : `docs/revue-projet-2026-10.md`. Mise à jour d'une
 instance : *Notes de version 1.3* de `DEPLOY-CPANEL.md` :

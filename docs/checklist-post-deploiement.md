@@ -153,6 +153,14 @@ Sans création de données :
 - [ ] **Compte désactivé** : désactiver un compte d'agent financier, valider un état des avances → aucune notification ni e-mail pour ce compte (n° 27).
 - [ ] **PDF après amendement** : sur un OM dont l'avance est validée, télécharger le PDF, amender à la baisse jusqu'au trop-perçu, puis retélécharger → le nouveau PDF affiche « Avance engagée », « Trop-perçu (à recouvrer par retenue sur salaire) » avec un montant négatif, « Montant total dû », et l'encadré de l'amendement (date, jours avant → après, motif). Le premier PDF n'est plus servi.
 
+### Version 1.4 (décisions D1 à D4, 26/10/2026)
+
+- [ ] **Migration** : `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` figure dans la table `migrations`.
+- [ ] **Fuseau** : dans phpMyAdmin, un `date_paiement` relevé avant la mise à jour a pris **une heure** de plus ; à l'écran (Historique des paiements), il affiche la **même** heure qu'avant. Une heure de décalage à l'écran = migration jouée avec la configuration en cache (rollback, `optimize:clear`, puis migrer de nouveau).
+- [ ] **Rapport mensuel** : un paiement confirmé le 1er du mois entre 0 h et 1 h (heure du Bénin) compte dans ce mois, plus dans le précédent.
+- [ ] **Notifications** : un compte à qui l'on a accordé `paiements.generer` à titre individuel reçoit « OM validé » / « État validé » ; un agent financier à qui on l'a retiré ne le reçoit plus.
+- [ ] **Échec de génération** : après l'échec d'une génération sur un lot déjà généré, l'écran affiche le lot en erreur, sans bouton « Confirmer le paiement », sans recharger la page.
+
 ---
 
 ## 07 · Filet de sécurité

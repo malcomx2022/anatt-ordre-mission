@@ -15,14 +15,22 @@ use App\Support\NotificationContenu;
  *
  * Note : dans le nouveau modèle, les agents (bénéficiaires) ne sont PAS des comptes
  * utilisateurs et n'ont pas d'e-mail. Les notifications ciblent donc les utilisateurs
- * applicatifs par rôle (gestionnaire_om / agent_financier / admin).
+ * applicatifs selon la permission qui les rend responsables de l'étape suivante
+ * (paiements.generer, om.retranscrire, om.valider / om.viser / om.approuver…).
  */
 class NotificationService
 {
+    /** Signature attendue d'un rôle du circuit → permission qui la porte. */
+    private const SIGNATURE_PAR_ROLE = [
+        User::ROLE_CONTROLEUR => 'om.valider',
+        User::ROLE_DAF => 'om.viser',
+        User::ROLE_DG => 'om.approuver',
+    ];
+
     /** OM validé : l'agent financier peut préparer le paiement. */
     public function omValide(OrdreMission $ordre): void
     {
-        $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'om_valide', [
+        $this->notifier(['paiements.generer'], 'om_valide', [
             'reference_semo' => $ordre->reference_semo,
             'beneficiaire' => $ordre->agent?->nom_complet ?? '—',
             'montant' => number_format($ordre->montant_total, 0, ',', ' '),
@@ -32,23 +40,21 @@ class NotificationService
     /** OM rejeté : le gestionnaire OM est informé. */
     public function omRejete(OrdreMission $ordre): void
     {
-        $this->notifierRole(User::ROLE_GESTIONNAIRE_OM, 'om_rejete', [
+        $this->notifier(['om.retranscrire'], 'om_rejete', [
             'reference_semo' => $ordre->reference_semo,
             'motif' => $ordre->commentaire_rejet ?? '—',
         ]);
     }
 
-    /** Lot de paiement confirmé : gestionnaire OM et admin sont informés. */
+    /** Lot de paiement confirmé : gestionnaire OM et administration sont informés. */
     public function lotConfirme(LotPaiement $lot): void
     {
-        foreach ([User::ROLE_GESTIONNAIRE_OM, User::ROLE_ADMIN] as $role) {
-            $this->notifierRole($role, 'lot_confirme', [
-                'mission' => $lot->mission?->destination ?? '—',
-                'tranche' => $lot->tranche,
-                'operateur' => $lot->operateur,
-                'montant' => number_format($lot->montant_total, 0, ',', ' '),
-            ]);
-        }
+        $this->notifier(['om.retranscrire', 'utilisateurs.gerer'], 'lot_confirme', [
+            'mission' => $lot->mission?->destination ?? '—',
+            'tranche' => $lot->tranche,
+            'operateur' => $lot->operateur,
+            'montant' => number_format($lot->montant_total, 0, ',', ' '),
+        ]);
     }
 
     /**
@@ -58,7 +64,7 @@ class NotificationService
      */
     public function etatAttendSignature(EtatPaiement $etat, string $role): void
     {
-        $this->notifierRole($role, 'etat_attend_signature', [
+        $this->notifier([self::SIGNATURE_PAR_ROLE[$role]], 'etat_attend_signature', [
             'mission' => $etat->mission?->objet ?? '—',
             'destination' => $etat->mission?->destination ?? '—',
             'numero' => $etat->numero ?? '—',
@@ -70,7 +76,7 @@ class NotificationService
     /** État validé par le DG : l'agent financier peut générer les fichiers de paiement. */
     public function etatValide(EtatPaiement $etat): void
     {
-        $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'etat_valide', [
+        $this->notifier(['paiements.generer'], 'etat_valide', [
             'mission' => $etat->mission?->objet ?? '—',
             'numero' => $etat->numero ?? '—',
             'tranche' => $etat->libelleTranche(),
@@ -85,7 +91,7 @@ class NotificationService
      */
     public function tropPercuCree(OrdreMission $ordre, int $montantARecouvrer): void
     {
-        $this->notifierRole(User::ROLE_AGENT_FINANCIER, 'trop_percu_cree', [
+        $this->notifier(['paiements.confirmer'], 'trop_percu_cree', [
             'reference_semo' => $ordre->reference_semo,
             'beneficiaire' => $ordre->agent?->nom_complet ?? '—',
             'montant' => number_format($montantARecouvrer, 0, ',', ' '),
@@ -95,7 +101,7 @@ class NotificationService
     /** État rejeté : le gestionnaire OM est informé, avec le motif, pour correction. */
     public function etatRejete(EtatPaiement $etat, string $motif): void
     {
-        $this->notifierRole(User::ROLE_GESTIONNAIRE_OM, 'etat_rejete', [
+        $this->notifier(['om.retranscrire'], 'etat_rejete', [
             'mission' => $etat->mission?->objet ?? '—',
             'numero' => $etat->numero ?? '—',
             'tranche' => $etat->libelleTranche(),
@@ -104,25 +110,34 @@ class NotificationService
     }
 
     /**
-     * Notifie les utilisateurs ACTIFS d'un rôle (un compte désactivé ne reçoit
-     * plus rien) : dépose une notification in-app
-     * (feed de la cloche) ET dispatche l'e-mail. Les deux partagent le même
-     * sujet/corps (NotificationContenu), pour ne jamais diverger.
+     * Notifie les utilisateurs ACTIFS qui détiennent, dans leurs droits EFFECTIFS
+     * (profil, rôle personnalisé, accords et retraits individuels), au moins une des
+     * permissions de l'action : la notification suit l'autorisation (décision D1,
+     * docs/rbac-flexible.md). Le SUPER_ADMIN, dont l'accès implicite n'est pas une
+     * responsabilité du circuit, n'est pas visé ; un compte désactivé ne reçoit rien.
+     * Chaque destinataire reçoit une seule notification in-app (feed de la cloche)
+     * et un seul e-mail, qui partagent le même sujet/corps (NotificationContenu).
      *
+     * @param  string[]  $permissions
      * @param  array<string,mixed>  $data
      */
-    private function notifierRole(string $role, string $type, array $data): void
+    private function notifier(array $permissions, string $type, array $data): void
     {
-        User::where('role', $role)->where('actif', true)->get()->each(function (User $u) use ($type, $data) {
-            Notification::create([
-                'user_id' => $u->id,
-                'type' => $type,
-                'titre' => NotificationContenu::sujet($type, $data),
-                'message' => NotificationContenu::corps($type, $data),
-                'data' => $data,
-            ]);
+        User::where('actif', true)
+            ->where('role', '!=', User::ROLE_SUPER_ADMIN)
+            ->with('permissionOverrides')
+            ->get()
+            ->filter(fn (User $u) => array_intersect($permissions, $u->permissions()) !== [])
+            ->each(function (User $u) use ($type, $data) {
+                Notification::create([
+                    'user_id' => $u->id,
+                    'type' => $type,
+                    'titre' => NotificationContenu::sujet($type, $data),
+                    'message' => NotificationContenu::corps($type, $data),
+                    'data' => $data,
+                ]);
 
-            SendNotification::dispatch($u->id, $type, $data);
-        });
+                SendNotification::dispatch($u->id, $type, $data);
+            });
     }
 }

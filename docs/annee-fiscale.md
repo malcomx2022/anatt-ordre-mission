@@ -6,7 +6,7 @@
 >
 > *Relu le 24/10/2026 contre le code* (`Parametres`, `SettingsController`, `SettingsView`,
 > `utils/exercice.ts`) : conforme. Précisés : la liste d'années garde une année enregistrée hors
-> plage, et le serveur détermine l'exercice en **UTC** (voir *Fuseau horaire*).
+> plage, et le serveur détermine l'exercice à l'heure du Bénin (voir *Fuseau horaire*).
 
 ## Ce qui change
 
@@ -57,13 +57,14 @@ année civile, libellé « 2026 ».
 
 ## Fuseau horaire
 
-Le serveur détermine l'exercice courant avec l'horloge de l'application, réglée en **UTC**
-(`config/app.php`, `timezone`). L'écran Paramètres le détermine avec l'heure du navigateur,
-c'est-à-dire l'heure du Bénin (UTC+1). Le premier jour d'un exercice, entre 0 h et 1 h (heure
-du Bénin), le serveur renvoie donc encore l'exercice précédent alors que l'écran affiche déjà le
-nouveau. Sans effet aujourd'hui, puisque rien ne consomme l'exercice (§ suivant) ; à corriger
-avant de brancher un filtre par exercice, en même temps que le choix du fuseau de l'application
-(qui porte aussi les horodatages de paiement).
+Depuis le 26/10/2026 (décision D2), l'application est à l'heure du Bénin : `config/app.php`,
+`timezone` = `APP_TIMEZONE`, défaut `Africa/Porto-Novo` (UTC+1, sans heure d'été). Le serveur et
+l'écran Paramètres, qui calcule avec l'heure du navigateur, déterminent donc le même exercice, y
+compris le premier jour entre 0 h et 1 h. Les horodatages de paiement (`date_paiement`) et les
+rapports par mois suivent la même heure. Les valeurs enregistrées auparavant en UTC ont été
+décalées d'une heure par la migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif`.
+L'API continue de sérialiser les dates en UTC (`…Z`) : l'instant affiché par le navigateur ne
+change pas.
 
 ## Où l'exercice est utilisé (état au 24/10/2026)
 

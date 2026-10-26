@@ -419,14 +419,16 @@ confirme la liste établie en **B** :
 
 Le rapport distingue `Ran` (déjà jouée) de `Pending` (à jouer).
 
-**3. Migrez** — une seule tâche, qui enchaîne migration et purge des caches :
+**3. Migrez** — une seule tâche, qui purge les caches, migre, puis purge de nouveau :
 
 ```bash
-/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
 ```
 
 `--force` est obligatoire en production (il remplace la confirmation interactive, impossible en
-Cron). La redirection `> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
+Cron). La première purge fait lire aux migrations la configuration **à jour** : avec une
+configuration en cache (`php artisan optimize`), elles liraient l'ancienne — en 1.4, la migration
+du fuseau ne décalerait alors rien. La redirection `> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
 fenêtre sur ce qui s'est passé.
 
 **4. Relisez le log**, confirmez que chaque migration attendue affiche `DONE`, puis
@@ -460,6 +462,7 @@ cPanel > **Terminal**. Mêmes commandes, en interactif, avec la sortie à l'écr
 ```bash
 cd ~/anatt-api
 /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate:status
+/opt/cpanel/ea-php84/root/usr/bin/php artisan optimize:clear
 /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
 /opt/cpanel/ea-php84/root/usr/bin/php artisan optimize:clear
 ```
@@ -550,6 +553,17 @@ Ce qui change pour la mise à jour d'une instance en 1.2 (revue d'octobre 2026) 
 | **Fichiers supprimés** | `app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php` (inutilisés). Un envoi FTP ne supprime rien sur le serveur : effacez-les de `anatt-api/` par le Gestionnaire de fichiers. Laissés en place, ils restent inertes (jamais chargés). |
 | **Restauration** | `db:restore` purge la matrice des permissions : plus besoin de vider `storage/framework/cache/data/` après une restauration. |
 | **Correctifs des 23 au 25/10 (n° 17 à 32)** | Code seul (`app/`, `bootstrap/app.php`, seeders, SPA) : **aucune migration** de plus, `vendor/` inchangé. Le SPA est à redéployer : menu latéral accentué, « Amender » sur un OM soldé dont le reliquat n'est pas payé. Ils ne reprennent pas les données : un OM dont le trop-perçu a été recouvré **avant** la mise à jour reste `VALIDE`. Les comptes désactivés ne reçoivent plus de notification ni d'e-mail. Les erreurs de l'API (405, 404, 403, 422, 500) répondent en JSON même sans en-tête `Accept` (n° 29). Les états signés ensuite impriment la fonction du compte signataire quand *Paramètres › Signatures* ne la renseigne pas (n° 30) ; `ComptesCircuitSeeder` ne rétrograde plus un super administrateur (n° 31) ; `GET /admin/settings` renvoie `{}`, et non `[]`, sans réglage (n° 32). Contrôles : `docs/checklist-post-deploiement.md` §06. |
+
+### Notes de version 1.4 (décisions D1 à D4, 26/10/2026)
+
+Ce qui change pour la mise à jour d'une instance en 1.3 :
+
+| Élément | À faire |
+|---|---|
+| **Fuseau horaire (D2)** | L'application passe à l'heure du Bénin (`config/app.php` : `APP_TIMEZONE`, défaut `Africa/Porto-Novo`). La migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` décale d'**une heure** toutes les colonnes date-heure déjà enregistrées (UTC → heure du Bénin) : chaque horodatage garde le même instant, les dates seules (départ, retour) ne bougent pas. ⚠️ **Mettez l'application en maintenance avant d'envoyer le code** et migrez dans la foulée (§ D, commande qui purge les caches d'abord) : une écriture faite entre l'envoi de `config/app.php` et la migration serait déjà à l'heure du Bénin, puis décalée une seconde fois. La migration ne se joue qu'une fois ; elle s'annule par `migrate:rollback --step=1` (−1 h). Pour rester en UTC : `APP_TIMEZONE=UTC` dans le `.env` **avant** de migrer (la migration ne fait alors rien). |
+| **Notifications (D1)** | Code seul. Elles visent les comptes actifs qui détiennent la permission de l'étape (droits effectifs), plus seulement les profils système : rôles personnalisés et droits accordés individuellement sont notifiés, un droit retiré ne l'est plus, le super administrateur ne l'est pas. Avec la matrice par défaut, les destinataires ne changent pas. |
+| **SPA (D3, D4)** | À redéployer (§ F) : dépendances inutilisées retirées (bundle inchangé à l'usage), et l'écran de génération recharge le lot après un échec (« Confirmer » ne reste plus affiché sur un lot passé en erreur). |
+| **`vendor/`** | **Inchangé** (`composer.lock` non modifié). |
 
 ### G. Vérification
 

@@ -161,6 +161,9 @@ async function generer() {
     await rafraichir()
   } catch (e) {
     toast.error(getErrorMessage(e))
+    // En file sync, l'échec d'un gros lot passe en ERREUR le lot GENERE de la même
+    // sélection (failed()) : on recharge, sinon « Confirmer » resterait affiché.
+    await rafraichir()
   } finally {
     action.value = false
   }
