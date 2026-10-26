@@ -292,6 +292,26 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
 
+#### Documentation — maquettes HTML (26/10/2026)
+
+- **Les 42 maquettes HTML** (`docs/00_galerie_index.html` … `41_page_maintenance.html`, août 2026) sont
+  confrontées au routeur et aux écrans réels. Elles datent d'avant la retranscription SEMO et le circuit
+  par état de paiement, et ne sont **pas redessinées** : l'application fait foi.
+- Nouveau script `docs/annoter_maquettes.py`, rejouable et idempotent :
+  - chaque maquette reçoit un encart fixe avec son état (fidèle, écarts, obsolète), l'écran réel
+    (route et vue) et les écarts connus ;
+  - la galerie reçoit un tableau de correspondance et la liste des 14 écrans réels sans maquette.
+- Constats sur 41 maquettes :
+  - 16 fidèles dans l'esprit ;
+  - 19 avec écarts : OM retranscrits et mono-bénéficiaires, pas de brouillon ni de « Soumettre pour
+    validation », agents désactivés et non supprimés, import tout ou rien, interrupteur « Double
+    validation » retiré… ;
+  - 6 obsolètes : modification et validation d'un OM, OM en attente, réconciliation par import, import de
+    relevé opérateur, marquage « payé » ;
+  - un écart commun : la charte n'est pas appliquée (Plus Jakarta Sans, vert `#009639`, icônes
+    Font Awesome).
+- `CLAUDE.md`, `AGENTS.md` et `docs/revue-projet-2026-10.md` §7.3 mis à jour.
+
 #### Documentation — guide utilisateur (26/10/2026)
 
 - **`docs/Guide-Utilisateur-ANaTT.docx`** confronté aux libellés réels de l'interface (`navigation.ts`,
