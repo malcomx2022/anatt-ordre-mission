@@ -387,7 +387,7 @@ correction des écarts. La date et la PR sont celles de la dernière relecture.
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Confrontés ; réponses validées | 25/10 (#160, #161) | Validation des réponses en CI (§7.2) |
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | **Historiques**, marqués comme tels | 25/10 et 23/10 | Rien, sauf décision de les archiver |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Régénéré | 24/10 (n° 28 compris) | Rien d'utilisateur dans les n° 29 à 32, sauf la fonction imprimée (n° 30) : une phrase à ajouter au §7.4 *Signatures des titulaires* |
-| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée | 23/10 (jusqu'au n° 22) | **À reprendre** : solde (n° 23, 24, 26), amendement d'un OM soldé (n° 28), notifications (n° 27), erreurs JSON (n° 29), signatures (n° 30, 31), `sync` des gros lots |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Confrontée, régénérée | 26/10 (#162, n° 1 à 32) | — |
 | `docs/00_galerie_index.html` … `41_page_maintenance.html` (42 maquettes) | **Jamais confrontées** | août 2026 | Antérieures au circuit par état : interrupteur « Double validation » (`34_parametres.html`), bouton « Soumettre pour validation » (`14_om_creation_etape3.html`), aucun écran des états de paiement. À marquer *maquettes d'origine, non tenues à jour*, ou à refaire |
 | `backend/README.md`, `frontend/README.md` | Gabarits Laravel / Vite d'origine | — | À remplacer par un renvoi au `README.md` racine, ou à supprimer |
 | `backend/.env.example`, `backend/.env.production.example` | Relu pour le déploiement | 25/10 (#159) | — |

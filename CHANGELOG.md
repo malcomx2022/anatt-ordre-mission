@@ -292,6 +292,30 @@ Chaque correctif a un test de non-régression vu en échec sans lui.
 - Tests dans `EtatPaiementTest` (3) et `ComptesCircuitSeederTest` (1), les deux défauts vus en échec
   sans correctif. Pest : 586 tests.
 
+#### Documentation — documentation technique (26/10/2026)
+
+- **`docs/ANaTT_Documentation_Technique_Fonctionnelle.docx`** confrontée au code, puis régénérée par
+  `generer_documentation_technique.py`.
+- Corrigé dans la pile technique :
+  - la ligne « VuePDF » est retirée : aucune visionneuse PDF n'est importée ;
+  - Vue 3.6 bêta figée par le lockfile ;
+  - PHP 8.4.x 64 bits, ni 8.3 ni 8.5 ;
+  - `SANCTUM_STATEFUL_DOMAINS` laissée vide (jetons Bearer).
+- Ajouté :
+  - évolutions n° 19 à 32 ;
+  - solde d'un OM (confirmation, recouvrement, amendement, exonération) ;
+  - garde du reliquat payé et OM soldé amendable ;
+  - destinataires réels des notifications (comptes actifs, profil attendu) ;
+  - gros lot en `sync` ;
+  - erreurs JSON et 405 ;
+  - priorité du nom et de la fonction imprimés ;
+  - `ComptesCircuitSeeder` en production ;
+  - variables `FRONTEND_URL`, `MTN_COMPTE`, `WORKFLOW_SEPARATION_TACHES`, `CONTROLEUR_*` / `DAF_*` /
+    `DG_*` ;
+  - volumes de tests (Pest 589, dont 129 unitaires ; Vitest 123) ;
+  - validation des réponses OpenAPI.
+- `docs/revue-projet-2026-10.md` §7.3 : la documentation technique n'est plus à reprendre.
+
 #### Documentation — AGENTS.md et point restant (25/10/2026)
 
 - **`AGENTS.md`** relu contre le code. Deux affirmations étaient fausses :
