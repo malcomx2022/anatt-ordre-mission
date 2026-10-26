@@ -1,128 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Gestion des Rôles</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}.perm-cell{transition:all .15s}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matrice des permissions — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#FBF3E0;color:#1f2937;border:1px solid #8B6914;border-left:4px solid #8B6914;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#8B6914"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Écarts avec l&#x27;écran réel</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /admin/roles — admin/RolesView.vue (« Matrice des permissions »)</div><div style="margin-top:4px"><strong>Écarts :</strong> Écriture réservée au SUPER_ADMIN ; profils système non renommables ; séparation ordonnateur / payeur contrôlée.</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#8B6914">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
-        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
-            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
-            <a href="33_gestion_roles.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-key w-5 text-center"></i>Rôles</a>
-            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
-    </aside>
-
-    <main class="ml-64 pt-1 min-h-screen">
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div><h1 class="text-lg font-bold text-gray-800">Gestion des Rôles & Permissions</h1><p class="text-xs text-gray-500">Matrice des droits d'accès par rôle</p></div>
-                <div class="flex items-center gap-2">
-                    <button class="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-plus"></i>Nouveau rôle</button>
-                    <button class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-save"></i>Enregistrer</button>
-                </div>
-            </div>
-        </header>
-
-        <div class="p-6">
-            <!-- Role Cards Summary -->
-            <div class="grid grid-cols-5 gap-3 mb-6 fade-in">
-                <div class="bg-white rounded-xl border-2 border-red-200 p-4 text-center">
-                    <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-2"><i class="fas fa-crown text-red-600"></i></div>
-                    <p class="text-sm font-bold text-gray-800">Super Admin</p>
-                    <p class="text-[11px] text-gray-500">1 utilisateur</p>
-                </div>
-                <div class="bg-white rounded-xl border-2 border-blue-200 p-4 text-center">
-                    <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2"><i class="fas fa-user-cog text-blue-600"></i></div>
-                    <p class="text-sm font-bold text-gray-800">Administrateur</p>
-                    <p class="text-[11px] text-gray-500">1 utilisateur</p>
-                </div>
-                <div class="bg-white rounded-xl border-2 border-green-200 p-4 text-center">
-                    <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2"><i class="fas fa-check-double text-green-600"></i></div>
-                    <p class="text-sm font-bold text-gray-800">Validateur</p>
-                    <p class="text-[11px] text-gray-500">1 utilisateur</p>
-                </div>
-                <div class="bg-white rounded-xl border-2 border-amber-200 p-4 text-center">
-                    <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-2"><i class="fas fa-tasks text-amber-600"></i></div>
-                    <p class="text-sm font-bold text-gray-800">Gestionnaire</p>
-                    <p class="text-[11px] text-gray-500">3 utilisateurs</p>
-                </div>
-                <div class="bg-white rounded-xl border-2 border-gray-200 p-4 text-center">
-                    <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-2"><i class="fas fa-eye text-gray-600"></i></div>
-                    <p class="text-sm font-bold text-gray-800">Lecteur</p>
-                    <p class="text-[11px] text-gray-500">1 utilisateur</p>
-                </div>
-            </div>
-
-            <!-- Permission Matrix -->
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden fade-in" style="animation-delay:.1s">
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th class="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase min-w-[220px] sticky left-0 bg-gray-50 z-10">Module / Permission</th>
-                                <th class="px-4 py-4 text-center text-xs font-semibold text-red-600 uppercase"><i class="fas fa-crown mr-1"></i>Super Admin</th>
-                                <th class="px-4 py-4 text-center text-xs font-semibold text-blue-600 uppercase">Admin</th>
-                                <th class="px-4 py-4 text-center text-xs font-semibold text-green-600 uppercase">Validateur</th>
-                                <th class="px-4 py-4 text-center text-xs font-semibold text-amber-600 uppercase">Gestionnaire</th>
-                                <th class="px-4 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Lecteur</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Dashboard -->
-                            <tr class="bg-anatt-50/50"><td colspan="6" class="px-5 py-2.5 text-xs font-bold text-anatt-700 uppercase tracking-wider"><i class="fas fa-th-large mr-2"></i>Tableau de bord</td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Voir le dashboard</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Statistiques avancées</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <!-- Personnel -->
-                            <tr class="bg-anatt-50/50"><td colspan="6" class="px-5 py-2.5 text-xs font-bold text-anatt-700 uppercase tracking-wider"><i class="fas fa-users mr-2"></i>Personnel</td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Consulter</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Créer / Modifier</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Supprimer</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Importer en masse</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <!-- Ordres de Mission -->
-                            <tr class="bg-anatt-50/50"><td colspan="6" class="px-5 py-2.5 text-xs font-bold text-anatt-700 uppercase tracking-wider"><i class="fas fa-file-alt mr-2"></i>Ordres de Mission</td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Consulter</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Créer / Modifier</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Valider / Rejeter</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <!-- Paiements -->
-                            <tr class="bg-anatt-50/50"><td colspan="6" class="px-5 py-2.5 text-xs font-bold text-anatt-700 uppercase tracking-wider"><i class="fas fa-money-check-alt mr-2"></i>Paiements</td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Consulter les lots</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Générer des fichiers</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Marquer payé</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Réconciliation</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <!-- Administration -->
-                            <tr class="bg-anatt-50/50"><td colspan="6" class="px-5 py-2.5 text-xs font-bold text-anatt-700 uppercase tracking-wider"><i class="fas fa-cog mr-2"></i>Administration</td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Gérer utilisateurs</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Gérer rôles</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr class="border-b border-gray-50"><td class="px-5 py-3 text-sm text-gray-700 pl-10">Paramètres système</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                            <tr><td class="px-5 py-3 text-sm text-gray-700 pl-10">Journal d'audit</td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-check-circle text-green-500"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td><td class="text-center"><i class="fas fa-times-circle text-gray-300"></i></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-                    <div class="flex items-center gap-4 text-xs text-gray-500">
-                        <span class="flex items-center gap-1"><i class="fas fa-check-circle text-green-500"></i> Autorisé</span>
-                        <span class="flex items-center gap-1"><i class="fas fa-times-circle text-gray-300"></i> Refusé</span>
-                    </div>
-                    <p class="text-xs text-gray-400">Dernière modification : 15/01/2025 à 09:30 par Gislain A.</p>
-                </div>
-            </div>
-        </div>
-    </main>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Administration</div><h1>Matrice des permissions</h1><p>Permissions par profil, éditables à chaud par le super administrateur ; séparation ordonnateur / payeur contrôlée côté serveur.</p><div class="meta"><span class="badge">/admin/roles</span><span class="badge blue">admin/RolesView.vue</span><span class="badge gold">Profil : Super administrateur</span></div><div class="capture"><img src="ecrans/33_gestion_roles.jpg" alt="Capture de l'écran « Matrice des permissions »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="32_formulaire_utilisateur.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="34_parametres.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

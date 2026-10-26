@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historique d&#x27;un OM — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Missions et ordres de mission</div><h1>Historique d&#x27;un OM</h1><p>Journal d&#x27;audit de l&#x27;OM : retranscription, amendements, validation.</p><div class="meta"><span class="badge">/ordres/10/historique</span><span class="badge blue">missions/MissionHistoryView.vue</span><span class="badge gold">Profil : Gestionnaire OM</span></div><div class="capture"><img src="ecrans/44_historique_om.jpg" alt="Capture de l'écran « Historique d&#x27;un OM »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="43_pdf_om.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="45_paiements_statuts.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
+</body>
+</html>

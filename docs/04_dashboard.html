@@ -1,273 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Tableau de bord</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>
-        .sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}
-        .stat-card{transition:all .3s}.stat-card:hover{transform:translateY(-4px);box-shadow:0 12px 24px rgba(0,0,0,.08)}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .fade-in{animation:fadeIn .5s ease-out both}
-        .fade-in-1{animation-delay:.1s}.fade-in-2{animation-delay:.2s}.fade-in-3{animation-delay:.3s}.fade-in-4{animation-delay:.4s}
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau de bord — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#FBF3E0;color:#1f2937;border:1px solid #8B6914;border-left:4px solid #8B6914;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#8B6914"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Écarts avec l&#x27;écran réel</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> / — dashboard/DashboardView.vue</div><div style="margin-top:4px"><strong>Écarts :</strong> Indicateurs réels : OM en cours, OM validés, paiements du mois ; menu réel (États de paiement, Générer MTN / Moov, Régularisations…).</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#8B6914">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto transition-transform duration-300">
-        <div class="p-5 border-b border-white/10">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div>
-                <div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div>
-            </div>
-        </div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
-            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
-            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission<span class="ml-auto bg-orange-500 text-[10px] px-1.5 py-0.5 rounded-full">12</span></a>
-            
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
-            <a href="17_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
-            <a href="19_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
-            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
-            
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
-            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
-            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
-            
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
-            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
-            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div>
-                <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div>
-                <a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- CONTENU PRINCIPAL -->
-    <main class="ml-64 pt-1 min-h-screen">
-        <!-- Header -->
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full');document.querySelector('main').classList.toggle('ml-0')" class="lg:hidden text-gray-500"><i class="fas fa-bars text-lg"></i></button>
-                    <div><h1 class="text-lg font-bold text-gray-800">Tableau de bord</h1><p class="text-xs text-gray-500">Vue d'ensemble du système de paiements</p></div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-colors relative">
-                            <i class="fas fa-bell text-gray-600"></i>
-                            <span class="absolute -top-1 -right-1 w-5 h-5 bg-danger-500 text-white text-[10px] rounded-full flex items-center justify-center">3</span>
-                        </button>
-                    </div>
-                    <div class="hidden sm:flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-                        <i class="fas fa-calendar text-gray-400 text-sm"></i>
-                        <span class="text-sm text-gray-600">Déc 2024</span>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="p-6">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
-                <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 fade-in fade-in-1">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-file-alt text-blue-600"></i></div>
-                        <span class="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded-lg"><i class="fas fa-arrow-up mr-1"></i>+12%</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800">156</p>
-                    <p class="text-sm text-gray-500">Ordres de Mission</p>
-                    <div class="mt-3 flex gap-2 text-[11px]">
-                        <span class="text-green-600 bg-green-50 px-2 py-0.5 rounded">98 validés</span>
-                        <span class="text-orange-600 bg-orange-50 px-2 py-0.5 rounded">12 en attente</span>
-                    </div>
-                </div>
-                <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 fade-in fade-in-2">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="w-11 h-11 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-money-bill-wave text-green-600"></i></div>
-                        <span class="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded-lg"><i class="fas fa-arrow-up mr-1"></i>+8%</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800">24.5M</p>
-                    <p class="text-sm text-gray-500">Total Paiements (FCFA)</p>
-                    <div class="mt-3 flex gap-2 text-[11px]">
-                        <span class="text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded">MTN: 15.2M</span>
-                        <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">MOOV: 9.3M</span>
-                    </div>
-                </div>
-                <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 fade-in fade-in-3">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fas fa-users text-purple-600"></i></div>
-                        <span class="text-xs text-gray-500 font-semibold bg-gray-50 px-2 py-1 rounded-lg">Actif</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800">87</p>
-                    <p class="text-sm text-gray-500">Personnel Actif</p>
-                    <div class="mt-3 flex gap-2 text-[11px]">
-                        <span class="text-purple-600 bg-purple-50 px-2 py-0.5 rounded">52 MTN</span>
-                        <span class="text-purple-600 bg-purple-50 px-2 py-0.5 rounded">35 MOOV</span>
-                    </div>
-                </div>
-                <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 fade-in fade-in-4">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="w-11 h-11 bg-orange-100 rounded-xl flex items-center justify-center"><i class="fas fa-file-export text-orange-600"></i></div>
-                        <span class="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded-lg">Ce mois</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800">28</p>
-                    <p class="text-sm text-gray-500">Fichiers Générés</p>
-                    <div class="mt-3 flex gap-2 text-[11px]">
-                        <span class="text-green-600 bg-green-50 px-2 py-0.5 rounded">23 payés</span>
-                        <span class="text-red-600 bg-red-50 px-2 py-0.5 rounded">5 en cours</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2 colonnes -->
-            <div class="grid lg:grid-cols-3 gap-6 mb-6">
-                <!-- OMs Récents -->
-                <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5 fade-in">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-bold text-gray-800">Ordres de Mission Récents</h3>
-                        <a href="11_liste_ordres_mission.html" class="text-sm text-anatt-600 hover:text-anatt-700 font-medium">Voir tout <i class="fas fa-arrow-right text-xs ml-1"></i></a>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead><tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                                <th class="pb-3 pr-4">Référence</th><th class="pb-3 pr-4">Missionnaire</th><th class="pb-3 pr-4">Montant</th><th class="pb-3 pr-4">Statut</th><th class="pb-3">Date</th>
-                            </tr></thead>
-                            <tbody class="divide-y divide-gray-50">
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000793</span></td>
-                                    <td class="py-3 pr-4 font-medium">MAGBE Victorin</td>
-                                    <td class="py-3 pr-4 font-semibold">60 000</td>
-                                    <td class="py-3 pr-4"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-check-circle text-[10px]"></i>Validé</span></td>
-                                    <td class="py-3 text-gray-500 text-xs">04/12/2024</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000794</span></td>
-                                    <td class="py-3 pr-4 font-medium">ADJOVI Pierre</td>
-                                    <td class="py-3 pr-4 font-semibold">45 000</td>
-                                    <td class="py-3 pr-4"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 text-xs rounded-lg font-medium"><i class="fas fa-clock text-[10px]"></i>En attente</span></td>
-                                    <td class="py-3 text-gray-500 text-xs">03/12/2024</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000792</span></td>
-                                    <td class="py-3 pr-4 font-medium">DOSSA Marie</td>
-                                    <td class="py-3 pr-4 font-semibold">35 000</td>
-                                    <td class="py-3 pr-4"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg font-medium"><i class="fas fa-money-bill text-[10px]"></i>Payé</span></td>
-                                    <td class="py-3 text-gray-500 text-xs">02/12/2024</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000791</span></td>
-                                    <td class="py-3 pr-4 font-medium">SAOSSI Paterne</td>
-                                    <td class="py-3 pr-4 font-semibold">88 000</td>
-                                    <td class="py-3 pr-4"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium"><i class="fas fa-check-circle text-[10px]"></i>Validé</span></td>
-                                    <td class="py-3 text-gray-500 text-xs">01/12/2024</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-3 pr-4"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">OM-2024-000790</span></td>
-                                    <td class="py-3 pr-4 font-medium">KONE Jean-Baptiste</td>
-                                    <td class="py-3 pr-4 font-semibold">40 000</td>
-                                    <td class="py-3 pr-4"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 text-xs rounded-lg font-medium"><i class="fas fa-times-circle text-[10px]"></i>Rejeté</span></td>
-                                    <td class="py-3 text-gray-500 text-xs">30/11/2024</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Actions rapides + Répartition -->
-                <div class="space-y-6">
-                    <div class="bg-white rounded-2xl border border-gray-100 p-5 fade-in">
-                        <h3 class="font-bold text-gray-800 mb-4">Actions rapides</h3>
-                        <div class="space-y-2">
-                            <a href="12_om_creation_etape1.html" class="flex items-center gap-3 p-3 rounded-xl hover:bg-anatt-50 transition-colors group">
-                                <div class="w-10 h-10 bg-anatt-100 rounded-lg flex items-center justify-center group-hover:bg-anatt-200 transition-colors"><i class="fas fa-plus text-anatt-600"></i></div>
-                                <div><p class="text-sm font-medium text-gray-800">Nouvel Ordre de Mission</p><p class="text-[11px] text-gray-500">Créer un OM</p></div>
-                            </a>
-                            <a href="17_generation_fichiers.html" class="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors"><i class="fas fa-file-export text-blue-600"></i></div>
-                                <div><p class="text-sm font-medium text-gray-800">Générer Fichiers</p><p class="text-[11px] text-gray-500">MTN / MOOV</p></div>
-                            </a>
-                            <a href="05_personnel_liste.html" class="flex items-center gap-3 p-3 rounded-xl hover:bg-purple-50 transition-colors group">
-                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors"><i class="fas fa-user-plus text-purple-600"></i></div>
-                                <div><p class="text-sm font-medium text-gray-800">Gérer Personnel</p><p class="text-[11px] text-gray-500">87 agents actifs</p></div>
-                            </a>
-                            <a href="25_rapports.html" class="flex items-center gap-3 p-3 rounded-xl hover:bg-amber-50 transition-colors group">
-                                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-200 transition-colors"><i class="fas fa-chart-pie text-amber-600"></i></div>
-                                <div><p class="text-sm font-medium text-gray-800">Rapports</p><p class="text-[11px] text-gray-500">États & statistiques</p></div>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-gray-100 p-5 fade-in">
-                        <h3 class="font-bold text-gray-800 mb-4">Répartition Opérateurs</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700"><i class="fas fa-circle text-yellow-500 text-xs mr-2"></i>MTN MoMo</span><span class="font-bold">62%</span></div>
-                                <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-yellow-500 h-2.5 rounded-full" style="width:62%"></div></div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700"><i class="fas fa-circle text-blue-500 text-xs mr-2"></i>MOOV Flooz</span><span class="font-bold">38%</span></div>
-                                <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-blue-500 h-2.5 rounded-full" style="width:38%"></div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Paiements récents -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-gray-800">Derniers Lots de Paiement</h3>
-                    <a href="19_lots_paiement.html" class="text-sm text-anatt-600 hover:text-anatt-700 font-medium">Voir tout <i class="fas fa-arrow-right text-xs ml-1"></i></a>
-                </div>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-lg">MTN</span>
-                            <span class="text-green-600 text-xs font-medium"><i class="fas fa-check-circle mr-1"></i>Payé</span>
-                        </div>
-                        <p class="font-mono text-xs text-gray-500">LOT-MTN-20241204-001</p>
-                        <p class="text-lg font-bold text-gray-800 mt-1">1 250 000 FCFA</p>
-                        <p class="text-xs text-gray-500 mt-2"><i class="fas fa-users mr-1"></i>15 bénéficiaires</p>
-                    </div>
-                    <div class="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-lg">MOOV</span>
-                            <span class="text-orange-600 text-xs font-medium"><i class="fas fa-clock mr-1"></i>En cours</span>
-                        </div>
-                        <p class="font-mono text-xs text-gray-500">LOT-MOOV-20241203-002</p>
-                        <p class="text-lg font-bold text-gray-800 mt-1">876 000 FCFA</p>
-                        <p class="text-xs text-gray-500 mt-2"><i class="fas fa-users mr-1"></i>11 bénéficiaires</p>
-                    </div>
-                    <div class="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-lg">MTN</span>
-                            <span class="text-green-600 text-xs font-medium"><i class="fas fa-check-circle mr-1"></i>Payé</span>
-                        </div>
-                        <p class="font-mono text-xs text-gray-500">LOT-MTN-20241202-003</p>
-                        <p class="text-lg font-bold text-gray-800 mt-1">2 100 000 FCFA</p>
-                        <p class="text-xs text-gray-500 mt-2"><i class="fas fa-users mr-1"></i>22 bénéficiaires</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Tableau de bord</div><h1>Tableau de bord</h1><p>Ordres de mission actifs, versements confirmés et montant payé du mois, paiements par opérateur, derniers OM, actions rapides selon les droits.</p><div class="meta"><span class="badge">/</span><span class="badge blue">dashboard/DashboardView.vue</span><span class="badge gold">Profil : Super administrateur</span></div><div class="capture"><img src="ecrans/04_dashboard.jpg" alt="Capture de l'écran « Tableau de bord »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="03_reinitialisation_mdp.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="05_personnel_liste.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

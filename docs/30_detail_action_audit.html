@@ -1,203 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Détail Action Audit</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}.diff-old{background:#fef2f2;border-left:3px solid #ef4444}.diff-new{background:#f0fdf4;border-left:3px solid #22c55e}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Détail d&#x27;une action — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#EDFAF2;color:#1f2937;border:1px solid #1D9E4F;border-left:4px solid #1D9E4F;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#1D9E4F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Fidèle dans l&#x27;esprit</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /audit/:id — audit/AuditDetailView.vue</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#1D9E4F">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
-        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
-            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
-            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
-            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
-            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
-            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
-            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
-            <a href="29_journal_audit.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-history w-5 text-center"></i>Audit</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
-            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
-            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
-    </aside>
-
-    <main class="ml-64 pt-1 min-h-screen">
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <a href="29_journal_audit.html" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
-                    <div><h1 class="text-lg font-bold text-gray-800">Détail de l'action</h1><p class="text-xs text-gray-500">Trace d'audit #AUD-2025-004721</p></div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button class="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-chevron-left mr-1"></i>Précédent</button>
-                    <button class="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Suivant<i class="fas fa-chevron-right ml-1"></i></button>
-                </div>
-            </div>
-        </header>
-
-        <div class="p-6">
-            <!-- Action Summary -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in">
-                <div class="flex items-start justify-between mb-6">
-                    <div class="flex items-start gap-4">
-                        <div class="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center"><i class="fas fa-edit text-amber-600 text-xl"></i></div>
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-900">Modification de barème</h2>
-                            <p class="text-sm text-gray-500 mt-1">Modification des indemnités journalières pour la Catégorie A</p>
-                            <div class="flex items-center gap-3 mt-3">
-                                <span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg"><i class="fas fa-edit mr-1"></i>Modification</span>
-                                <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg">Barèmes</span>
-                            </div>
-                        </div>
-                    </div>
-                    <span class="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full border border-amber-200"><i class="fas fa-exclamation-circle mr-1"></i>Impact financier</span>
-                </div>
-
-                <!-- Metadata Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl">
-                    <div>
-                        <p class="text-[10px] uppercase text-gray-400 font-semibold mb-1">Date & Heure</p>
-                        <p class="text-sm font-semibold text-gray-800">15/01/2025 à 13:55:42</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] uppercase text-gray-400 font-semibold mb-1">Utilisateur</p>
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 bg-anatt-100 rounded-md flex items-center justify-center text-[9px] font-bold text-anatt-700">GA</div>
-                            <p class="text-sm font-semibold text-gray-800">Gislain A.</p>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-[10px] uppercase text-gray-400 font-semibold mb-1">Adresse IP</p>
-                        <p class="text-sm font-mono text-gray-800">192.168.1.45</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] uppercase text-gray-400 font-semibold mb-1">Navigateur</p>
-                        <p class="text-sm text-gray-800">Chrome 120 · Windows 11</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Before / After Comparison -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in" style="animation-delay:.1s">
-                <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-exchange-alt mr-2 text-gray-400"></i>Comparaison Avant / Après</h3>
-                <div class="grid grid-cols-2 gap-6">
-                    <!-- Before -->
-                    <div>
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-6 h-6 bg-red-100 rounded-md flex items-center justify-center"><i class="fas fa-minus text-red-500 text-xs"></i></div>
-                            <h4 class="text-sm font-bold text-red-700">Avant modification</h4>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="diff-old p-3 rounded-r-lg">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Indemnité journalière</p>
-                                <p class="text-sm font-semibold text-red-700 line-through">25 000 FCFA</p>
-                            </div>
-                            <div class="diff-old p-3 rounded-r-lg">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Indemnité de nuitée</p>
-                                <p class="text-sm font-semibold text-red-700 line-through">35 000 FCFA</p>
-                            </div>
-                            <div class="p-3 bg-gray-50 rounded-lg border-l-3 border-gray-200">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Indemnité de transport</p>
-                                <p class="text-sm font-semibold text-gray-700">15 000 FCFA</p>
-                                <p class="text-[10px] text-gray-400 italic">Inchangé</p>
-                            </div>
-                            <div class="p-3 bg-gray-50 rounded-lg border-l-3 border-gray-200">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Plafond mensuel</p>
-                                <p class="text-sm font-semibold text-gray-700">500 000 FCFA</p>
-                                <p class="text-[10px] text-gray-400 italic">Inchangé</p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- After -->
-                    <div>
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-6 h-6 bg-green-100 rounded-md flex items-center justify-center"><i class="fas fa-plus text-green-500 text-xs"></i></div>
-                            <h4 class="text-sm font-bold text-green-700">Après modification</h4>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="diff-new p-3 rounded-r-lg">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Indemnité journalière</p>
-                                <p class="text-sm font-bold text-green-700">28 000 FCFA</p>
-                                <p class="text-[10px] text-green-600"><i class="fas fa-arrow-up mr-1"></i>+12.0%</p>
-                            </div>
-                            <div class="diff-new p-3 rounded-r-lg">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Indemnité de nuitée</p>
-                                <p class="text-sm font-bold text-green-700">40 000 FCFA</p>
-                                <p class="text-[10px] text-green-600"><i class="fas fa-arrow-up mr-1"></i>+14.3%</p>
-                            </div>
-                            <div class="p-3 bg-gray-50 rounded-lg border-l-3 border-gray-200">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Indemnité de transport</p>
-                                <p class="text-sm font-semibold text-gray-700">15 000 FCFA</p>
-                                <p class="text-[10px] text-gray-400 italic">Inchangé</p>
-                            </div>
-                            <div class="p-3 bg-gray-50 rounded-lg border-l-3 border-gray-200">
-                                <p class="text-[10px] uppercase text-gray-400 font-semibold">Plafond mensuel</p>
-                                <p class="text-sm font-semibold text-gray-700">500 000 FCFA</p>
-                                <p class="text-[10px] text-gray-400 italic">Inchangé</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Impact Analysis -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 fade-in" style="animation-delay:.2s">
-                <h3 class="text-base font-bold text-gray-800 mb-4"><i class="fas fa-chart-line mr-2 text-gray-400"></i>Analyse d'impact</h3>
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div class="p-4 bg-amber-50 rounded-xl text-center">
-                        <p class="text-2xl font-bold text-amber-700">+8 000</p>
-                        <p class="text-xs text-amber-600">FCFA / jour / agent Cat. A</p>
-                    </div>
-                    <div class="p-4 bg-blue-50 rounded-xl text-center">
-                        <p class="text-2xl font-bold text-blue-700">23</p>
-                        <p class="text-xs text-blue-600">Agents concernés (Cat. A)</p>
-                    </div>
-                    <div class="p-4 bg-purple-50 rounded-xl text-center">
-                        <p class="text-2xl font-bold text-purple-700">+184 000</p>
-                        <p class="text-xs text-purple-600">FCFA / jour impact total</p>
-                    </div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded-xl">
-                    <p class="text-sm text-gray-600"><i class="fas fa-info-circle text-blue-500 mr-2"></i>Cette modification impacte rétroactivement les ordres de mission non encore payés pour les agents de catégorie A. <span class="font-semibold">3 ordres de mission</span> en attente seront recalculés.</p>
-                </div>
-            </div>
-
-            <!-- Technical Details -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.3s">
-                <h3 class="text-base font-bold text-gray-800 mb-4"><i class="fas fa-code mr-2 text-gray-400"></i>Détails techniques</h3>
-                <div class="bg-gray-900 rounded-xl p-5 font-mono text-sm overflow-x-auto">
-                    <div class="space-y-1">
-                        <p class="text-gray-500">// Requête de modification</p>
-                        <p><span class="text-purple-400">UPDATE</span> <span class="text-blue-400">baremes</span></p>
-                        <p><span class="text-purple-400">SET</span></p>
-                        <p class="pl-4"><span class="text-green-400">indemnite_journaliere</span> = <span class="text-amber-400">28000</span>,</p>
-                        <p class="pl-4"><span class="text-green-400">indemnite_nuitee</span> = <span class="text-amber-400">40000</span>,</p>
-                        <p class="pl-4"><span class="text-green-400">updated_at</span> = <span class="text-amber-400">'2025-01-15 13:55:42'</span>,</p>
-                        <p class="pl-4"><span class="text-green-400">updated_by</span> = <span class="text-amber-400">1</span></p>
-                        <p><span class="text-purple-400">WHERE</span> <span class="text-green-400">categorie</span> = <span class="text-amber-400">'A'</span>;</p>
-                        <p class="text-gray-500 mt-3">// Résultat : 1 ligne affectée</p>
-                        <p class="text-gray-500">// Session ID : sess_a8f3c2e1d9b4</p>
-                        <p class="text-gray-500">// User Agent : Mozilla/5.0 (Windows NT 10.0; Win64; x64)</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Audit</div><h1>Détail d&#x27;une action</h1><p>Données enregistrées avec l&#x27;action, telles qu&#x27;au moment de l&#x27;action.</p><div class="meta"><span class="badge">/audit/53</span><span class="badge blue">audit/AuditDetailView.vue</span><span class="badge gold">Profil : Super administrateur</span></div><div class="capture"><img src="ecrans/30_detail_action_audit.jpg" alt="Capture de l'écran « Détail d&#x27;une action »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="29_journal_audit.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="31_gestion_utilisateurs.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

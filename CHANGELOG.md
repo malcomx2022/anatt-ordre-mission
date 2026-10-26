@@ -31,6 +31,14 @@ pour la migration du fuseau).
   `3.6.0-beta.9`.
 - **D4 — Écran de génération rechargé après un échec** (`PaiementGeneration.vue`) : un lot passé en
   `ERREUR` par `failed()` n'affiche plus « Confirmer ». 1 test Vitest.
+- **Maquettes refaites à partir de l'application réelle.** `docs/capturer_ecrans.cjs` (Playwright)
+  fait avancer la mission DEMO-CIRCUIT dans le circuit (état des avances validé, amendement en
+  trop-perçu, lot MTN généré) puis capture 46 écrans du build de production (`docs/ecrans/*.jpg`) ;
+  `docs/generer_maquettes.py` en tire la galerie et 53 pages à la charte (Sora / DM Sans, logo local,
+  flag-bar). Les 41 anciens noms sont conservés ; une ancienne maquette sans écran propre renvoie vers
+  l'écran qui assure la fonction ; 12 pages nouvelles couvrent les écrans qui n'avaient pas de
+  maquette. `docs/annoter_maquettes.py` est retiré.
+- Paramètres : le champ « Fuseau horaire » devient une valeur en lecture seule (réglée sur le serveur).
 - Documentation : CLAUDE.md, AGENTS.md, README, `docs/rbac-flexible.md`, `docs/annee-fiscale.md`,
   `backend/docs/queues.md`, `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`,
   `docs/checklist-post-deploiement.md`, `docs/revue-projet-2026-10.md` §7.1, documentation technique.

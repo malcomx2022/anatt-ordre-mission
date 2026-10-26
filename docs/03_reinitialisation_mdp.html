@@ -1,90 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Réinitialiser le mot de passe</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{500:'#FCD116'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.bg-pattern{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}.card-anim{animation:slideUp .6s ease-out}@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Réinitialisation du mot de passe — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans min-h-screen bg-gradient-to-br from-anatt-800 via-anatt-700 to-anatt-900 bg-pattern flex items-center justify-center p-4">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#EDFAF2;color:#1f2937;border:1px solid #1D9E4F;border-left:4px solid #1D9E4F;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#1D9E4F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Fidèle dans l&#x27;esprit</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /reinitialiser/:token — auth/ResetPasswordView.vue</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#1D9E4F">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1.5 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <div class="w-full max-w-md card-anim">
-        <div class="text-center mb-8">
-            <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/20"><i class="fas fa-shield-alt text-3xl text-gold-500"></i></div>
-            <h1 class="text-2xl font-bold text-white">Nouveau mot de passe</h1>
-            <p class="text-anatt-200 text-sm mt-1">Créez un mot de passe sécurisé</p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
-            <div id="formState">
-                <form onsubmit="handleSubmit(event)">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Nouveau mot de passe</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400 text-sm"></i></div>
-                            <input type="password" id="newPwd" oninput="checkStrength()" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
-                        </div>
-                        <!-- Indicateur de force -->
-                        <div class="mt-2 flex gap-1">
-                            <div id="s1" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
-                            <div id="s2" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
-                            <div id="s3" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
-                            <div id="s4" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
-                        </div>
-                        <p id="strengthText" class="text-xs text-gray-400 mt-1">Entrez un mot de passe</p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Confirmer le mot de passe</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400 text-sm"></i></div>
-                            <input type="password" id="confirmPwd" oninput="checkMatch()" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" required>
-                        </div>
-                        <p id="matchText" class="text-xs mt-1 hidden"></p>
-                    </div>
-                    <div class="bg-gray-50 rounded-xl p-3 mb-6 text-xs text-gray-500 space-y-1">
-                        <p id="r1"><i class="fas fa-circle text-gray-300 mr-1"></i> Au moins 8 caractères</p>
-                        <p id="r2"><i class="fas fa-circle text-gray-300 mr-1"></i> Une lettre majuscule</p>
-                        <p id="r3"><i class="fas fa-circle text-gray-300 mr-1"></i> Un chiffre</p>
-                        <p id="r4"><i class="fas fa-circle text-gray-300 mr-1"></i> Un caractère spécial (@#$...)</p>
-                    </div>
-                    <button type="submit" class="w-full bg-anatt-600 hover:bg-anatt-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-anatt-600/30">
-                        <i class="fas fa-check-circle"></i> Réinitialiser
-                    </button>
-                </form>
-            </div>
-            <div id="successState" class="hidden text-center py-4">
-                <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center"><i class="fas fa-check text-2xl text-green-600"></i></div>
-                <h3 class="text-lg font-bold text-gray-800 mb-2">Mot de passe modifié !</h3>
-                <p class="text-gray-500 text-sm mb-6">Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
-                <a href="01_login.html" class="inline-flex items-center gap-2 bg-anatt-600 hover:bg-anatt-700 text-white font-semibold py-3 px-6 rounded-xl transition-all"><i class="fas fa-sign-in-alt"></i> Se connecter</a>
-            </div>
-        </div>
-    </div>
-    <script>
-    function checkStrength(){
-        const v=document.getElementById('newPwd').value;const bars=[document.getElementById('s1'),document.getElementById('s2'),document.getElementById('s3'),document.getElementById('s4')];
-        let s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
-        const colors=['bg-red-500','bg-orange-500','bg-yellow-500','bg-green-500'];const labels=['Faible','Moyen','Bon','Excellent'];
-        bars.forEach((b,i)=>{b.className='h-1.5 flex-1 rounded-full transition-all '+(i<s?colors[s-1]:'bg-gray-200')});
-        document.getElementById('strengthText').textContent=s>0?labels[s-1]:'Entrez un mot de passe';
-        ['r1','r2','r3','r4'].forEach((r,i)=>{
-            const ok=[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)][i];
-            document.getElementById(r).innerHTML='<i class="fas fa-'+(ok?'check-circle text-green-500':'circle text-gray-300')+' mr-1"></i> '+document.getElementById(r).textContent.replace(/^[^\s]+\s/,'');
-        });
-    }
-    function checkMatch(){
-        const m=document.getElementById('matchText');const a=document.getElementById('newPwd').value;const b=document.getElementById('confirmPwd').value;
-        m.classList.remove('hidden');if(b===''){m.classList.add('hidden');return;}
-        if(a===b){m.className='text-xs mt-1 text-green-600';m.innerHTML='<i class="fas fa-check-circle mr-1"></i>Les mots de passe correspondent';}
-        else{m.className='text-xs mt-1 text-red-500';m.innerHTML='<i class="fas fa-times-circle mr-1"></i>Les mots de passe ne correspondent pas';}
-    }
-    function handleSubmit(e){e.preventDefault();document.getElementById('formState').classList.add('hidden');document.getElementById('successState').classList.remove('hidden');}
-    </script>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Authentification</div><h1>Réinitialisation du mot de passe</h1><p>Nouveau mot de passe et confirmation, avec les règles de complexité. La réinitialisation révoque les sessions ouvertes.</p><div class="meta"><span class="badge">/reinitialiser/demo</span><span class="badge blue">auth/ResetPasswordView.vue</span><span class="badge gold">Profil : Non connecté</span></div><div class="capture"><img src="ecrans/03_reinitialisation_mdp.jpg" alt="Capture de l'écran « Réinitialisation du mot de passe »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="02_mot_de_passe_oublie.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="04_dashboard.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

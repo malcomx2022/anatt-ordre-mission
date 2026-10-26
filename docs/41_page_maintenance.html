@@ -1,189 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Maintenance en cours</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>
-    @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .6s ease-out both}
-    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}.float{animation:float 3s ease-in-out infinite}
-    @keyframes gear-rotate{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.gear-rotate{animation:gear-rotate 5s linear infinite}
-    @keyframes progress-fill{0%{width:0}50%{width:75%}100%{width:100%}}.progress-fill{animation:progress-fill 4s ease-in-out infinite}
-    @keyframes wrench-work{0%,100%{transform:rotate(0)}25%{transform:rotate(-25deg)}50%{transform:rotate(0)}75%{transform:rotate(25deg)}}.wrench-work{animation:wrench-work 2s ease-in-out infinite}
-    @keyframes sparkle{0%,100%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1)}}.sparkle{animation:sparkle 1.5s ease-in-out infinite}
-    @keyframes lift{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}.lift{animation:lift 2s ease-in-out infinite}
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maintenance — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen flex flex-col">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#EDFAF2;color:#1f2937;border:1px solid #1D9E4F;border-left:4px solid #1D9E4F;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#1D9E4F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Fidèle dans l&#x27;esprit</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /maintenance — system/MaintenanceView.vue</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#1D9E4F">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-
-    <div class="flex-1 flex items-center justify-center p-6 pt-8">
-        <div class="text-center max-w-lg fade-in">
-            
-            <!-- Illustration SVG - Bus in Garage / Maintenance -->
-            <div class="relative mb-8">
-                <svg class="w-72 h-52 mx-auto float" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Garage structure -->
-                    <rect x="50" y="50" width="220" height="145" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
-                    <!-- Garage roof -->
-                    <path d="M40 55 L160 15 L280 55" stroke="#009639" stroke-width="4" stroke-linecap="round" fill="none"/>
-                    <path d="M45 55 L160 18 L275 55" fill="#009639" opacity="0.1"/>
-                    <!-- Garage door lines -->
-                    <line x1="55" y1="80" x2="265" y2="80" stroke="#e5e7eb" stroke-width="1"/>
-                    <line x1="55" y1="95" x2="265" y2="95" stroke="#e5e7eb" stroke-width="1"/>
-                    
-                    <!-- Bus on lift -->
-                    <g class="lift">
-                        <!-- Lift platform -->
-                        <rect x="90" y="160" width="140" height="5" rx="2" fill="#9ca3af"/>
-                        <!-- Lift columns -->
-                        <rect x="95" y="165" width="6" height="25" fill="#6b7280"/>
-                        <rect x="219" y="165" width="6" height="25" fill="#6b7280"/>
-                        
-                        <!-- Bus body -->
-                        <g transform="translate(100, 105)">
-                            <rect x="0" y="15" width="120" height="42" rx="8" fill="#009639"/>
-                            <rect x="6" y="20" width="28" height="16" rx="3" fill="#bbf7d0"/>
-                            <rect x="40" y="20" width="28" height="16" rx="3" fill="#bbf7d0"/>
-                            <rect x="74" y="20" width="28" height="16" rx="3" fill="#bbf7d0"/>
-                            <rect x="108" y="20" width="8" height="16" rx="2" fill="#FCD116"/>
-                            <!-- ANaTT label -->
-                            <rect x="35" y="42" width="50" height="8" rx="2" fill="#007a2f"/>
-                            <text x="60" y="49" fill="#bbf7d0" font-size="6" font-weight="700" text-anchor="middle">ANaTT</text>
-                        </g>
-                    </g>
-                    
-                    <!-- Big gear left -->
-                    <g class="gear-rotate" style="transform-origin:75px 130px">
-                        <circle cx="75" cy="130" r="14" fill="none" stroke="#FCD116" stroke-width="3" opacity="0.6"/>
-                        <circle cx="75" cy="130" r="6" fill="#FCD116" opacity="0.4"/>
-                        <rect x="73" y="113" width="4" height="8" rx="1" fill="#FCD116" opacity="0.5"/>
-                        <rect x="73" y="139" width="4" height="8" rx="1" fill="#FCD116" opacity="0.5"/>
-                        <rect x="58" y="128" width="8" height="4" rx="1" fill="#FCD116" opacity="0.5"/>
-                        <rect x="84" y="128" width="8" height="4" rx="1" fill="#FCD116" opacity="0.5"/>
-                    </g>
-                    
-                    <!-- Wrench icon working -->
-                    <g transform="translate(245, 110)" class="wrench-work" style="transform-origin:255px 125px">
-                        <rect x="0" y="8" width="24" height="4" rx="2" fill="#6b7280"/>
-                        <circle cx="0" cy="10" r="6" fill="none" stroke="#6b7280" stroke-width="2.5"/>
-                        <path d="M22 5 L28 5 L28 15 L22 15" fill="#6b7280" rx="1"/>
-                    </g>
-                    
-                    <!-- Sparkle effects around bus -->
-                    <circle cx="130" cy="110" r="3" fill="#FCD116" class="sparkle"/>
-                    <circle cx="210" cy="105" r="2" fill="#FCD116" class="sparkle" style="animation-delay:.5s"/>
-                    <circle cx="170" cy="100" r="2.5" fill="#009639" class="sparkle" style="animation-delay:1s"/>
-                    <circle cx="240" cy="125" r="2" fill="#FCD116" class="sparkle" style="animation-delay:.7s"/>
-                    
-                    <!-- Small gear right -->
-                    <g class="gear-rotate" style="transform-origin:250px 75px;animation-direction:reverse;animation-duration:3.5s">
-                        <circle cx="250" cy="75" r="10" fill="none" stroke="#d1d5db" stroke-width="2.5"/>
-                        <circle cx="250" cy="75" r="4" fill="#d1d5db"/>
-                        <rect x="249" y="63" width="3" height="5" rx="1" fill="#d1d5db"/>
-                        <rect x="249" y="82" width="3" height="5" rx="1" fill="#d1d5db"/>
-                        <rect x="237" y="73.5" width="5" height="3" rx="1" fill="#d1d5db"/>
-                        <rect x="258" y="73.5" width="5" height="3" rx="1" fill="#d1d5db"/>
-                    </g>
-
-                    <!-- Toolbox -->
-                    <g transform="translate(65, 170)">
-                        <rect x="0" y="5" width="20" height="14" rx="3" fill="#EF3340" opacity="0.7"/>
-                        <rect x="6" y="2" width="8" height="5" rx="2" fill="none" stroke="#EF3340" stroke-width="1.5" opacity="0.7"/>
-                    </g>
-                </svg>
-            </div>
-
-            <!-- Icon -->
-            <div class="flex items-center justify-center mb-5">
-                <div class="w-16 h-16 bg-gradient-to-br from-anatt-600 to-anatt-700 rounded-2xl flex items-center justify-center shadow-lg shadow-anatt-600/30">
-                    <i class="fas fa-hard-hat text-white text-2xl"></i>
-                </div>
-            </div>
-
-            <h1 class="text-2xl font-extrabold text-gray-800 mb-3">Maintenance en cours</h1>
-            <p class="text-gray-500 mb-6 max-w-sm mx-auto">Notre bus est au garage pour une révision ! Le système est temporairement indisponible pour amélioration.</p>
-
-            <!-- Progress Bar -->
-            <div class="max-w-xs mx-auto mb-8 fade-in" style="animation-delay:.15s">
-                <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span class="font-semibold">Progression</span>
-                    <span class="font-mono">~75%</span>
-                </div>
-                <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-anatt-600 via-gold-500 to-anatt-500 rounded-full progress-fill" style="width:75%"></div>
-                </div>
-                <p class="text-[11px] text-gray-400 mt-2">Temps estimé : ~30 minutes</p>
-            </div>
-
-            <!-- Info Cards -->
-            <div class="grid grid-cols-2 gap-3 mb-8 max-w-sm mx-auto fade-in" style="animation-delay:.2s">
-                <div class="bg-white border border-gray-100 rounded-xl p-4 text-left">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-clock text-blue-500 text-sm"></i>
-                        </div>
-                        <p class="text-xs font-bold text-gray-700">Début</p>
-                    </div>
-                    <p class="text-sm font-semibold text-gray-900" id="maintenance-start">08:00</p>
-                    <p class="text-[11px] text-gray-400">Aujourd'hui</p>
-                </div>
-                <div class="bg-white border border-gray-100 rounded-xl p-4 text-left">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-check-circle text-green-500 text-sm"></i>
-                        </div>
-                        <p class="text-xs font-bold text-gray-700">Fin prévue</p>
-                    </div>
-                    <p class="text-sm font-semibold text-gray-900">10:30</p>
-                    <p class="text-[11px] text-gray-400">Aujourd'hui</p>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex flex-col items-center gap-3 fade-in" style="animation-delay:.3s">
-                <button onclick="location.reload()" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 transition-colors shadow-lg shadow-anatt-600/20 w-full max-w-xs">
-                    <i class="fas fa-sync-alt mr-2"></i>Vérifier la disponibilité
-                </button>
-                <a href="mailto:support@anatt.bj" class="px-6 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors w-full max-w-xs inline-block">
-                    <i class="fas fa-envelope mr-2"></i>Contacter le support
-                </a>
-            </div>
-
-            <!-- Notification subscribe -->
-            <div class="mt-8 bg-anatt-50 border border-anatt-100 rounded-2xl p-4 max-w-sm mx-auto fade-in" style="animation-delay:.4s">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-anatt-100 rounded-xl flex items-center justify-center shrink-0">
-                        <i class="fas fa-bell text-anatt-600"></i>
-                    </div>
-                    <div class="text-left">
-                        <p class="text-xs font-bold text-anatt-800">Être notifié du retour</p>
-                        <p class="text-[11px] text-anatt-600">Recevez un email quand le système sera rétabli</p>
-                    </div>
-                </div>
-                <div class="flex mt-3 gap-2">
-                    <input type="email" placeholder="votre@email.bj" class="flex-1 text-xs px-3 py-2 border border-anatt-200 rounded-lg focus:ring-2 focus:ring-anatt-500 focus:border-transparent outline-none bg-white">
-                    <button class="px-4 py-2 bg-anatt-600 text-white text-xs font-semibold rounded-lg hover:bg-anatt-700 transition-colors">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="text-center py-6">
-        <div class="flex items-center justify-center gap-2 text-gray-400 text-xs">
-            <div class="w-6 h-6 bg-gold-500 rounded-md flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-[9px]"></i></div>
-            <span>ANaTT · Agence Nationale des Transports Terrestres</span>
-        </div>
-    </footer>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Pages système</div><h1>Maintenance</h1><p>Vérification automatique de la disponibilité de l&#x27;API.</p><div class="meta"><span class="badge">/maintenance</span><span class="badge blue">system/MaintenanceView.vue</span><span class="badge gold">Profil : Non connecté</span></div><div class="capture"><img src="ecrans/41_page_maintenance.jpg" alt="Capture de l'écran « Maintenance »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="40_page_500.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="42_missions.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

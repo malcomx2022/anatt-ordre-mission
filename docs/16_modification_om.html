@@ -1,131 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Modification OM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}.fade-in{animation:fadeIn .4s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modification d&#x27;un OM — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#FDECEE;color:#1f2937;border:1px solid #CE1126;border-left:4px solid #CE1126;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#CE1126"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Obsolète : fonction absente de l&#x27;application</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /ordres/:id/modifier — redirige vers la fiche</div><div style="margin-top:4px"><strong>Écarts :</strong> Un OM ne se modifie pas : seul l&#x27;amendement (avenant, motif obligatoire) ajuste ses jours facturés.</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#CE1126">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
-        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
-            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
-            <a href="11_liste_ordres_mission.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
-            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
-            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
-            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
-            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
-            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
-            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
-            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
-    </aside>
-    <main class="ml-64 pt-1 min-h-screen">
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <a href="15_detail_om.html" class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500"><i class="fas fa-arrow-left text-sm"></i></a>
-                    <div><h1 class="text-lg font-bold text-gray-800">Modifier OM-2024-000791</h1><p class="text-xs text-gray-500">SEMO-4519 • Statut: En attente</p></div>
-                </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 text-xs rounded-lg font-medium"><i class="fas fa-circle text-[6px]"></i>En attente</span>
-            </div>
-        </header>
-        <div class="p-6 fade-in max-w-4xl">
-            <!-- Alerte audit -->
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-                <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
-                <div><p class="text-sm font-semibold text-amber-800">Modifications traçées</p><p class="text-xs text-amber-600 mt-1">Toute modification sera enregistrée dans le journal d'audit avec l'identité du modificateur et l'horodatage.</p></div>
-            </div>
-
-            <!-- Références -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-info-circle text-anatt-600"></i>Références</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Référence SEMO <span class="text-red-500">*</span></label><input type="text" value="SEMO-4519" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Objet de la mission <span class="text-red-500">*</span></label><input type="text" value="Contrôle des permis zone sud" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
-                </div>
-            </div>
-
-            <!-- Itinéraire -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-map-marked-alt text-anatt-600"></i>Itinéraire</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Lieu de départ</label><input type="text" value="Cotonou" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Destination</label><input type="text" value="Abomey" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20"></div>
-                </div>
-            </div>
-
-            <!-- Période -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <h2 class="text-base font-bold text-gray-800 mb-5 flex items-center gap-2"><i class="fas fa-calendar-alt text-anatt-600"></i>Période</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Date de début</label><input type="date" value="2024-12-10" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" onchange="calculateDuration()"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Date de fin</label><input type="date" value="2024-12-12" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-anatt-600 focus:ring-2 focus:ring-anatt-600/20" onchange="calculateDuration()"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Durée</label><div class="flex items-center gap-2 px-4 py-2.5 bg-anatt-50 border border-anatt-200 rounded-xl"><i class="fas fa-clock text-anatt-600"></i><span class="text-sm font-bold text-anatt-700">3 jours</span></div></div>
-                </div>
-            </div>
-
-            <!-- Bénéficiaire existant -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-users text-anatt-600"></i>Bénéficiaire</h2>
-                <div class="border border-gray-200 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xs font-bold text-purple-600">DM</div>
-                            <div><p class="font-semibold text-gray-800">DOSSA Marie</p><p class="text-[11px] text-gray-400">Chef Service • 650 000 FCFA • 400-800K</p></div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="grid grid-cols-3 gap-4">
-                            <div><label class="text-[11px] text-gray-500 block mb-1">Jours 1 repas</label><input type="number" value="1" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-anatt-600"><span class="text-[11px] text-gray-400 ml-2">× 12 000 F</span></div>
-                            <div><label class="text-[11px] text-gray-500 block mb-1">Jours 2 repas</label><input type="number" value="1" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-anatt-600"><span class="text-[11px] text-gray-400 ml-2">× 20 000 F</span></div>
-                            <div><label class="text-[11px] text-gray-500 block mb-1">Nuitées</label><input type="number" value="2" class="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-anatt-600"><span class="text-[11px] text-gray-400 ml-2">× 35 000 F</span></div>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-gray-200 flex justify-end"><span class="text-sm font-bold text-anatt-700 bg-anatt-50 px-3 py-1.5 rounded-lg">Total: 102 000 FCFA</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Historique des modifications -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-history text-anatt-600"></i>Historique des modifications</h2>
-                <div class="space-y-3">
-                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-edit text-amber-600 text-xs"></i></div>
-                        <div><p class="text-sm font-medium text-gray-800">Destination modifiée: Porto-Novo → Abomey</p><p class="text-[11px] text-gray-400">Par Gislain A. • 09 Déc 2024 à 11:30</p></div>
-                    </div>
-                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-plus text-gray-500 text-xs"></i></div>
-                        <div><p class="text-sm font-medium text-gray-800">OM créé</p><p class="text-[11px] text-gray-400">Par Gislain A. • 08 Déc 2024 à 09:00</p></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex items-center justify-between">
-                <a href="15_detail_om.html" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"><i class="fas fa-times mr-2"></i>Annuler</a>
-                <div class="flex gap-3">
-                    <button class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"><i class="fas fa-save mr-2"></i>Sauvegarder</button>
-                    <button onclick="alert('OM modifié et resoumis pour validation !')" class="px-6 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-medium hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-paper-plane"></i>Sauvegarder et resoumettre</button>
-                </div>
-            </div>
-        </div>
-    </main>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Missions et ordres de mission</div><h1>Modification d&#x27;un OM</h1><div class="meta"><span class="badge">/ordres/10</span><span class="badge blue">missions/MissionDetailView.vue</span><span class="badge gold">Profil : Gestionnaire OM</span></div><div class="note"><strong>Ancienne maquette sans écran propre.</strong> Un OM ne se modifie pas : /ordres/:id/modifier redirige vers la fiche, et seul l&#x27;amendement (avenant, motif obligatoire) ajuste ses jours facturés. Écran correspondant : <a href="15_detail_om.html">15_detail_om.html</a>.</div><div class="capture"><img src="ecrans/15_detail_om.jpg" alt="Capture de l'écran « Modification d&#x27;un OM »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="15_detail_om.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="17_validation_om.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>
