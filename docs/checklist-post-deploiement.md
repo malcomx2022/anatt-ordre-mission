@@ -7,14 +7,17 @@
 > - **SPA** : `https://omsemo.anatt.bj` (contenu de `frontend/dist/` dans `public_html/`)
 > - **API** : `https://api-omsemo.anatt.bj` (application Laravel dans `anatt-api/`, racine `anatt-api/public`)
 >
-> Référence détaillée : [`DEPLOY-CPANEL.md`](../DEPLOY-CPANEL.md) — pour une **mise à jour** vers la 1.3,
-> lire d'abord ses *Notes de version 1.3* (migration, `vendor/` inchangé, SPA à redéployer).
+> Référence détaillée : [`DEPLOY-CPANEL.md`](../DEPLOY-CPANEL.md) — pour une **mise à jour**, lire d'abord
+> ses *Notes de version* : 1.3 (migration, `vendor/` inchangé, SPA à redéployer) et 1.4 (maintenance,
+> migration du fuseau, SPA à redéployer).
 >
 > Sauf mention contraire, tout se vérifie **sans créer de données** en production : les contrôles
 > qui génèrent un lot ou restaurent une base se font sur une instance de **recette**.
 >
 > *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 32 ajoutés (§06, *Correctifs
 > des 23 au 25/10* ; n° 29 à 32 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
+> *Relu le 27/10/2026 (version 1.4)* : sortie de maintenance (§01), cache des PDF d'OM à vider aussi en 1.4
+> (§04), comportement réel de l'écran Maintenance (§05), contrôles de la 1.4 précisés (§06).
 
 ---
 
@@ -26,7 +29,8 @@ Le back-end doit répondre **avant** tout test du SPA.
 - [ ] **Route API** : un POST sur `/api/auth/login` répond en JSON ; un GET renvoie une erreur JSON (route vivante, pas une page cPanel).
 - [ ] **`.env` serveur correct** : `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` renseignée, `APP_URL=https://api-omsemo.anatt.bj`, `CORS_ALLOWED_ORIGINS=https://omsemo.anatt.bj`.
 - [ ] **Base de données** : `DB_DATABASE / DB_USERNAME / DB_PASSWORD` valides et **schéma à jour**.
-- [ ] **Aucune migration en attente** : dans phpMyAdmin, `SELECT migration FROM migrations ORDER BY id;` contient bien **tous** les noms de fichiers de `backend/database/migrations/` (sans `.php`). Un nom manquant = migration non jouée. Voir `DEPLOY-CPANEL.md` § *Mise à jour*, B et D.
+- [ ] **Sortie de maintenance** : `https://api-omsemo.anatt.bj/api/auth/me` répond **401 en JSON**, pas **503**. `/up` ne le prouve pas : il répond 200 même en maintenance. Un 503 = `artisan up` non joué, ou la commande de migration s'est arrêtée avant lui (relire son log, `DEPLOY-CPANEL.md` § *Mise à jour*, B bis et D).
+- [ ] **Aucune migration en attente** : dans phpMyAdmin, `SELECT migration FROM migrations ORDER BY id;` contient bien **tous** les noms de fichiers de `backend/database/migrations/` (sans `.php` ; **34** en version 1.4). Un nom manquant = migration non jouée. Voir `DEPLOY-CPANEL.md` § *Mise à jour*, B et D.
 - [ ] **PHP 8.4.x 64 bits** sélectionné — ni 8.3 (minimum imposé par `composer.lock` : l'API renvoie 500 sur tous les appels), ni 8.5 (`phpoffice/phpspreadsheet` déclare `<8.5.0`, l'API démarrerait hors plage supportée ; cf. `DEPLOY-CPANEL.md` §4), extensions actives : `mbstring, openssl, pdo_mysql, tokenizer, xml, dom, simplexml, xmlreader, xmlwriter, ctype, json, iconv, fileinfo, gd, zip, zlib, bcmath, curl`. Cette liste est celle qu'exige `composer.lock` : `dom`, `gd` et `iconv` pour les PDF, `zip` et `xml*` pour les fichiers `.xlsx`, `zlib` pour les sauvegardes `.gz` (`DEPLOY-CPANEL.md` §4).
 - [ ] **Permissions** : `storage/` (récursif) et `bootstrap/cache/` en écriture (755/775) — sinon erreur 500 au premier appel.
 - [ ] **Caches applicatifs vidés** après changement de code ou de `.env` : `php artisan optimize:clear` (ou `config:clear` + `view:clear`).
@@ -72,7 +76,7 @@ Le symptôme « page blanche » venait d'un bundle mis en cache.
 - [ ] Rechargement forcé <kbd>Ctrl</kbd>+<kbd>F5</kbd> (et test en navigation privée).
 - [ ] Cache CDN / proxy purgé le cas échéant (Cloudflare, LiteSpeed cPanel…).
 - [ ] Onglet Réseau : les `assets/*.js` chargés portent les nouveaux hachages (ex. `EtatDetailView-*.js` en **200**, pas un ancien nom en `304`).
-- [ ] **Cache des PDF d'OM** vidé quand la version change le gabarit de l'OM (c'est le cas de la 1.3) : `anatt-api/storage/app/private/ordres/` est vide juste après la mise à jour, puis se remplit au fil des téléchargements.
+- [ ] **Cache des PDF d'OM** vidé quand la version change ce que le PDF de l'OM imprime — c'est le cas de la 1.3 (gabarit) **et de la 1.4** (heure du Bénin) : `anatt-api/storage/app/private/ordres/` est vide juste après la mise à jour, puis se remplit au fil des téléchargements. En 1.4, un PDF d'OM resté en cache imprime ses heures de signature en UTC, une heure plus tôt que le PDF de l'état, toujours régénéré : les deux documents ne concorderaient plus.
 
 ---
 
@@ -92,7 +96,7 @@ Connecté en Super Administrateur. Chaque route rend son écran, **sans page bla
 | `/paiements/regularisations` | Liste des trop-perçus (vide sur une instance neuve), total à recouvrer |
 | `/admin/roles` | Matrice des permissions (8 profils système) |
 | `/admin/sauvegardes` | Liste des sauvegardes ; boutons Télécharger / Restaurer |
-| `/maintenance` | Page de maintenance avec compte à rebours (si une fin est programmée) |
+| `/maintenance` | Écran Maintenance : nouvelle vérification de l'API dans 30 s, puis retour seul à l'accueil (l'API répond) ; heure de fin affichée seulement avec `?fin=` |
 
 > `/missions/1/etat` suppose qu'une mission n° 1 existe ; sur une instance neuve, prendre l'identifiant
 > d'une mission réelle ou passer cette ligne.
@@ -161,8 +165,9 @@ Sans création de données :
 - [ ] **Notifications** : un compte à qui l'on a accordé `paiements.generer` à titre individuel reçoit « OM validé » / « État validé » ; un agent financier à qui on l'a retiré ne le reçoit plus.
 - [ ] **Écran Signatures** : le bandeau d'information se lit d'un seul tenant (plus de texte en colonnes).
 - [ ] **OM amendé en trop-perçu** : la fiche et l'aperçu du PDF affichent « Avance engagée » et « Trop-perçu (à recouvrer par retenue sur salaire) », comme le PDF officiel.
-- [ ] **Configuration e-mail** : la liste présente les 7 notifications du circuit actuel (« État à signer »…), plus « Mission soumise ».
-- [ ] **Maintenance** : pendant la mise à jour (`artisan down`), le SPA affiche « Maintenance en cours » ; après `artisan up`, il revient seul à la page demandée.
+- [ ] **Configuration e-mail** (`/admin/email`) : la liste présente les **7** notifications du circuit actuel (« État à signer », « État validé »…), chacune avec ses destinataires (permission) ; l'ancien modèle « Mission soumise » n'y figure plus.
+- [ ] **Maintenance** : pendant la mise à jour (`artisan down`), toute action dans le SPA ouvre l'écran « Maintenance en cours » ; après `artisan up`, il revient seul à la page demandée (au plus 30 s). Constat à faire **pendant** la fenêtre de maintenance, avant le `up` : après coup, seul le contrôle de sortie de maintenance (§01) reste vérifiable.
+- [ ] **Cache des PDF d'OM** : sur une mission validée par le circuit, l'heure de signature du DG est la **même** sur le PDF de l'état et sur celui d'un de ses OM. Une heure d'écart = `storage/app/private/ordres/` non vidé (§04).
 - [ ] **Échec de génération** : après l'échec d'une génération sur un lot déjà généré, l'écran affiche le lot en erreur, sans bouton « Confirmer le paiement », sans recharger la page.
 
 ---

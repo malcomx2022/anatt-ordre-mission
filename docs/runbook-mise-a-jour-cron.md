@@ -203,11 +203,12 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 > `anatt-api/bootstrap/cache/*.php`, `anatt-api/storage/framework/views/*.php`,
 > `anatt-api/storage/framework/cache/data/`.
 
-- [ ] **1.3** : vider le cache des PDF d'OM — Gestionnaire de fichiers >
+- [ ] **1.3 et 1.4** : vider le cache des PDF d'OM — Gestionnaire de fichiers >
       `anatt-api/storage/app/private/ordres/` > sélectionner tout le contenu > *Delete* (garder le
-      dossier). Le PDF de l'OM a changé (signatures de l'état, répartition après amendement, taux
-      hors transport) et un OM sans état ni amendement garderait sinon son ancien PDF. Les PDF se
-      régénèrent au premier téléchargement ; ne touchez pas à `paiements/` ni à `signatures/`.
+      dossier). En 1.3, le PDF de l'OM a changé (signatures de l'état, répartition après amendement,
+      taux hors transport) et un OM sans état ni amendement garderait sinon son ancien PDF. En 1.4, un
+      PDF resté en cache imprimerait ses heures de signature en UTC, une heure plus tôt que l'état.
+      Les PDF se régénèrent au premier téléchargement ; ne touchez pas à `paiements/` ni à `signatures/`.
 
 ---
 

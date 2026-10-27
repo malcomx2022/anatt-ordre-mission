@@ -9,6 +9,21 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Checklist post-déploiement mise à jour — version 1.4 (27/10/2026)
+
+- **Écart corrigé (procédure 1.4)** : le cache des PDF d'OM (`storage/app/private/ordres/`) n'était à vider
+  qu'en 1.3. Or, en 1.4, un PDF d'OM resté en cache imprime ses heures de signature en UTC, alors que le PDF
+  de l'état, régénéré à chaque téléchargement (`EtatPaiementPdf::telecharger`), les imprime à l'heure du
+  Bénin : les deux documents ne concordaient plus. Purge ajoutée aux notes de version 1.4 de
+  `DEPLOY-CPANEL.md`, au runbook (« 1.3 et 1.4 ») et à la checklist (§04, plus un contrôle au §06).
+- §01 : contrôle de **sortie de maintenance** (`/api/auth/me` en 401, pas 503 ; `/up` répond 200 même en
+  maintenance) ; 34 migrations attendues.
+- §05 : comportement réel de l'écran `/maintenance` (nouvelle vérification après 30 s, retour à l'accueil
+  quand l'API répond, heure de fin seulement avec `?fin=`).
+- §06 (1.4) : contrôle « Configuration e-mail » corrigé — il annonçait « plus « Mission soumise » », un modèle
+  justement retiré (7 notifications et leurs destinataires) ; contrôle de maintenance à faire pendant la
+  fenêtre ; en-tête relu le 27/10.
+
 ### UPLOAD-VENDOR.md mis à jour — échange de `vendor/` sous maintenance (27/10/2026)
 
 - **Écart corrigé (procédure)** : entre le renommage de l'ancien `vendor/` et la fin de l'extraction, l'API
