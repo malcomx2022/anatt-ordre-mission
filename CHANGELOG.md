@@ -28,6 +28,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   réécrite en ce sens et les couleurs `app.primary` / `app.sidebar`, jamais utilisées, sont retirées de
   `tailwind.config.js` (build inchangé). Le bleu standard reste une couleur d'accent (badges, bandeaux).
 - `docs/parametrage-part-avance.md` : la limite relevée la veille est levée (section *Libellés*, fichiers, tests).
+- **Guide utilisateur** (`docs/generer_guide_utilisateur.py`, `.docx` régénéré) : nouveauté 1.4 « Part de l'avance
+  d'une mission » ; §7.1 (onglets de l'état), §8 (une mission saisie garde ses montants et sa part), §9.1 (tranche
+  libellée avec la part de la mission) et §13 (Paramètres, onglet Général : la part ne vaut que pour les OM saisis ensuite).
 
 ### Guide du paramétrage de la part d'avance — version 1.4 (27/10/2026)
 
