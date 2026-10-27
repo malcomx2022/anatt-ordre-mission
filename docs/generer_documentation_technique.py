@@ -202,7 +202,7 @@ r.font.size = Pt(12); r.font.color.rgb = GRIS
 for _ in range(5):
     doc.add_paragraph()
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
-r = m.add_run("Version 1.3.0  •  Octobre 2026"); r.bold = True; r.font.color.rgb = OR
+r = m.add_run("Version 1.4.0  •  Octobre 2026"); r.bold = True; r.font.color.rgb = OR
 m = doc.add_paragraph(); m.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = m.add_run("Document interne — Usage restreint"); r.italic = True; r.font.size = Pt(10); r.font.color.rgb = GRIS
 doc.add_page_break()
@@ -217,6 +217,32 @@ doc.add_page_break()
 # =========================================================================
 # ÉVOLUTIONS
 # =========================================================================
+h1("Évolutions de la version 1.4 (26-27 octobre 2026)")
+para("Cette version applique les quatre décisions du §7.1 de la revue (docs/revue-projet-2026-10.md), corrige "
+     "trois défauts d'interface et remplace les maquettes d'août 2026 par les écrans réels.")
+tableau(
+    ["Domaine", "Évolution", "Référence"],
+    [
+        ["Notifications (D1)", "NotificationService::notifier vise les comptes actifs dont les permissions EFFECTIVES "
+         "portent la clé de l'étape (om.valider / om.viser / om.approuver, paiements.generer, paiements.confirmer, "
+         "om.retranscrire, utilisateurs.gerer) : rôles personnalisés et droits individuels compris, retraits "
+         "respectés, SUPER_ADMIN exclu, une notification par compte.", "§4.2, §6.3"],
+        ["Fuseau horaire (D2)", "config/app.php : APP_TIMEZONE, défaut Africa/Porto-Novo (UTC+1). Migration "
+         "2026_10_26_090000_passer_horodatages_au_fuseau_applicatif : +1 h sur toutes les colonnes DATETIME / "
+         "TIMESTAMP (même instant, scellés inchangés), down() −1 h. L'API sérialise toujours en UTC.", "§2.2, §9.2, §9.6"],
+        ["Dépendances (D3)", "vue-pdf-embed, lucide-vue-next et @vueuse/core retirés (inutilisés) ; Vue reste en 3.6.0-beta.9.", "§2.2"],
+        ["Écran de génération (D4)", "PaiementGeneration.vue recharge le lot après l'échec d'une génération.", "§4.3"],
+        ["Interface", "AppAlert : contenu du slot en un seul bloc (bandeau de l'écran Signatures). Fiche et aperçu d'un "
+         "OM : libellés de la répartition alignés sur le PDF (utils/repartition.ts, miroir de "
+         "PdfGenerator::libellesRepartition). Configuration e-mail : les 7 notifications de NotificationContenu.", "§3.4, §4.4"],
+        ["Maquettes", "Galerie et pages d'écran tirées des captures de l'application réelle (docs/capturer_ecrans.cjs, "
+         "docs/generer_maquettes.py) ; remplacent les maquettes d'août 2026.", "§2.3"],
+        ["Tests", "FuseauHoraireTest, NotificationModelesEcranTest (écran e-mail ↔ NotificationContenu), tests des "
+         "destinataires ; Pest 599, Vitest 133.", "§10"],
+    ],
+    largeurs=[3.6, 10.6, 2.6],
+)
+
 h1("Évolutions de la version 1.3 (octobre 2026)")
 para("Cette version intègre la revue complète d'octobre 2026 (rapport : docs/revue-projet-2026-10.md) et "
      "met à jour la documentation sur les fonctionnalités livrées depuis la 1.2 (amendement des OM, "
@@ -248,7 +274,7 @@ tableau(
         ["Exercice", "L'écran Paramètres propose l'exercice déterminé par le mois de début, et non l'année civile (n° 20).", "§9.2"],
         ["Lot complémentaire", "L'écran de génération propose « Générer le lot complémentaire » quand l'aperçu d'un lot confirmé compte encore des bénéficiaires (n° 21).", "§4.3"],
         ["Amendement", "Refusé si le reliquat de l'OM est déjà CONFIRME (n° 22). Un OM SOLDE reste amendable hors reliquat payé ou trop-perçu recouvré ; il redevient VALIDE si un montant est de nouveau à régler (n° 28).", "§4.6"],
-        ["Notifications", "Adressées aux seuls comptes ACTIFS des profils système ; aucun e-mail vers un compte désactivé entre-temps (n° 27).", "§4.2, §6.3"],
+        ["Notifications", "Adressées aux seuls comptes ACTIFS (alors des profils système, droits effectifs depuis la 1.4) ; aucun e-mail vers un compte désactivé entre-temps (n° 27).", "§4.2, §6.3"],
         ["API", "Toute erreur d'une route /api/* répond en JSON, même sans en-tête Accept : 405, 404, 403, 422 et 500, comme le 401 (n° 29). GET/PUT /admin/settings renvoient toujours un objet (n° 32).", "§6.3, §7.6"],
         ["Signatures", "Nom et fonction figés à la signature : Paramètres › Signatures, sinon le compte du signataire (fonction posée par ComptesCircuitSeeder), sinon le libellé du poste (n° 30). ComptesCircuitSeeder ne rétrograde jamais un super administrateur (n° 31).", "§3.5, §9.4"],
         ["Référence API", "openapi.yaml validée OpenAPI 3.0.3 et confrontée aux réponses réelles (routes GET et parcours d'écriture complet) le 25/10/2026.", "§7.1"],
@@ -376,7 +402,8 @@ code("anatt-ordre-mission/\n"
      "    src/components/shared/  Composants réutilisables (AppTable, AppModal, AppBadge...)\n"
      "    src/stores/            Pinia (auth, notifications, ordres-mission)\n"
      "    src/composables/       Logique réutilisable (useApi, useAuth, usePartAvance, useSearch, useToast)\n"
-     "    src/utils/permissions.ts  Miroir RBAC frontend (guards + directive v-permission)\n"
+     "    src/utils/             permissions (miroir RBAC : guards + v-permission), benin, exercice,\n"
+     "                           repartition (libellés avance / reliquat, miroir de PdfGenerator)\n"
      "  backend/                 API Laravel 12\n"
      "    app/Http/Controllers/Api/  Contrôleurs REST\n"
      "    app/Http/Requests/     Form Requests (validation des écritures)\n"
@@ -389,6 +416,7 @@ code("anatt-ordre-mission/\n"
      "    app/Jobs/              Tâches asynchrones (gros lots, exports de rapports, e-mails)\n"
      "    docs/openapi.yaml      Référence API (verrouillée par tests/Feature/OpenApiTest.php)\n"
      "  docs/                    Documentation (.docx + scripts générateurs)\n"
+     "    00_galerie_index.html…  Galerie des écrans réels (captures docs/ecrans/, generer_maquettes.py)\n"
      "  CLAUDE.md                Contexte projet")
 
 h2("2.4 Modèles de données")
@@ -499,7 +527,9 @@ bullet("Liste des OM : filtres statut/zone/opérateur/agent/dates, recherche par
 bullet("Retranscription : assistant mission + N bénéficiaires (participants + CAV), per diem en temps réel.")
 bullet("Détail d'un OM : mission, bénéficiaire, montants, versements, journal des amendements ; renvoie vers "
        "l'état de la mission. Boutons Valider / Rejeter uniquement pour une mission SANS état (repli). "
-       "Amender (om.retranscrire). Brouillon PDF de l'OM et historique d'audit (OM-08).")
+       "Amender (om.retranscrire). Brouillon PDF de l'OM et historique d'audit (OM-08). Après un amendement, la "
+       "fiche et l'aperçu OM-07 affichent les libellés du PDF officiel (« Avance engagée », « Reliquat (ajusté "
+       "par amendement) », « Trop-perçu ») ; sinon le pourcentage réel de l'OM (utils/repartition.ts).")
 
 h2("3.5 Module États de paiement")
 para("Objet central du circuit de validation. DEUX états par mission — l'état des AVANCES puis l'état des "
@@ -681,7 +711,7 @@ tableau(
         ["5", "Statut", "Un OM SOLDE à qui l'amendement recrée un montant à régler redevient VALIDE ; un reliquat "
                         "ramené à 0, avance payée, solde l'OM (OrdreMission::solderSiRegle)."],
         ["6", "Traçabilité", "Ligne om_amendements (avant / après, delta, motif, auteur) + audit AMEND_OM ; "
-                             "notification « trop-perçu » à l'agent financier si reliquat < 0."],
+                             "notification « trop-perçu » aux détenteurs de paiements.confirmer si reliquat < 0."],
     ],
     largeurs=[0.8, 2.8, 13.2],
 )
@@ -825,7 +855,8 @@ bullet("Super admin protégé : il existe toujours ≥ 1 SUPER_ADMIN actif ; le 
 bullet("Injection SQL : prévenue par l'ORM Eloquent (requêtes préparées).")
 bullet("Toute erreur d'une route /api/* répond en JSON, même sans en-tête Accept : 401 (aucune redirection vers "
        "une page de login), 405, 404, 403, 422 et 500 (bootstrap/app.php).")
-bullet("Notifications et e-mails réservés aux comptes actifs ; un compte désactivé n'en reçoit plus.")
+bullet("Notifications et e-mails réservés aux comptes actifs détenant la permission de l'étape (droits "
+       "effectifs) ; un compte désactivé n'en reçoit plus, le SUPER_ADMIN n'est pas visé.")
 bullet("Téléchargements (sauvegardes, exports) : basename + extension imposée, anti-traversée de répertoire ; "
        "restauration conditionnée à la recopie du nom du fichier.")
 bullet("Pagination bornée (per_page 5-100) sur les listes.")
@@ -1019,6 +1050,7 @@ tableau(
     ["Variable", "Description"],
     [
         ["APP_ENV / APP_DEBUG / APP_URL", "Environnement, débogage, URL de base de l'API"],
+        ["APP_TIMEZONE", "Fuseau de l'application : Africa/Porto-Novo par défaut (heure du Bénin). À fixer AVANT la migration du fuseau ; UTC la rend sans effet"],
         ["DB_DATABASE / DB_USERNAME / DB_PASSWORD", "Connexion MySQL"],
         ["CACHE_STORE / SESSION_DRIVER / QUEUE_CONNECTION", "Production mutualisée : file / file / sync (aucun worker ni Redis) ; database ou redis si un worker traite la file"],
         ["SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD", "Super admin initial (mot de passe OBLIGATOIRE en production)"],
@@ -1043,13 +1075,13 @@ code("# Backend (Laravel)\n"
      "php artisan key:generate\n"
      "php artisan migrate --seed\n"
      "php artisan storage:link\n"
-     "php artisan config:cache && php artisan route:cache\n"
+     "php artisan config:cache && php artisan route:cache   # mise à jour : optimize:clear AVANT migrate\n"
      "php artisan queue:work --queue=paiements,etats,default --tries=3   # worker (si QUEUE_CONNECTION ≠ sync)\n"
      "#   Cron mutualisé (QUEUE_CONNECTION=database) : même ligne + --stop-when-empty, chaque minute\n"
      "php artisan schedule:run           # cron chaque minute : db:backup 02:00, purge des tokens\n"
      "php artisan db:restore <fichier>   # restauration (sauvegarde de sécurité préalable)\n\n"
      "# Frontend (Vue)\n"
-     "cd frontend && npm install && npm run build\n\n"
+     "cd frontend && npm ci && npm run build      # npm ci : garde la bêta Vue figée par le lock\n\n"
      "# Windows : environnement de dev complet (API, worker, Vite)\n"
      ".\\start-dev.ps1 [-Install -Fresh]   /   .\\stop-dev.ps1")
 
@@ -1076,6 +1108,17 @@ bullet("Supprimer sur le serveur app/Http/Requests/StoreOrdreMissionRequest.php 
 bullet("Si la file passe en QUEUE_CONNECTION=database : la tâche Cron queue:work doit nommer les trois files "
        "(--queue=paiements,etats,default), sinon les gros lots restent INTROUVABLE.")
 
+h2("9.6 Mise à jour d'une instance (version 1.4)")
+bullet("Migration à jouer : 2026_10_26_090000_passer_horodatages_au_fuseau_applicatif (34 migrations en tout). "
+       "Elle décale d'une heure les date-heures existantes ; à jouer une seule fois, application EN MAINTENANCE "
+       "pendant l'envoi du code et la migration (une écriture intermédiaire serait décalée deux fois).")
+bullet("Purger les caches AVANT migrate (optimize:clear) : avec une configuration en cache encore en UTC, la "
+       "migration ne décalerait rien. Les commandes de DEPLOY-CPANEL.md et du runbook enchaînent désormais "
+       "optimize:clear → migrate → optimize:clear.")
+bullet("Contrôle : un date_paiement relevé avant la mise à jour a pris une heure en base, et l'écran affiche la "
+       "même heure qu'avant (docs/checklist-post-deploiement.md §06, Version 1.4).")
+bullet("vendor/ inchangé ; SPA à redéployer (dépendances retirées, écran de génération, correctifs d'interface).")
+
 # =========================================================================
 # 10. QUALITÉ ET TESTS
 # =========================================================================
@@ -1084,7 +1127,7 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "599 tests au total (68 fichiers)"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "599 tests au total (70 fichiers)"],
         ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "133 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
@@ -1092,12 +1135,15 @@ tableau(
     largeurs=[3.2, 4.2, 6.6, 2.8],
 )
 bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permission), OpenApiTest "
-       "(openapi.yaml ↔ routes ↔ permissions) et navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
+       "(openapi.yaml ↔ routes ↔ permissions), NotificationModelesEcranTest (écran Configuration e-mail ↔ "
+       "NotificationContenu) et navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
+bullet("Fuseau : FuseauHoraireTest (heure du Bénin, rapport du 1er du mois à 0 h 30, sérialisation UTC, "
+       "migration aller-retour) ; migration éprouvée sur MariaDB avec les données de démonstration.")
 bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
        "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme. Le 25/10, réponses "
        "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32.")
 bullet("Défauts relevés par la revue d'octobre 2026 : 32, tous corrigés avec un test vu en échec sans le "
-       "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Points ouverts : §7 du rapport.")
+       "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Les quatre décisions du §7.1 sont appliquées depuis la 1.4.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
        "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
 bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")

@@ -9,6 +9,17 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation technique mise à jour (27/10/2026)
+
+- `docs/generer_documentation_technique.py` et le `.docx` régénéré, **version 1.4.0** :
+  - nouveau chapitre « Évolutions de la version 1.4 » (D1 à D4, correctifs d'interface, maquettes, tests) ;
+  - §2.3 structure (`utils/repartition.ts`, galerie des écrans), §3.4 libellés de la fiche OM amendée,
+    §4.6 et §6.3 destinataires des notifications selon les droits effectifs ;
+  - §9.2 `APP_TIMEZONE`, §9.3 `npm ci` et purge des caches avant `migrate`, nouveau §9.6 « Mise à jour
+    d'une instance (version 1.4) » (maintenance, `optimize:clear` → `migrate`, contrôle du décalage) ;
+  - §10 : 70 fichiers Pest, `NotificationModelesEcranTest` et `FuseauHoraireTest` parmi les garde-fous ;
+    plus de « points ouverts » (les décisions du §7.1 sont appliquées).
+
 ### Guide utilisateur mis à jour (27/10/2026)
 
 - `docs/generer_guide_utilisateur.py` et `Guide-Utilisateur-ANaTT.docx` régénéré :
