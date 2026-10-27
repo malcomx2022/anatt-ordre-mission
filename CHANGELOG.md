@@ -9,6 +9,19 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### README mis à jour (27/10/2026)
+
+- `README.md` confronté au dépôt : stack (Vue 3.6 bêta figée par le lock, heure du Bénin), `npm ci` au
+  démarrage manuel, notifications selon les droits effectifs, horodatages à l'heure du Bénin, libellés
+  d'un OM amendé, mise à jour en version 1.4 (maintenance, caches purgés avant `migrate`), structure
+  (`backend/README.md`, `frontend/README.md`, `utils/`), table de la documentation (documentation
+  technique v1.4, scénario rejoué, galerie et script de capture).
+- Chemin de menu corrigé : la restauration se fait depuis *Paramètres › Sauvegardes* (et non
+  *Administration › Sauvegardes*, absent du menu).
+- **`start-dev.ps1 -Install`** lançait `npm install` : avec `"vue": "beta"` dans `package.json`, la bêta de
+  Vue pouvait avancer à l'insu du développeur, contre la règle du projet (version figée par
+  `package-lock.json`). Le script lance désormais `npm ci`.
+
 ### Scénario de démonstration mis à jour (27/10/2026)
 
 - `docs/SCENARIO-DEMO.md` **rejoué sur l'API réelle** (base neuve, version 1.4) : fichiers MTN / Moov,

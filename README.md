@@ -10,8 +10,8 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 | Couche | Technologies |
 |---|---|
-| Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) |
-| Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
+| Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
+| Frontend | Vue **3.6 bêta** (Composition API, TypeScript), figée par `package-lock.json` · Vite 8 · Tailwind · Pinia |
 | Tests | Pest / PHPUnit (599 tests, 70 fichiers) · Vitest (133 tests) · Playwright (parcours critique e2e) |
 
 ---
@@ -80,7 +80,7 @@ php artisan queue:work --queue=paiements,etats,default --tries=3   # (terminal B
 
 # 2) Frontend
 cd ..\frontend
-npm install                     # première fois
+npm ci                          # première fois — pas npm install : garde la bêta Vue du lock
 npm run dev                     # http://localhost:5173  (terminal C)
 ```
 
@@ -113,7 +113,13 @@ npm run dev                     # http://localhost:5173  (terminal C)
   L'amendement est refusé quand le reliquat est déjà payé, qu'un trop-perçu a été recouvré ou qu'un fichier
   de l'OM attend son dépôt : ces cas relèvent d'un avenant formel ou d'une action sur le lot d'abord.
   Un amendement qui ramène le reliquat à 0, avance payée, solde l'OM ; une rallonge sur un OM soldé
-  (avance à 100 % payée) le rouvre.
+  (avance à 100 % payée) le rouvre. La fiche, l'aperçu et le PDF de l'OM affichent alors « Avance
+  engagée » et « Reliquat (ajusté par amendement) » ou « Trop-perçu ».
+- **Notifications** (cloche + e-mail) : à chaque étape du circuit, elles vont aux comptes actifs qui
+  **détiennent la permission** de l'étape suivante — droits effectifs, rôles personnalisés et droits
+  individuels compris ; le SUPER_ADMIN n'est pas notifié.
+- **Heure** : les horodatages (paiements, signatures, journal) sont à l'heure du Bénin ; l'API les
+  renvoie en UTC (`…Z`). Un paiement confirmé le 1er du mois juste après minuit compte dans ce mois.
 
 ---
 
@@ -141,7 +147,7 @@ npm run dev                     # http://localhost:5173  (terminal C)
   jetons de connexion expirés (`sanctum:prune-expired`).
 - **Files d'attente** : en mutualisé, `QUEUE_CONNECTION=sync` (aucun worker ; cf.
   `backend/.env.production.example`) ; avec un worker, voir [`backend/docs/queues.md`](backend/docs/queues.md).
-- **Restauration** : écran *Administration › Sauvegardes* (SUPER_ADMIN, confirmation par recopie du nom du
+- **Restauration** : écran *Paramètres › Sauvegardes* (SUPER_ADMIN, confirmation par recopie du nom du
   fichier) ou `php artisan db:restore <fichier> --force`. Une **sauvegarde de sécurité** de l'état courant
   est prise avant d'écraser la base. Requiert `mysqldump` et `mysql` (`DB_DUMP_BINARY` /
   `DB_RESTORE_BINARY` dans le `.env`). À tester sur une base de recette avant d'en avoir besoin.
@@ -150,7 +156,10 @@ npm run dev                     # http://localhost:5173  (terminal C)
   des signataires et les fichiers produits (PDF, fichiers de paiement) vivent sur le disque. Les conserver
   en sauvegardant `storage/` ; ne jamais écraser ce dossier lors d'une mise à jour.
 - **Mise à jour d'une instance** : voir [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) (§ *Mise à jour*, *Notes de
-  version 1.3*) et le runbook [`docs/runbook-mise-a-jour-cron.md`](docs/runbook-mise-a-jour-cron.md).
+  version 1.3* et *1.4*) et le runbook [`docs/runbook-mise-a-jour-cron.md`](docs/runbook-mise-a-jour-cron.md).
+  **Version 1.4** : la migration du fuseau décale d'une heure les horodatages existants — application en
+  **maintenance** pendant l'envoi du code et la migration, caches purgés (`optimize:clear`) **avant**
+  `migrate`, puis contrôles de [`docs/checklist-post-deploiement.md`](docs/checklist-post-deploiement.md) §06.
 
 ---
 
@@ -168,10 +177,12 @@ anatt-ordre-mission/
 │   ├── app/{Http,Models,Services,Jobs}
 │   ├── database/{migrations,seeders,factories}
 │   ├── tests/{Feature,Unit}
-│   └── docs/queues.md   # documentation des files (worker)
+│   ├── docs/            # queues.md (files), openapi.yaml (référence API)
+│   └── README.md        # prise en main de l'API
 ├── frontend/            # SPA Vue 3
-│   ├── src/{views,components,stores,services,types}
-│   └── e2e/             # parcours critique Playwright
+│   ├── src/{views,components,stores,services,types,utils}
+│   ├── e2e/             # parcours critique Playwright
+│   └── README.md        # prise en main du SPA
 └── docs/                # guides, procédures, revue, galerie des écrans
 ```
 
@@ -210,8 +221,8 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `AGENTS.md` | Consignes de contribution : environnement, vérifications, règles à ne pas casser |
 | `CHANGELOG.md` | Historique des modifications |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
-| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.3) — générée par `docs/generer_documentation_technique.py` |
-| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov, variantes) |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.4) — générée par `docs/generer_documentation_technique.py` |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov, variantes), rejoué le 27/10/2026 |
 | `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
 | `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
@@ -219,5 +230,6 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
 | `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
-| `docs/00_galerie_index.html` … | Galerie des écrans réels (captures, `docs/generer_maquettes.py`) |
+| `docs/00_galerie_index.html` … | Galerie des écrans réels : captures par `docs/capturer_ecrans.cjs`, pages par `docs/generer_maquettes.py` |
+| `backend/README.md`, `frontend/README.md` | Prise en main de l'API et du SPA (commandes, repères dans le code) |
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest`) |
