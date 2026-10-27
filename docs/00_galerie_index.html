@@ -1,424 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Galerie des Maquettes (41 écrans)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>
-    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-    .card{animation:fadeIn .4s ease-out both}
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galerie des écrans — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-    <!-- Benin Flag Stripe -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-100 sticky top-1 z-40">
-        <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center shadow-md shadow-gold-500/20">
-                    <i class="fas fa-bus-alt text-anatt-900 text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-extrabold text-gray-900">Maquettes ANaTT</h1>
-                    <p class="text-xs text-gray-400">Système de Gestion des Paiements de Missions · 41 écrans</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="hidden sm:inline-flex items-center gap-1.5 bg-anatt-50 text-anatt-700 text-xs font-bold px-3 py-1.5 rounded-full">
-                    <span class="w-2 h-2 bg-anatt-500 rounded-full"></span>
-                    Maquettes d'origine — non tenues à jour
-                </span>
-                <span class="hidden sm:inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">
-                    <i class="fas fa-palette text-xs"></i> Tailwind CSS
-                </span>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-6xl mx-auto px-6 py-8">
-<!-- annotation-maquette:debut -->
-<section id="correspondance" style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin-bottom:32px;font:13px/1.5 'DM Sans',system-ui,sans-serif;color:#1f2937"><h2 style="font-family:'Sora','DM Sans',sans-serif;font-size:16px;font-weight:800;margin:0 0 6px">Correspondance avec l'application (au 26/10/2026)</h2><p style="margin:0 0 6px">Ces maquettes datent d'août 2026, avant la retranscription des OM SEMO et le circuit de validation par état de paiement. Elles ne sont <strong>pas redessinées</strong> : l'application fait foi. Bilan : 16 fidèles dans l'esprit, 19 avec écarts, 6 obsolètes, 14 écrans réels sans maquette.</p><p style="margin:0 0 12px;color:#6b7280">Écart commun à toutes les maquettes : elles n&#x27;appliquent pas la charte actuelle (police Plus Jakarta Sans au lieu de Sora / DM Sans, vert #009639 au lieu de #1D9E4F, icônes Font Awesome au lieu de SVG en ligne). Référence des écrans : <code>frontend/src/router/index.ts</code>, registre de <code>CLAUDE.md</code> §5. Encarts régénérés par <code>docs/annoter_maquettes.py</code>.</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#6b7280"><th style="padding:8px">Maquette</th><th style="padding:8px">État</th><th style="padding:8px">Écran réel</th><th style="padding:8px">Écarts</th></tr></thead><tbody><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="01_login.html" style="color:#2563EB">01_login.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/login — auth/LoginView.vue</td><td style="padding:8px;color:#4b5563">Message d&#x27;échec neutre « Identifiants incorrects. » ; verrou de changement de mot de passe (423) après création ou réinitialisation.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="02_mot_de_passe_oublie.html" style="color:#2563EB">02_mot_de_passe_oublie.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/mot-de-passe-oublie — auth/ForgotPasswordView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="03_reinitialisation_mdp.html" style="color:#2563EB">03_reinitialisation_mdp.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/reinitialiser/:token — auth/ResetPasswordView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="04_dashboard.html" style="color:#2563EB">04_dashboard.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/ — dashboard/DashboardView.vue</td><td style="padding:8px;color:#4b5563">Indicateurs réels : OM en cours, OM validés, paiements du mois ; menu réel (États de paiement, Générer MTN / Moov, Régularisations…).</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="05_personnel_liste.html" style="color:#2563EB">05_personnel_liste.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/agents — agents/AgentListView.vue</td><td style="padding:8px;color:#4b5563">Un agent n&#x27;est jamais supprimé : il est désactivé. Cartes de comptage servies par GET /api/agents/stats.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="06_formulaire_personnel.html" style="color:#2563EB">06_formulaire_personnel.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/agents/nouveau — agents/AgentCreateView.vue</td><td style="padding:8px;color:#4b5563">Pas de brouillon. Catégorie d&#x27;indice déduite de l&#x27;indice ou du salaire ; téléphone national à 10 chiffres et opérateur cohérents.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="07_detail_personnel.html" style="color:#2563EB">07_detail_personnel.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/agents/:id — agents/AgentDetailView.vue</td><td style="padding:8px;color:#4b5563">Fiche et historique des ordres de mission ; pas d&#x27;onglet « Paiements » dédié.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="08_modification_personnel.html" style="color:#2563EB">08_modification_personnel.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/agents/:id/modifier — agents/AgentEditView.vue</td><td style="padding:8px;color:#4b5563">La catégorie est recalculée dès que l&#x27;indice ou le salaire change.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="09_import_personnel.html" style="color:#2563EB">09_import_personnel.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/agents/import — agents/AgentImportView.vue</td><td style="padding:8px;color:#4b5563">Import « tout ou rien » : une seule ligne en erreur annule l&#x27;import ; on ne peut pas ignorer les erreurs.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="10_rapport_import.html" style="color:#2563EB">10_rapport_import.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/agents/import — agents/AgentImportView.vue</td><td style="padding:8px;color:#4b5563">Pas d&#x27;écran séparé : le rapport d&#x27;erreurs ligne à ligne s&#x27;affiche sur l&#x27;écran d&#x27;import.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="11_liste_ordres_mission.html" style="color:#2563EB">11_liste_ordres_mission.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/ordres — missions/MissionListView.vue</td><td style="padding:8px;color:#4b5563">1 OM = 1 bénéficiaire, identifié par sa référence SEMO ; aucun OM ne se supprime. Filtres statut, zone, opérateur du versement.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="12_om_creation_etape1.html" style="color:#2563EB">12_om_creation_etape1.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/ordres/nouveau — missions/MissionCreateView.vue</td><td style="padding:8px;color:#4b5563">L&#x27;OM n&#x27;est pas créé : il est RETRANSCRIT depuis SEMO (menu « Retranscrire »). Pas de brouillon ; zone déduite de la destination.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="13_om_creation_etape2.html" style="color:#2563EB">13_om_creation_etape2.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/ordres/nouveau — missions/MissionCreateView.vue</td><td style="padding:8px;color:#4b5563">Chaque bénéficiaire (participant ou CAV) a son propre OM et sa référence SEMO ; un agent ne figure qu&#x27;une fois par mission.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="14_om_creation_etape3.html" style="color:#2563EB">14_om_creation_etape3.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/ordres/nouveau — missions/MissionCreateView.vue</td><td style="padding:8px;color:#4b5563">Pas de « Soumettre pour validation » ni de brouillon : l&#x27;enregistrement crée la mission et ses OM au statut IMPORTE. La validation se fait sur l&#x27;état de paiement.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="15_detail_om.html" style="color:#2563EB">15_detail_om.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/ordres/:id — missions/MissionDetailView.vue</td><td style="padding:8px;color:#4b5563">Un seul bénéficiaire par OM ; pas de « Dupliquer ». Liens « Historique » et « PDF de l&#x27;OM », bouton « Amender » (avenant), versements AVANCE / RELIQUAT.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="16_modification_om.html" style="color:#2563EB">16_modification_om.html</a></td><td style="padding:8px"><span style="background:#FDECEE;color:#CE1126;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Obsolète : fonction absente de l&#x27;application</span></td><td style="padding:8px">/ordres/:id/modifier — redirige vers la fiche</td><td style="padding:8px;color:#4b5563">Un OM ne se modifie pas : seul l&#x27;amendement (avenant, motif obligatoire) ajuste ses jours facturés.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="17_validation_om.html" style="color:#2563EB">17_validation_om.html</a></td><td style="padding:8px"><span style="background:#FDECEE;color:#CE1126;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Obsolète : fonction absente de l&#x27;application</span></td><td style="padding:8px">/missions/:missionId/etat — etats/EtatDetailView.vue</td><td style="padding:8px;color:#4b5563">La validation porte sur l&#x27;état de paiement de la mission, par tranche : contrôle, visa DAF, validation DG. Pas de « Mettre en attente ».</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="18_liste_om_attente.html" style="color:#2563EB">18_liste_om_attente.html</a></td><td style="padding:8px"><span style="background:#FDECEE;color:#CE1126;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Obsolète : fonction absente de l&#x27;application</span></td><td style="padding:8px">/etats — États de paiement (file de travail)</td><td style="padding:8px;color:#4b5563">Plus de file d&#x27;OM à valider : chaque signataire retrouve les états qui l&#x27;attendent dans « États de paiement ».</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="19_generation_fichiers.html" style="color:#2563EB">19_generation_fichiers.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/paiements/mtn et /paiements/moov — PaiementMtnView.vue / PaiementMoovView.vue (composant PaiementGeneration.vue)</td><td style="padding:8px;color:#4b5563">Un fichier = 1 mission × 1 tranche × 1 opérateur ; aperçu automatique, pas de sélection manuelle ni d&#x27;« Exclure doublons » (un versement confirmé n&#x27;est jamais réinclus). Lot complémentaire après confirmation.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="20_lots_paiement.html" style="color:#2563EB">20_lots_paiement.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/paiements — paiements/PaiementListView.vue</td><td style="padding:8px;color:#4b5563">Statuts GENERE / CONFIRME / ERREUR ; badge « complémentaire n° N ».</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="21_detail_lot.html" style="color:#2563EB">21_detail_lot.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/paiements/mtn et /paiements/moov — PaiementGeneration.vue</td><td style="padding:8px;color:#4b5563">Pas d&#x27;écran de détail de lot : l&#x27;aperçu des bénéficiaires et le téléchargement se trouvent sur l&#x27;écran de génération et dans la liste des lots.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="22_reconciliation.html" style="color:#2563EB">22_reconciliation.html</a></td><td style="padding:8px"><span style="background:#FDECEE;color:#CE1126;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Obsolète : fonction absente de l&#x27;application</span></td><td style="padding:8px">/paiements/reconciliation — écran d&#x27;information</td><td style="padding:8px;color:#4b5563">Aucun réimport de fichier opérateur ni rapprochement automatique (règle d&#x27;or) : la confirmation d&#x27;un lot est manuelle.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="23_consultation_baremes.html" style="color:#2563EB">23_consultation_baremes.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/taux — taux/TauxListView.vue</td><td style="padding:8px;color:#4b5563">Barème officiel catégorie d&#x27;indice × zone (INTERIEUR, EXT_ZONE_I, II = III) × type de prise en charge.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="24_modification_baremes.html" style="color:#2563EB">24_modification_baremes.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/taux/configurer — taux/TauxEditView.vue</td><td style="padding:8px;color:#4b5563">Seul le taux journalier se modifie ; les zones II et III restent synchronisées.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="25_rapports.html" style="color:#2563EB">25_rapports.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/rapports — rapports/RapportDashboardView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="26_rapport_mensuel.html" style="color:#2563EB">26_rapport_mensuel.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/rapports/mensuel — rapports/RapportMensuelView.vue</td><td style="padding:8px;color:#4b5563">Alimenté par les versements confirmés (date de paiement).</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="27_rapport_personnel.html" style="color:#2563EB">27_rapport_personnel.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/rapports/agents — rapports/RapportAgentView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="28_export_rapports.html" style="color:#2563EB">28_export_rapports.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/rapports/export — rapports/RapportExportView.vue</td><td style="padding:8px;color:#4b5563">Export synchrone Excel ou PDF par dimension (agent, opérateur, zone, imputation) et période.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="29_journal_audit.html" style="color:#2563EB">29_journal_audit.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/audit — audit/AuditListView.vue</td><td style="padding:8px;color:#4b5563">Filtres par action, entité et dates.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="30_detail_action_audit.html" style="color:#2563EB">30_detail_action_audit.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/audit/:id — audit/AuditDetailView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="31_gestion_utilisateurs.html" style="color:#2563EB">31_gestion_utilisateurs.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/admin/utilisateurs — admin/UserManagementView.vue</td><td style="padding:8px;color:#4b5563">Modification du rôle en modale (sessions révoquées) ; permissions par utilisateur.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="32_formulaire_utilisateur.html" style="color:#2563EB">32_formulaire_utilisateur.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/admin/utilisateurs/nouveau — admin/UserCreateView.vue</td><td style="padding:8px;color:#4b5563">Pas de brouillon : mot de passe temporaire, changement imposé à la première connexion.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="33_gestion_roles.html" style="color:#2563EB">33_gestion_roles.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/admin/roles — admin/RolesView.vue (« Matrice des permissions »)</td><td style="padding:8px;color:#4b5563">Écriture réservée au SUPER_ADMIN ; profils système non renommables ; séparation ordonnateur / payeur contrôlée.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="34_parametres.html" style="color:#2563EB">34_parametres.html</a></td><td style="padding:8px"><span style="background:#FBF3E0;color:#8B6914;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Écarts avec l&#x27;écran réel</span></td><td style="padding:8px">/admin/parametres — admin/SettingsView.vue</td><td style="padding:8px;color:#4b5563">L&#x27;interrupteur « Double validation » n&#x27;existe plus. Réglages réels : part de l&#x27;avance, exercice (année, mois de début), messagerie, sauvegardes.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="35_profil_utilisateur.html" style="color:#2563EB">35_profil_utilisateur.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/mon-profil — agents/AgentProfileView.vue</td><td style="padding:8px;color:#4b5563">Changement de mot de passe : /changer-mot-de-passe.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="36_import_releve.html" style="color:#2563EB">36_import_releve.html</a></td><td style="padding:8px"><span style="background:#FDECEE;color:#CE1126;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Obsolète : fonction absente de l&#x27;application</span></td><td style="padding:8px">aucun</td><td style="padding:8px;color:#4b5563">L&#x27;application n&#x27;importe aucun relevé opérateur (règle d&#x27;or) : les fichiers sont déposés à la main, puis confirmés.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="37_marquage_lot_paye.html" style="color:#2563EB">37_marquage_lot_paye.html</a></td><td style="padding:8px"><span style="background:#FDECEE;color:#CE1126;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Obsolète : fonction absente de l&#x27;application</span></td><td style="padding:8px">/paiements/mtn et /paiements/moov — « Confirmer le paiement »</td><td style="padding:8px;color:#4b5563">Pas d&#x27;écran dédié ni de reçus : le lot se confirme sur l&#x27;écran de génération, après dépôt réussi.</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="38_page_404.html" style="color:#2563EB">38_page_404.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/:pathMatch(.*)* — system/NotFoundView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="39_page_403.html" style="color:#2563EB">39_page_403.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/403 — system/ForbiddenView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="40_page_500.html" style="color:#2563EB">40_page_500.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/500 — system/ServerErrorView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><a href="41_page_maintenance.html" style="color:#2563EB">41_page_maintenance.html</a></td><td style="padding:8px"><span style="background:#EDFAF2;color:#1D9E4F;border-radius:999px;padding:2px 8px;font-weight:700;font-size:11px;white-space:nowrap">Fidèle dans l&#x27;esprit</span></td><td style="padding:8px">/maintenance — system/MaintenanceView.vue</td><td style="padding:8px;color:#4b5563">—</td></tr></tbody></table></div><h3 style="font-family:'Sora','DM Sans',sans-serif;font-size:14px;font-weight:800;margin:18px 0 6px">Écrans réels sans maquette</h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#6b7280"><th style="padding:8px">Route</th><th style="padding:8px">Vue</th><th style="padding:8px">Rôle</th></tr></thead><tbody><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/missions</code></td><td style="padding:8px">missions/MissionsIndexView.vue</td><td style="padding:8px;color:#4b5563">Missions et avancement de leurs deux états</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/etats</code></td><td style="padding:8px">etats/EtatListView.vue</td><td style="padding:8px;color:#4b5563">File de travail des états de paiement (contrôle, visa, validation)</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/missions/:missionId/etat</code></td><td style="padding:8px">etats/EtatDetailView.vue</td><td style="padding:8px;color:#4b5563">État des avances / des reliquats : circuit, numéro, PDF</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/ordres/:id/pdf</code></td><td style="padding:8px">missions/MissionPdfView.vue</td><td style="padding:8px;color:#4b5563">Aperçu et téléchargement du PDF officiel de l&#x27;OM</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/ordres/:id/historique</code></td><td style="padding:8px">missions/MissionHistoryView.vue</td><td style="padding:8px;color:#4b5563">Journal d&#x27;audit de l&#x27;OM</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/paiements/statuts</code></td><td style="padding:8px">paiements/PaiementStatutView.vue</td><td style="padding:8px;color:#4b5563">Synthèse des versements par opérateur et statut</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/paiements/historique</code></td><td style="padding:8px">paiements/PaiementHistoriqueView.vue</td><td style="padding:8px;color:#4b5563">Versements confirmés par période</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/paiements/regularisations</code></td><td style="padding:8px">paiements/PaiementRegularisationView.vue</td><td style="padding:8px;color:#4b5563">Trop-perçus : document de retenue, constat du recouvrement</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/rapports/trop-percus</code></td><td style="padding:8px">rapports/RapportTropPercusView.vue</td><td style="padding:8px;color:#4b5563">Synthèse des trop-perçus à recouvrer / recouvrés</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/admin/utilisateurs/:id/permissions</code></td><td style="padding:8px">admin/UserPermissionsView.vue</td><td style="padding:8px;color:#4b5563">Droits accordés ou retirés à un utilisateur</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/admin/signatures</code></td><td style="padding:8px">admin/SignaturesView.vue</td><td style="padding:8px;color:#4b5563">Identités et paraphes des signataires du circuit</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/admin/email</code></td><td style="padding:8px">admin/EmailConfigView.vue</td><td style="padding:8px;color:#4b5563">Configuration SMTP</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/admin/sauvegardes</code></td><td style="padding:8px">admin/BackupView.vue</td><td style="padding:8px;color:#4b5563">Sauvegardes : création, téléchargement, restauration</td></tr><tr style="border-top:1px solid #f3f4f6"><td style="padding:8px"><code>/changer-mot-de-passe</code></td><td style="padding:8px">auth/ForcePasswordChangeView.vue</td><td style="padding:8px;color:#4b5563">Changement de mot de passe imposé</td></tr></tbody></table></div></section>
-<!-- annotation-maquette:fin -->
-
-        <!-- Module Sections -->
-        <div class="space-y-10" id="modules">
-
-            <!-- 1. Authentification -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center"><i class="fas fa-lock text-indigo-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Authentification</h2>
-                        <p class="text-xs text-gray-400">Connexion, récupération mot de passe</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">01-03</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="01_login.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group" style="animation-delay:.05s">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">01</div>
-                        <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-indigo-100 transition-colors"><i class="fas fa-sign-in-alt text-indigo-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Connexion</p>
-                    </a>
-                    <a href="01_login.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group" style="animation-delay:.08s">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">02</div>
-                        <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-amber-100 transition-colors"><i class="fas fa-key text-amber-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Mot de passe oublié</p>
-                    </a>
-                    <a href="01_login.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group" style="animation-delay:.11s">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">03</div>
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-green-100 transition-colors"><i class="fas fa-check-circle text-green-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Code de vérification</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 2. Dashboard & Navigation -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-anatt-100 rounded-lg flex items-center justify-center"><i class="fas fa-chart-pie text-anatt-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Dashboard & Navigation</h2>
-                        <p class="text-xs text-gray-400">Tableau de bord, notifications, profil</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">02-03</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="02_dashboard.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">02</div>
-                        <div class="w-8 h-8 bg-anatt-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-anatt-100 transition-colors"><i class="fas fa-tachometer-alt text-anatt-600 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Dashboard</p>
-                    </a>
-                    <a href="03_notifications.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">03</div>
-                        <div class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-red-100 transition-colors"><i class="fas fa-bell text-red-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Notifications</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 3. Personnel -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center"><i class="fas fa-users text-blue-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Gestion du Personnel</h2>
-                        <p class="text-xs text-gray-400">Liste, fiches, création, import</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">04-10</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="04_liste_personnel.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">04</div>
-                        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-list text-blue-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Liste personnel</p>
-                    </a>
-                    <a href="05_fiche_agent.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">05</div>
-                        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-id-card text-blue-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Fiche agent</p>
-                    </a>
-                    <a href="06_creation_agent.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">06</div>
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-user-plus text-green-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Création agent</p>
-                    </a>
-                    <a href="07_edition_agent.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">07</div>
-                        <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-user-edit text-amber-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Édition agent</p>
-                    </a>
-                    <a href="08_profil_utilisateur.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">08</div>
-                        <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-user-circle text-purple-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Profil utilisateur</p>
-                    </a>
-                    <a href="09_organigramme.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">09</div>
-                        <div class="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-sitemap text-teal-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Organigramme</p>
-                    </a>
-                    <a href="10_rapport_import.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">10</div>
-                        <div class="w-8 h-8 bg-cyan-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-file-import text-cyan-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Import personnel</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 4. Ordres de Mission -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center"><i class="fas fa-file-alt text-amber-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Ordres de Mission</h2>
-                        <p class="text-xs text-gray-400">Liste, détails, création, validation</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">11-19</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="11_liste_ordres_mission.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">11</div>
-                        <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-clipboard-list text-amber-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Liste missions</p>
-                    </a>
-                    <a href="12_detail_ordre_mission.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">12</div>
-                        <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-file-invoice text-amber-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Détail mission</p>
-                    </a>
-                    <a href="13_creation_ordre_mission.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">13</div>
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-plus-circle text-green-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Création mission</p>
-                    </a>
-                    <a href="14_edition_ordre_mission.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">14</div>
-                        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-edit text-blue-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Édition mission</p>
-                    </a>
-                    <a href="15_validation_workflow.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">15</div>
-                        <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-project-diagram text-purple-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Workflow validation</p>
-                    </a>
-                    <a href="16_calendrier_missions.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">16</div>
-                        <div class="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-calendar-alt text-rose-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Calendrier</p>
-                    </a>
-                    <a href="17_carte_missions.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">17</div>
-                        <div class="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-map-marked-alt text-teal-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Carte missions</p>
-                    </a>
-                    <a href="18_impression_ordre.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">18</div>
-                        <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-print text-gray-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Impression ordre</p>
-                    </a>
-                    <a href="19_historique_missions.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">19</div>
-                        <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-history text-indigo-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Historique</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 5. Paiements -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-money-check-alt text-green-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Paiements & Mobile Money</h2>
-                        <p class="text-xs text-gray-400">Lots, traitement, MTN/MOOV, historique</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">20-25</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="20_lots_paiement.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">20</div>
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-layer-group text-green-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Lots paiement</p>
-                    </a>
-                    <a href="21_detail_lot.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">21</div>
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-receipt text-green-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Détail lot</p>
-                    </a>
-                    <a href="22_traitement_paiement.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">22</div>
-                        <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-cogs text-amber-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Traitement</p>
-                    </a>
-                    <a href="23_paiement_mobile_money.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">23</div>
-                        <div class="w-8 h-8 bg-yellow-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-mobile-alt text-yellow-600 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Mobile Money</p>
-                    </a>
-                    <a href="24_suivi_transactions.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">24</div>
-                        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-exchange-alt text-blue-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Suivi transactions</p>
-                    </a>
-                    <a href="25_rapprochement_bancaire.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">25</div>
-                        <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-balance-scale text-indigo-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Rapprochement</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 6. Barèmes -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center"><i class="fas fa-sliders-h text-purple-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Barèmes & Indemnités</h2>
-                        <p class="text-xs text-gray-400">Configuration des grilles tarifaires</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">26-28</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="26_liste_baremes.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">26</div>
-                        <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-table text-purple-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Liste barèmes</p>
-                    </a>
-                    <a href="27_edition_bareme.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">27</div>
-                        <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-edit text-purple-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Édition barème</p>
-                    </a>
-                    <a href="28_simulateur_indemnites.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">28</div>
-                        <div class="w-8 h-8 bg-cyan-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-calculator text-cyan-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Simulateur</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 7. Rapports & Statistiques -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center"><i class="fas fa-chart-bar text-cyan-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Rapports & Statistiques</h2>
-                        <p class="text-xs text-gray-400">Tableaux de bord, export, analytics</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">29-31</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="29_rapports_statistiques.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">29</div>
-                        <div class="w-8 h-8 bg-cyan-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-chart-line text-cyan-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Statistiques</p>
-                    </a>
-                    <a href="30_generateur_rapports.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">30</div>
-                        <div class="w-8 h-8 bg-cyan-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-file-pdf text-cyan-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Générateur</p>
-                    </a>
-                    <a href="31_export_donnees.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">31</div>
-                        <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-download text-green-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Export données</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 8. Audit & Logs -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center"><i class="fas fa-shield-alt text-orange-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Audit & Sécurité</h2>
-                        <p class="text-xs text-gray-400">Journal d'audit, logs système</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">32-33</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="32_journal_audit.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">32</div>
-                        <div class="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-clipboard-check text-orange-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Journal audit</p>
-                    </a>
-                    <a href="33_logs_systeme.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">33</div>
-                        <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-terminal text-gray-600 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Logs système</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 9. Administration -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-rose-100 rounded-lg flex items-center justify-center"><i class="fas fa-cog text-rose-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Administration</h2>
-                        <p class="text-xs text-gray-400">Rôles, paramètres, configuration</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">34-37</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="34_gestion_roles.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">34</div>
-                        <div class="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-user-shield text-rose-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Gestion rôles</p>
-                    </a>
-                    <a href="35_parametres_generaux.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">35</div>
-                        <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-sliders-h text-gray-600 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Paramètres</p>
-                    </a>
-                    <a href="36_configuration_api.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">36</div>
-                        <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-plug text-indigo-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Config. API</p>
-                    </a>
-                    <a href="37_sauvegarde_restauration.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">37</div>
-                        <div class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-database text-emerald-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Sauvegarde</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 10. Pages Système -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center"><i class="fas fa-exclamation-triangle text-red-600 text-sm"></i></div>
-                    <div>
-                        <h2 class="text-sm font-extrabold text-gray-800">Pages Système & Erreurs</h2>
-                        <p class="text-xs text-gray-400">404, 403, 500, maintenance</p>
-                    </div>
-                    <span class="ml-auto text-xs font-bold text-gray-300">38-41</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    <a href="38_page_404.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">38</div>
-                        <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-search text-amber-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Page 404</p>
-                    </a>
-                    <a href="39_page_403.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">39</div>
-                        <div class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-lock text-red-500 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Page 403</p>
-                    </a>
-                    <a href="40_page_500.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">40</div>
-                        <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-tools text-gray-600 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Erreur 500</p>
-                    </a>
-                    <a href="41_page_maintenance.html" class="card bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-300 hover:shadow-lg transition-all group">
-                        <div class="text-[10px] font-bold text-gray-300 mb-1">41</div>
-                        <div class="w-8 h-8 bg-anatt-50 rounded-lg flex items-center justify-center mb-2"><i class="fas fa-hard-hat text-anatt-600 text-xs"></i></div>
-                        <p class="text-xs font-bold text-gray-700 leading-tight">Maintenance</p>
-                    </a>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-gray-100 mt-12">
-        <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-2 text-gray-400 text-xs">
-                <div class="w-6 h-6 bg-gold-500 rounded-md flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-[9px]"></i></div>
-                <span>ANaTT · Agence Nationale des Transports Terrestres</span>
-            </div>
-            <div class="flex items-center gap-4 text-xs text-gray-400">
-                <span>41 maquettes HTML/Tailwind CSS</span>
-                <span>•</span>
-                <span>2025</span>
-            </div>
-        </div>
-    </footer>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<h1>Galerie des écrans</h1><p>46 écrans de l'application, capturés sur le build de production avec les données de démonstration (mission DEMO-CIRCUIT avancée jusqu'à la validation de l'état des avances, un amendement en trop-perçu et un lot MTN généré). Ces pages remplacent les maquettes dessinées en août 2026 ; elles se régénèrent avec <code>docs/capturer_ecrans.cjs</code> puis <code>docs/generer_maquettes.py</code>.</p><div class="meta"><span class="badge">Capturé le 26/10/2026</span><span class="badge blue">Référence : frontend/src/router/index.ts, CLAUDE.md §5</span></div><section class="module"><h2>Authentification</h2><div class="grille"><a class="carte card-hover" href="01_login.html"><span class="liseré"></span><img src="ecrans/01_login.jpg" alt="" loading="lazy"><div class="corps"><h3>Connexion</h3><p>/login</p></div></a><a class="carte card-hover" href="02_mot_de_passe_oublie.html"><span class="liseré"></span><img src="ecrans/02_mot_de_passe_oublie.jpg" alt="" loading="lazy"><div class="corps"><h3>Mot de passe oublié</h3><p>/mot-de-passe-oublie</p></div></a><a class="carte card-hover" href="03_reinitialisation_mdp.html"><span class="liseré"></span><img src="ecrans/03_reinitialisation_mdp.jpg" alt="" loading="lazy"><div class="corps"><h3>Réinitialisation du mot de passe</h3><p>/reinitialiser/demo</p></div></a></div></section><section class="module"><h2>Tableau de bord</h2><div class="grille"><a class="carte card-hover" href="04_dashboard.html"><span class="liseré"></span><img src="ecrans/04_dashboard.jpg" alt="" loading="lazy"><div class="corps"><h3>Tableau de bord</h3><p>/</p></div></a></div></section><section class="module"><h2>Personnel</h2><div class="grille"><a class="carte card-hover" href="05_personnel_liste.html"><span class="liseré"></span><img src="ecrans/05_personnel_liste.jpg" alt="" loading="lazy"><div class="corps"><h3>Personnel</h3><p>/agents</p></div></a><a class="carte card-hover" href="06_formulaire_personnel.html"><span class="liseré"></span><img src="ecrans/06_formulaire_personnel.jpg" alt="" loading="lazy"><div class="corps"><h3>Nouvel agent</h3><p>/agents/nouveau</p></div></a><a class="carte card-hover" href="07_detail_personnel.html"><span class="liseré"></span><img src="ecrans/07_detail_personnel.jpg" alt="" loading="lazy"><div class="corps"><h3>Fiche agent</h3><p>/agents/3</p></div></a><a class="carte card-hover" href="08_modification_personnel.html"><span class="liseré"></span><img src="ecrans/08_modification_personnel.jpg" alt="" loading="lazy"><div class="corps"><h3>Modifier l&#x27;agent</h3><p>/agents/3/modifier</p></div></a><a class="carte card-hover" href="09_import_personnel.html"><span class="liseré"></span><img src="ecrans/09_import_personnel.jpg" alt="" loading="lazy"><div class="corps"><h3>Import du personnel</h3><p>/agents/import</p></div></a></div></section><section class="module"><h2>Missions et ordres de mission</h2><div class="grille"><a class="carte card-hover" href="11_liste_ordres_mission.html"><span class="liseré"></span><img src="ecrans/11_liste_ordres_mission.jpg" alt="" loading="lazy"><div class="corps"><h3>Ordres de mission</h3><p>/ordres</p></div></a><a class="carte card-hover" href="12_om_creation_etape1.html"><span class="liseré"></span><img src="ecrans/12_om_creation.jpg" alt="" loading="lazy"><div class="corps"><h3>Retranscription d&#x27;une mission</h3><p>/ordres/nouveau</p></div></a><a class="carte card-hover" href="15_detail_om.html"><span class="liseré"></span><img src="ecrans/15_detail_om.jpg" alt="" loading="lazy"><div class="corps"><h3>Fiche d&#x27;un ordre de mission</h3><p>/ordres/10</p></div></a><a class="carte card-hover" href="42_missions.html"><span class="liseré"></span><img src="ecrans/42_missions.jpg" alt="" loading="lazy"><div class="corps"><h3>Missions</h3><p>/missions</p></div></a><a class="carte card-hover" href="43_pdf_om.html"><span class="liseré"></span><img src="ecrans/43_pdf_om.jpg" alt="" loading="lazy"><div class="corps"><h3>Aperçu du PDF de l&#x27;OM</h3><p>/ordres/10/pdf</p></div></a><a class="carte card-hover" href="44_historique_om.html"><span class="liseré"></span><img src="ecrans/44_historique_om.jpg" alt="" loading="lazy"><div class="corps"><h3>Historique d&#x27;un OM</h3><p>/ordres/10/historique</p></div></a></div></section><section class="module"><h2>États de paiement</h2><div class="grille"><a class="carte card-hover" href="17_validation_om.html"><span class="liseré"></span><img src="ecrans/17_etat_paiement.jpg" alt="" loading="lazy"><div class="corps"><h3>État de paiement d&#x27;une mission</h3><p>/missions/5/etat</p></div></a><a class="carte card-hover" href="18_liste_om_attente.html"><span class="liseré"></span><img src="ecrans/18_file_etats.jpg" alt="" loading="lazy"><div class="corps"><h3>États de paiement (file de travail)</h3><p>/etats</p></div></a></div></section><section class="module"><h2>Paiements</h2><div class="grille"><a class="carte card-hover" href="19_generation_fichiers.html"><span class="liseré"></span><img src="ecrans/19_generation_mtn.jpg" alt="" loading="lazy"><div class="corps"><h3>Génération du fichier MTN</h3><p>/paiements/mtn</p></div></a><a class="carte card-hover" href="20_lots_paiement.html"><span class="liseré"></span><img src="ecrans/20_lots_paiement.jpg" alt="" loading="lazy"><div class="corps"><h3>Lots de paiement</h3><p>/paiements</p></div></a><a class="carte card-hover" href="22_reconciliation.html"><span class="liseré"></span><img src="ecrans/22_reconciliation.jpg" alt="" loading="lazy"><div class="corps"><h3>Confirmation des paiements</h3><p>/paiements/reconciliation</p></div></a><a class="carte card-hover" href="45_paiements_statuts.html"><span class="liseré"></span><img src="ecrans/45_paiements_statuts.jpg" alt="" loading="lazy"><div class="corps"><h3>Statuts des versements</h3><p>/paiements/statuts</p></div></a><a class="carte card-hover" href="46_paiements_historique.html"><span class="liseré"></span><img src="ecrans/46_paiements_historique.jpg" alt="" loading="lazy"><div class="corps"><h3>Historique des paiements</h3><p>/paiements/historique</p></div></a><a class="carte card-hover" href="47_regularisations.html"><span class="liseré"></span><img src="ecrans/47_regularisations.jpg" alt="" loading="lazy"><div class="corps"><h3>Régularisations</h3><p>/paiements/regularisations</p></div></a><a class="carte card-hover" href="53_moov.html"><span class="liseré"></span><img src="ecrans/53_moov.jpg" alt="" loading="lazy"><div class="corps"><h3>Génération du fichier Moov</h3><p>/paiements/moov</p></div></a></div></section><section class="module"><h2>Barème</h2><div class="grille"><a class="carte card-hover" href="23_consultation_baremes.html"><span class="liseré"></span><img src="ecrans/23_consultation_baremes.jpg" alt="" loading="lazy"><div class="corps"><h3>Barème des indemnités</h3><p>/taux</p></div></a><a class="carte card-hover" href="24_modification_baremes.html"><span class="liseré"></span><img src="ecrans/24_modification_baremes.jpg" alt="" loading="lazy"><div class="corps"><h3>Modifier le barème</h3><p>/taux/configurer</p></div></a></div></section><section class="module"><h2>Rapports</h2><div class="grille"><a class="carte card-hover" href="25_rapports.html"><span class="liseré"></span><img src="ecrans/25_rapports.jpg" alt="" loading="lazy"><div class="corps"><h3>Rapports et états</h3><p>/rapports</p></div></a><a class="carte card-hover" href="26_rapport_mensuel.html"><span class="liseré"></span><img src="ecrans/26_rapport_mensuel.jpg" alt="" loading="lazy"><div class="corps"><h3>État mensuel</h3><p>/rapports/mensuel</p></div></a><a class="carte card-hover" href="27_rapport_personnel.html"><span class="liseré"></span><img src="ecrans/27_rapport_personnel.jpg" alt="" loading="lazy"><div class="corps"><h3>États par dimension</h3><p>/rapports/agents</p></div></a><a class="carte card-hover" href="28_export_rapports.html"><span class="liseré"></span><img src="ecrans/28_export_rapports.jpg" alt="" loading="lazy"><div class="corps"><h3>Export personnalisé</h3><p>/rapports/export</p></div></a><a class="carte card-hover" href="48_rapport_trop_percus.html"><span class="liseré"></span><img src="ecrans/48_rapport_trop_percus.jpg" alt="" loading="lazy"><div class="corps"><h3>Trop-perçus</h3><p>/rapports/trop-percus</p></div></a></div></section><section class="module"><h2>Audit</h2><div class="grille"><a class="carte card-hover" href="29_journal_audit.html"><span class="liseré"></span><img src="ecrans/29_journal_audit.jpg" alt="" loading="lazy"><div class="corps"><h3>Journal d&#x27;audit</h3><p>/audit</p></div></a><a class="carte card-hover" href="30_detail_action_audit.html"><span class="liseré"></span><img src="ecrans/30_detail_action_audit.jpg" alt="" loading="lazy"><div class="corps"><h3>Détail d&#x27;une action</h3><p>/audit/53</p></div></a></div></section><section class="module"><h2>Administration</h2><div class="grille"><a class="carte card-hover" href="31_gestion_utilisateurs.html"><span class="liseré"></span><img src="ecrans/31_gestion_utilisateurs.jpg" alt="" loading="lazy"><div class="corps"><h3>Utilisateurs</h3><p>/admin/utilisateurs</p></div></a><a class="carte card-hover" href="32_formulaire_utilisateur.html"><span class="liseré"></span><img src="ecrans/32_formulaire_utilisateur.jpg" alt="" loading="lazy"><div class="corps"><h3>Nouvel utilisateur</h3><p>/admin/utilisateurs/nouveau</p></div></a><a class="carte card-hover" href="33_gestion_roles.html"><span class="liseré"></span><img src="ecrans/33_gestion_roles.jpg" alt="" loading="lazy"><div class="corps"><h3>Matrice des permissions</h3><p>/admin/roles</p></div></a><a class="carte card-hover" href="34_parametres.html"><span class="liseré"></span><img src="ecrans/34_parametres.jpg" alt="" loading="lazy"><div class="corps"><h3>Paramètres du système</h3><p>/admin/parametres</p></div></a><a class="carte card-hover" href="35_profil_utilisateur.html"><span class="liseré"></span><img src="ecrans/35_profil_utilisateur.jpg" alt="" loading="lazy"><div class="corps"><h3>Mon profil</h3><p>/mon-profil</p></div></a><a class="carte card-hover" href="49_permissions_utilisateur.html"><span class="liseré"></span><img src="ecrans/49_permissions_utilisateur.jpg" alt="" loading="lazy"><div class="corps"><h3>Permissions d&#x27;un utilisateur</h3><p>/admin/utilisateurs/8/permissions</p></div></a><a class="carte card-hover" href="50_signatures.html"><span class="liseré"></span><img src="ecrans/50_signatures.jpg" alt="" loading="lazy"><div class="corps"><h3>Signatures</h3><p>/admin/signatures</p></div></a><a class="carte card-hover" href="51_config_email.html"><span class="liseré"></span><img src="ecrans/51_config_email.jpg" alt="" loading="lazy"><div class="corps"><h3>Configuration e-mail</h3><p>/admin/email</p></div></a><a class="carte card-hover" href="52_sauvegardes.html"><span class="liseré"></span><img src="ecrans/52_sauvegardes.jpg" alt="" loading="lazy"><div class="corps"><h3>Sauvegardes</h3><p>/admin/sauvegardes</p></div></a></div></section><section class="module"><h2>Pages système</h2><div class="grille"><a class="carte card-hover" href="38_page_404.html"><span class="liseré"></span><img src="ecrans/38_page_404.jpg" alt="" loading="lazy"><div class="corps"><h3>Page introuvable (404)</h3><p>/page-inexistante</p></div></a><a class="carte card-hover" href="39_page_403.html"><span class="liseré"></span><img src="ecrans/39_page_403.jpg" alt="" loading="lazy"><div class="corps"><h3>Accès interdit (403)</h3><p>/403</p></div></a><a class="carte card-hover" href="40_page_500.html"><span class="liseré"></span><img src="ecrans/40_page_500.jpg" alt="" loading="lazy"><div class="corps"><h3>Erreur serveur (500)</h3><p>/500</p></div></a><a class="carte card-hover" href="41_page_maintenance.html"><span class="liseré"></span><img src="ecrans/41_page_maintenance.jpg" alt="" loading="lazy"><div class="corps"><h3>Maintenance</h3><p>/maintenance</p></div></a></div></section><section class="module"><h2>Anciennes maquettes sans écran propre</h2><p>Leur nom de fichier est conservé ; chacune renvoie vers l'écran qui assure la fonction.</p><ul><li><a href="10_rapport_import.html">10_rapport_import.html</a> → <a href="09_import_personnel.html">09_import_personnel.html</a> — Pas d&#x27;écran séparé : le rapport d&#x27;erreurs ligne à ligne s&#x27;affiche sur l&#x27;écran d&#x27;import.</li><li><a href="13_om_creation_etape2.html">13_om_creation_etape2.html</a> → <a href="12_om_creation_etape1.html">12_om_creation_etape1.html</a> — Étape 2 du même assistant : un OM par bénéficiaire (participant ou CAV) avec sa référence SEMO ; un agent ne figure qu&#x27;une fois par mission. Per diem calculé en temps réel.</li><li><a href="14_om_creation_etape3.html">14_om_creation_etape3.html</a> → <a href="12_om_creation_etape1.html">12_om_creation_etape1.html</a> — Étape 3 : vérification puis enregistrement de la mission et de ses OM au statut IMPORTE. La validation se fait ensuite sur l&#x27;état de paiement.</li><li><a href="16_modification_om.html">16_modification_om.html</a> → <a href="15_detail_om.html">15_detail_om.html</a> — Un OM ne se modifie pas : /ordres/:id/modifier redirige vers la fiche, et seul l&#x27;amendement (avenant, motif obligatoire) ajuste ses jours facturés.</li><li><a href="21_detail_lot.html">21_detail_lot.html</a> → <a href="19_generation_fichiers.html">19_generation_fichiers.html</a> — Pas d&#x27;écran de détail : l&#x27;aperçu des bénéficiaires et les actions du lot se trouvent sur l&#x27;écran de génération.</li><li><a href="36_import_releve.html">36_import_releve.html</a> → <a href="22_reconciliation.html">22_reconciliation.html</a> — Fonction absente (règle d&#x27;or) : l&#x27;application n&#x27;importe aucun relevé ; les fichiers sont déposés à la main, puis confirmés.</li><li><a href="37_marquage_lot_paye.html">37_marquage_lot_paye.html</a> → <a href="19_generation_fichiers.html">19_generation_fichiers.html</a> — Pas d&#x27;écran dédié : le lot se confirme sur l&#x27;écran de génération (« Confirmer le paiement »), après dépôt réussi.</li></ul></section>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

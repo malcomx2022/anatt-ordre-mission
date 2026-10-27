@@ -1,222 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Gestion Utilisateurs</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}tr:hover td{background:#f8fafc}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Utilisateurs — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#EDFAF2;color:#1f2937;border:1px solid #1D9E4F;border-left:4px solid #1D9E4F;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#1D9E4F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Fidèle dans l&#x27;esprit</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /admin/utilisateurs — admin/UserManagementView.vue</div><div style="margin-top:4px"><strong>Écarts :</strong> Modification du rôle en modale (sessions révoquées) ; permissions par utilisateur.</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#1D9E4F">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
-        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
-            <a href="05_personnel_liste.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
-            <a href="11_liste_ordres_mission.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-alt w-5 text-center"></i>Ordres de Mission</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Finances</p>
-            <a href="19_generation_fichiers.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-file-export w-5 text-center"></i>Génération Fichiers</a>
-            <a href="20_lots_paiement.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-money-check-alt w-5 text-center"></i>Paiements</a>
-            <a href="23_consultation_baremes.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-calculator w-5 text-center"></i>Barèmes</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Analyses</p>
-            <a href="25_rapports.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-chart-bar w-5 text-center"></i>Rapports</a>
-            <a href="29_journal_audit.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-history w-5 text-center"></i>Audit</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
-            <a href="31_gestion_utilisateurs.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
-            <a href="33_gestion_roles.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-key w-5 text-center"></i>Rôles</a>
-            <a href="34_parametres.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
-    </aside>
-
-    <main class="ml-64 pt-1 min-h-screen">
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div><h1 class="text-lg font-bold text-gray-800">Gestion des Utilisateurs</h1><p class="text-xs text-gray-500">Comptes d'accès et permissions du système</p></div>
-                <a href="32_formulaire_utilisateur.html" class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-plus"></i>Nouvel utilisateur</a>
-            </div>
-        </header>
-
-        <div class="p-6">
-            <!-- Stats -->
-            <div class="grid grid-cols-4 gap-4 mb-6 fade-in">
-                <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-users text-blue-600"></i></div></div>
-                    <p class="text-2xl font-bold text-gray-900">8</p><p class="text-xs text-gray-500">Utilisateurs total</p>
-                </div>
-                <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-circle text-green-600 text-xs"></i></div></div>
-                    <p class="text-2xl font-bold text-gray-900">5</p><p class="text-xs text-gray-500">En ligne actuellement</p>
-                </div>
-                <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center"><i class="fas fa-user-clock text-amber-600"></i></div></div>
-                    <p class="text-2xl font-bold text-gray-900">2</p><p class="text-xs text-gray-500">Inactifs (30+ jours)</p>
-                </div>
-                <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center"><i class="fas fa-ban text-red-600"></i></div></div>
-                    <p class="text-2xl font-bold text-gray-900">1</p><p class="text-xs text-gray-500">Comptes désactivés</p>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6 fade-in" style="animation-delay:.1s">
-                <div class="flex items-center gap-4">
-                    <div class="flex-1 relative">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                        <input type="text" placeholder="Rechercher par nom, email, rôle..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-anatt-500 outline-none">
-                    </div>
-                    <select class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
-                        <option>Tous les rôles</option><option>Super Admin</option><option>Administrateur</option><option>Validateur</option><option>Gestionnaire</option><option>Lecteur</option>
-                    </select>
-                    <select class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none">
-                        <option>Tous les statuts</option><option>Actif</option><option>Inactif</option><option>Désactivé</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Users Table -->
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden fade-in" style="animation-delay:.2s">
-                <table class="w-full">
-                    <thead class="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Utilisateur</th>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Rôle</th>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Dernière connexion</th>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Actions (30j)</th>
-                            <th class="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50">
-                        <tr class="group">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gradient-to-br from-anatt-500 to-anatt-700 rounded-xl flex items-center justify-center text-white text-sm font-bold">GA</div><div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Gislain ADJAHO</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7f18160c131e1611511e1b151e17103f1e111e0b0b511d15">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-lg"><i class="fas fa-crown mr-1"></i>Super Admin</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-green-600"><span class="w-2 h-2 bg-green-500 rounded-full"></span>En ligne</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Maintenant</p><p class="text-[11px] text-gray-400">192.168.1.45</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-anatt-600 h-1.5 rounded-full" style="width:92%"></div></div><span class="text-xs font-semibold text-gray-600">458</span></div></td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="32_formulaire_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600" title="Modifier"><i class="fas fa-edit text-sm"></i></a>
-                                    <a href="35_profil_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600" title="Profil"><i class="fas fa-eye text-sm"></i></a>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="group">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">MD</div><div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Marie DOSSA</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ed808c9f8488c389829e9e8cad8c838c9999c38f87">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg">Administrateur</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-green-600"><span class="w-2 h-2 bg-green-500 rounded-full"></span>En ligne</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Il y a 12 min</p><p class="text-[11px] text-gray-400">192.168.1.22</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-anatt-600 h-1.5 rounded-full" style="width:78%"></div></div><span class="text-xs font-semibold text-gray-600">312</span></div></td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="32_formulaire_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-edit text-sm"></i></a>
-                                    <a href="35_profil_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600"><i class="fas fa-eye text-sm"></i></a>
-                                    <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-ban text-sm"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="group">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">PA</div><div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Pierre ADJOVI</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b8c8d1ddcacadd96d9dcd2d7ced1f8d9d6d9cccc96dad2">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-lg">Validateur</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-green-600"><span class="w-2 h-2 bg-green-500 rounded-full"></span>En ligne</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Il y a 1h</p><p class="text-[11px] text-gray-400">192.168.1.18</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-anatt-600 h-1.5 rounded-full" style="width:45%"></div></div><span class="text-xs font-semibold text-gray-600">178</span></div></td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="32_formulaire_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-edit text-sm"></i></a>
-                                    <a href="35_profil_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600"><i class="fas fa-eye text-sm"></i></a>
-                                    <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-ban text-sm"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="group">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">JK</div><div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Jean-Baptiste KONE</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c3a9a1eda8acada683a2ada2b7b7eda1a9">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg">Gestionnaire</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-green-600"><span class="w-2 h-2 bg-green-500 rounded-full"></span>En ligne</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Il y a 25 min</p><p class="text-[11px] text-gray-400">192.168.1.30</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-anatt-600 h-1.5 rounded-full" style="width:65%"></div></div><span class="text-xs font-semibold text-gray-600">267</span></div></td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="32_formulaire_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-edit text-sm"></i></a>
-                                    <a href="35_profil_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600"><i class="fas fa-eye text-sm"></i></a>
-                                    <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-ban text-sm"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="group">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">SP</div><div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Paterne SAOSSI</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5424352031263a317a27353b27273d14353a3520207a363e">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg">Gestionnaire</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-gray-500"><span class="w-2 h-2 bg-gray-400 rounded-full"></span>Hors ligne</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-700">Hier, 17:30</p><p class="text-[11px] text-gray-400">192.168.1.55</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-anatt-600 h-1.5 rounded-full" style="width:35%"></div></div><span class="text-xs font-semibold text-gray-600">142</span></div></td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="32_formulaire_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-edit text-sm"></i></a>
-                                    <a href="35_profil_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600"><i class="fas fa-eye text-sm"></i></a>
-                                    <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-ban text-sm"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="group">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center text-white text-sm font-bold">FK</div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Fatima KOUKOUI</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a1c7c0d5c8ccc08fcaced4caced4c8e1c0cfc0d5d58fc3cb">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg">Lecteur</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-amber-600"><span class="w-2 h-2 bg-amber-500 rounded-full"></span>Inactif</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-700">12/12/2024</p><p class="text-[11px] text-gray-400">192.168.1.67</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-gray-400 h-1.5 rounded-full" style="width:5%"></div></div><span class="text-xs font-semibold text-gray-400">8</span></div></td>
-                            <td class="px-5 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <a href="32_formulaire_utilisateur.html" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600"><i class="fas fa-edit text-sm"></i></a>
-                                    <button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-red-500"><i class="fas fa-trash text-sm"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="group opacity-50">
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative"><div class="w-10 h-10 bg-gray-300 rounded-xl flex items-center justify-center text-white text-sm font-bold">AH</div></div>
-                                    <div><p class="text-sm font-semibold text-gray-800">Arnaud HOUNTON</p><p class="text-[11px] text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a0c1d2cec1d5c48ec8cfd5ced4cfcee0c1cec1d4d48ec2ca">[email&#160;protected]</a></p></div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-1 bg-gray-100 text-gray-500 text-xs font-semibold rounded-lg">Gestionnaire</span></td>
-                            <td class="px-5 py-4"><span class="flex items-center gap-1.5 text-sm text-red-500"><span class="w-2 h-2 bg-red-500 rounded-full"></span>Désactivé</span></td>
-                            <td class="px-5 py-4"><p class="text-sm text-gray-500">05/11/2024</p><p class="text-[11px] text-gray-400">-</p></td>
-                            <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="flex-1 bg-gray-200 rounded-full h-1.5"><div class="bg-gray-400 h-1.5 rounded-full" style="width:0%"></div></div><span class="text
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Administration</div><h1>Utilisateurs</h1><p>Comptes, rôles, statut, réinitialisation du mot de passe ; la modification du rôle révoque les sessions.</p><div class="meta"><span class="badge">/admin/utilisateurs</span><span class="badge blue">admin/UserManagementView.vue</span><span class="badge gold">Profil : Super administrateur</span></div><div class="capture"><img src="ecrans/31_gestion_utilisateurs.jpg" alt="Capture de l'écran « Utilisateurs »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="30_detail_action_audit.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="32_formulaire_utilisateur.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
+</body>
+</html>

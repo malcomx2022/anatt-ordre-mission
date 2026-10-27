@@ -360,7 +360,7 @@ tableau(
         ["Laravel", "12.x", "Framework PHP principal"],
         ["PHP", "8.4.x, 64 bits", "Langage backend : minimum imposé par composer.lock (Symfony 8, activitylog) ; 8.5 non pris en charge (PhpSpreadsheet déclare < 8.5.0)"],
         ["Laravel Sanctum", "4.x", "Authentification API par tokens"],
-        ["MySQL", "8.0", "Base de données (SQLite en tests)"],
+        ["MySQL", "8.0", "Base de données (SQLite en tests) ; horodatages à l'heure du Bénin (Africa/Porto-Novo), API en UTC"],
         ["Redis", "7.x (optionnel)", "Cache et files (driver « database » utilisable sans Redis)"],
         ["DomPDF (barryvdh)", "3.1", "Génération des PDF (OM, états, document de retenue, rapports)"],
         ["Maatwebsite Excel / PhpSpreadsheet", "3.1", "Import agents et génération .xlsx Moov / exports"],
@@ -589,10 +589,11 @@ para("Circuit OM par OM (reprise de données) : POST /api/ordres/:id/valider (om
      "l'OM. La validation de l'état des avances ne repropage jamais VALIDE à un OM REJETE. Sur ce circuit, un "
      "OM exonéré (montant nul) passe directement SOLDE.",
      italic=True, color=GRIS)
-bullet("Notifications (cloche + e-mail, NotificationService::notifierRole), adressées aux seuls comptes ACTIFS "
-       "du profil système concerné : le signataire de l'étape suivante, l'agent financier à la validation finale, "
-       "le gestionnaire au rejet. Un rôle personnalisé ou un droit accordé individuellement autorise l'action "
-       "sans être notifié.")
+bullet("Notifications (cloche + e-mail, NotificationService::notifier), adressées aux comptes ACTIFS qui "
+       "détiennent la permission de l'étape suivante dans leurs droits EFFECTIFS (profil, rôle personnalisé, "
+       "accords et retraits individuels) : om.valider / om.viser / om.approuver pour le signataire suivant, "
+       "paiements.generer à la validation finale, om.retranscrire au rejet. Le SUPER_ADMIN n'est pas visé ; "
+       "un compte visé à deux titres ne reçoit qu'une notification.")
 
 h2("4.3 Génération et confirmation des paiements")
 para("Acteur : AGENT_FINANCIER (permissions paiements.generer / paiements.confirmer).")
@@ -624,7 +625,7 @@ bullet("Gros lot en file (GenererLotPaiementJob, file « paiements ») : mêmes 
        "rafraîchies, audit ERROR_LOT. Un lot CONFIRME n'est jamais touché. Détail : backend/docs/queues.md.")
 bullet("En QUEUE_CONNECTION=sync (production cPanel), le job tourne dans la requête : le gros lot répond 202 "
        "seulement si la génération réussit ; sinon l'erreur revient dans la réponse même (après failed()). "
-       "L'écran ne se rafraîchit pas alors : recharger la page avant toute autre action.")
+       "L'écran recharge alors le lot : un lot passé en ERREUR n'offre plus « Confirmer ».")
 
 h2("4.4 Génération de l'ordre de mission en PDF")
 tableau(
@@ -1083,8 +1084,8 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "589 tests au total (68 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "123 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "598 tests au total (68 fichiers)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "124 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],

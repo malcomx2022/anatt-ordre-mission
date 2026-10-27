@@ -1,140 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Rapport d'Import</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rapport d&#x27;import — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#FBF3E0;color:#1f2937;border:1px solid #8B6914;border-left:4px solid #8B6914;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#8B6914"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Écarts avec l&#x27;écran réel</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /agents/import — agents/AgentImportView.vue</div><div style="margin-top:4px"><strong>Écarts :</strong> Pas d&#x27;écran séparé : le rapport d&#x27;erreurs ligne à ligne s&#x27;affiche sur l&#x27;écran d&#x27;import.</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#8B6914">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
-        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Gestion</p>
-            <a href="05_personnel_liste.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-users w-5 text-center"></i>Personnel</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1"><p class="text-sm font-medium">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div></div></div>
-    </aside>
-    <main class="ml-64 pt-1 min-h-screen">
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <a href="05_personnel_liste.html" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50"><i class="fas fa-arrow-left text-gray-600 text-sm"></i></a>
-                    <div><h1 class="text-lg font-bold text-gray-800">Rapport d'Import</h1><p class="text-xs text-gray-500">Import du 04/12/2024 à 14:30</p></div>
-                </div>
-                <div class="flex gap-2">
-                    <button class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-download text-anatt-600"></i>Exporter PDF</button>
-                    <button class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-print text-gray-500"></i>Imprimer</button>
-                </div>
-            </div>
-        </header>
-        <div class="p-6 max-w-5xl">
-            <!-- Résumé -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-clipboard-check text-2xl text-green-600"></i></div>
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-800">Import réussi</h3>
-                        <p class="text-sm text-gray-500">Fichier: personnel_anatt_dec2024.xlsx • 45 lignes traitées</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div class="bg-gray-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-gray-800">45</p><p class="text-xs text-gray-500">Total lignes</p></div>
-                    <div class="bg-green-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-green-700">38</p><p class="text-xs text-green-600">Créés</p></div>
-                    <div class="bg-blue-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-blue-700">4</p><p class="text-xs text-blue-600">Mis à jour</p></div>
-                    <div class="bg-red-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-red-700">2</p><p class="text-xs text-red-600">Erreurs</p></div>
-                    <div class="bg-amber-50 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-amber-700">1</p><p class="text-xs text-amber-600">Doublons</p></div>
-                </div>
-            </div>
-
-            <!-- Barres de progression -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-                <h3 class="text-base font-bold text-gray-800 mb-4">Taux de réussite</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700">Agents créés</span><span class="font-bold text-green-600">38/45 (84%)</span></div>
-                        <div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-green-500 h-3 rounded-full transition-all" style="width:84%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700">Agents mis à jour</span><span class="font-bold text-blue-600">4/45 (9%)</span></div>
-                        <div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full transition-all" style="width:9%"></div></div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="font-medium text-gray-700">Erreurs</span><span class="font-bold text-red-600">3/45 (7%)</span></div>
-                        <div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-red-500 h-3 rounded-full transition-all" style="width:7%"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Détail des erreurs -->
-            <div class="bg-white rounded-2xl border border-red-200 p-6 mb-6">
-                <h3 class="text-base font-bold text-red-800 mb-4 flex items-center gap-2"><i class="fas fa-exclamation-triangle text-red-500"></i>Détail des erreurs (3)</h3>
-                <div class="space-y-3">
-                    <div class="bg-red-50 rounded-xl p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-bold text-red-800">Ligne 3 — Doublon matricule</span>
-                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg">IGNORÉ</span>
-                        </div>
-                        <p class="text-sm text-red-700">Le matricule <span class="font-mono font-bold">MAT-0045</span> est déjà attribué à <strong>MAGBE Victorin</strong>.</p>
-                        <p class="text-xs text-red-600 mt-1">Données reçues: CISSE Moussa • 320 000 FCFA • MOOV</p>
-                    </div>
-                    <div class="bg-red-50 rounded-xl p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-bold text-red-800">Ligne 5 — Numéro invalide</span>
-                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg">IGNORÉ</span>
-                        </div>
-                        <p class="text-sm text-red-700">Le numéro MTN <span class="font-mono font-bold">123456</span> ne respecte pas le format 229XXXXXXXX.</p>
-                        <p class="text-xs text-red-600 mt-1">Données reçues: EKUE Pascal • MAT-0091 • 350 000 FCFA</p>
-                    </div>
-                    <div class="bg-red-50 rounded-xl p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-bold text-red-800">Ligne 12 — Champ obligatoire manquant</span>
-                            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg">IGNORÉ</span>
-                        </div>
-                        <p class="text-sm text-red-700">Le champ <span class="font-mono font-bold">grade</span> est vide.</p>
-                        <p class="text-xs text-red-600 mt-1">Données reçues: FANOU Georges • MAT-0092 • 450 000 FCFA</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Détail des mises à jour -->
-            <div class="bg-white rounded-2xl border border-blue-200 p-6 mb-6">
-                <h3 class="text-base font-bold text-blue-800 mb-4 flex items-center gap-2"><i class="fas fa-sync-alt text-blue-500"></i>Mises à jour effectuées (4)</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                            <th class="pb-3 pr-4">Agent</th><th class="pb-3 pr-4">Champ</th><th class="pb-3 pr-4">Ancienne valeur</th><th class="pb-3 pr-4">Nouvelle valeur</th>
-                        </tr></thead>
-                        <tbody class="divide-y divide-gray-50">
-                            <tr><td class="py-3 pr-4 font-medium">ADJO Mariette</td><td class="py-3 pr-4">Salaire</td><td class="py-3 pr-4 text-gray-500 line-through">420 000</td><td class="py-3 pr-4 text-blue-600 font-semibold">450 000</td></tr>
-                            <tr><td class="py-3 pr-4 font-medium">BOKO Samuel</td><td class="py-3 pr-4">Tél MTN</td><td class="py-3 pr-4 text-gray-500 line-through font-mono text-xs">22996111222</td><td class="py-3 pr-4 text-blue-600 font-mono text-xs">22996333444</td></tr>
-                            <tr><td class="py-3 pr-4 font-medium">GABA Pierre</td><td class="py-3 pr-4">Grade</td><td class="py-3 pr-4 text-gray-500 line-through">Agent</td><td class="py-3 pr-4 text-blue-600 font-semibold">Cadre</td></tr>
-                            <tr><td class="py-3 pr-4 font-medium">HOUNSA Rita</td><td class="py-3 pr-4">Opérateur</td><td class="py-3 pr-4 text-gray-500 line-through">MTN</td><td class="py-3 pr-4 text-blue-600 font-semibold">MOOV</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Métadonnées -->
-            <div class="bg-gray-100 rounded-2xl p-5 text-sm text-gray-600">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div><p class="text-xs text-gray-500">Importé par</p><p class="font-medium">Gislain A.</p></div>
-                    <div><p class="text-xs text-gray-500">Date</p><p class="font-medium">04/12/2024 14:30</p></div>
-                    <div><p class="text-xs text-gray-500">Durée</p><p class="font-medium">2.3 secondes</p></div>
-                    <div><p class="text-xs text-gray-500">Fichier</p><p class="font-medium font-mono text-xs">personnel_anatt_dec2024.xlsx</p></div>
-                </div>
-            </div>
-        </div>
-    </main>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Personnel</div><h1>Rapport d&#x27;import</h1><div class="meta"><span class="badge">/agents/import</span><span class="badge blue">agents/AgentImportView.vue</span><span class="badge gold">Profil : Gestionnaire OM</span></div><div class="note"><strong>Ancienne maquette sans écran propre.</strong> Pas d&#x27;écran séparé : le rapport d&#x27;erreurs ligne à ligne s&#x27;affiche sur l&#x27;écran d&#x27;import. Écran correspondant : <a href="09_import_personnel.html">09_import_personnel.html</a>.</div><div class="capture"><img src="ecrans/09_import_personnel.jpg" alt="Capture de l'écran « Rapport d&#x27;import »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="09_import_personnel.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="11_liste_ordres_mission.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

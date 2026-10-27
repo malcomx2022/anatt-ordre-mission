@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) |
 | Frontend | Vue 3 (Composition API, TypeScript) · Vite · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (589 tests, 68 fichiers) · Vitest (123 tests) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (598 tests, 69 fichiers) · Vitest (124 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -172,7 +172,7 @@ anatt-ordre-mission/
 ├── frontend/            # SPA Vue 3
 │   ├── src/{views,components,stores,services,types}
 │   └── e2e/             # parcours critique Playwright
-└── docs/                # guides, procédures, revue, maquettes HTML des écrans
+└── docs/                # guides, procédures, revue, galerie des écrans
 ```
 
 ---
@@ -181,7 +181,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 589 tests (68 fichiers)
+.\vendor\bin\pest                 # 598 tests (69 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
@@ -219,5 +219,5 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
 | `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
-| `docs/00_galerie_index.html` … | Maquettes HTML des écrans |
+| `docs/00_galerie_index.html` … | Galerie des écrans réels (captures, `docs/generer_maquettes.py`) |
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest`) |

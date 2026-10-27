@@ -155,9 +155,9 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
 > (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
-> **Notifications** : adressées aux comptes **actifs** des profils système (`NotificationService::notifierRole`) —
-> un rôle personnalisé ou un droit accordé à titre individuel autorise l'action mais n'est pas notifié
-> (limite documentée dans `docs/rbac-flexible.md`).
+> **Notifications** : adressées aux comptes **actifs** qui détiennent, dans leurs droits **effectifs**, la permission
+> de l'étape suivante (`NotificationService::notifier`) — rôles personnalisés et droits individuels compris, retraits
+> respectés, SUPER_ADMIN exclu, une seule notification par compte (table dans `docs/rbac-flexible.md`).
 
 > **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `daf@`, `dg@`, `lecteur@anatt.bj`.
 
@@ -176,9 +176,9 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **HTTP** : Axios avec intercepteurs (token Bearer)
 - **Graphiques** : Chart.js 4
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
-  Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` sont déclarés mais non importés)
+  Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` retirés le 26/10/2026)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (123 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (124 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -186,10 +186,12 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
   **8.5 non pris en charge** : `phpoffice/phpspreadsheet` 1.30 déclare `<8.5.0`, que `platform_check` ne contrôle pas)
 - **Auth** : Laravel Sanctum 4 (SPA tokens)
 - **BDD** : MySQL 8 (production) / SQLite (tests)
+- **Fuseau** : `Africa/Porto-Novo` (UTC+1, `APP_TIMEZONE`) ; l'API sérialise toujours les dates en UTC (`…Z`).
+  Horodatages antérieurs repris d'une heure par la migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif`
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (589 tests, 68 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (598 tests, 69 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -286,8 +288,9 @@ anatt-ordre-mission/
     ├── circuits-validation.md · amendement-om.md · rbac-flexible.md · workflows-par-profil.md
     ├── parametrage-part-avance.md · annee-fiscale.md · categories-indice.md
     ├── checklist-post-deploiement.md · runbook-mise-a-jour-cron.md
-    └── 00_galerie_index.html … 41_page_maintenance.html  ← maquettes d'origine (août 2026), annotées par
-                                                             annoter_maquettes.py : l'application fait foi
+    ├── 00_galerie_index.html … 53_moov.html  ← pages d'écran tirées des CAPTURES de l'app réelle (ecrans/*.jpg),
+    │                                           générées par generer_maquettes.py (refonte du 26/10/2026)
+    └── capturer_ecrans.cjs · ecrans/        ← captures Playwright (API + SPA sur les données de démonstration)
 ```
 
 ---
@@ -1127,6 +1130,7 @@ VITE_APP_VERSION=1.0.0
 # backend/.env
 APP_NAME="ANaTT Gestion Missions"
 APP_URL=http://localhost:8000
+APP_TIMEZONE=Africa/Porto-Novo   # heure du Bénin (défaut) ; dates de l'API toujours en UTC
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306

@@ -134,6 +134,28 @@ describe('PaiementGeneration — génération asynchrone (202)', () => {
   })
 })
 
+describe('PaiementGeneration — échec d’une génération (file sync)', () => {
+  it('recharge le lot après l’échec : un lot passé en ERREUR n’offre plus « Confirmer »', async () => {
+    // Un lot GENERE existait déjà ; la régénération échoue et failed() le passe en ERREUR.
+    const lotGenere = {
+      id: 7, mission_id: 5, tranche: 'AVANCE', operateur: 'MTN', sequence: 1, statut: 'GENERE',
+      nom_fichier: 'mission_AVANCE.txt', nb_lignes: 60, montant_total: 600000,
+    }
+    lots.mockResolvedValue({ items: [lotGenere], meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 } })
+    const wrapper = await monter()
+    expect(wrapper.text()).toContain('Confirmer le paiement')
+
+    lots.mockResolvedValue({ items: [{ ...lotGenere, statut: 'ERREUR' }], meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 } })
+    generer.mockRejectedValue(new Error('Numéro invalide ligne 12'))
+    const bouton = wrapper.findAll('button').find((x) => x.text().includes('Régénérer') || x.text().includes('Générer'))
+    await bouton!.trigger('click')
+    await flushPromises()
+
+    expect(toastError).toHaveBeenCalledWith('Numéro invalide ligne 12')
+    expect(wrapper.text()).not.toContain('Confirmer le paiement')
+  })
+})
+
 describe('PaiementGeneration — lot complémentaire', () => {
   const lotConfirme = {
     id: 9, mission_id: 5, tranche: 'AVANCE', operateur: 'MTN', sequence: 1, statut: 'CONFIRME',

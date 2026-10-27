@@ -72,13 +72,14 @@ return [
     | Application Timezone
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | Fuseau de l'application, utilisé par les fonctions de date de PHP et pour
+    | les horodatages enregistrés en base. ANaTT : heure du Bénin (UTC+1, sans heure d'été). Les horodatages
+    | enregistrés avant ce choix (UTC) sont repris par la migration
+    | 2026_10_26_090000_passer_horodatages_au_fuseau_applicatif.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Africa/Porto-Novo'),
 
     /*
     |--------------------------------------------------------------------------

@@ -1,138 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANaTT - Paramètres Système</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{anatt:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',500:'#22c55e',600:'#009639',700:'#007a2f',800:'#005f24',900:'#004a1c'},gold:{400:'#facc15',500:'#FCD116',600:'#d4a90e'},danger:{500:'#EF3340',600:'#dc2626'}},fontFamily:{sans:['Plus Jakarta Sans','sans-serif']}}}}</script>
-    <style>.sidebar-link{transition:all .2s}.sidebar-link:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}.sidebar-link.active{background:rgba(255,255,255,.15);border-right:3px solid #FCD116}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out both}.toggle{width:44px;height:24px;border-radius:9999px;position:relative;cursor:pointer;transition:background .3s}.toggle::after{content:'';width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:transform .3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.toggle.on{background:#009639}.toggle.on::after{transform:translateX(20px)}.toggle.off{background:#d1d5db}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paramètres du système — Écrans ANaTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--anatt:#1D9E4F;--anatt-600:#1A8C48;--anatt-50:#EDFAF2;--gold:#D4A843;--red:#CE1126;--ink:#111827;--muted:#6B7280}
+*{box-sizing:border-box}body{margin:0;background:#F9FAFB;color:var(--ink);font:15px/1.55 'DM Sans',system-ui,sans-serif}
+h1,h2,h3,.display,a.btn,.badge,label{font-family:'Sora','DM Sans',sans-serif}
+a{color:var(--anatt-600)}
+header{background:#fff;border-bottom:1px solid #E5E7EB}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.top img{height:36px}.top nav a{margin-left:16px;font-family:'Sora',sans-serif;font-weight:600;font-size:13px;text-decoration:none}
+main{padding:32px 0 48px}
+.fil{font-size:12px;color:var(--muted);margin-bottom:6px}
+h1{font-size:26px;font-weight:800;margin:0 0 8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;background:var(--anatt-50);color:var(--anatt-600)}
+.badge.gold{background:#FBF3E0;color:#8B6914}.badge.blue{background:#EFF6FF;color:#2563EB}
+.note{background:#FBF3E0;border:1px solid #EBCF8A;border-left:4px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+.capture{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:12px;box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+.capture img{display:block;width:100%;height:auto;border-radius:8px}
+.pied-nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid var(--anatt);color:var(--anatt-600);font-weight:600;font-size:13px;text-decoration:none;transition:all .2s}
+a.btn:hover{background:var(--anatt);color:#fff}
+.flag-bar{height:3px;background:linear-gradient(90deg,#1D9E4F 0%,#1D9E4F 33%,#D4A843 33%,#D4A843 66%,#CE1126 66%,#CE1126 100%)}
+footer{background:#fff;color:var(--muted);font-size:12px;padding:16px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.carte{display:block;background:#fff;border:1px solid #F3F4F6;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;position:relative}
+.carte img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid #F3F4F6}
+.carte .corps{padding:12px 14px}.carte h3{font-size:14px;margin:0 0 4px}.carte p{margin:0;font-size:12px;color:var(--muted)}
+.carte .liseré{position:absolute;top:0;left:0;right:0;height:4px;background:var(--anatt);transform:scaleX(0);transform-origin:left;transition:transform .5s}
+.carte:hover .liseré{transform:scaleX(1)}
+.card-hover{transition:all .3s cubic-bezier(.4,0,.2,1)}.card-hover:hover{transform:translateY(-4px);box-shadow:0 16px 40px -10px rgba(0,0,0,.08)}
+section.module{margin-top:36px}section.module h2{font-size:18px;font-weight:800;margin:0 0 14px}
+@media (max-width:640px){.top nav{display:none}h1{font-size:21px}}
+</style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
-<!-- annotation-maquette:debut -->
-<aside role="note" aria-label="État de la maquette" style="position:fixed;right:16px;bottom:16px;z-index:9999;max-width:380px;background:#FBF3E0;color:#1f2937;border:1px solid #8B6914;border-left:4px solid #8B6914;border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.12);font:12px/1.45 'DM Sans',system-ui,sans-serif"><div style="display:flex;gap:8px;color:#8B6914"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div style="font-family:'Sora','DM Sans',sans-serif;font-weight:700">Maquette d'origine (août 2026) — Écarts avec l&#x27;écran réel</div></div><div style="margin-top:6px"><div><strong>Écran réel :</strong> /admin/parametres — admin/SettingsView.vue</div><div style="margin-top:4px"><strong>Écarts :</strong> L&#x27;interrupteur « Double validation » n&#x27;existe plus. Réglages réels : part de l&#x27;avance, exercice (année, mois de début), messagerie, sauvegardes.</div></div><div style="margin-top:6px;color:#6b7280">Non redessinée ; confrontée au code le 26/10/2026. <a href="00_galerie_index.html#correspondance" style="color:#8B6914">Correspondance complète</a>.</div></aside>
-<!-- annotation-maquette:fin -->
-    <div class="fixed top-0 left-0 right-0 h-1 flex z-50"><div class="flex-1 bg-[#009639]"></div><div class="flex-1 bg-[#FCD116]"></div><div class="flex-1 bg-[#EF3340]"></div></div>
-    <aside class="fixed top-1 left-0 bottom-0 w-64 bg-gradient-to-b from-anatt-800 to-anatt-900 text-white z-40 overflow-y-auto">
-        <div class="p-5 border-b border-white/10"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-gold-500 rounded-xl flex items-center justify-center"><i class="fas fa-bus-alt text-anatt-900 text-lg"></i></div><div><h2 class="font-bold text-sm">ANaTT</h2><p class="text-[10px] text-anatt-200">Paiements Missions</p></div></div></div>
-        <nav class="p-3 space-y-1">
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 font-semibold">Principal</p>
-            <a href="04_dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-th-large w-5 text-center"></i>Tableau de bord</a>
-            <p class="text-[10px] uppercase tracking-wider text-anatt-200/60 px-3 py-2 mt-3 font-semibold">Système</p>
-            <a href="31_gestion_utilisateurs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-user-shield w-5 text-center"></i>Utilisateurs</a>
-            <a href="33_gestion_roles.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-anatt-100"><i class="fas fa-key w-5 text-center"></i>Rôles</a>
-            <a href="34_parametres.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"><i class="fas fa-cog w-5 text-center"></i>Paramètres</a>
-        </nav>
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-anatt-900/50"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-anatt-600 rounded-lg flex items-center justify-center text-sm font-bold">GA</div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">Gislain A.</p><p class="text-[10px] text-anatt-200">Super Admin</p></div><a href="01_login.html" class="text-anatt-200 hover:text-white"><i class="fas fa-sign-out-alt"></i></a></div></div>
-    </aside>
-
-    <main class="ml-64 pt-1 min-h-screen">
-        <header class="bg-white border-b border-gray-200 px-6 py-4 sticky top-1 z-30">
-            <div class="flex items-center justify-between">
-                <div><h1 class="text-lg font-bold text-gray-800">Paramètres du Système</h1><p class="text-xs text-gray-500">Configuration générale de l'application</p></div>
-                <button class="px-4 py-2.5 bg-anatt-600 text-white rounded-xl text-sm font-semibold hover:bg-anatt-700 flex items-center gap-2"><i class="fas fa-save"></i>Enregistrer tout</button>
-            </div>
-        </header>
-
-        <div class="p-6">
-            <div class="flex gap-6">
-                <!-- Sidebar tabs -->
-                <div class="w-56 shrink-0">
-                    <nav class="bg-white rounded-2xl border border-gray-100 p-2 space-y-1 sticky top-20">
-                        <a href="#general" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-anatt-50 text-anatt-700"><i class="fas fa-building w-5 text-center"></i>Général</a>
-                        <a href="#paiements" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-credit-card w-5 text-center"></i>Paiements</a>
-                        <a href="#notifications" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-bell w-5 text-center"></i>Notifications</a>
-                        <a href="#email" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-envelope w-5 text-center"></i>Email (SMTP)</a>
-                        <a href="#securite" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-shield-alt w-5 text-center"></i>Sécurité</a>
-                        <a href="#maintenance" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-tools w-5 text-center"></i>Maintenance</a>
-                    </nav>
-                </div>
-
-                <!-- Settings Content -->
-                <div class="flex-1 space-y-6">
-                    <!-- General -->
-                    <div id="general" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in">
-                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-building mr-2 text-anatt-600"></i>Paramètres généraux</h3>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Nom de l'application</label><input type="text" value="Système de Paiement des Missions - ANaTT" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Version</label><input type="text" value="2.1.0" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500"></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Année fiscale en cours</label><select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none"><option>2025</option><option>2024</option></select></div>
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Devise</label><input type="text" value="FCFA (XOF)" disabled class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500"></div>
-                            </div>
-                            <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Fuseau horaire</label><select class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none"><option>Africa/Porto-Novo (UTC+1)</option></select></div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Settings -->
-                    <div id="paiements" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.1s">
-                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-credit-card mr-2 text-anatt-600"></i>Configuration des paiements</h3>
-                        <div class="space-y-5">
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                <div><p class="text-sm font-semibold text-gray-800">MTN Mobile Money</p><p class="text-[11px] text-gray-500">API de paiement MTN MoMo</p></div>
-                                <div class="flex items-center gap-3"><span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded-full">Connecté</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                <div><p class="text-sm font-semibold text-gray-800">MOOV Money</p><p class="text-[11px] text-gray-500">API de paiement MOOV Africa</p></div>
-                                <div class="flex items-center gap-3"><span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded-full">Connecté</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Taille max. d'un lot</label><input type="number" value="100" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Délai de réconciliation (jours)</label><input type="number" value="7" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                <div><p class="text-sm font-semibold text-gray-800">Double validation requise</p><p class="text-[11px] text-gray-500">Exiger deux validations pour les lots > 5 000 000 FCFA</p></div>
-                                <div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notifications -->
-                    <div id="notifications" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.2s">
-                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-bell mr-2 text-anatt-600"></i>Notifications</h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Nouvel ordre de mission</p><p class="text-[11px] text-gray-500">Notifier les validateurs</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Validation effectuée</p><p class="text-[11px] text-gray-500">Notifier le créateur de l'OM</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Paiement effectué</p><p class="text-[11px] text-gray-500">Notifier l'agent par SMS</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Échec de paiement</p><p class="text-[11px] text-gray-500">Alerter les administrateurs</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Rapport mensuel auto</p><p class="text-[11px] text-gray-500">Générer et envoyer le 1er de chaque mois</p></div><div class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                        </div>
-                    </div>
-
-                    <!-- Security -->
-                    <div id="securite" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.3s">
-                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-shield-alt mr-2 text-anatt-600"></i>Sécurité</h3>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Durée de session (minutes)</label><input type="number" value="30" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1.5">Max tentatives connexion</label><input type="number" value="5" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-anatt-500"></div>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Forcer HTTPS</p><p class="text-[11px] text-gray-500">Rediriger toutes les requêtes vers HTTPS</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div><p class="text-sm font-semibold text-gray-800">Journaliser les connexions</p><p class="text-[11px] text-gray-500">Enregistrer toutes les tentatives de connexion</p></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
-                        </div>
-                    </div>
-
-                    <!-- Maintenance -->
-                    <div id="maintenance" class="bg-white rounded-2xl border border-gray-100 p-6 fade-in" style="animation-delay:.4s">
-                        <h3 class="text-base font-bold text-gray-800 mb-5"><i class="fas fa-tools mr-2 text-anatt-600"></i>Maintenance</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                <div><p class="text-sm font-semibold text-gray-800">Mode maintenance</p><p class="text-[11px] text-amber-700"><i class="fas fa-exclamation-triangle mr-1"></i>Rend le système inaccessible aux non-admins</p></div>
-                                <div class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors"><p class="text-sm font-semibold text-gray-800"><i class="fas fa-database mr-2 text-blue-500"></i>Sauvegarder la base</p><p class="text-[11px] text-gray-500">Dernière sauvegarde : 15/01/2025 02:00</p></button>
-                                <button class="p-4 border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors"><p class="text-sm font-semibold text-gray-800"><i class="fas fa-broom mr-2 text-amber-500"></i>Nettoyer le cache</p><p class="text-[11px] text-gray-500">Taille actuelle : 124 MB</p></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+<body>
+<!-- Page générée par docs/generer_maquettes.py — ne pas modifier à la main. -->
+<header><div class="wrap top"><a href="00_galerie_index.html"><img src="../frontend/src/assets/logo-anatt.png" alt="ANaTT"></a>
+<nav><a href="00_galerie_index.html">Galerie des écrans</a></nav></div></header>
+<main><div class="wrap">
+<div class="fil"><a href="00_galerie_index.html">Galerie</a> › Administration</div><h1>Paramètres du système</h1><p>Part de l&#x27;avance, exercice (année, mois de début), messagerie, sauvegardes. Le fuseau (heure du Bénin) est réglé sur le serveur.</p><div class="meta"><span class="badge">/admin/parametres</span><span class="badge blue">admin/SettingsView.vue</span><span class="badge gold">Profil : Super administrateur</span></div><div class="capture"><img src="ecrans/34_parametres.jpg" alt="Capture de l'écran « Paramètres du système »" loading="lazy"></div><div class="pied-nav"><a class="btn" href="33_gestion_roles.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Écran précédent</a><a class="btn" href="35_profil_utilisateur.html">Écran suivant <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+</div></main>
+<div class="flag-bar"></div>
+<footer><div class="wrap">ANaTT — Agence Nationale des Transports Terrestres, République du Bénin · Écrans capturés sur l'application réelle (données de démonstration) le 26/10/2026.</div></footer>
 </body>
 </html>

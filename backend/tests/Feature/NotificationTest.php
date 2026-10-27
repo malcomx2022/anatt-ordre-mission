@@ -2,12 +2,16 @@
 
 use App\Jobs\SendNotification;
 use App\Models\Bareme;
+use App\Models\LotPaiement;
 use App\Models\Mission;
 use App\Models\Notification;
 use App\Models\OrdreMission;
 use App\Models\User;
+use App\Models\UserPermission;
 use App\Models\Versement;
 use App\Services\MissionService;
+use App\Services\NotificationService;
+use App\Support\PermissionRepository;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
@@ -105,4 +109,64 @@ it('n’émet aucune notification de trop-perçu quand le reliquat reste positif
     $this->service->amender($om, ['nb_jours' => 8, 'motif' => 'Rallonge de la mission de deux jours.'], $this->gestion);
 
     Queue::assertNotPushed(SendNotification::class);
+});
+
+// ── Destinataires selon les droits effectifs (décision D1) ──
+
+it('notifie un rôle personnalisé qui détient la permission de l’action', function () {
+    app(PermissionRepository::class)->creerRole('PAYEUR_REGIONAL', 'Payeur régional', [
+        'om.consulter', 'paiements.consulter', 'paiements.generer', 'paiements.confirmer',
+    ]);
+    $payeur = User::factory()->create(['role' => 'PAYEUR_REGIONAL']);
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->service->valider($om, $this->gestion);
+
+    expect(Notification::pour($payeur->id)->where('type', 'om_valide')->count())->toBe(1);
+});
+
+it('notifie un compte à qui la permission est accordée individuellement', function () {
+    $lecteur = User::factory()->lecteur()->create();
+    UserPermission::create(['user_id' => $lecteur->id, 'permission' => 'paiements.generer', 'granted' => true]);
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->service->valider($om, $this->gestion);
+
+    expect(Notification::pour($lecteur->id)->where('type', 'om_valide')->count())->toBe(1);
+});
+
+it('ne notifie plus un membre du profil à qui la permission est retirée', function () {
+    $financier = User::factory()->agentFinancier()->create();
+    UserPermission::create(['user_id' => $financier->id, 'permission' => 'paiements.generer', 'granted' => false]);
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->service->valider($om, $this->gestion);
+
+    expect(Notification::pour($financier->id)->count())->toBe(0);
+    Queue::assertNotPushed(SendNotification::class);
+});
+
+it('ne notifie pas le super admin, dont l’accès implicite n’est pas une responsabilité', function () {
+    $superAdmin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN]);
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->service->valider($om, $this->gestion);
+
+    expect(Notification::pour($superAdmin->id)->count())->toBe(0);
+});
+
+it('ne notifie qu’une fois un compte visé à deux titres (lot confirmé)', function () {
+    // Gestionnaire OM à qui l'on a aussi accordé utilisateurs.gerer : il relève des
+    // deux destinataires du lot confirmé, mais ne reçoit qu'une notification.
+    UserPermission::create(['user_id' => $this->gestion->id, 'permission' => 'utilisateurs.gerer', 'granted' => true]);
+    $admin = User::factory()->admin()->create();
+    $lot = LotPaiement::create([
+        'mission_id' => Mission::factory()->create()->id, 'tranche' => 'AVANCE',
+        'operateur' => 'MTN', 'statut' => 'CONFIRME', 'montant_total' => 45000,
+    ]);
+
+    app(NotificationService::class)->lotConfirme($lot);
+
+    expect(Notification::pour($this->gestion->id)->where('type', 'lot_confirme')->count())->toBe(1)
+        ->and(Notification::pour($admin->id)->where('type', 'lot_confirme')->count())->toBe(1);
 });

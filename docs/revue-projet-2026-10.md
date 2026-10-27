@@ -26,7 +26,9 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > - n° 30 et 31 en relisant `docs/deploiement-circuit-validation.md` ;
 > - n° 32 en confrontant `backend/docs/openapi.yaml` aux réponses réelles de l'API.
 >
-> Pest compte 589 tests, Vitest 123. Le §7 dresse le point de ce qui reste.
+> **Mise à jour du 26/10/2026.** Les quatre décisions du §7.1 sont prises et appliquées (option (b)
+> pour chacune ; D2 avec reprise des horodatages). Pest compte 598 tests, Vitest 124. Le §7 dresse
+> le point de ce qui reste.
 >
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
 > colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
@@ -300,6 +302,7 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #163 | Guide utilisateur |
 | #164 | Maquettes HTML annotées (`docs/annoter_maquettes.py`) |
 | #165 | README du backend et du frontend |
+| #166 | Décisions D1 à D4 (notifications par droits effectifs, heure du Bénin, dépendances, écran de génération) ; maquettes refaites à partir des captures de l'application (`docs/capturer_ecrans.cjs`, `docs/generer_maquettes.py`) |
 
 ### À faire côté exploitation
 
@@ -344,13 +347,20 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 
 ## 7. Point restant et cartographie du restant (25/10/2026)
 
-État : les 32 défauts relevés sont corrigés et testés. Il reste quatre décisions à prendre, une
-dette technique connue, des documents non encore confrontés au code et les gestes d'exploitation
+État : les 32 défauts relevés sont corrigés et testés. Les quatre décisions ont été prises le
+26/10/2026 et appliquées (§7.1) ; restent une dette technique connue et les gestes d'exploitation
 du §6.
 
-### 7.1 Décisions en attente (côté ANaTT)
+### 7.1 Décisions (prises le 26/10/2026)
 
-Rien n'est implémenté tant que la décision n'est pas prise.
+| # | Décision retenue | Mise en œuvre | Vérification |
+|---|------------------|---------------|--------------|
+| D1 | (b) notifier selon les **droits effectifs** | `NotificationService::notifier` : comptes actifs dont les permissions effectives portent la clé de l'étape (table dans `docs/rbac-flexible.md`, *Limites connues*) ; SUPER_ADMIN exclu, une notification par compte. Destinataires inchangés avec la matrice par défaut. | 5 tests dans `NotificationTest` (rôle personnalisé, droit accordé, droit retiré, super admin, doublon) |
+| D2 | (b) `Africa/Porto-Novo`, **avec reprise** des horodatages | `config/app.php` (`APP_TIMEZONE`) ; migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` (+1 h sur toutes les colonnes date-heure, `down()` −1 h), éprouvée sur MariaDB. L'API sérialise toujours en UTC. Déploiement en maintenance, caches purgés avant `migrate` (`DEPLOY-CPANEL.md`, *Notes de version 1.4*). | `FuseauHoraireTest` (4 tests : fuseau, rapport du 1er du mois à 0 h 30, sérialisation, migration aller-retour) |
+| D3 | (b) retirer les dépendances | `npm uninstall @vueuse/core lucide-vue-next vue-pdf-embed` (pdfjs-dist et @napi-rs/canvas partent avec) ; Vue reste en `3.6.0-beta.9`. | type-check, lint, build, Vitest |
+| D4 | (b) rafraîchir dans le `catch` | `PaiementGeneration.vue` recharge le lot après l'échec d'une génération. | `paiements-async.spec.ts` (lot passé en ERREUR : plus de « Confirmer ») |
+
+Énoncé initial des décisions (pour mémoire) :
 
 | # | Sujet | Constat dans le code | Options | Impact |
 |---|-------|----------------------|---------|--------|
@@ -391,7 +401,7 @@ correction des écarts. La date et la PR sont celles de la dernière relecture.
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | **Historiques**, marqués comme tels | 25/10 et 23/10 | Rien, sauf décision de les archiver |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Confronté à l’interface, régénéré | 26/10 (#163, n° 1 à 32) | — |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Confrontée, régénérée | 26/10 (#162, n° 1 à 32) | — |
-| `docs/00_galerie_index.html` … `41_page_maintenance.html` (42 maquettes) | Confrontées, **annotées** (non redessinées) | 26/10 (`docs/annoter_maquettes.py`) | Sur 41 maquettes : 16 fidèles dans l'esprit, 19 avec écarts, 6 obsolètes. 14 écrans réels n'ont pas de maquette. Un nouveau dessin, s'il est voulu, est un chantier à part |
+| `docs/00_galerie_index.html` … `53_moov.html` (galerie + 53 pages) | **Refaites** à partir des captures de l'application réelle | 26/10 (`docs/capturer_ecrans.cjs`, `docs/generer_maquettes.py`) | 46 écrans capturés (build de production, données de démonstration) ; les 41 anciens noms sont conservés, ceux sans écran propre renvoient vers l'écran qui assure la fonction ; 12 pages nouvelles pour les écrans sans maquette. Les maquettes d'août 2026 restent dans l'historique git |
 | `backend/README.md`, `frontend/README.md` | Réécrits pour le projet, confrontés au code | 26/10 (#165) | — |
 | `backend/.env.example`, `backend/.env.production.example` | Relu pour le déploiement | 25/10 (#159) | — |
 | `.github/workflows/ci.yml` | Exécuté sur chaque PR | — | — |

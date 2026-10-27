@@ -20,9 +20,10 @@ sur l'hébergement mutualisé (`backend/.env.production.example`).
 > - **S'il échoue**, aucun `202` ne part : l'exception remonte dans la réponse du `POST`. Son code
 >   est celui de l'erreur, souvent un 500 JSON « Erreur interne du serveur. ». `failed()` a déjà
 >   tourné (suivi `ERREUR`, dernier lot non confirmé en `ERREUR`, cf. *Échec définitif*). L'écran
->   affiche l'erreur sans sonder. C'est le même comportement qu'un petit lot en échec, à une
->   différence près : si un lot `GENERE` existait déjà pour cette clé, il vient de passer en
->   `ERREUR` sans que l'écran se rafraîchisse. Rechargez la page avant toute autre action.
+>   affiche l'erreur sans sonder. C'est le même comportement qu'un petit lot en échec. Si un lot `GENERE` existait déjà pour
+>   cette clé, il vient de passer en `ERREUR` : l'écran recharge le lot après l'erreur
+>   (`PaiementGeneration.vue`, depuis le 26/10/2026), « Confirmer » disparaît et « Régénérer »
+>   reste proposé.
 
 ## Jobs
 

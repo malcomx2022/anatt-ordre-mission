@@ -223,7 +223,7 @@ le front dérive `granted` (cochées hors base) et `revoked` (base décochées).
   état, sous les mêmes garde-fous : séparation des tâches (un même compte ne signe pas deux
   étapes) et séparation ordonnateur / payeur. Deux différences avec les profils système :
   - il n'est **pas notifié** quand un état attend sa signature, car les notifications ciblent les
-    profils système (voir *Limites connues*) ;
+    détenteurs effectifs de la permission (voir *Limites connues*) ;
   - le nom et la fonction imprimés sur l'état viennent des **Paramètres** (titulaire du poste),
     puis du compte. À défaut de fonction renseignée, aucun libellé de profil n'est repris pour
     un rôle personnalisé.
@@ -312,14 +312,24 @@ nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
 
 # Limites connues
 
-- **Notifications par profil, autorisations par permission.** Les notifications (état à signer,
-  OM validé ou rejeté, lot confirmé, trop-perçu…) sont adressées aux **profils système**
-  (`NotificationService::notifierRole`), alors que les droits suivent la matrice et les overrides.
-  Un rôle personnalisé, ou un utilisateur à qui l'on a accordé une permission du circuit à titre
-  individuel, peut agir mais **n'est pas notifié**. Inversement, un membre du profil à qui l'on a
-  retiré la permission reste notifié. Aligner les notifications sur les permissions effectives
-  changerait les destinataires de chaque notification : c'est une décision à prendre, non
-  appliquée à ce jour.
+- **Notifications selon les droits effectifs** (décision D1, 26/10/2026). Les notifications suivent
+  désormais l'autorisation : `NotificationService::notifier` vise les comptes actifs dont les
+  permissions **effectives** (profil, rôle personnalisé, accords et retraits individuels) comportent
+  la clé de l'étape suivante. Un rôle personnalisé ou un droit accordé individuellement est donc
+  notifié ; un membre du profil à qui l'on a retiré la permission ne l'est plus. Le SUPER_ADMIN,
+  dont l'accès implicite n'est pas une responsabilité du circuit, n'est pas visé. Un compte visé à
+  deux titres (lot confirmé) ne reçoit qu'une notification.
+
+  | Notification | Permission visée |
+  |---|---|
+  | État à contrôler / viser / approuver | `om.valider` / `om.viser` / `om.approuver` |
+  | OM validé, état validé | `paiements.generer` |
+  | Trop-perçu créé | `paiements.confirmer` (constat du recouvrement) |
+  | OM rejeté, état rejeté | `om.retranscrire` |
+  | Lot confirmé | `om.retranscrire` ou `utilisateurs.gerer` |
+
+  Avec la matrice par défaut, les destinataires sont les mêmes qu'avant (un profil par clé).
+  Avant le 26/10/2026, seuls les membres des profils système étaient notifiés.
 - **Comptes désactivés** : ils ne reçoivent ni notification ni e-mail. Le filtre s'applique au
   dépôt de la notification et à l'envoi de l'e-mail, au cas où le compte serait désactivé entre
   les deux, en file d'attente. Avant le 24/10/2026, un compte désactivé recevait encore les

@@ -1,0 +1,281 @@
+{
+  "capture_le": "2026-10-26T20:18:48.041Z",
+  "ecrans": [
+    {
+      "fichier": "01_login",
+      "route": "/login",
+      "compte": null,
+      "url": "/login"
+    },
+    {
+      "fichier": "02_mot_de_passe_oublie",
+      "route": "/mot-de-passe-oublie",
+      "compte": null,
+      "url": "/mot-de-passe-oublie"
+    },
+    {
+      "fichier": "03_reinitialisation_mdp",
+      "route": "/reinitialiser/demo?email=agent%40anatt.bj",
+      "compte": null,
+      "url": "/reinitialiser/demo?email=agent%40anatt.bj"
+    },
+    {
+      "fichier": "04_dashboard",
+      "route": "/",
+      "compte": "superadmin@anatt.bj",
+      "url": "/"
+    },
+    {
+      "fichier": "05_personnel_liste",
+      "route": "/agents",
+      "compte": "gestion@anatt.bj",
+      "url": "/agents"
+    },
+    {
+      "fichier": "06_formulaire_personnel",
+      "route": "/agents/nouveau",
+      "compte": "gestion@anatt.bj",
+      "url": "/agents/nouveau"
+    },
+    {
+      "fichier": "07_detail_personnel",
+      "route": "/agents/3",
+      "compte": "gestion@anatt.bj",
+      "url": "/agents/3"
+    },
+    {
+      "fichier": "08_modification_personnel",
+      "route": "/agents/3/modifier",
+      "compte": "gestion@anatt.bj",
+      "url": "/agents/3/modifier"
+    },
+    {
+      "fichier": "09_import_personnel",
+      "route": "/agents/import",
+      "compte": "gestion@anatt.bj",
+      "url": "/agents/import"
+    },
+    {
+      "fichier": "11_liste_ordres_mission",
+      "route": "/ordres",
+      "compte": "gestion@anatt.bj",
+      "url": "/ordres"
+    },
+    {
+      "fichier": "12_om_creation",
+      "route": "/ordres/nouveau",
+      "compte": "gestion@anatt.bj",
+      "url": "/ordres/nouveau"
+    },
+    {
+      "fichier": "15_detail_om",
+      "route": "/ordres/10",
+      "compte": "gestion@anatt.bj",
+      "url": "/ordres/10"
+    },
+    {
+      "fichier": "17_etat_paiement",
+      "route": "/missions/5/etat",
+      "compte": "demo.controleur@anatt.bj",
+      "url": "/missions/5/etat"
+    },
+    {
+      "fichier": "18_file_etats",
+      "route": "/etats",
+      "compte": "demo.controleur@anatt.bj",
+      "url": "/etats"
+    },
+    {
+      "fichier": "19_generation_mtn",
+      "route": "/paiements/mtn",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements/mtn"
+    },
+    {
+      "fichier": "20_lots_paiement",
+      "route": "/paiements",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements"
+    },
+    {
+      "fichier": "22_reconciliation",
+      "route": "/paiements/reconciliation",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements/reconciliation"
+    },
+    {
+      "fichier": "23_consultation_baremes",
+      "route": "/taux",
+      "compte": "superadmin@anatt.bj",
+      "url": "/taux"
+    },
+    {
+      "fichier": "24_modification_baremes",
+      "route": "/taux/configurer",
+      "compte": "superadmin@anatt.bj",
+      "url": "/taux/configurer"
+    },
+    {
+      "fichier": "25_rapports",
+      "route": "/rapports",
+      "compte": "superadmin@anatt.bj",
+      "url": "/rapports"
+    },
+    {
+      "fichier": "26_rapport_mensuel",
+      "route": "/rapports/mensuel",
+      "compte": "superadmin@anatt.bj",
+      "url": "/rapports/mensuel"
+    },
+    {
+      "fichier": "27_rapport_personnel",
+      "route": "/rapports/agents",
+      "compte": "superadmin@anatt.bj",
+      "url": "/rapports/agents"
+    },
+    {
+      "fichier": "28_export_rapports",
+      "route": "/rapports/export",
+      "compte": "superadmin@anatt.bj",
+      "url": "/rapports/export"
+    },
+    {
+      "fichier": "29_journal_audit",
+      "route": "/audit",
+      "compte": "superadmin@anatt.bj",
+      "url": "/audit"
+    },
+    {
+      "fichier": "30_detail_action_audit",
+      "route": "/audit/53",
+      "compte": "superadmin@anatt.bj",
+      "url": "/audit/53"
+    },
+    {
+      "fichier": "31_gestion_utilisateurs",
+      "route": "/admin/utilisateurs",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/utilisateurs"
+    },
+    {
+      "fichier": "32_formulaire_utilisateur",
+      "route": "/admin/utilisateurs/nouveau",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/utilisateurs/nouveau"
+    },
+    {
+      "fichier": "33_gestion_roles",
+      "route": "/admin/roles",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/roles"
+    },
+    {
+      "fichier": "34_parametres",
+      "route": "/admin/parametres",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/parametres"
+    },
+    {
+      "fichier": "35_profil_utilisateur",
+      "route": "/mon-profil",
+      "compte": "gestion@anatt.bj",
+      "url": "/mon-profil"
+    },
+    {
+      "fichier": "38_page_404",
+      "route": "/page-inexistante",
+      "compte": "gestion@anatt.bj",
+      "url": "/page-inexistante"
+    },
+    {
+      "fichier": "39_page_403",
+      "route": "/403",
+      "compte": "gestion@anatt.bj",
+      "url": "/403"
+    },
+    {
+      "fichier": "40_page_500",
+      "route": "/500",
+      "compte": "gestion@anatt.bj",
+      "url": "/500"
+    },
+    {
+      "fichier": "41_page_maintenance",
+      "route": "/maintenance",
+      "compte": null,
+      "url": "/maintenance"
+    },
+    {
+      "fichier": "42_missions",
+      "route": "/missions",
+      "compte": "gestion@anatt.bj",
+      "url": "/missions"
+    },
+    {
+      "fichier": "43_pdf_om",
+      "route": "/ordres/10/pdf",
+      "compte": "gestion@anatt.bj",
+      "url": "/ordres/10/pdf"
+    },
+    {
+      "fichier": "44_historique_om",
+      "route": "/ordres/10/historique",
+      "compte": "gestion@anatt.bj",
+      "url": "/ordres/10/historique"
+    },
+    {
+      "fichier": "45_paiements_statuts",
+      "route": "/paiements/statuts",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements/statuts"
+    },
+    {
+      "fichier": "46_paiements_historique",
+      "route": "/paiements/historique",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements/historique"
+    },
+    {
+      "fichier": "47_regularisations",
+      "route": "/paiements/regularisations",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements/regularisations"
+    },
+    {
+      "fichier": "48_rapport_trop_percus",
+      "route": "/rapports/trop-percus",
+      "compte": "superadmin@anatt.bj",
+      "url": "/rapports/trop-percus"
+    },
+    {
+      "fichier": "49_permissions_utilisateur",
+      "route": "/admin/utilisateurs/8/permissions",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/utilisateurs/8/permissions"
+    },
+    {
+      "fichier": "50_signatures",
+      "route": "/admin/signatures",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/signatures"
+    },
+    {
+      "fichier": "51_config_email",
+      "route": "/admin/email",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/email"
+    },
+    {
+      "fichier": "52_sauvegardes",
+      "route": "/admin/sauvegardes",
+      "compte": "superadmin@anatt.bj",
+      "url": "/admin/sauvegardes"
+    },
+    {
+      "fichier": "53_moov",
+      "route": "/paiements/moov",
+      "compte": "finance@anatt.bj",
+      "url": "/paiements/moov"
+    }
+  ]
+}

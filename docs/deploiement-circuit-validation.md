@@ -13,7 +13,7 @@
 > | §3.3 Comptes du circuit (`ComptesCircuitSeeder`) | **Toujours valable**, complété le 25/10 : lancement par tâche Cron, fonction imprimée (n° 30) et super administrateur protégé (n° 31). Voir le §3.3. |
 > | §3.4 Bascule `WORKFLOW_DOUBLE_VALIDATION`, §4 interrupteur « Double validation » | **Obsolètes** : le drapeau n'existe plus, et l'interrupteur a disparu de l'écran *Paramètres*. Seul `WORKFLOW_SEPARATION_TACHES` subsiste dans `config/workflow.php`. |
 > | §5 Contrôle fonctionnel (boutons Vérifier / Viser / Valider sur l'OM) | **Obsolète** : le contrôle se fait sur l'état (`docs/checklist-post-deploiement.md`, `docs/workflows-par-profil.md`). |
-> | §6 Retour arrière | **Obsolète et dangereux** : 33 migrations existent aujourd'hui, et `migrate:rollback --step=3` annulerait les **trois dernières**, pas celles du 27/07. Revenir en arrière par la restauration d'une sauvegarde (`DEPLOY-CPANEL.md` § *Mise à jour*, H). |
+> | §6 Retour arrière | **Obsolète et dangereux** : 34 migrations existent aujourd'hui, et `migrate:rollback --step=3` annulerait les **trois dernières**, pas celles du 27/07. Revenir en arrière par la restauration d'une sauvegarde (`DEPLOY-CPANEL.md` § *Mise à jour*, H). |
 >
 > Pour une mise à jour d'aujourd'hui, suivre `DEPLOY-CPANEL.md` et `docs/runbook-mise-a-jour-cron.md`.
 
