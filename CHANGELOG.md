@@ -9,6 +9,17 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide des circuits de validation — version 1.4 (27/10/2026)
+
+- **Écart corrigé** : `docs/circuits-validation.md` §7 annonçait « trois cases de signature » sur le PDF de
+  l'OM ; le gabarit (`ordre-mission.blade.php`) en porte **quatre** (bénéficiaire, contrôle, visa DAF,
+  validation DG). Il affirmait aussi que le cache des PDF se renouvelle « sans purge manuelle » : vrai pour
+  les signatures et les amendements, pas pour une mise à jour de version (clé sans version : purge en 1.3
+  et en 1.4, cf. runbook).
+- §1 : ligne *Notifications* par circuit (permission visée à chaque étape, droits effectifs, décision D1) ;
+  §7 : date et heure de signature imprimées à l'heure du Bénin ; §8 : `NotificationService` et
+  `NotificationTest` ajoutés, toutes les références (classes, méthodes, tests) vérifiées.
+
 ### Guide des workflows par profil — version 1.4 (27/10/2026)
 
 - **Écart corrigé** : `docs/workflows-par-profil.md` §8 décrivait encore des notifications « par profil »

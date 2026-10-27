@@ -4,6 +4,10 @@
 > mission, quand chacun s'applique, et pourquoi ce n'est **pas** une double source
 > de vérité. Ce document est la référence unique sur le sujet ; le code et les
 > tests renvoient ici.
+>
+> *Relu le 27/10/2026 contre le code (version 1.4)* : notifications de chaque étape par droits
+> effectifs (§1), quatre blocs de signature sur le PDF de l'OM, heure du Bénin et purge du cache
+> des PDF à une mise à jour de version (§7). Références (§8) vérifiées une à une.
 
 ---
 
@@ -20,6 +24,13 @@
 | Rejet | rejet motivé de l'état à chaque étape (signatures amont effacées, paraphes archivés purgés) | `IMPORTE → REJETE` ; les versements `EN_ATTENTE` de l'OM passent `ANNULE` |
 | Permissions | `om.retranscrire` (récapitulatif) · `om.valider` (contrôle) · `om.viser` (visa DAF) · `om.numeroter` (numéro) · `om.approuver` (validation DG) · `om.rejeter` | `om.valider` (contrôleur seul, matrice par défaut) · `om.rejeter` (contrôleur, DAF et DG) |
 | Signatures sur le PDF de l'OM | celles de l'**état des avances** qui couvre l'OM (§7) | celle portée par l'OM |
+| Notifications (comptes **actifs** détenant la permission, droits effectifs) | récapitulatif → `om.valider` ; contrôle → `om.viser` ; visa → `om.approuver` ; validation → `paiements.generer` ; rejet → `om.retranscrire` | validation → `paiements.generer` ; rejet → `om.retranscrire` |
+
+Les notifications visent, depuis la 1.4 (décision D1), les comptes qui détiennent **effectivement** la
+permission de l'étape suivante — rôles personnalisés et droits individuels compris, droits retirés
+respectés, SUPER_ADMIN exclu (`NotificationService::notifier`). Avec la matrice par défaut, ce sont le
+contrôleur, le DAF, le DG, l'agent financier et le gestionnaire OM, comme avant (détail :
+`docs/workflows-par-profil.md` §8).
 
 **Séparation des tâches** (`config/workflow.php` → `separation_des_taches`, activée par
 défaut, `Workflow::separationDesTaches()`) : sur un même état, le DAF ne vise pas un état
@@ -239,8 +250,9 @@ retenue.
 
 ## 7. Les signatures sur le PDF de l'OM
 
-Le PDF d'un OM (`GET /api/ordres/:id/pdf`) porte trois cases de signature : contrôle,
-visa DAF, validation DG. Sous le circuit par état, l'OM lui-même n'est jamais signé ;
+Le PDF d'un OM (`GET /api/ordres/:id/pdf`) porte quatre blocs de signature, en deux rangées :
+le bénéficiaire (nom imprimé, signature manuscrite hors application), puis les trois étapes du
+circuit — contrôle, visa DAF (« Vu »), validation DG. Sous le circuit par état, l'OM lui-même n'est jamais signé ;
 sans précaution, ces cases restaient « en attente » alors que l'état de la mission était
 validé (défaut corrigé par la revue d'octobre 2026, §3 n° 11). Le PDF reprend donc les
 signatures de l'**état des avances** qui couvre l'OM (`PdfGenerator::etatSignataire`) :
@@ -253,13 +265,20 @@ signatures de l'**état des avances** qui couvre l'OM (`PdfGenerator::etatSignat
 | OM `REJETE` / `ANNULE`, état `REJETE` ou `BROUILLON`, aucun état | aucune |
 | PDF brouillon (`/pdf/brouillon`, filigrané) | aucune |
 
+Chaque bloc signé imprime le nom, la date et l'heure (« Le JJ/MM/AAAA à HH:MM », à l'heure du
+Bénin depuis la 1.4) et le code de vérification de l'étape.
+
 Seul l'état des **avances** est repris : c'est sa validation qui fait passer l'OM à
 `VALIDE`. L'état des reliquats ne change pas le statut de l'OM et n'apparaît pas sur son
 PDF.
 
 Le PDF est mis en cache sous `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` : chaque
 signature de l'état et chaque amendement de l'OM changent la clé, donc le PDF est régénéré sans
-purge manuelle (`docs/amendement-om.md` §4.6). Tests : `tests/Feature/OmPdfSignaturesEtatTest.php`,
+purge manuelle (`docs/amendement-om.md` §4.6). La clé ne porte pas la **version** de
+l'application : quand une mise à jour change ce que le PDF imprime (gabarit en 1.3, heure du Bénin
+en 1.4), le dossier `storage/app/private/ordres/` se vide à la main au déploiement, sans quoi un PDF
+resté en cache n'afficherait pas les mêmes heures de signature que le PDF de l'état, toujours
+régénéré (`docs/runbook-mise-a-jour-cron.md`, étape 6). Tests : `tests/Feature/OmPdfSignaturesEtatTest.php`,
 `tests/Feature/OmPdfAmendementTest.php`.
 
 ---
@@ -275,6 +294,7 @@ purge manuelle (`docs/amendement-om.md` §4.6). Tests : `tests/Feature/OmPdfSign
 | Propagation (exclut `SOLDE` / `ANNULE` / `REJETE`) | `EtatPaiementService::propager()` |
 | Porte de paiement unifiée | `Versement::scopeEligiblesLot()`, `FileGenerator::exigerEtatValide()` |
 | Signatures de l'état sur le PDF de l'OM | `PdfGenerator::etatSignataire()`, `PdfGenerator::signatureEtat()` |
+| Notifications de chaque étape (droits effectifs) | `NotificationService::notifier()` ; tests `tests/Feature/NotificationTest.php` |
 | Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
 | Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `LotPaiementService::marquerRecouvre()`, `MissionService::amender()` (règle commune `OrdreMission::solderSiRegle()`), `MissionService::valider()` (exonéré), `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `tests/Feature/RegularisationTest.php`, `tests/Feature/CircuitValidationTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
