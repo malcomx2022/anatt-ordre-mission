@@ -1140,7 +1140,8 @@ bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permi
 bullet("Fuseau : FuseauHoraireTest (heure du Bénin, rapport du 1er du mois à 0 h 30, sérialisation UTC, "
        "migration aller-retour) ; migration éprouvée sur MariaDB avec les données de démonstration.")
 bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
-       "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme. Le 25/10, réponses "
+       "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme, puis de nouveau le "
+       "27/10 en version 1.4 (mêmes fichiers et montants, notifications de chaque signataire). Le 25/10, réponses "
        "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32.")
 bullet("Défauts relevés par la revue d'octobre 2026 : 32, tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Les quatre décisions du §7.1 sont appliquées depuis la 1.4.")
