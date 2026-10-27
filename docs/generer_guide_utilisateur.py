@@ -8,7 +8,9 @@ Dépendance :
     pip install python-docx
 
 Le contenu reflète l'implémentation réelle de l'application (rôles, workflows,
-barème, statuts). À régénérer après toute évolution fonctionnelle majeure.
+barème, statuts). Les figures sont les captures de l'application réelle
+(docs/ecrans/, produites par docs/capturer_ecrans.cjs). À régénérer après toute
+évolution fonctionnelle majeure.
 """
 import os
 from datetime import date
@@ -141,6 +143,21 @@ def encadre(titre, t):
     doc.add_paragraph()
 
 
+ECRANS = os.path.join(ICI, "ecrans")
+
+
+def capture(nom, legende):
+    """Capture de l'écran réel (docs/ecrans, produite par capturer_ecrans.cjs), avec sa légende."""
+    chemin = os.path.join(ECRANS, f"{nom}.jpg")
+    if not os.path.exists(chemin):
+        print(f"  capture absente, ignorée : {nom}.jpg")
+        return
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run().add_picture(chemin, width=Cm(16))
+    leg = doc.add_paragraph(); leg.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = leg.add_run(f"Figure — {legende}"); run.italic = True; run.font.size = Pt(9); run.font.color.rgb = GRIS
+
+
 def tableau(entetes, lignes, largeurs=None):
     t = doc.add_table(rows=1, cols=len(entetes))
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -257,8 +274,17 @@ tableau(
          "recouvré : une rallonge le rouvre, une réduction à zéro le solde.", "6.3"],
         ["Lot complémentaire", "Sur l'écran de génération, le bouton devient « Générer le lot complémentaire » "
          "dès qu'un lot confirmé laisse des bénéficiaires à payer.", "9.3"],
-        ["Notifications", "Seuls les comptes actifs reçoivent la cloche et l'e-mail ; un compte désactivé "
-         "n'est plus prévenu.", "7.2"],
+        ["Notifications", "Elles suivent les droits réels : un compte reçoit la cloche et l'e-mail dès qu'il "
+         "détient la permission de l'étape (rôle personnalisé ou droit accordé à titre individuel compris) ; "
+         "un droit retiré n'est plus notifié. Seuls les comptes actifs sont prévenus.", "7.2"],
+        ["Heure du Bénin", "Les dates et heures enregistrées (paiements, signatures, journal) sont à l'heure "
+         "du Bénin. Un paiement confirmé le 1er du mois juste après minuit compte dans ce mois.", "11"],
+        ["Échec d'une génération", "Après une erreur, l'écran de génération recharge le lot de lui-même : "
+         "plus besoin de recharger la page.", "9.1"],
+        ["Fiche et aperçu de l'OM amendé", "Ils affichent les mêmes libellés que le PDF officiel : « Avance "
+         "engagée », « Reliquat (ajusté par amendement) » ou « Trop-perçu ».", "6.3"],
+        ["Configuration e-mail", "L'écran présente les notifications réellement envoyées, avec leurs "
+         "destinataires.", "13.2"],
         ["Fonction imprimée", "Sans fonction saisie dans « Signatures », l'état imprime celle du compte du "
          "signataire, puis le libellé du poste.", "7.4"],
         ["Menu", "Libellés accentués : « États de paiement », « Générer MTN », « Générer Moov », "
@@ -396,6 +422,7 @@ encadre("Garde-fous",
         "valide l'état (DG) ne peut pas aussi générer ou confirmer les paiements. Cette règle est vérifiée "
         "pour chaque membre d'un profil modifié, droits individuels compris : la modification est refusée "
         "et les comptes concernés sont nommés. Toute modification est tracée au journal d'audit.")
+capture("33_gestion_roles", "matrice des permissions")
 para("Les nouveaux droits d'un utilisateur prennent effet à sa connexion (ou à son prochain "
      "rafraîchissement). La lecture de la matrice est ouverte à l'ADMIN ; sa modification est réservée "
      "au SUPER_ADMIN.")
@@ -412,6 +439,8 @@ encadre("Sécurité",
         "Pour votre protection, le message d'erreur en cas d'échec est volontairement identique "
         "(« Identifiants incorrects. ») quelle que soit la cause. Après plusieurs tentatives infructueuses, "
         "la connexion est temporairement bloquée.")
+
+capture("01_login", "écran de connexion")
 
 h2("3.2 Mot de passe oublié")
 etape("Sur l'écran de connexion, cliquez sur « Mot de passe oublié ? ».")
@@ -435,6 +464,8 @@ para("À la connexion, le tableau de bord présente une vue d'ensemble : indicat
      "actifs), graphiques et accès rapides aux principales actions. Les indicateurs affichés dépendent "
      "de vos droits.")
 
+capture("04_dashboard", "tableau de bord (profil super administrateur)")
+
 # =========================================================================
 # 5. PERSONNEL / AGENTS
 # =========================================================================
@@ -443,6 +474,7 @@ para("Le référentiel des agents centralise les bénéficiaires. C'est lui qui 
      "l'opérateur (MTN / Moov) utilisés pour le paiement — jamais l'ordre de mission.")
 
 h2("5.1 Consulter la liste")
+capture("05_personnel_liste", "liste du personnel")
 bullet("Recherche par nom, matricule ou IFU.")
 bullet("Filtres par catégorie d'indice (≥ 800 / 400-799 / < 400), par opérateur et par statut actif/inactif.")
 bullet("Pagination et accès à la fiche détaillée d'un agent.")
@@ -473,6 +505,7 @@ para("C'est le cœur de l'application. Les OM sont retranscrits depuis SEMO ; il
 h2("6.1 Retranscrire une mission (assistant en 3 étapes)")
 para("Réservé au GESTIONNAIRE_OM (permission « OM — retranscrire »). Une mission regroupe plusieurs "
      "bénéficiaires (participants + CAV).")
+capture("12_om_creation", "assistant de retranscription, étape 1")
 h3("Étape 1 — Contexte de la mission")
 bullet("Objet, destination, zone (déduite de la destination), dates de départ et de retour.")
 bullet("Indiquez s'il y a prise en charge par un tiers (exonération : aucun frais alloué).")
@@ -508,6 +541,7 @@ bullet("Le PDF de l'OM reprend les signatures de l'état des avances de sa missi
        "l'état. Un OM rejeté n'en porte aucune, et un brouillon jamais. Le document de référence reste "
        "l'état de paiement.")
 
+capture("15_detail_om", "fiche d'un OM amendé après paiement de l'avance (trop-perçu)")
 para("La validation des ordres de mission ne se fait pas un par un : elle se joue sur l'état de paiement "
      "de la mission (chapitre 7).")
 encadre("Exception : mission sans état de paiement (reprise de données)",
@@ -540,7 +574,7 @@ bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM atten
        "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
 bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "
        "l'amendement, exactement comme après la validation d'un état des avances.")
-bullet("Le PDF de l'OM (lien « PDF de l'OM » en haut de la fiche) est régénéré après l'amendement. Il n'affiche plus "
+bullet("La fiche de l'OM, l'aperçu « PDF de l'OM » et le PDF officiel (régénéré après l'amendement) n'affichent plus "
        "« Avance (70 %) / Reliquat (30 %) » mais « Avance engagée », puis « Reliquat (ajusté par "
        "amendement) » ou, en cas de réduction forte, « Trop-perçu (à recouvrer par retenue sur salaire) » "
        "avec un montant négatif et la mention « Montant total dû ». Un encadré rappelle l'amendement : "
@@ -568,6 +602,8 @@ bullet("Le brouillon est téléchargeable en PDF : il porte le filigrane « BROU
 bullet("Tant qu'aucune signature n'est apposée, « Rafraîchir » recalcule l'état si les OM ont changé.")
 bullet("La tranche Reliquats n'est proposée qu'après validation de l'état des avances.")
 
+capture("18_file_etats", "file de travail des états de paiement (profil contrôleur)")
+
 h2("7.2 Le circuit en trois étapes")
 para("Chaque état (avances, puis reliquats) passe successivement entre trois mains. Le circuit est donc "
      "parcouru DEUX fois : une fois pour l'état des avances, une fois pour l'état des reliquats. Chacun "
@@ -590,9 +626,12 @@ bullet("Validation de l'état des AVANCES : elle arrête l'état, fait passer le
        "statut VALIDE (un OM rejeté auparavant reste rejeté), fige l'avance de chacun et ouvre les "
        "fichiers d'avance.")
 bullet("Validation de l'état des RELIQUATS : elle ouvre les fichiers de reliquat (les OM sont déjà VALIDE).")
-bullet("Notifications : à chaque étape, les comptes actifs du profil attendu reçoivent une notification "
-       "(cloche et e-mail) ; à la validation finale, l'agent financier est prévenu ; en cas de rejet, le "
-       "gestionnaire. Un compte désactivé n'est jamais notifié.")
+bullet("Notifications (cloche et e-mail) : à chaque étape, sont prévenus les comptes actifs qui détiennent "
+       "la permission de l'étape suivante — contrôler, viser, puis valider ; à la validation finale, ceux qui "
+       "génèrent les fichiers de paiement ; en cas de rejet, ceux qui retranscrivent les missions. Un rôle "
+       "personnalisé ou un droit accordé à titre individuel est donc notifié ; un droit retiré ne l'est plus. "
+       "Le super administrateur n'est pas notifié, et un compte désactivé ne l'est jamais.")
+capture("17_etat_paiement", "état des avances validé : numéro, montants et circuit signé")
 encadre("Rejet possible à chaque étape",
         "Le contrôleur, le DAF ou le DG peuvent rejeter l'état avec un motif (≥ 10 caractères). Le rejet "
         "efface les signatures déjà apposées et renvoie l'état en correction ; les ordres de mission "
@@ -663,7 +702,9 @@ para("Pour un volume important (plus de 50 bénéficiaires), la génération peu
      "un bandeau de suivi s'affiche et le fichier se télécharge automatiquement dès qu'il est prêt. Restez "
      "sur l'écran pendant le traitement ; le lot reste ensuite re-téléchargeable depuis la liste des lots. "
      "Sur l'hébergement de production, le traitement se fait d'un seul tenant : si une erreur s'affiche, "
-     "rechargez la page avant toute autre action, car un lot précédemment généré peut être passé en erreur.")
+     "l'écran recharge le lot de lui-même. Un lot précédemment généré a pu passer en erreur : « Confirmer "
+     "le paiement » n'est alors plus proposé et « Régénérer » reste disponible.")
+capture("19_generation_mtn", "génération MTN : aperçu des bénéficiaires et lot généré, en attente de dépôt")
 
 h2("9.2 Déposer puis confirmer")
 etape("Déposez le fichier généré sur la plateforme de l'opérateur (hors application).")
@@ -699,6 +740,7 @@ bullet("Le versement concerné bascule automatiquement au statut À RECOUVRER et
 etape("Ouvrez « Régularisations » : la liste des trop-perçus (à recouvrer / recouvrés) s'affiche, filtrable et paginée.")
 etape("Cliquez sur « Document » pour télécharger le « document de retenue sur salaire » (PDF) à remettre à la RH ; il porte le montant à retenir, en chiffres et en toutes lettres, et le motif du dernier amendement.")
 etape("Une fois la retenue appliquée par la RH, cliquez sur « Marquer recouvré » : le versement passe au statut RECOUVRÉ. Si l'avance de l'OM est payée, l'OM passe SOLDÉ.")
+capture("47_regularisations", "régularisations : un trop-perçu à recouvrer")
 para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montants à recouvrer et déjà recouvrés. "
      "La consultation est ouverte aux profils disposant de « Paiements — consulter » ; le constat de "
      "recouvrement requiert « Paiements — confirmer ».")
@@ -716,10 +758,12 @@ para("Le détail complet des taux figure en Annexe B.")
 # =========================================================================
 h1("11. Rapports et états")
 para("Les états sont alimentés par les versements confirmés.")
-bullet("Rapport mensuel : synthèse par opérateur, par tranche et par statut.")
+bullet("Rapport mensuel : synthèse par opérateur, par tranche et par statut. Un paiement est rangé dans le "
+       "mois de sa confirmation, à l'heure du Bénin.")
 bullet("Par agent, par opérateur, par zone, par imputation budgétaire.")
 bullet("Trop-perçus : synthèse des régularisations (montants à recouvrer vs déjà recouvrés).")
 bullet("Export Excel ou PDF (immédiat ou en arrière-plan pour les gros volumes).")
+capture("26_rapport_mensuel", "état mensuel")
 
 # =========================================================================
 # 12. AUDIT
@@ -747,6 +791,7 @@ bullet("Ajuster les permissions d'un utilisateur au-delà de son profil (accorde
 bullet("Toute action sur un super administrateur est réservée à un super administrateur.")
 bullet("Le dernier super administrateur actif ne peut être ni rétrogradé, ni désactivé, ni supprimé.")
 bullet("On ne peut pas désactiver ou supprimer son propre compte.")
+capture("31_gestion_utilisateurs", "gestion des utilisateurs")
 encadre("Sécurité des sessions",
         "Lorsqu'un compte est désactivé, supprimé, change de rôle ou voit son mot de passe réinitialisé, "
         "ses sessions actives sont immédiatement révoquées.")
@@ -757,12 +802,15 @@ bullet("Matrice des permissions : consultation par l'ADMIN ; édition à chaud p
 bullet("Signatures : identités et paraphes scannés du contrôleur, du DAF et du Directeur Général, "
        "imprimés sur l'état de paiement (voir chapitre 7.4).")
 bullet("Paramètres : configuration générale de l'application, dont la part de l'avance (%) appliquée "
-       "à la répartition avance / reliquat (70 % par défaut).")
+       "à la répartition avance / reliquat (70 % par défaut). Le fuseau horaire (heure du Bénin) y est "
+       "affiché pour information : il est réglé sur le serveur.")
 bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste dynamique) et mois de début "
        "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
        "différent produit un exercice à cheval, libellé « 2026-2027 ». À ce jour, ce réglage n'agit ni sur "
        "les montants, ni sur les rapports, ni sur les documents, qui se filtrent par dates.")
-bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair.")
+bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair. "
+       "L'écran liste les sept notifications envoyées (état à signer, état validé ou rejeté, OM validé ou "
+       "rejeté, lot confirmé, trop-perçu créé) avec la permission de leurs destinataires.")
 bullet("Sauvegardes : création, téléchargement, restauration et suppression des sauvegardes de la "
        "base de données (voir chapitre 13.3).")
 
