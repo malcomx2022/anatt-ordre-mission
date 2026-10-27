@@ -52,6 +52,29 @@ describe('EmailConfigView — assainissement', () => {
   })
 })
 
+describe('EmailConfigView — notifications réellement envoyées', () => {
+  // Miroir de backend/app/Support/NotificationContenu.php (7 types) : l'écran
+  // présentait des modèles de l'ancien circuit (« chef de service », « approuvé par la DG »).
+  it('liste les 7 notifications du circuit actuel, avec leur destinataire', async () => {
+    const { default: View } = await import('../views/admin/EmailConfigView.vue')
+    const w = mount(View, { global: { stubs } })
+    await flushPromises()
+    const texte = w.text()
+    for (const sujet of [
+      'OM {reference_semo} validé — paiement préparable',
+      'OM {reference_semo} rejeté',
+      'Lot {tranche} {operateur} confirmé',
+      'État de paiement {numero} — signature attendue',
+      'État de paiement {numero} validé — fichiers générables',
+      'État de paiement {numero} rejeté',
+      'Trop-perçu sur OM {reference_semo} — régularisation à traiter',
+    ]) expect(texte).toContain(sujet)
+    expect(texte).toContain('om.viser')
+    expect(texte).not.toContain('chef de service')
+    expect(texte).not.toContain('Mission soumise')
+  })
+})
+
 describe('BackupView — assainissement', () => {
   async function monter() {
     const { default: View } = await import('../views/admin/BackupView.vue')

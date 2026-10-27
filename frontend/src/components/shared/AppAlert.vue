@@ -14,6 +14,9 @@ defineProps<{
       'bg-blue-50 border border-blue-200 text-blue-700'
     ]"
   >
-    <slot />
+    <!-- Un seul bloc : sinon chaque nœud du slot (texte, <strong>) devient une colonne flex. -->
+    <div class="min-w-0 flex-1">
+      <slot />
+    </div>
   </div>
 </template>

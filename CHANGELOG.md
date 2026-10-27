@@ -9,6 +9,23 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Trois défauts d'interface relevés par les captures (27/10/2026)
+
+- **Bandeau de l'écran Signatures coupé en colonnes.** `AppAlert` est en `flex` : un texte brut
+  entrecoupé de `<strong>` devenait une suite de colonnes. Le contenu du slot forme désormais un
+  seul bloc (`AppAlert.vue`). Test `app-alert.spec.ts`.
+- **Libellés avance / reliquat après un amendement.** La fiche OM et l'aperçu du PDF affichaient
+  « Avance (70 %) / Reliquat (30 %) » avec le paramètre courant, même pour un trop-perçu. Ils
+  reprennent maintenant la règle du PDF officiel (`utils/repartition.ts`, miroir de
+  `PdfGenerator::libellesRepartition`) : pourcentage réel de l'OM, puis « Avance engagée » et
+  « Reliquat (ajusté par amendement) » ou « Trop-perçu (à recouvrer par retenue sur salaire) ».
+  Tests `repartition.spec.ts` et `mission-detail.spec.ts`.
+- **Modèles de notification de l'écran Configuration e-mail.** Ils dataient de l'ancien circuit
+  (« Mission soumise », « validé par le chef de service »). L'écran liste les 7 notifications réelles
+  de `NotificationContenu`, avec leur sujet et la permission de leurs destinataires.
+  `NotificationModelesEcranTest` (Pest) échoue si l'écran et `NotificationContenu` divergent.
+- Galerie des écrans recapturée (`docs/ecrans/`).
+
 ### Version 1.4 — décisions D1 à D4 (26/10/2026)
 
 Mise à jour d'une instance : *Notes de version 1.4* de `DEPLOY-CPANEL.md` (maintenance obligatoire

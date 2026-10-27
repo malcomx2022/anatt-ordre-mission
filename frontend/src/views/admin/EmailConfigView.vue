@@ -17,14 +17,17 @@ const smtpEncryption = ref('TLS')
 const fromAddress = ref('')
 const fromName = ref('ANaTT Missions')
 
-// Templates derives du SendNotification job (pas de table, definis dans le code)
+// Notifications réellement envoyées (cloche + e-mail). Miroir de
+// backend/app/Support/NotificationContenu.php ; destinataires : comptes actifs
+// détenant la permission indiquée (NotificationService::notifier, SUPER_ADMIN exclu).
 const templates = [
-  { id: 1, name: 'Mission soumise', subject: 'Nouvel OM {numero} - En attente de validation', type: 'mission_soumise' },
-  { id: 2, name: 'Mission validee', subject: 'OM {numero} valide par le chef de service', type: 'mission_validee' },
-  { id: 3, name: 'Mission approuvee', subject: 'OM {numero} approuve par la DG', type: 'mission_approuvee' },
-  { id: 4, name: 'Mission rejetee', subject: 'OM {numero} rejete', type: 'mission_rejetee' },
-  { id: 5, name: 'Paiement effectue', subject: 'Paiement de {montant} FCFA effectue via {operateur}', type: 'paiement_effectue' },
-  { id: 6, name: 'Paiement echoue', subject: 'Echec paiement OM {numero}', type: 'paiement_echec' },
+  { id: 1, name: 'État à signer', subject: 'État de paiement {numero} — signature attendue', type: 'etat_attend_signature', destinataires: 'om.valider, puis om.viser, puis om.approuver (étape suivante du circuit)' },
+  { id: 2, name: 'État validé', subject: 'État de paiement {numero} validé — fichiers générables', type: 'etat_valide', destinataires: 'paiements.generer' },
+  { id: 3, name: 'État rejeté', subject: 'État de paiement {numero} rejeté', type: 'etat_rejete', destinataires: 'om.retranscrire' },
+  { id: 4, name: 'OM validé (circuit par OM)', subject: 'OM {reference_semo} validé — paiement préparable', type: 'om_valide', destinataires: 'paiements.generer' },
+  { id: 5, name: 'OM rejeté (circuit par OM)', subject: 'OM {reference_semo} rejeté', type: 'om_rejete', destinataires: 'om.retranscrire' },
+  { id: 6, name: 'Lot confirmé', subject: 'Lot {tranche} {operateur} confirmé', type: 'lot_confirme', destinataires: 'om.retranscrire ou utilisateurs.gerer' },
+  { id: 7, name: 'Trop-perçu créé', subject: 'Trop-perçu sur OM {reference_semo} — régularisation à traiter', type: 'trop_percu_cree', destinataires: 'paiements.confirmer' },
 ]
 
 onMounted(async () => {
@@ -134,7 +137,7 @@ async function saveConfig() {
     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-fade-up delay-200">
       <div class="px-6 py-4 border-b border-gray-100">
         <h3 class="text-sm font-display font-semibold text-gray-700">Templates de notification</h3>
-        <p class="text-[11px] text-gray-400 font-body mt-0.5">Modèles définis dans le code (job d'envoi) — présentés ici à titre de référence.</p>
+        <p class="text-[11px] text-gray-400 font-body mt-0.5">Modèles définis dans le code (<code>NotificationContenu</code>), communs à la cloche et à l'e-mail — présentés ici à titre de référence.</p>
       </div>
       <div class="divide-y divide-gray-50">
         <div v-for="tpl in templates" :key="tpl.id" class="px-6 py-4 flex items-center justify-between">
@@ -145,6 +148,7 @@ async function saveConfig() {
             <div>
               <p class="text-sm font-display font-semibold text-gray-800">{{ tpl.name }}</p>
               <p class="text-[11px] text-gray-400 font-body">Sujet : {{ tpl.subject }}</p>
+              <p class="text-[11px] text-gray-400 font-body">Destinataires : comptes actifs avec <code>{{ tpl.destinataires }}</code></p>
             </div>
           </div>
         </div>

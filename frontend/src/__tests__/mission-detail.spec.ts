@@ -194,3 +194,32 @@ describe('Chargement en échec (404)', () => {
     expect(w.text()).not.toContain('Télécharger PDF')
   })
 })
+
+describe('Répartition affichée après un amendement (libellés du PDF officiel)', () => {
+  // OM réduit à 1 jour après paiement d'une avance engagée de 94 500 : reliquat négatif.
+  const tropPercu = {
+    ...ordre('VALIDE', { statut: 'VALIDE' }),
+    nb_jours: 1, montant_total: 45000, avance: 94500, avance_engagee: 94500, reliquat: -49500,
+    amendements: [{ id: 1, nb_jours_avant: 3, nb_jours_apres: 1, montant_total_avant: 135000, montant_total_apres: 45000, delta_montant: -90000, motif: 'Retour anticipé constaté.', amende_par: 3, amende_par_nom: 'Marie DOSSOU', amende_le: '2026-10-26T20:08:05Z' }],
+  }
+
+  beforeEach(() => { get.mockReset() })
+
+  it('la fiche affiche « Avance engagée » et « Trop-perçu », plus de pourcentage', async () => {
+    get.mockResolvedValue(tropPercu)
+    const texte = (await monter()).text()
+    expect(texte).toContain('Avance engagée')
+    expect(texte).toContain('Trop-perçu (à recouvrer par retenue sur salaire)')
+    expect(texte).not.toContain('Avance (70 %)')
+  })
+
+  it('l’aperçu PDF suit les mêmes libellés', async () => {
+    get.mockResolvedValue(tropPercu)
+    const { default: View } = await import('../views/missions/MissionPdfView.vue')
+    const texte = mount(View, { global: { stubs } })
+    await flushPromises()
+    expect(texte.text()).toContain('Avance engagée')
+    expect(texte.text()).toContain('Trop-perçu (à recouvrer par retenue sur salaire)')
+    expect(texte.text()).not.toContain('Reliquat (30 %)')
+  })
+})

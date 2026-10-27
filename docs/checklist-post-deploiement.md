@@ -159,6 +159,9 @@ Sans création de données :
 - [ ] **Fuseau** : dans phpMyAdmin, un `date_paiement` relevé avant la mise à jour a pris **une heure** de plus ; à l'écran (Historique des paiements), il affiche la **même** heure qu'avant. Une heure de décalage à l'écran = migration jouée avec la configuration en cache (rollback, `optimize:clear`, puis migrer de nouveau).
 - [ ] **Rapport mensuel** : un paiement confirmé le 1er du mois entre 0 h et 1 h (heure du Bénin) compte dans ce mois, plus dans le précédent.
 - [ ] **Notifications** : un compte à qui l'on a accordé `paiements.generer` à titre individuel reçoit « OM validé » / « État validé » ; un agent financier à qui on l'a retiré ne le reçoit plus.
+- [ ] **Écran Signatures** : le bandeau d'information se lit d'un seul tenant (plus de texte en colonnes).
+- [ ] **OM amendé en trop-perçu** : la fiche et l'aperçu du PDF affichent « Avance engagée » et « Trop-perçu (à recouvrer par retenue sur salaire) », comme le PDF officiel.
+- [ ] **Configuration e-mail** : la liste présente les 7 notifications du circuit actuel (« État à signer »…), plus « Mission soumise ».
 - [ ] **Échec de génération** : après l'échec d'une génération sur un lot déjà généré, l'écran affiche le lot en erreur, sans bouton « Confirmer le paiement », sans recharger la page.
 
 ---
