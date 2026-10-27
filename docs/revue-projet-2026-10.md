@@ -307,7 +307,7 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #168 | Guide utilisateur : nouveautés D1 à D4 et correctifs d'interface, 12 figures tirées des captures de l'application |
 | #169 | Documentation technique 1.4 : évolutions D1 à D4, mise à jour d'une instance (§9.6), garde-fous de tests |
 | #170 | Scénario de démonstration rejoué en version 1.4 |
-| #171 | README confronté au dépôt ; `start-dev.ps1 -Install` passe à `npm ci` |
+| #171 | README et `AGENTS.md` confrontés au dépôt ; `start-dev.ps1 -Install` passe à `npm ci` |
 
 ### À faire côté exploitation
 
