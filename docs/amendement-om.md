@@ -1,7 +1,7 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
 > **Statut : fonctionnalité complète — Phases 1 à 6 livrées, document de retenue RH inclus,
-> durcie par la revue d'octobre 2026 (version 1.3).**
+> durcie par la revue d'octobre 2026 (version 1.3), relue en version 1.4 (27/10/2026).**
 > Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
@@ -111,6 +111,18 @@
 > - **reliquat ramené à 0** : un amendement qui ramène le total à l'avance déjà payée solde l'OM
 >   (par exemple 10 jours à 35 000 réduits à 7, avec une avance de 245 000). L'OM restait `VALIDE`
 >   sans rien à régler (défaut n° 26).
+>
+> **Révisé (version 1.4, 26-27/10/2026)** :
+> - **fiche et aperçu de l'OM** (`/ordres/:id`, `/ordres/:id/pdf`) : ils affichaient « Avance (70 %) /
+>   Reliquat (30 %) » sur un OM amendé, alors que le PDF disait déjà « Avance engagée » / « Trop-perçu ».
+>   Les deux écrans reprennent désormais les libellés du PDF (`utils/repartition.ts`, miroir de
+>   `PdfGenerator::libellesRepartition`, §4.6) ;
+> - **notification du trop-perçu** : elle vise les comptes actifs qui détiennent `paiements.confirmer`
+>   dans leurs droits effectifs (décision D1), plus seulement le profil agent financier (§4.4) ;
+> - **heure du Bénin** : la date de l'amendement (`amende_le`) et celle qu'impriment le PDF de l'OM et
+>   le document de retenue sont à l'heure du Bénin ; les amendements antérieurs ont été décalés d'une
+>   heure par la migration du fuseau (même instant). D'où la purge du cache des PDF d'OM à la mise à
+>   jour (§4.6).
 
 ---
 
@@ -248,10 +260,12 @@ Body: { nb_jours? , lignes? , motif }
   - statut de versement `A_RECOUVRER` + écran **« Régularisations / trop-perçus »** qui
     les liste. La récupération (retenue sur salaire, ordre de reversement) est un
     **processus manuel hors Mobile Money**.
-  - **Notification** : dès qu'un amendement produit un trop-perçu, l'agent financier est
-    averti dans l'application (cloche) et par e-mail (`NotificationService::tropPercuCree`,
-    type `trop_percu_cree`) —
-    la régularisation ne dépend pas d'une consultation manuelle de l'écran.
+  - **Notification** : dès qu'un amendement produit un trop-perçu, les comptes actifs qui
+    détiennent `paiements.confirmer` (ceux qui constateront le recouvrement : l'agent financier
+    avec la matrice par défaut, plus tout rôle personnalisé ou droit individuel équivalent) sont
+    avertis dans l'application (cloche) et par e-mail (`NotificationService::tropPercuCree`,
+    type `trop_percu_cree`) — la régularisation ne dépend pas d'une consultation manuelle de
+    l'écran. Rien n'est envoyé quand le reliquat reste positif.
 
 ### 4.5 État des reliquats
 
@@ -274,7 +288,9 @@ Le PDF de l'OM (`PdfGenerator`) en tient compte :
 
 - **cache** : la clé `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` compte les
   amendements ; après un amendement, `GET /api/ordres/:id/pdf/download` régénère le PDF au
-  lieu de servir celui d'avant ;
+  lieu de servir celui d'avant. Elle ne compte pas la **version** de l'application : à une mise à
+  jour qui change ce que le PDF imprime (1.3, 1.4), `storage/app/private/ordres/` se vide au
+  déploiement (`docs/runbook-mise-a-jour-cron.md`, étape 6) ;
 - **répartition** (`libellesRepartition`) :
 
   | Situation de l'OM | Libellés |
@@ -291,6 +307,10 @@ Le PDF de l'OM (`PdfGenerator`) en tient compte :
 
 Les signatures reprises de l'état des avances restent affichées : elles portent sur
 l'avance, que l'amendement ne modifie pas. Tests : `tests/Feature/OmPdfAmendementTest.php`.
+
+**À l'écran** (version 1.4) : la fiche de l'OM et l'aperçu imprimable (OM-07) appliquent les mêmes
+trois règles de libellés, par `frontend/src/utils/repartition.ts`, miroir de
+`libellesRepartition`. Tests : `repartition.spec.ts`, `mission-detail.spec.ts`.
 
 ---
 
@@ -365,7 +385,8 @@ Questions de gestion posées au cadrage, et la réponse retenue :
 | Amendement et gardes | `MissionService::amender()`, `MissionService::exigerAmendementPossible()` |
 | Solde d'un OM (après paiement, recouvrement ou amendement) | `OrdreMission::solderSiRegle()`, `docs/circuits-validation.md` §3 |
 | Régularisations et document de retenue | `LotPaiementService::regularisations()`, `PdfGenerator::genererDocumentRetenue()` |
-| Notification du trop-perçu | `NotificationService::tropPercuCree()` |
+| Notification du trop-perçu (droits effectifs) | `NotificationService::tropPercuCree()`, tests `NotificationTest` |
+| Libellés de la répartition à l'écran | `frontend/src/utils/repartition.ts` (miroir de `PdfGenerator::libellesRepartition`), tests `repartition.spec.ts`, `mission-detail.spec.ts` |
 | PDF de l'OM amendé | `PdfGenerator::donnees()`, `PdfGenerator::libellesRepartition()`, gabarit `pdf.ordre-mission` |
 | Endpoints et permissions | `backend/docs/openapi.yaml` (`POST /ordres/{ordre}/amender`, tag *Paiements* pour les régularisations) |
 | Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest`, `OmPdfAmendementTest` |

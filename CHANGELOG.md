@@ -9,6 +9,89 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide du paramétrage de la part d'avance — version 1.4 (27/10/2026)
+
+- **Écart corrigé** : `docs/parametrage-part-avance.md` affirmait que tous les libellés à l'écran suivent la
+  part **courante**. Depuis la 1.4, la fiche et l'aperçu de l'OM la tirent des **montants de l'OM**, comme le
+  PDF (`utils/repartition.ts`) ; le guide distingue désormais ce qui reste à créer (part courante) de ce qui
+  décrit un OM existant (part de l'OM), avec fichiers, tests (`repartition.spec.ts`) et PR #167.
+- **Limite relevée, non corrigée** : l'écran d'un état de paiement titre ses tranches avec la part courante
+  (« Avances (70 %) ») ; montants justes, pourcentage du titre faux si la part a changé depuis la
+  retranscription. Le PDF de l'état n'imprime pas ce pourcentage.
+- Chemin de l'écran corrigé : menu *Système* › Paramètres, onglet *Général*.
+
+### Guide de l'amendement d'un OM — version 1.4 (27/10/2026)
+
+- `docs/amendement-om.md` confronté au code (méthodes, migrations, tests cités : tous présents). Ajouts 1.4 :
+  - en-tête *Révisé (version 1.4)* : libellés de la fiche et de l'aperçu de l'OM alignés sur le PDF
+    (`utils/repartition.ts`), notification par droits effectifs, heure du Bénin ;
+  - **Écart corrigé** §4.4 : la notification du trop-perçu était décrite comme adressée à « l'agent
+    financier » ; elle vise les détenteurs effectifs de `paiements.confirmer` (décision D1) ;
+  - §4.6 : libellés à l'écran (miroir et tests) ; cache des PDF à vider à une mise à jour de version ;
+  - §8 : références `utils/repartition.ts` et `NotificationTest`.
+
+### Guide des circuits de validation — version 1.4 (27/10/2026)
+
+- **Écart corrigé** : `docs/circuits-validation.md` §7 annonçait « trois cases de signature » sur le PDF de
+  l'OM ; le gabarit (`ordre-mission.blade.php`) en porte **quatre** (bénéficiaire, contrôle, visa DAF,
+  validation DG). Il affirmait aussi que le cache des PDF se renouvelle « sans purge manuelle » : vrai pour
+  les signatures et les amendements, pas pour une mise à jour de version (clé sans version : purge en 1.3
+  et en 1.4, cf. runbook).
+- §1 : ligne *Notifications* par circuit (permission visée à chaque étape, droits effectifs, décision D1) ;
+  §7 : date et heure de signature imprimées à l'heure du Bénin ; §8 : `NotificationService` et
+  `NotificationTest` ajoutés, toutes les références (classes, méthodes, tests) vérifiées.
+
+### Guide des workflows par profil — version 1.4 (27/10/2026)
+
+- **Écart corrigé** : `docs/workflows-par-profil.md` §8 décrivait encore des notifications « par profil »
+  (rôle personnalisé et droit individuel jamais notifiés, droit retiré toujours notifié), contraire à la
+  décision D1. Section réécrite : permission visée par chaque événement (`NotificationService`), profils
+  notifiés avec la matrice par défaut, effet d'une personnalisation, SUPER_ADMIN exclu, une seule
+  notification par compte. Même correction au §3 et dans `docs/rbac-flexible.md` (circuit de signature
+  d'un rôle personnalisé).
+- Matrice (§3) et menu (§7) reconfrontés à `config/profils.php` et à `navigation.ts` : conformes.
+
+### Runbook de mise à jour — version 1.4 (27/10/2026)
+
+- **Écart corrigé (procédure)** : le runbook et `DEPLOY-CPANEL.md` § B bis annonçaient que, en maintenance,
+  le SPA affiche « Maintenance en cours ». Or le SPA servi pendant l'opération est encore l'**ancien** (il
+  n'est remplacé qu'à l'étape 7), et la prise en charge du 503 n'existe qu'à partir de la 1.4 : lors de la
+  mise à jour 1.3 → 1.4, les écrans échouent sans message. Prévenir les utilisateurs ; le contrôle de la
+  checklist (§06) se fait dès la mise à jour suivante ou sur la recette.
+- `docs/runbook-mise-a-jour-cron.md` : encadré d'en-tête **1.4** ; `APP_TIMEZONE` du `.env` vérifiée avant la
+  migration ; horodatage témoin relevé à l'étape 2, contrôlé à l'étape 6 (+1 h en base) et en recette (même
+  heure à l'écran) ; `maintenance.log` et `--render` si `vendor/` est réenvoyé (étape 3 bis) ; arrêt de la
+  commande 5b = application laissée en maintenance ; sortie de maintenance vérifiée par `/api/auth/me`
+  (401, pas 503) ; recette 1.4 en lecture seule ; ménage (3 bis, `maintenance.log`) ; retour arrière :
+  caches purgés et `artisan up`, cohérence dump UTC ↔ code 1.3, `migrate:rollback` avant le retour au code.
+
+### Checklist post-déploiement mise à jour — version 1.4 (27/10/2026)
+
+- **Écart corrigé (procédure 1.4)** : le cache des PDF d'OM (`storage/app/private/ordres/`) n'était à vider
+  qu'en 1.3. Or, en 1.4, un PDF d'OM resté en cache imprime ses heures de signature en UTC, alors que le PDF
+  de l'état, régénéré à chaque téléchargement (`EtatPaiementPdf::telecharger`), les imprime à l'heure du
+  Bénin : les deux documents ne concordaient plus. Purge ajoutée aux notes de version 1.4 de
+  `DEPLOY-CPANEL.md`, au runbook (« 1.3 et 1.4 ») et à la checklist (§04, plus un contrôle au §06).
+- §01 : contrôle de **sortie de maintenance** (`/api/auth/me` en 401, pas 503 ; `/up` répond 200 même en
+  maintenance) ; 34 migrations attendues.
+- §05 : comportement réel de l'écran `/maintenance` (nouvelle vérification après 30 s, retour à l'accueil
+  quand l'API répond, heure de fin seulement avec `?fin=`).
+- §06 (1.4) : contrôle « Configuration e-mail » corrigé — il annonçait « plus « Mission soumise » », un modèle
+  justement retiré (7 notifications et leurs destinataires) ; contrôle de maintenance à faire pendant la
+  fenêtre ; en-tête relu le 27/10.
+
+### UPLOAD-VENDOR.md mis à jour — échange de `vendor/` sous maintenance (27/10/2026)
+
+- **Écart corrigé (procédure)** : entre le renommage de l'ancien `vendor/` et la fin de l'extraction, l'API
+  répondait **500** à toute requête. §4 : maintenance posée **avant** par tâche Cron, avec
+  `artisan down --render="errors::503"` — un `down` simple a lui-même besoin de `vendor/` pour répondre 503
+  (constaté : sans `vendor/`, `/api/*` répond 500 sans `--render`, 503 avec) ; étape 7 : sortie de
+  maintenance (`artisan up`, ou fin de la commande de migration du § D) après vérification ; §5 : `/up`
+  traverse Laravel même en maintenance et prouve que `vendor/` se charge ; deux lignes de dépannage.
+- §0 : versions 1.3 **et 1.4** sans ré-upload (`composer.lock` inchangé depuis la 1.2 ; les dépendances
+  retirées en 1.4 sont celles du SPA) ; en-tête relu le 27/10.
+- `DEPLOY-CPANEL.md` § B bis : renvoi à `--render` quand la mise à jour renvoie aussi `vendor/`.
+
 ### DEPLOY-CPANEL.md mis à jour — mise en maintenance sans SSH (27/10/2026)
 
 - **Écart corrigé (SPA)** : en maintenance (`php artisan down`), l'API répond **503** à toute requête, mais

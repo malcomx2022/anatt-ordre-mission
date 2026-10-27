@@ -377,15 +377,21 @@ tâche Cron ponctuelle, **avant** l'envoi du code :
 /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan down > /home/anatt/maintenance.log 2>&1
 ```
 
-- L'API répond alors **503** à toute requête (`{"message":"Service Unavailable"}`) ; le SPA bascule
-  sur son écran **Maintenance**, qui revérifie l'API toutes les 30 s et ramène l'utilisateur à sa
-  page dès qu'elle répond. `/up` reste à 200 : ne l'utilisez pas pour juger de la fin de maintenance.
+- L'API répond alors **503** à toute requête (`{"message":"Service Unavailable"}`) ; un SPA **1.4 ou
+  plus récent** bascule sur son écran **Maintenance**, qui revérifie l'API toutes les 30 s et ramène
+  l'utilisateur à sa page dès qu'elle répond. Le SPA servi pendant l'opération est encore l'**ancien**
+  (il n'est remplacé qu'au § F) : lors de la mise à jour **1.3 → 1.4**, ses écrans échouent donc sans
+  message — prévenez les utilisateurs. `/up` reste à 200 : ne l'utilisez pas pour juger de la fin de
+  maintenance.
 - Les commandes `artisan` (migrations, purge des caches) fonctionnent normalement en maintenance.
 - La sortie de maintenance (`artisan up`) termine la commande de migration du § D : elle n'est
   jouée que si tout ce qui précède a réussi. Un échec laisse donc l'application **en maintenance** —
   c'est voulu : corrigez (ou revenez en arrière, § H), puis lancez `artisan up` par une tâche Cron.
   Sur une instance qui n'était pas en maintenance, `artisan up` ne fait rien (« already up »).
 - Supprimez la tâche `down` dès qu'elle a tourné, comme toutes les tâches ponctuelles.
+- Si la mise à jour renvoie aussi `vendor/`, ajoutez `--render="errors::503"` à la commande : un
+  `down` simple a besoin de `vendor/` pour répondre 503, et l'API répondrait 500 pendant l'échange
+  (`UPLOAD-VENDOR.md` §4).
 
 ### C. Uploader le nouveau code de l'API
 
@@ -586,6 +592,7 @@ Ce qui change pour la mise à jour d'une instance en 1.3 :
 | Élément | À faire |
 |---|---|
 | **Fuseau horaire (D2)** | L'application passe à l'heure du Bénin (`config/app.php` : `APP_TIMEZONE`, défaut `Africa/Porto-Novo`). La migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` décale d'**une heure** toutes les colonnes date-heure déjà enregistrées (UTC → heure du Bénin) : chaque horodatage garde le même instant, les dates seules (départ, retour) ne bougent pas. ⚠️ **Mettez l'application en maintenance avant d'envoyer le code** (§ B bis, `artisan down`) et migrez dans la foulée (§ D : la commande purge les caches d'abord et finit par `artisan up`) : une écriture faite entre l'envoi de `config/app.php` et la migration serait déjà à l'heure du Bénin, puis décalée une seconde fois. La migration ne se joue qu'une fois ; elle s'annule par `migrate:rollback --step=1` (−1 h). Pour rester en UTC : `APP_TIMEZONE=UTC` dans le `.env` **avant** de migrer (la migration ne fait alors rien). |
+| **PDF des OM** | ➜ **Videz `storage/app/private/ordres/`** après la migration, comme en 1.3 : un PDF d'OM resté en cache imprime ses heures de signature en UTC, une heure plus tôt que le PDF de l'état (toujours régénéré). Ce dossier n'est qu'un cache. |
 | **Notifications (D1)** | Code seul. Elles visent les comptes actifs qui détiennent la permission de l'étape (droits effectifs), plus seulement les profils système : rôles personnalisés et droits accordés individuellement sont notifiés, un droit retiré ne l'est plus, le super administrateur ne l'est pas. Avec la matrice par défaut, les destinataires ne changent pas. |
 | **SPA (D3, D4 et correctifs)** | À redéployer (§ F) : dépendances inutilisées retirées (bundle inchangé à l'usage) ; l'écran de génération recharge le lot après un échec (« Confirmer » ne reste plus affiché sur un lot passé en erreur) ; bandeau de l'écran Signatures lisible ; fiche et aperçu d'un OM amendé aux libellés du PDF ; écran Configuration e-mail listant les 7 notifications réelles ; fuseau affiché en lecture seule dans Paramètres ; une API en maintenance (503) ouvre l'écran Maintenance au lieu d'erreurs silencieuses. |
 | **Documentation** | Guide utilisateur (avec captures) et documentation technique régénérés en 1.4 ; galerie des écrans réels (`docs/00_galerie_index.html`). Rien à déployer. |

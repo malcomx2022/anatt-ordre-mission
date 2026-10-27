@@ -17,8 +17,15 @@
 > code (`app/`, `bootstrap/app.php`, SPA). Ils n'ajoutent **aucune migration** et ne changent pas `vendor/`. Le SPA reste à
 > redéployer : le menu latéral et la fiche OM ont changé. Leurs contrôles sont listés à l'étape 8.
 >
+> **Mise à jour vers la 1.4** (décisions D1 à D4, 26/10/2026) : une seule migration
+> (`2026_10_26_090000_passer_horodatages_au_fuseau_applicatif`, qui décale d'une heure les horodatages
+> existants : passage à l'heure du Bénin), **mise en maintenance obligatoire** (étape 3 bis), `vendor/`
+> **inchangé**, cache des PDF d'OM à vider (étape 6), SPA **à redéployer**. Encadrés « 1.4 » ci-dessous ;
+> détail dans les *Notes de version 1.4* de `DEPLOY-CPANEL.md`.
+>
 > *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
-> `vendor/composer/platform_check.php`.
+> `vendor/composer/platform_check.php`. *Relu le 27/10/2026 (version 1.4)* : fuseau dans le `.env`,
+> SPA servi pendant la maintenance, sortie de maintenance vérifiée, recette et retour arrière 1.4.
 
 ---
 
@@ -39,7 +46,11 @@
       sont soit déposés et confirmés, soit passés en erreur. Un lot généré pendant l'opération
       serait perdu en cas de retour arrière (la base revient à l'étape 1, pas le fichier).
 
-> **1.3** : `composer.lock` n'a pas changé depuis la 1.2 → **ne pas** réenvoyer `vendor/`.
+> **1.3 et 1.4** : `composer.lock` n'a pas changé depuis la 1.2 → **ne pas** réenvoyer `vendor/`.
+>
+> **1.4** : prévenez les utilisateurs de l'heure de l'opération. Pendant la maintenance, c'est encore
+> le SPA 1.3 qui est servi : il ne connaît pas l'écran *Maintenance* (apparu en 1.4) et ses écrans
+> échouent sans message jusqu'à l'étape 7.
 
 ---
 
@@ -51,6 +62,10 @@
 - [ ] **SPA** — Gestionnaire de fichiers > `public_html` > tout sélectionner > **Compresser**
       en `public_html_AAAA-MM-JJ.zip` > télécharger.
 - [ ] **`.env`** — télécharger `anatt-api/.env` (il ne sera pas écrasé, mais il est irremplaçable).
+      **1.4** : y chercher `APP_TIMEZONE`. Absente (cas normal, les gabarits antérieurs ne l'ont
+      pas) → l'application prend l'heure du Bénin. Présente, elle doit valoir `Africa/Porto-Novo` ;
+      `APP_TIMEZONE=UTC` n'est à garder que pour rester **volontairement** en UTC (la migration ne
+      décale alors rien). Toute correction du `.env` se fait **avant** l'étape 5b.
 - [ ] **Réglages et paraphes** — télécharger `anatt-api/storage/app/settings.json` et
       `anatt-api/storage/app/private/signatures/` : ils ne sont pas dans le dump de la base
       (`DEPLOY-CPANEL.md` § *Mise à jour*, A.4).
@@ -83,6 +98,10 @@ SELECT migration, batch FROM migrations ORDER BY id;
 
 > **1.3** : depuis une instance 1.2 à jour, seul `2026_10_22_090000_add_sequence_to_lots_paiement`
 > manque. Une base antérieure au 14/09 manque aussi `2026_09_14_090000_renommer_categories_ordre_en_indice`.
+>
+> **1.4** : depuis une instance 1.3 à jour, seul `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif`
+> manque (34 migrations au total). **Notez aussi** un horodatage témoin, pour l'étape 6 :
+> `SELECT id, date_paiement FROM versements WHERE date_paiement IS NOT NULL ORDER BY id DESC LIMIT 1;`
 
 ---
 
@@ -114,9 +133,15 @@ Tâche Cron ponctuelle, **avant** l'envoi du code :
 /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan down > /home/anatt/maintenance.log 2>&1
 ```
 
-- [ ] `https://api-omsemo.anatt.bj/api/auth/me` répond **503** (`{"message":"Service Unavailable"}`) ;
-      le SPA affiche « Maintenance en cours ».
+- [ ] `/home/anatt/maintenance.log` affiche `Application is now in maintenance mode.`
+- [ ] `https://api-omsemo.anatt.bj/api/auth/me` répond **503** (`{"message":"Service Unavailable"}`).
+      Le SPA en place est encore l'ancien : un SPA **1.4 ou plus récent** affiche « Maintenance en
+      cours » ; le SPA 1.3, servi pendant la mise à jour vers la 1.4, échoue sans message.
 - [ ] Tâche supprimée.
+
+> **`vendor/` réenvoyé dans la même opération** (jamais en 1.3 ni en 1.4) : ajoutez
+> `--render="errors::503"` à la commande. Un `down` simple a besoin de `vendor/` pour répondre 503 :
+> pendant l'échange, l'API répondrait 500 (`UPLOAD-VENDOR.md` §4).
 
 > La sortie de maintenance est la fin de la commande de l'étape 5b (`artisan up`) : elle n'est jouée que
 > si la migration réussit. Détail : `DEPLOY-CPANEL.md`, § Mise à jour, B bis.
@@ -177,6 +202,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       les horodatages existants — application **en maintenance** pendant l'envoi du code et la
       migration, cf. `DEPLOY-CPANEL.md`, *Notes de version 1.4*).
 - [ ] Le log se termine par `Application is now live.` (sortie de maintenance) ou `Application is already up.`
+      S'il s'arrête avant (migration en erreur), l'application **reste en maintenance**, c'est voulu :
+      lire l'erreur, corriger ou revenir en arrière, puis jouer `artisan up` par une tâche ponctuelle
+      (`DEPLOY-CPANEL.md`, § Mise à jour, B bis).
 - [ ] **Tâche supprimée** — sinon elle se rejoue toutes les cinq minutes et **écrase le log**.
 
 > `--force` remplace la confirmation interactive, impossible en Cron. La purge **avant** `migrate`
@@ -187,11 +215,16 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 
 ## 6 · Vérifier l'API avant de toucher au SPA
 
-- [ ] `https://api-omsemo.anatt.bj/up` → page de santé Laravel en **200**.
+- [ ] `https://api-omsemo.anatt.bj/up` → page de santé Laravel en **200**. Il répond 200 même en
+      maintenance : il ne prouve pas la sortie de maintenance.
 - [ ] Un POST sur `/api/auth/login` répond en JSON.
-- [ ] **1.3** : `https://api-omsemo.anatt.bj/api/auth/me` ouvert dans le navigateur répond **401 en
-      JSON** (`{"message":"Non authentifie."}`). Une page 500 ici = l'ancien `bootstrap/app.php` est
-      encore en place (étape 4).
+- [ ] `https://api-omsemo.anatt.bj/api/auth/me` ouvert dans le navigateur répond **401 en JSON**
+      (`{"message":"Non authentifie."}`). Un **503** = toujours en maintenance (`artisan up` non joué,
+      étape 5b) ; **1.3** : une page 500 = l'ancien `bootstrap/app.php` est encore en place (étape 4).
+- [ ] **1.4** : dans phpMyAdmin, l'horodatage témoin de l'étape 2 a pris **une heure** de plus
+      (même instant, désormais exprimé à l'heure du Bénin). Inchangé = migration jouée avec une
+      configuration en UTC : `APP_TIMEZONE` du `.env` ou cache non purgé (`DEPLOY-CPANEL.md`,
+      *Dépannage*).
 
 > **500 partout** avec « Your Composer dependencies require a PHP version ">= 8.4.0" » → la
 > version PHP du **site** (pas celle du Cron) est trop basse : *Select PHP Version* → 8.4.
@@ -203,11 +236,12 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 > `anatt-api/bootstrap/cache/*.php`, `anatt-api/storage/framework/views/*.php`,
 > `anatt-api/storage/framework/cache/data/`.
 
-- [ ] **1.3** : vider le cache des PDF d'OM — Gestionnaire de fichiers >
+- [ ] **1.3 et 1.4** : vider le cache des PDF d'OM — Gestionnaire de fichiers >
       `anatt-api/storage/app/private/ordres/` > sélectionner tout le contenu > *Delete* (garder le
-      dossier). Le PDF de l'OM a changé (signatures de l'état, répartition après amendement, taux
-      hors transport) et un OM sans état ni amendement garderait sinon son ancien PDF. Les PDF se
-      régénèrent au premier téléchargement ; ne touchez pas à `paiements/` ni à `signatures/`.
+      dossier). En 1.3, le PDF de l'OM a changé (signatures de l'état, répartition après amendement,
+      taux hors transport) et un OM sans état ni amendement garderait sinon son ancien PDF. En 1.4, un
+      PDF resté en cache imprimerait ses heures de signature en UTC, une heure plus tôt que l'état.
+      Les PDF se régénèrent au premier téléchargement ; ne touchez pas à `paiements/` ni à `signatures/`.
 
 ---
 
@@ -246,17 +280,26 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       N'amendez rien pour tester. Le détail des contrôles se trouve dans la section *06 › Correctifs
       des 23 au 25/10/2026* de la checklist, et ceux qui créent des données dans sa sous-section
       *Sur l'instance de recette uniquement*.
+- [ ] **1.4** (contrôles en lecture seule) :
+      - *Paramètres* affiche le fuseau `Africa/Porto-Novo`, en lecture seule ;
+      - *Historique des paiements* (`/paiements/historique`) : le paiement témoin de l'étape 2 affiche
+        la **même** heure qu'avant la mise à jour. Une heure de moins à l'écran = migration jouée
+        avec une configuration en UTC (contrôle de l'étape 6 ; `DEPLOY-CPANEL.md`, *Dépannage*) ;
+      - sur une mission validée par le circuit, l'heure de signature du DG est la même sur le PDF de
+        l'état et sur celui d'un de ses OM (cache vidé à l'étape 6) ;
+      - *Configuration e-mail* (`/admin/email`) liste les 7 notifications et leurs destinataires.
+
+      Les autres contrôles 1.4 sont dans la section *06 › Version 1.4* de la checklist.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu
-      (version 1.3 : voir la section *06* de la checklist et les *Notes de version 1.3* de
-      `DEPLOY-CPANEL.md`).
+      (voir la section *06* de la checklist et les *Notes de version* 1.3 / 1.4 de `DEPLOY-CPANEL.md`).
 - [ ] Checklist complète : [`checklist-post-deploiement.md`](checklist-post-deploiement.md).
 
 ---
 
 ## 9 · Ménage
 
-- [ ] Toutes les tâches Cron temporaires supprimées (étapes 3, 5a, 5b).
+- [ ] Toutes les tâches Cron temporaires supprimées (étapes 3, 3 bis, 5a, 5b).
 - [ ] Tâches Cron **permanentes** toujours présentes (`schedule:run` chaque minute ou `db:backup` 02:00,
       `queue:work --queue=paiements,etats,default` le cas échéant). Le lendemain, un nouveau fichier
       daté apparaît dans `anatt-api/storage/app/backups/`.
@@ -264,7 +307,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       `* * * * *  /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan schedule:run >> /dev/null 2>&1`.
       Elle ajoute la purge quotidienne des jetons Sanctum expirés (`DEPLOY-CPANEL.md` §9). **Ne gardez
       pas les deux**, sinon la sauvegarde est prise deux fois.
-- [ ] `/home/anatt/php-version.log`, `migration-status.log`, `migration-run.log` supprimés.
+- [ ] `/home/anatt/php-version.log`, `maintenance.log`, `migration-status.log`, `migration-run.log` supprimés.
 - [ ] Sauvegardes de l'étape 1 archivées hors du serveur.
 
 ---
@@ -277,6 +320,9 @@ Si la recette échoue et que le correctif n'est pas immédiat :
 2. **Base** — phpMyAdmin > **Importer** le dump de l'étape 1 (ses `DROP TABLE` remplacent l'état
    actuel sans intervention manuelle).
 3. **Code API** — réenvoyer le `anatt-api/` de la version précédente.
+4. **Caches et maintenance** — tâche Cron ponctuelle `artisan optimize:clear && artisan up` (chemins
+   complets, comme à l'étape 5b) : la configuration en cache serait celle de la version abandonnée,
+   et l'application peut être restée en maintenance.
 
 > `migrate:rollback --step=1` existe (les 34 migrations implémentent toutes `down()`), mais
 > restaurer le dump reste plus sûr : un rollback ne rend pas les données qu'une migration a
@@ -287,3 +333,12 @@ Si la recette échoue et que le correctif n'est pas immédiat :
 > — raison de plus pour revenir par le dump. Les fichiers de paiement écrits après la mise à jour
 > (`storage/app/private/paiements/{mission_id}/`) restent sur le disque mais ne sont plus référencés
 > par la base restaurée : ne les redéposez pas sans les avoir rapprochés des lots.
+>
+> **1.4** : le dump de l'étape 1 est en UTC ; il ne va qu'avec le code **1.3** (`config/app.php` en UTC).
+> Ne réimportez jamais ce dump sous le code 1.4 sans rejouer la migration du fuseau, et ne gardez pas
+> une base migrée sous le code 1.3 : les heures seraient décalées d'une heure. Deux voies cohérentes :
+> le dump **et** le code 1.3 (les écritures faites depuis la mise à jour sont perdues), ou
+> `migrate:rollback --step=1` (−1 h sur toute la base, écritures récentes comprises, qui repasse en
+> UTC) **puis** le code 1.3 — dans cet ordre : le rollback a besoin du fichier de migration et calcule
+> son décalage sur la configuration 1.4 (heure du Bénin).
+> Videz aussi `storage/app/private/ordres/` : les PDF régénérés sous la 1.4 imprimeraient l'heure du Bénin.

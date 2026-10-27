@@ -12,11 +12,15 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 > *Relu le 24/10/2026 contre le code* : règle du solde déplacée sur le modèle
 > (`OrdreMission::solderSiRegle`), conséquences d'une part à 0 % ou 100 % sur l'état des avances
 > et sur l'amendement (défaut n° 28 : un OM soldé par une avance à 100 % redevient amendable).
+>
+> *Relu le 27/10/2026 (version 1.4)* : la fiche et l'aperçu de l'OM ne lisent plus le paramètre courant
+> pour leurs libellés, mais les montants de l'OM, comme le PDF (`utils/repartition.ts`) ; chemin de
+> l'écran corrigé (menu *Système*, onglet *Général*).
 
 ## Où se règle-t-il
 
-- **Écran** : Administration → Paramètres → *Part de l'avance (%)* (le champ *Part du
-  reliquat* est calculé automatiquement).
+- **Écran** : menu *Système* → **Paramètres** (`/admin/parametres`), onglet **Général** →
+  *Part de l'avance (%)* (le champ *Part du reliquat* est calculé automatiquement).
 - **Permission** : `parametres.gerer` (SUPER_ADMIN) pour l'écriture.
 - **Stockage** : clé `partAvance` dans `storage/app/settings.json` (fichier, **pas** la
   base de données).
@@ -77,11 +81,23 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
     423) ; elle est relue dès la sortie de ce verrou ;
   - les vues lisent la valeur **réactive** (`usePartAvance().partAvance`), pas une copie
     figée au montage.
-- **Libellés** : tous dynamiques (`{{ avancePct }} %` / `{{ 100 − avancePct }} %`). Le
-  **PDF officiel de l'ordre de mission** tire, lui, son pourcentage des **montants de l'OM**
-  (`round(avance × 100 / total)`) : un OM retranscrit à 70 % garde « Avance (70 %) » même si la
-  part a changé depuis. Après un amendement, il affiche « Avance engagée » et « Reliquat (ajusté
-  par amendement) » ou « Trop-perçu » (`docs/amendement-om.md` §4.6).
+- **Libellés** — deux familles :
+  - **ce qui reste à créer** suit le paramètre courant (`usePartAvance().partAvance`) : aperçu
+    du per diem à la retranscription (`stores/ordres-mission.ts`), sélecteur de tranche de
+    l'écran de génération (« Avance (70 %) »), mention « avance et reliquat sont recalculés
+    (70 / 30 %) » de la modale d'amendement tant que l'avance n'est pas engagée ;
+  - **ce qui décrit un OM existant** tire son pourcentage des **montants de l'OM**
+    (`round(avance × 100 / total)`) : un OM retranscrit à 70 % garde « Avance (70 %) » même si la
+    part a changé depuis. C'est le cas du **PDF officiel** (`PdfGenerator::libellesRepartition`)
+    et, depuis la 1.4, de la **fiche** et de l'**aperçu** de l'OM (`utils/repartition.ts`, son
+    miroir) — auparavant, ces deux écrans affichaient la part courante et contredisaient le PDF.
+    Le paramètre n'y sert plus que de repli pour un OM à montant nul (exonéré). Après un
+    amendement, les trois affichent « Avance engagée » et « Reliquat (ajusté par amendement) » ou
+    « Trop-perçu » (`docs/amendement-om.md` §4.6).
+  - **limite connue** : l'écran d'un état de paiement (`EtatDetailView`) titre encore ses tranches
+    avec la part **courante** (« Avances (70 %) »). Ses montants, figés au récapitulatif, sont
+    justes ; seul le pourcentage du titre peut différer de celui des OM si la part a changé depuis
+    leur retranscription. Le PDF de l'état ne porte pas ce pourcentage.
 
 ## Fichiers principaux
 
@@ -106,6 +122,8 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   changement de mot de passe imposé, reset logout.
 - `views/admin/SettingsView.vue` — édition du réglage + rafraîchissement (et chargement
   correct d'une part à 0 %).
+- `utils/repartition.ts` — libellés d'un OM existant (part tirée de ses montants, miroir de
+  `PdfGenerator::libellesRepartition`), utilisés par la fiche et l'aperçu de l'OM.
 - Lecteurs de la valeur : `stores/ordres-mission.ts` (aperçu du per diem à la
   retranscription), `views/missions/MissionDetailView.vue`, `views/missions/MissionPdfView.vue`,
   `views/etats/EtatDetailView.vue`, `components/paiements/PaiementGeneration.vue`.
@@ -126,6 +144,8 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   reliquat n'est ni payé ni recouvré, masqué sinon.
 - `tests/Feature/OmPdfAmendementTest.php` — le PDF de l'OM tire son pourcentage des montants
   de l'OM, et non du paramètre courant.
+- `frontend/src/__tests__/repartition.spec.ts` — part réelle de l'OM et non le paramètre courant ;
+  repli sur le paramètre pour un OM à montant nul ; libellés après amendement et trop-perçu.
 - `frontend/src/__tests__/part-avance.spec.ts` — pas de mise en cache du défaut sur
   erreur ; pas de chargement pendant le changement de mot de passe imposé, relecture après.
 - `tests/Feature/MissionsIndexTest.php` — distinction état des avances / état des
@@ -144,6 +164,7 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 | #50 | Libellé avance/reliquat du PDF de l'OM dynamique |
 | #51 | Chargement correct d'une part enregistrée à 0 % |
 | #125 | Revue d'octobre 2026 : pas de cache sur échec, relecture après le changement de mot de passe imposé, lectures réactives |
+| #167 | Version 1.4 : fiche et aperçu de l'OM aux libellés du PDF (part tirée des montants de l'OM, `utils/repartition.ts`) |
 
 ## Exploitation
 
