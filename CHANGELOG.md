@@ -31,6 +31,10 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Guide utilisateur** (`docs/generer_guide_utilisateur.py`, `.docx` régénéré) : nouveauté 1.4 « Part de l'avance
   d'une mission » ; §7.1 (onglets de l'état), §8 (une mission saisie garde ses montants et sa part), §9.1 (tranche
   libellée avec la part de la mission) et §13 (Paramètres, onglet Général : la part ne vaut que pour les OM saisis ensuite).
+- **Scénario de démo** (`docs/SCENARIO-DEMO.md`) : variante **§8.5 « Changer la part de l'avance »**, rejouée sur l'API
+  réelle (base neuve) — réglage passé à 60 % : la mission déjà saisie garde 199 500 / 85 500 et « Avances (70 %) », une
+  nouvelle mission est répartie 171 000 / 114 000 et affiche 60 % (état, aperçu du lot MTN à 171 000) ; étape C : les
+  onglets de l'état portent la part de la mission.
 
 ### Guide du paramétrage de la part d'avance — version 1.4 (27/10/2026)
 
