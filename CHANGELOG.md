@@ -9,6 +9,16 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### CLAUDE.md mis à jour (27/10/2026)
+
+- §1 : libellés d'un OM amendé sur la fiche et l'aperçu (`utils/repartition.ts`) ; §3 : `utils/repartition`,
+  `start-dev.ps1 -Install` (npm ci) ; §5 : descriptions réelles d'ADM-04 (Paramètres) et d'ADM-05 (e-mail).
+- §4 « Layout application » confronté aux composants (`AppLayout`, `AppSidebar`, `AppTopBar`) : barre latérale
+  `w-64` en dégradé vert, logo `AppLogo` sur carte blanche, profil en bas de barre, barre du haut sticky,
+  contenu `ml-64 p-6`. L'ancien schéma (260 px, `bg-app-sidebar`, logo base64 inversé) ne correspondait plus.
+- Règle n° 6 (thème bleu de l'app de gestion) : **constat** ajouté, sans modifier la règle — l'application
+  est entièrement au vert ANaTT et les couleurs `app.*` ne sont utilisées nulle part ; arbitrage à rendre.
+
 ### AGENTS.md mis à jour (27/10/2026)
 
 - Décisions D1–D4 appliquées (plus de « points ouverts » au §7 de la revue) ; `npm ci` obligatoire

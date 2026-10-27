@@ -82,7 +82,8 @@ SEMO émet l'OM → retranscription dans l'app → regroupement par mission
     même instantané, paraphe archivé et code de vérification (`PdfGenerator::etatSignataire`). Une signature portée
     par l'OM lui-même (circuit par OM, données héritées) reste prioritaire ; OM `REJETE`/`ANNULE`, état `REJETE` et
     brouillon n'en montrent aucune. Clé de cache `ordres/OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf` (n = nombre d'amendements).
-    Après un amendement, les libellés suivent la répartition réelle (avance engagée, reliquat ajusté, trop-perçu).
+    Après un amendement, les libellés suivent la répartition réelle (avance engagée, reliquat ajusté, trop-perçu) —
+    sur le PDF comme sur la fiche et l'aperçu OM-07 (`utils/repartition.ts`, miroir de `PdfGenerator::libellesRepartition`).
   - **Deux circuits de validation** (par état = canonique ; par OM = repli des missions sans état) :
     ils sont **exclusifs par mission** (verrou `MissionService::exigerAbsenceDEtat`) et unifiés à la porte
     de paiement (`Versement::scopeEligiblesLot`). Référence unique : `docs/circuits-validation.md`.
@@ -209,7 +210,7 @@ anatt-ordre-mission/
 ├── CLAUDE.md                    ← CE FICHIER
 ├── AGENTS.md · README.md · CHANGELOG.md
 ├── DEPLOY-CPANEL.md · UPLOAD-VENDOR.md   ← déploiement / mise à jour (cPanel)
-├── start-dev.ps1 · stop-dev.ps1          ← environnement de dev (Windows)
+├── start-dev.ps1 · stop-dev.ps1          ← environnement de dev (Windows ; -Install lance composer install + npm ci)
 ├── .github/workflows/ci.yml
 ├── frontend/                    ← Application Vue 3
 │   ├── src/
@@ -229,7 +230,8 @@ anatt-ordre-mission/
 │   │   ├── router/index.ts     ← routes + meta.permission
 │   │   ├── types/              ← agent, bareme, etat, mission, paiement (+ index)
 │   │   ├── utils/              ← benin (téléphone, catégorie, moisLocal), permissions, roles, etats,
-│   │   │                         exercice (exerciceDe : miroir de Parametres::anneeFiscalePour)
+│   │   │                         exercice (exerciceDe : miroir de Parametres::anneeFiscalePour),
+│   │   │                         repartition (libellés avance / reliquat : miroir de PdfGenerator::libellesRepartition)
 │   │   ├── directives/         ← permission (v-permission)
 │   │   ├── views/              ← Pages : les 42 écrans du registre (§5) + écrans ajoutés depuis
 │   │   │                         (états, régularisations, signatures, permissions par utilisateur…)
@@ -305,6 +307,9 @@ anatt-ordre-mission/
 4. La `flag-bar` (barre tricolore) avant CHAQUE footer
 5. `card-hover` sur TOUTES les cartes cliquables
 6. Thème **vert** (#1D9E4F) pour l'interface publique / Thème **bleu** (#2563EB) pour l'app de gestion
+   > *Constat du 27/10/2026* : l'application de gestion est entièrement au **vert ANaTT** (barre latérale
+   > `anatt-800 → anatt-900`, boutons `anatt-500`) ; les couleurs `app.primary` / `app.sidebar` sont déclarées
+   > dans `tailwind.config.js` mais utilisées nulle part. Règle et code divergent : arbitrage à rendre.
 7. Icônes SVG inline uniquement (style Lucide) — jamais d'emoji, jamais de font-icon
 
 ### Couleurs — Tailwind config
@@ -450,23 +455,23 @@ extend: {
 
 ### Layout application (tous les écrans connectés)
 
+Composants : `AppLayout` · `AppSidebar` · `AppTopBar` (état du code au 27/10/2026).
+
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  SIDEBAR (fixed, 260px, bg-app-sidebar)                    │
-│  ┌─ Logo ANaTT base64 (h-10, brightness-0 invert)          │
-│  ├─ Profil utilisateur connecté                             │
-│  ├─ Navigation par module (icône + label)                   │
-│  │   Dashboard · Personnel · Ordres · Paiements            │
-│  │   Barème · Rapports · Audit · Administration            │
-│  └─ Déconnexion                                            │
+│  flag-bar fixe en haut de page (h-1, vert · or · rouge)    │
 ├────────────────────────────────────────────────────────────│
-│  TOPBAR (fixed, left-offset 260px, h-16, bg-white)        │
-│  ├─ Fil d'Ariane + Titre de la page                        │
-│  ├─ Notifications (cloche + badge)                          │
-│  └─ Menu profil (avatar initiales + rôle)                  │
+│  SIDEBAR (fixed, w-64 = 256px, dégradé anatt-800 → 900)    │
+│  ┌─ Logo : AppLogo sur carte blanche (variante couleur)    │
+│  ├─ Navigation par sections (Principal, Gestion, Finances, │
+│  │   Analyses, Système) : icône SVG + libellé, sous-menus  │
+│  │   (navigation.ts, filtrée par permission)               │
+│  └─ Profil connecté (initiales, nom, rôle) + déconnexion   │
 ├────────────────────────────────────────────────────────────│
-│  CONTENT (ml-[260px], pt-16, p-8, bg-gray-50)             │
-│  └─ Contenu de la page                                     │
+│  TOPBAR (sticky, fond blanc) : titre + sous-titre de page, │
+│  actions de l'écran, cloche des notifications, profil      │
+├────────────────────────────────────────────────────────────│
+│  CONTENT (ml-64, p-6, bg-gray-50) : contenu de la page     │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -553,8 +558,8 @@ extend: {
 | ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles (liste, filtres, statut, reset mot de passe, **édition du rôle** en modale — révoque les sessions) |
 | ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle, téléphone) |
 | ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
-| ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, nom app, logo, email |
-| ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP, templates notifications |
+| ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système : part de l'avance, exercice (année, mois de début), fuseau affiché en lecture seule ; onglets Général, Paiements, Notifications, Sécurité, Maintenance |
+| ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP (indicative, l'envoi suit le `.env`) ; les 7 notifications réelles (`NotificationContenu`) et leurs destinataires |
 | ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration (confirmation par recopie du nom ; sauvegarde de sécurité préalable) |
 
 ### Pages SYSTÈME (4 écrans)
@@ -1159,6 +1164,8 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 23 octobre 2026 (stack et règles confrontées au code : Vue 3.6 bêta, PHP 8.4.x, solde et
-amendement après les correctifs n° 17 à 22) — précédente : 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes ; puis PDF de l'OM signé par l'état, purge de la matrice à la restauration — cf. `docs/revue-projet-2026-10.md`)*  
+*Dernière mise à jour : 27 octobre 2026 (version 1.4 : notifications par droits effectifs, heure du Bénin, libellés d'un
+OM amendé, galerie des écrans réels ; mise en page du §4 confrontée aux composants) — précédentes : 23 octobre 2026
+(stack et règles confrontées au code : Vue 3.6 bêta, PHP 8.4.x, solde et amendement après les correctifs n° 17 à 22),
+22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes ; puis PDF de l'OM signé par l'état, purge de la matrice à la restauration — cf. `docs/revue-projet-2026-10.md`)*  
 *Version projet : 1.0.0*
