@@ -9,6 +9,19 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide utilisateur mis à jour (27/10/2026)
+
+- `docs/generer_guide_utilisateur.py` et `Guide-Utilisateur-ANaTT.docx` régénéré :
+  - **Nouveautés 1.4** : notifications selon les droits réels (D1), heure du Bénin (D2), écran de
+    génération rechargé après un échec (D4), libellés de la fiche et de l'aperçu d'un OM amendé,
+    notifications listées sur l'écran Configuration e-mail ;
+  - chapitres 6.3 (libellés après amendement), 7.2 (destinataires des notifications), 9.1 (plus de
+    « rechargez la page »), 11 (rapport mensuel à l'heure du Bénin), 13.2 (fuseau en lecture seule,
+    notifications de l'écran e-mail) ;
+  - **12 figures** tirées des captures de l'application réelle (`docs/ecrans/`) : connexion, tableau de
+    bord, personnel, retranscription, fiche OM, file et détail d'un état, génération MTN,
+    régularisations, état mensuel, utilisateurs, matrice des permissions.
+
 ### Trois défauts d'interface relevés par les captures (27/10/2026)
 
 - **Bandeau de l'écran Signatures coupé en colonnes.** `AppAlert` est en `flex` : un texte brut
