@@ -9,6 +9,16 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide de l'amendement d'un OM — version 1.4 (27/10/2026)
+
+- `docs/amendement-om.md` confronté au code (méthodes, migrations, tests cités : tous présents). Ajouts 1.4 :
+  - en-tête *Révisé (version 1.4)* : libellés de la fiche et de l'aperçu de l'OM alignés sur le PDF
+    (`utils/repartition.ts`), notification par droits effectifs, heure du Bénin ;
+  - **Écart corrigé** §4.4 : la notification du trop-perçu était décrite comme adressée à « l'agent
+    financier » ; elle vise les détenteurs effectifs de `paiements.confirmer` (décision D1) ;
+  - §4.6 : libellés à l'écran (miroir et tests) ; cache des PDF à vider à une mise à jour de version ;
+  - §8 : références `utils/repartition.ts` et `NotificationTest`.
+
 ### Guide des circuits de validation — version 1.4 (27/10/2026)
 
 - **Écart corrigé** : `docs/circuits-validation.md` §7 annonçait « trois cases de signature » sur le PDF de
