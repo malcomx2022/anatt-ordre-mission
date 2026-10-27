@@ -48,6 +48,8 @@ class LotPaiementService
             'mission' => $mission->objet.' — '.$mission->destination,
             'tranche' => $tranche,
             'operateur' => $operateur,
+            // Part d'avance réelle de la mission (et non le réglage courant).
+            'part_avance' => $mission->partAvanceReelle(),
             'nb_lignes' => $lignes->count(),
             'total' => (int) $lignes->sum('montant'),
             'beneficiaires' => $lignes,

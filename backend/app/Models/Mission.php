@@ -65,6 +65,31 @@ class Mission extends Model
         return $this->etatsPaiement()->where('tranche', $tranche)->first();
     }
 
+    /**
+     * Part d'avance RÉELLE de la mission, en % : celle de ses OM, figée à la
+     * retranscription, et non le réglage courant (Parametres::partAvance), qui
+     * a pu changer depuis. Les écrans qui décrivent une mission existante (état
+     * de paiement, aperçu d'un lot) l'affichent, comme le PDF de l'OM.
+     *
+     * Même règle que PdfGenerator::libellesRepartition : un OM amendé dont
+     * l'avance est engagée n'a plus de pourcentage (le reliquat a absorbé
+     * l'écart), il est écarté ; les OM rejetés ou annulés aussi.
+     *
+     * @return int|null null sans montant à répartir (mission exonérée, sans OM)
+     */
+    public function partAvanceReelle(): ?int
+    {
+        $ordres = $this->ordresMission()
+            ->whereNotIn('statut', ['REJETE', 'ANNULE'])
+            ->where('montant_total', '>', 0)
+            ->where(fn ($q) => $q->whereNull('avance_engagee')->orWhereDoesntHave('amendements'))
+            ->get(['avance', 'montant_total']);
+
+        $total = (int) $ordres->sum('montant_total');
+
+        return $total > 0 ? (int) round($ordres->sum('avance') * 100 / $total) : null;
+    }
+
     public function zone(): BelongsTo
     {
         return $this->belongsTo(ZoneGeographique::class, 'zone_code', 'code');

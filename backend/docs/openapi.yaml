@@ -505,6 +505,7 @@ components:
         montant_avance: { type: integer }
         montant_reliquat: { type: integer }
         montant_total_lettres: { type: string }
+        part_avance: { type: integer, nullable: true, description: "Part d'avance (%) des OM de la mission, figée à la retranscription (Mission::partAvanceReelle) — pas le réglage courant. null : mission exonérée, ou file de travail (GET /etats)." }
         controle: { $ref: '#/components/schemas/Signature' }
         visa_daf: { $ref: '#/components/schemas/Signature' }
         validation_dg: { $ref: '#/components/schemas/Signature' }
@@ -539,6 +540,7 @@ components:
         mission: { type: string }
         tranche: { $ref: '#/components/schemas/Tranche' }
         operateur: { $ref: '#/components/schemas/Operateur' }
+        part_avance: { type: integer, nullable: true, description: "Part d'avance (%) des OM de la mission (Mission::partAvanceReelle), null si exonérée." }
         nb_lignes: { type: integer }
         total: { type: integer }
         beneficiaires:

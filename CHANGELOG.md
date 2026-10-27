@@ -9,6 +9,26 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Pourcentages et montants alignés sur le réglage de la part d'avance ; thème vert confirmé (27/10/2026)
+
+- **Écart corrigé (SPA + API)** : l'écran d'un état de paiement (« Avances (70 %) », montant de la tranche) et le
+  sélecteur de tranche de l'écran de génération affichaient la part **courante**, même pour une mission
+  retranscrite avec une autre part : montants justes, pourcentage faux. Nouveau `Mission::partAvanceReelle()`
+  (Σ avances / Σ montants des OM, hors rejetés / annulés et hors OM amendés à avance engagée, même règle que
+  `libellesRepartition`), exposé en `part_avance` sur `GET /missions/:id/etat`, le récapitulatif et
+  `GET /paiements/lots/previsualiser` (pas sur la file `GET /etats`, pour éviter une requête par ligne) ; les
+  deux écrans l'affichent, repli sur le réglage pour une mission exonérée. OpenAPI à jour.
+- **Vérification de la chaîne des montants** : `ChaineMontantsPartAvanceTest` retranscrit une mission à 55 % et
+  contrôle OM, versements, état des avances, aperçus MTN / Moov et état des reliquats, puis passe le réglage à
+  70 % sans effet sur la mission. Calcul serveur et aperçu de saisie (`stores/ordres-mission.ts`) relus : même
+  formule, même arrondi ; aucune part codée en dur hors défaut (70) et factory de test.
+- Tests vus en échec avant le correctif : `PartAvanceReelleTest` (6), `part-avance-reelle.spec.ts` (2 sur 4).
+  Pest 606 (72 fichiers), Vitest 139, Playwright 3.
+- **Règle n° 6 (thème) tranchée** : l'application de gestion reste au **vert ANaTT** ; la règle de `CLAUDE.md` est
+  réécrite en ce sens et les couleurs `app.primary` / `app.sidebar`, jamais utilisées, sont retirées de
+  `tailwind.config.js` (build inchangé). Le bleu standard reste une couleur d'accent (badges, bandeaux).
+- `docs/parametrage-part-avance.md` : la limite relevée la veille est levée (section *Libellés*, fichiers, tests).
+
 ### Guide du paramétrage de la part d'avance — version 1.4 (27/10/2026)
 
 - **Écart corrigé** : `docs/parametrage-part-avance.md` affirmait que tous les libellés à l'écran suivent la
