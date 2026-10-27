@@ -7,11 +7,12 @@ puis on l'extrait directement dans cPanel.
 > `vendor/` n'est pas versionné (régénérable). À refaire après chaque changement de
 > dépendances backend (`composer.json` / `composer.lock`).
 >
-> *Relu le 25/10/2026 contre le code.* Les chiffres viennent de `composer.lock` : 95 paquets de
-> production, 51 de développement, et les bornes PHP. Un `vendor/` construit par la commande du §1
-> a été démarré avec `APP_ENV=production`. La migration et les seeders de production passent ; la
-> santé `/up`, la connexion et les exports de rapports en `.xlsx` (PhpSpreadsheet) et `.pdf`
-> (DomPDF) répondent.
+> *Relu le 27/10/2026 contre le code (version 1.4).* Les chiffres viennent de `composer.lock` : 95 paquets
+> de production, 51 de développement, et les bornes PHP. Le 25/10, un `vendor/` construit par la commande
+> du §1 a été démarré avec `APP_ENV=production` : la migration et les seeders de production passent ; la
+> santé `/up`, la connexion et les exports de rapports en `.xlsx` (PhpSpreadsheet) et `.pdf` (DomPDF)
+> répondent. Le 27/10, l'échange de `vendor/` sur une API en service a été rejoué, avec et sans
+> maintenance (§4).
 
 ---
 
@@ -28,9 +29,10 @@ git diff --stat <commit-deploye> HEAD -- backend/composer.lock
 Aucune ligne affichée → `vendor/` est inchangé : **ne rien envoyer**, passez directement au
 déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 
-> **Version 1.3** (revue d'octobre 2026, correctifs n° 1 à 29 compris) : `composer.lock` n'a pas
-> changé depuis la 1.2 → **pas de ré-upload de `vendor/`** (cf. *Notes de version 1.3* de
-> `DEPLOY-CPANEL.md`).
+> **Versions 1.3 et 1.4** : `composer.lock` n'a pas changé depuis la 1.2 → **pas de ré-upload de
+> `vendor/`** (cf. *Notes de version* de `DEPLOY-CPANEL.md`). La 1.4 ne retire des dépendances que
+> **côté SPA** (`@vueuse/core`, `lucide-vue-next`, `vue-pdf-embed` dans `frontend/package.json`) :
+> elles sont absentes du `dist/` construit, rien à faire sur le serveur pour elles.
 
 ---
 
@@ -122,6 +124,24 @@ Déposez **`vendor.zip`** dans `/home/anatt/anatt-api/`
 
 ## 4. Extraire dans cPanel
 
+Entre le renommage de l'ancien `vendor/` (étape 2) et la fin de l'extraction (étape 3), l'API n'a
+plus de dépendances : **chaque requête répond 500**. Posez donc la maintenance **avant**, par une
+tâche Cron ponctuelle (comme `DEPLOY-CPANEL.md` § *Mise à jour* B bis), avec l'option `--render` :
+
+```bash
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan down --render="errors::503" > /home/anatt/maintenance.log 2>&1
+```
+
+> **Pourquoi `--render`.** Un `artisan down` simple laisse Laravel répondre le 503 lui-même : il lui
+> faut donc `vendor/`, et pendant l'échange l'API répond quand même 500. Avec `--render`, la page 503
+> est calculée d'avance et servie par `public/index.php` **avant** le chargement de `vendor/` : l'API
+> répond 503 pendant tout l'échange, et le SPA affiche son écran *Maintenance* au lieu d'erreurs.
+> (Le corps est alors une page HTML, plus `{"message":"Service Unavailable"}` : le SPA ne regarde que
+> le code 503.) Constaté le 27/10/2026 : sans `vendor/`, `/api/*` répond 503 avec `--render`, 500 sans.
+
+Supprimez la tâche dès qu'elle a tourné (`maintenance.log` doit afficher *« Application is now in
+maintenance mode. »*), puis :
+
 1. **cPanel → Gestionnaire de fichiers** → dossier `anatt-api/`.
 2. **Renommez** l'ancien `vendor/` en `vendor_old/` (clic droit → *Rename*). Extraire par-dessus
    laisserait en place les fichiers des paquets retirés ; `vendor_old/` sert aussi de retour arrière.
@@ -131,12 +151,26 @@ Déposez **`vendor.zip`** dans `/home/anatt/anatt-api/`
    fichiers, gardez le dossier) : ils listent les paquets découverts avec l'ancien `vendor/`, et
    Laravel les régénère seul à la requête suivante.
 6. **Supprimez** `vendor.zip` du serveur (plus utile).
+7. **Sortez de maintenance** — mais seulement après les vérifications du §5 :
+   - `vendor/` renvoyé **avec une mise à jour du code** : rien à ajouter, la commande de migration de
+     `DEPLOY-CPANEL.md` § D se termine par `artisan up` ;
+   - `vendor/` renvoyé **seul** : une tâche Cron ponctuelle, à supprimer après son passage :
+
+     ```bash
+     /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan up > /home/anatt/maintenance.log 2>&1
+     ```
+
+     `maintenance.log` doit afficher *« Application is now live. »*. Cette commande a besoin de
+     `vendor/` : si elle échoue, l'extraction est incomplète (§5).
 
 ---
 
 ## 5. Vérifier
 
-Ouvrez `https://api-omsemo.anatt.bj/up` → page de santé (200), puis connectez-vous au SPA.
+Ouvrez `https://api-omsemo.anatt.bj/up` → page de santé (200). `/up` traverse Laravel même en
+maintenance : un 200 prouve que le nouveau `vendor/` se charge (sans lui, `/up` répond 500). Sortez
+ensuite de maintenance (§4, étape 7), puis connectez-vous au SPA — en maintenance, la connexion
+répond 503 et le SPA reste sur son écran *Maintenance*.
 
 - Tout est bon → **supprimez `vendor_old/`**.
 - `Class ... not found` → `vendor/` incomplet : refaites l'extraction (ou re-zippez/ré-uploadez),
@@ -148,7 +182,10 @@ Ouvrez `https://api-omsemo.anatt.bj/up` → page de santé (200), puis connectez
 - Des fichiers nommés `vendor\…` apparaissent à la racine de `anatt-api/` → l'archive a été écrite
   avec des `\` (§2) : supprimez-les, recréez l'archive avec `tar`, puis réextrayez.
 - Impossible de corriger tout de suite → **retour arrière** : supprimez `vendor/`, renommez
-  `vendor_old/` en `vendor/`, videz de nouveau `bootstrap/cache/packages.php` et `services.php`.
+  `vendor_old/` en `vendor/`, videz de nouveau `bootstrap/cache/packages.php` et `services.php`,
+  puis sortez de maintenance (§4, étape 7).
+- Le SPA reste sur l'écran *Maintenance* alors que `/up` répond 200 → la sortie de maintenance n'a
+  pas été jouée : lancez la tâche `artisan up` (§4, étape 7).
 
 ---
 
@@ -158,6 +195,7 @@ Ouvrez `https://api-omsemo.anatt.bj/up` → page de santé (200), puis connectez
 |---|---|
 | `backend\vendor.zip` | `/home/anatt/anatt-api/vendor.zip` → extraire → `vendor/` |
 | — | `/home/anatt/anatt-api/vendor_old/` (ancien `vendor/`, à supprimer après vérification) |
+| — | `/home/anatt/maintenance.log` (sortie des tâches `down` / `up`, hors des dossiers publics) |
 
 Voir `DEPLOY-CPANEL.md` pour le déploiement complet et `docs/runbook-mise-a-jour-cron.md` pour le
 déroulé d'une mise à jour.

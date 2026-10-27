@@ -9,6 +9,18 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### UPLOAD-VENDOR.md mis à jour — échange de `vendor/` sous maintenance (27/10/2026)
+
+- **Écart corrigé (procédure)** : entre le renommage de l'ancien `vendor/` et la fin de l'extraction, l'API
+  répondait **500** à toute requête. §4 : maintenance posée **avant** par tâche Cron, avec
+  `artisan down --render="errors::503"` — un `down` simple a lui-même besoin de `vendor/` pour répondre 503
+  (constaté : sans `vendor/`, `/api/*` répond 500 sans `--render`, 503 avec) ; étape 7 : sortie de
+  maintenance (`artisan up`, ou fin de la commande de migration du § D) après vérification ; §5 : `/up`
+  traverse Laravel même en maintenance et prouve que `vendor/` se charge ; deux lignes de dépannage.
+- §0 : versions 1.3 **et 1.4** sans ré-upload (`composer.lock` inchangé depuis la 1.2 ; les dépendances
+  retirées en 1.4 sont celles du SPA) ; en-tête relu le 27/10.
+- `DEPLOY-CPANEL.md` § B bis : renvoi à `--render` quand la mise à jour renvoie aussi `vendor/`.
+
 ### DEPLOY-CPANEL.md mis à jour — mise en maintenance sans SSH (27/10/2026)
 
 - **Écart corrigé (SPA)** : en maintenance (`php artisan down`), l'API répond **503** à toute requête, mais

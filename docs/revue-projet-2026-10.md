@@ -309,6 +309,7 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #170 | Scénario de démonstration rejoué en version 1.4 |
 | #171 | README et `AGENTS.md` confrontés au dépôt ; `start-dev.ps1 -Install` passe à `npm ci` |
 | #172 | `CLAUDE.md` : version 1.4, mise en page du §4, constat sur la règle n° 6 (thème) ; `DEPLOY-CPANEL.md` et runbook : mise en maintenance sans SSH ; *(code)* écran Maintenance ouvert sur un 503 |
+| #173 | `UPLOAD-VENDOR.md` : échange de `vendor/` sous maintenance (`down --render`), versions 1.3 et 1.4 sans ré-upload |
 
 ### À faire côté exploitation
 

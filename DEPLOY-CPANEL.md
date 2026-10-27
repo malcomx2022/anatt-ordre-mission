@@ -386,6 +386,9 @@ tâche Cron ponctuelle, **avant** l'envoi du code :
   c'est voulu : corrigez (ou revenez en arrière, § H), puis lancez `artisan up` par une tâche Cron.
   Sur une instance qui n'était pas en maintenance, `artisan up` ne fait rien (« already up »).
 - Supprimez la tâche `down` dès qu'elle a tourné, comme toutes les tâches ponctuelles.
+- Si la mise à jour renvoie aussi `vendor/`, ajoutez `--render="errors::503"` à la commande : un
+  `down` simple a besoin de `vendor/` pour répondre 503, et l'API répondrait 500 pendant l'échange
+  (`UPLOAD-VENDOR.md` §4).
 
 ### C. Uploader le nouveau code de l'API
 
