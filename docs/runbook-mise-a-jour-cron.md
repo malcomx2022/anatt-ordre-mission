@@ -106,6 +106,21 @@ SELECT migration, batch FROM migrations ORDER BY id;
 
 ---
 
+## 3 bis · Mettre en maintenance (version 1.4, ou si les notes de version l'exigent)
+
+Tâche Cron ponctuelle, **avant** l'envoi du code :
+
+```bash
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan down > /home/anatt/maintenance.log 2>&1
+```
+
+- [ ] `https://api-omsemo.anatt.bj/api/auth/me` répond **503** (`{"message":"Service Unavailable"}`) ;
+      le SPA affiche « Maintenance en cours ».
+- [ ] Tâche supprimée.
+
+> La sortie de maintenance est la fin de la commande de l'étape 5b (`artisan up`) : elle n'est jouée que
+> si la migration réussit. Détail : `DEPLOY-CPANEL.md`, § Mise à jour, B bis.
+
 ## 4 · Envoyer le nouveau code de l'API
 
 FTP vers `/home/anatt/anatt-api/` — écraser :
@@ -152,7 +167,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 ### 5b · Migrer et purger les caches
 
 ```bash
-/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan up >> /home/anatt/migration-run.log 2>&1
 ```
 
 - [ ] `/home/anatt/migration-run.log` : chaque migration attendue affiche **`DONE`**
@@ -161,6 +176,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif … DONE`, qui décale d'une heure
       les horodatages existants — application **en maintenance** pendant l'envoi du code et la
       migration, cf. `DEPLOY-CPANEL.md`, *Notes de version 1.4*).
+- [ ] Le log se termine par `Application is now live.` (sortie de maintenance) ou `Application is already up.`
 - [ ] **Tâche supprimée** — sinon elle se rejoue toutes les cinq minutes et **écrase le log**.
 
 > `--force` remplace la confirmation interactive, impossible en Cron. La purge **avant** `migrate`

@@ -162,6 +162,7 @@ Sans création de données :
 - [ ] **Écran Signatures** : le bandeau d'information se lit d'un seul tenant (plus de texte en colonnes).
 - [ ] **OM amendé en trop-perçu** : la fiche et l'aperçu du PDF affichent « Avance engagée » et « Trop-perçu (à recouvrer par retenue sur salaire) », comme le PDF officiel.
 - [ ] **Configuration e-mail** : la liste présente les 7 notifications du circuit actuel (« État à signer »…), plus « Mission soumise ».
+- [ ] **Maintenance** : pendant la mise à jour (`artisan down`), le SPA affiche « Maintenance en cours » ; après `artisan up`, il revient seul à la page demandée.
 - [ ] **Échec de génération** : après l'échec d'une génération sur un lot déjà généré, l'écran affiche le lot en erreur, sans bouton « Confirmer le paiement », sans recharger la page.
 
 ---
