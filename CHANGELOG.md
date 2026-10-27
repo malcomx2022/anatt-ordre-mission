@@ -9,6 +9,17 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide du paramétrage de la part d'avance — version 1.4 (27/10/2026)
+
+- **Écart corrigé** : `docs/parametrage-part-avance.md` affirmait que tous les libellés à l'écran suivent la
+  part **courante**. Depuis la 1.4, la fiche et l'aperçu de l'OM la tirent des **montants de l'OM**, comme le
+  PDF (`utils/repartition.ts`) ; le guide distingue désormais ce qui reste à créer (part courante) de ce qui
+  décrit un OM existant (part de l'OM), avec fichiers, tests (`repartition.spec.ts`) et PR #167.
+- **Limite relevée, non corrigée** : l'écran d'un état de paiement titre ses tranches avec la part courante
+  (« Avances (70 %) ») ; montants justes, pourcentage du titre faux si la part a changé depuis la
+  retranscription. Le PDF de l'état n'imprime pas ce pourcentage.
+- Chemin de l'écran corrigé : menu *Système* › Paramètres, onglet *Général*.
+
 ### Guide de l'amendement d'un OM — version 1.4 (27/10/2026)
 
 - `docs/amendement-om.md` confronté au code (méthodes, migrations, tests cités : tous présents). Ajouts 1.4 :

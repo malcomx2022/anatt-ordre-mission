@@ -309,7 +309,7 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #170 | Scénario de démonstration rejoué en version 1.4 |
 | #171 | README et `AGENTS.md` confrontés au dépôt ; `start-dev.ps1 -Install` passe à `npm ci` |
 | #172 | `CLAUDE.md` : version 1.4, mise en page du §4, constat sur la règle n° 6 (thème) ; `DEPLOY-CPANEL.md` et runbook : mise en maintenance sans SSH ; *(code)* écran Maintenance ouvert sur un 503 |
-| #173 | `UPLOAD-VENDOR.md` : échange de `vendor/` sous maintenance (`down --render`), versions 1.3 et 1.4 sans ré-upload ; checklist post-déploiement 1.4 (sortie de maintenance, cache des PDF d'OM à vider aussi en 1.4) ; runbook de mise à jour 1.4 (SPA servi pendant la maintenance, fuseau, retour arrière) ; workflows par profil : notifications par droits effectifs (§8) ; circuits de validation : PDF de l'OM (quatre blocs, cache), notifications ; amendement d'un OM : révisions 1.4 |
+| #173 | `UPLOAD-VENDOR.md` : échange de `vendor/` sous maintenance (`down --render`), versions 1.3 et 1.4 sans ré-upload ; checklist post-déploiement 1.4 (sortie de maintenance, cache des PDF d'OM à vider aussi en 1.4) ; runbook de mise à jour 1.4 (SPA servi pendant la maintenance, fuseau, retour arrière) ; workflows par profil : notifications par droits effectifs (§8) ; circuits de validation : PDF de l'OM (quatre blocs, cache), notifications ; amendement d'un OM : révisions 1.4 ; part d'avance : libellés d'un OM existant, limite de l'écran de l'état |
 
 ### À faire côté exploitation
 
