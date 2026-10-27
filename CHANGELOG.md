@@ -9,6 +9,16 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide des workflows par profil — version 1.4 (27/10/2026)
+
+- **Écart corrigé** : `docs/workflows-par-profil.md` §8 décrivait encore des notifications « par profil »
+  (rôle personnalisé et droit individuel jamais notifiés, droit retiré toujours notifié), contraire à la
+  décision D1. Section réécrite : permission visée par chaque événement (`NotificationService`), profils
+  notifiés avec la matrice par défaut, effet d'une personnalisation, SUPER_ADMIN exclu, une seule
+  notification par compte. Même correction au §3 et dans `docs/rbac-flexible.md` (circuit de signature
+  d'un rôle personnalisé).
+- Matrice (§3) et menu (§7) reconfrontés à `config/profils.php` et à `navigation.ts` : conformes.
+
 ### Runbook de mise à jour — version 1.4 (27/10/2026)
 
 - **Écart corrigé (procédure)** : le runbook et `DEPLOY-CPANEL.md` § B bis annonçaient que, en maintenance,

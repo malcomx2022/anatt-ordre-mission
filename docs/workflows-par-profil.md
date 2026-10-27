@@ -15,6 +15,10 @@
 > **Relu le 24/10/2026 contre le code** : matrice identique à `config/profils.php` ; ajout de
 > la section *Qui est notifié* (§8), des règles de solde et d'amendement corrigées depuis
 > (défauts n° 19 et 22 à 28) et de la place des rôles personnalisés.
+>
+> **Relu le 27/10/2026 (version 1.4)** : matrice (§3) et menu (§7) toujours conformes à
+> `config/profils.php` et `navigation.ts` ; §8 réécrit — les notifications suivent désormais les
+> **droits effectifs** (décision D1), plus les profils système.
 
 ---
 
@@ -251,8 +255,8 @@ Générée depuis `config/profils.php`. `SUPER_ADMIN` a tout, implicitement.
 
 Les trois permissions de signature sont **mutuellement exclusives** entre contrôleur, DAF
 et DG : aucun profil métier n'en détient deux. Un **rôle personnalisé** (`docs/rbac-flexible.md`,
-niveau 3) peut aussi porter une clé du circuit : il signe alors sous les mêmes garde-fous, mais
-n'est pas notifié (§8). Combinées à la séparation des tâches, elles
+niveau 3) peut aussi porter une clé du circuit : il signe alors sous les mêmes garde-fous, et
+reçoit les mêmes notifications que le profil système qui la détient (§8). Combinées à la séparation des tâches, elles
 rendent le circuit infalsifiable sans complicité entre trois personnes. Le serveur refuse
 aussi qu'un profil — ou un utilisateur, compte tenu de ses droits individuels — cumule
 `om.approuver` (ordonnateur) et `paiements.generer` / `paiements.confirmer` (payeur).
@@ -354,23 +358,32 @@ profil ne voit jamais une entrée qu'il ne peut pas ouvrir (verrouillé par
 
 ## 8. Qui est notifié
 
-Chaque notification apparaît dans la cloche et part par e-mail (`NotificationService`). Elle vise
-les comptes **actifs** du profil système concerné ; un compte désactivé ne reçoit plus rien
-(défaut n° 27, corrigé le 24/10/2026).
+Chaque notification apparaît dans la cloche et part par e-mail (`NotificationService::notifier`).
+Depuis la version 1.4 (décision D1), elle vise les comptes **actifs** qui détiennent, dans leurs
+**droits effectifs**, la permission de l'étape suivante : profil, rôle personnalisé et droits
+accordés ou retirés à titre individuel compris. Un compte désactivé ne reçoit rien (défaut n° 27).
 
-| Événement | Profil notifié |
-|---|---|
-| Récapitulatif d'un état établi ou rafraîchi (avances ou reliquats) | `CONTROLEUR` |
-| État contrôlé | `DAF` |
-| État visé par le DAF | `DG` |
-| État validé par le DG (fichiers de la tranche ouverts) | `AGENT_FINANCIER` |
-| État rejeté (motif) | `GESTIONNAIRE_OM` |
-| OM validé (circuit par OM, mission sans état) | `AGENT_FINANCIER` |
-| OM rejeté | `GESTIONNAIRE_OM` |
-| Lot de paiement confirmé | `GESTIONNAIRE_OM`, `ADMIN` |
-| Trop-perçu créé par un amendement | `AGENT_FINANCIER` |
+| Événement | Permission visée | Profils notifiés (matrice par défaut) |
+|---|---|---|
+| Récapitulatif d'un état établi ou rafraîchi (avances ou reliquats) | `om.valider` | `CONTROLEUR` |
+| État contrôlé | `om.viser` | `DAF` |
+| État visé par le DAF | `om.approuver` | `DG` |
+| État validé par le DG (fichiers de la tranche ouverts) | `paiements.generer` | `AGENT_FINANCIER` |
+| État rejeté (motif) | `om.retranscrire` | `GESTIONNAIRE_OM` |
+| OM validé (circuit par OM, mission sans état) | `paiements.generer` | `AGENT_FINANCIER` |
+| OM rejeté | `om.retranscrire` | `GESTIONNAIRE_OM` |
+| Lot de paiement confirmé | `om.retranscrire` ou `utilisateurs.gerer` | `GESTIONNAIRE_OM`, `ADMIN` |
+| Trop-perçu créé par un amendement | `paiements.confirmer` | `AGENT_FINANCIER` |
 
-Les notifications suivent les **profils**, pas les permissions : un rôle personnalisé ou un droit
-accordé à titre individuel permet d'agir, mais ne déclenche aucune notification. Inversement, un
-membre du profil à qui l'on a retiré la permission reste notifié. Cette limite est documentée
-dans `docs/rbac-flexible.md` (*Limites connues*).
+Avec la matrice par défaut, les destinataires sont donc ceux d'avant la 1.4. Ce qui change dès
+qu'on la personnalise :
+
+- un **rôle personnalisé** ou un compte à qui l'on **accorde** la permission est notifié ;
+- un membre du profil à qui l'on **retire** la permission ne l'est plus ;
+- le **SUPER_ADMIN** n'est jamais notifié : son accès implicite n'est pas une responsabilité
+  dans le circuit ;
+- un compte visé à deux titres (lot confirmé : `om.retranscrire` **et** `utilisateurs.gerer`)
+  ne reçoit qu'**une** notification.
+
+Les modèles (objet, texte) sont listés dans *Paramètres › Messagerie* (`/admin/email`), avec la
+permission visée par chacun ; détail dans `docs/rbac-flexible.md`.

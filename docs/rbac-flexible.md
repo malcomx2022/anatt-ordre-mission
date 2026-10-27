@@ -221,9 +221,10 @@ le front dérive `granted` (cochées hors base) et `revoked` (base décochées).
 - **Circuit de signature** : l'autorisation se fait **par permission**. Un rôle personnalisé
   qui porte `om.valider`, `om.viser` ou `om.approuver` peut donc contrôler, viser ou valider un
   état, sous les mêmes garde-fous : séparation des tâches (un même compte ne signe pas deux
-  étapes) et séparation ordonnateur / payeur. Deux différences avec les profils système :
-  - il n'est **pas notifié** quand un état attend sa signature, car les notifications ciblent les
-    détenteurs effectifs de la permission (voir *Limites connues*) ;
+  étapes) et séparation ordonnateur / payeur. Deux points à connaître :
+  - il est **notifié** comme le profil système quand un état attend sa signature : les
+    notifications ciblent les détenteurs effectifs de la permission (décision D1, voir
+    *Limites connues*) ;
   - le nom et la fonction imprimés sur l'état viennent des **Paramètres** (titulaire du poste),
     puis du compte. À défaut de fonction renseignée, aucun libellé de profil n'est repris pour
     un rôle personnalisé.
