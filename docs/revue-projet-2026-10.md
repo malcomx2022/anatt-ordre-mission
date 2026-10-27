@@ -303,6 +303,7 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #164 | Maquettes HTML annotées (`docs/annoter_maquettes.py`) |
 | #165 | README du backend et du frontend |
 | #166 | Décisions D1 à D4 (notifications par droits effectifs, heure du Bénin, dépendances, écran de génération) ; maquettes refaites à partir des captures de l'application (`docs/capturer_ecrans.cjs`, `docs/generer_maquettes.py`) |
+| #167 | Trois défauts d'interface relevés par les captures : bandeau `AppAlert`, libellés avance / reliquat après amendement, modèles de notification de l'écran e-mail |
 
 ### À faire côté exploitation
 

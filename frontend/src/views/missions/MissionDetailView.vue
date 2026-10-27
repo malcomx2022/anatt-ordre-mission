@@ -13,6 +13,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getErrorMessage } from '@/composables/useApi'
 import { usePartAvance } from '@/composables/usePartAvance'
+import { libellesRepartition } from '@/utils/repartition'
 import { numeroEtat } from '@/utils/etats'
 import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
@@ -26,6 +27,8 @@ const { partAvance: avancePct } = usePartAvance()
 const reliquatPct = computed(() => 100 - avancePct.value)
 
 const ordre = ref<OrdreMission | null>(null)
+// Mêmes libellés que le PDF officiel : pourcentage réel de l'OM, puis avance engagée / trop-perçu après amendement.
+const libelles = computed(() => libellesRepartition(ordre.value ?? { montant_total: 0, avance: 0, reliquat: 0 }, avancePct.value))
 const loading = ref(true)
 const action = ref(false)
 /** Message serveur en cas d'échec du chargement (404, 403…) : la page ne reste pas blanche. */
@@ -333,8 +336,8 @@ onMounted(load)
               <dt class="text-gray-400">Transport</dt><dd>{{ fmt(ordre.montant_transport) }} FCFA</dd>
             </template>
             <dt class="text-gray-400">Total</dt><dd class="font-display font-bold text-anatt-700">{{ fmt(ordre.montant_total) }} FCFA</dd>
-            <dt class="text-gray-400">Avance ({{ avancePct }} %)</dt><dd>{{ fmt(ordre.avance) }}</dd>
-            <dt class="text-gray-400">Reliquat ({{ reliquatPct }} %)</dt><dd>{{ fmt(ordre.reliquat) }}</dd>
+            <dt class="text-gray-400">{{ libelles.avance }}</dt><dd>{{ fmt(ordre.avance) }}</dd>
+            <dt class="text-gray-400">{{ libelles.reliquat }}</dt><dd>{{ fmt(ordre.reliquat) }}</dd>
           </dl>
         </AppCard>
       </div>
