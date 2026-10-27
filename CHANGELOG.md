@@ -9,6 +9,20 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Runbook de mise à jour — version 1.4 (27/10/2026)
+
+- **Écart corrigé (procédure)** : le runbook et `DEPLOY-CPANEL.md` § B bis annonçaient que, en maintenance,
+  le SPA affiche « Maintenance en cours ». Or le SPA servi pendant l'opération est encore l'**ancien** (il
+  n'est remplacé qu'à l'étape 7), et la prise en charge du 503 n'existe qu'à partir de la 1.4 : lors de la
+  mise à jour 1.3 → 1.4, les écrans échouent sans message. Prévenir les utilisateurs ; le contrôle de la
+  checklist (§06) se fait dès la mise à jour suivante ou sur la recette.
+- `docs/runbook-mise-a-jour-cron.md` : encadré d'en-tête **1.4** ; `APP_TIMEZONE` du `.env` vérifiée avant la
+  migration ; horodatage témoin relevé à l'étape 2, contrôlé à l'étape 6 (+1 h en base) et en recette (même
+  heure à l'écran) ; `maintenance.log` et `--render` si `vendor/` est réenvoyé (étape 3 bis) ; arrêt de la
+  commande 5b = application laissée en maintenance ; sortie de maintenance vérifiée par `/api/auth/me`
+  (401, pas 503) ; recette 1.4 en lecture seule ; ménage (3 bis, `maintenance.log`) ; retour arrière :
+  caches purgés et `artisan up`, cohérence dump UTC ↔ code 1.3, `migrate:rollback` avant le retour au code.
+
 ### Checklist post-déploiement mise à jour — version 1.4 (27/10/2026)
 
 - **Écart corrigé (procédure 1.4)** : le cache des PDF d'OM (`storage/app/private/ordres/`) n'était à vider

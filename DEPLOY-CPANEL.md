@@ -377,9 +377,12 @@ tâche Cron ponctuelle, **avant** l'envoi du code :
 /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan down > /home/anatt/maintenance.log 2>&1
 ```
 
-- L'API répond alors **503** à toute requête (`{"message":"Service Unavailable"}`) ; le SPA bascule
-  sur son écran **Maintenance**, qui revérifie l'API toutes les 30 s et ramène l'utilisateur à sa
-  page dès qu'elle répond. `/up` reste à 200 : ne l'utilisez pas pour juger de la fin de maintenance.
+- L'API répond alors **503** à toute requête (`{"message":"Service Unavailable"}`) ; un SPA **1.4 ou
+  plus récent** bascule sur son écran **Maintenance**, qui revérifie l'API toutes les 30 s et ramène
+  l'utilisateur à sa page dès qu'elle répond. Le SPA servi pendant l'opération est encore l'**ancien**
+  (il n'est remplacé qu'au § F) : lors de la mise à jour **1.3 → 1.4**, ses écrans échouent donc sans
+  message — prévenez les utilisateurs. `/up` reste à 200 : ne l'utilisez pas pour juger de la fin de
+  maintenance.
 - Les commandes `artisan` (migrations, purge des caches) fonctionnent normalement en maintenance.
 - La sortie de maintenance (`artisan up`) termine la commande de migration du § D : elle n'est
   jouée que si tout ce qui précède a réussi. Un échec laisse donc l'application **en maintenance** —
