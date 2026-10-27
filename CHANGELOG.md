@@ -9,6 +9,31 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### DEPLOY-CPANEL.md mis à jour — mise en maintenance sans SSH (27/10/2026)
+
+- **Écart corrigé (SPA)** : en maintenance (`php artisan down`), l'API répond **503** à toute requête, mais
+  rien ne menait à l'écran *Maintenance* (SYS-03) : les écrans échouaient sans message. L'intercepteur de
+  `useApi.ts` ouvre désormais l'écran Maintenance, avec retour à la page demandée dès que l'API répond.
+  Test `maintenance-503.spec.ts`, vu en échec avant le correctif (Vitest 135).
+- `DEPLOY-CPANEL.md` : nouveau § *Mise à jour*, **B bis**, mise en maintenance par tâche Cron (`artisan down`),
+  comportement éprouvé (503 JSON, `/up` toujours à 200, commandes `artisan` disponibles) ; la commande de
+  migration du § D se termine par `artisan up`, joué seulement si tout a réussi ; repli Terminal ; notes de
+  version 1.4 complétées (correctifs d'interface du SPA, documentation) ; `APP_TIMEZONE` au § 5.1 ; chemin
+  *Paramètres › Sauvegardes* au § 9.1 ; deux lignes de dépannage (heures décalées, SPA resté en maintenance) ;
+  en-tête relu (34 migrations, versions 1.3 et 1.4).
+- `docs/runbook-mise-a-jour-cron.md` : étape **3 bis** (maintenance), même commande de migration, contrôle
+  du message `Application is now live.`.
+
+### CLAUDE.md mis à jour (27/10/2026)
+
+- §1 : libellés d'un OM amendé sur la fiche et l'aperçu (`utils/repartition.ts`) ; §3 : `utils/repartition`,
+  `start-dev.ps1 -Install` (npm ci) ; §5 : descriptions réelles d'ADM-04 (Paramètres) et d'ADM-05 (e-mail).
+- §4 « Layout application » confronté aux composants (`AppLayout`, `AppSidebar`, `AppTopBar`) : barre latérale
+  `w-64` en dégradé vert, logo `AppLogo` sur carte blanche, profil en bas de barre, barre du haut sticky,
+  contenu `ml-64 p-6`. L'ancien schéma (260 px, `bg-app-sidebar`, logo base64 inversé) ne correspondait plus.
+- Règle n° 6 (thème bleu de l'app de gestion) : **constat** ajouté, sans modifier la règle — l'application
+  est entièrement au vert ANaTT et les couleurs `app.*` ne sont utilisées nulle part ; arbitrage à rendre.
+
 ### AGENTS.md mis à jour (27/10/2026)
 
 - Décisions D1–D4 appliquées (plus de « points ouverts » au §7 de la revue) ; `npm ci` obligatoire

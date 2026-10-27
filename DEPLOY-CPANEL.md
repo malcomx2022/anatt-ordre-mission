@@ -7,9 +7,10 @@ Guide pas-à-pas pour déployer **sans accès SSH** (FTP + phpMyAdmin), avec :
 
 > Compte cPanel : utilisateur système **`anatt`** (préfixe BDD `anatt_`, dossier `/home/anatt/`).
 >
-> *Relu le 25/10/2026 contre le code* : seeders, `.env.production.example`, `bootstrap/app.php`,
-> `routes/console.php`, `vendor/composer/platform_check.php`, 33 migrations. La version **1.3**
-> comprend les correctifs n° 1 à 29 (*Notes de version 1.3*).
+> *Relu le 27/10/2026 contre le code* : seeders, `.env.production.example`, `bootstrap/app.php`,
+> `routes/console.php`, `vendor/composer/platform_check.php`, 34 migrations, mode maintenance
+> (`artisan down` / `up`, éprouvé). La version **1.3** comprend les correctifs n° 1 à 32 ; la
+> **1.4** les décisions D1 à D4 et la migration du fuseau horaire (*Notes de version 1.3* et *1.4*).
 
 ```
 public_html/                 -> SPA Vue (contenu de frontend/dist/)
@@ -190,6 +191,8 @@ Copiez `backend/.env.production.example` en `anatt-api/.env` (via l'éditeur de 
 - `DB_RESTORE_BINARY=` chemin du client `mysql` de l'hébergeur, utilisé par la **restauration** d'une
   sauvegarde (écran *Sauvegardes* ou `artisan db:restore`) ; sinon laissez `mysql`
 - Bloc `MAIL_*` (SMTP de l'hébergeur)
+- `APP_TIMEZONE=Africa/Porto-Novo` (valeur du gabarit) : heure du Bénin pour les horodatages et les
+  rapports par mois ; l'API renvoie toujours les dates en UTC. À fixer **avant** la première migration.
 - `MTN_COMPTE` — compte payeur de l'en-tête `HDR` du fichier MTN. Le gabarit propose `SARALY` :
   faites-le confirmer par la DAF.
 - `WORKFLOW_SEPARATION_TACHES=true` (valeur du gabarit) : le DAF ne vise pas un état qu'il a
@@ -288,7 +291,7 @@ Si vous activez la file `database` (gros volumes) ou voulez des sauvegardes plan
 
 ### 9.1 Restaurer une sauvegarde
 
-Depuis la version 1.3, l'écran **Administration › Sauvegardes** (SUPER_ADMIN) sait aussi
+Depuis la version 1.3, l'écran **Paramètres › Sauvegardes** (SUPER_ADMIN) sait aussi
 **télécharger** et **restaurer** une sauvegarde de `anatt-api/storage/app/backups/`. La
 restauration passe par `artisan db:restore`, qui :
 
@@ -364,6 +367,26 @@ migration à appliquer.** Notez-les : c'est exactement ce que la suite doit prod
 > (octobre 2026) n'aura pas `2026_10_22_090000_add_sequence_to_lots_paiement` (cf. *Notes de
 > version 1.3* ci-dessous).
 
+### B bis. Mettre l'application en maintenance (quand une version l'exige)
+
+Certaines mises à jour (la **1.4**, pour la migration du fuseau) exigent qu'**aucune écriture** n'ait
+lieu entre l'envoi du code et la fin de la migration. Sans SSH, la maintenance se pose par une
+tâche Cron ponctuelle, **avant** l'envoi du code :
+
+```bash
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan down > /home/anatt/maintenance.log 2>&1
+```
+
+- L'API répond alors **503** à toute requête (`{"message":"Service Unavailable"}`) ; le SPA bascule
+  sur son écran **Maintenance**, qui revérifie l'API toutes les 30 s et ramène l'utilisateur à sa
+  page dès qu'elle répond. `/up` reste à 200 : ne l'utilisez pas pour juger de la fin de maintenance.
+- Les commandes `artisan` (migrations, purge des caches) fonctionnent normalement en maintenance.
+- La sortie de maintenance (`artisan up`) termine la commande de migration du § D : elle n'est
+  jouée que si tout ce qui précède a réussi. Un échec laisse donc l'application **en maintenance** —
+  c'est voulu : corrigez (ou revenez en arrière, § H), puis lancez `artisan up` par une tâche Cron.
+  Sur une instance qui n'était pas en maintenance, `artisan up` ne fait rien (« already up »).
+- Supprimez la tâche `down` dès qu'elle a tourné, comme toutes les tâches ponctuelles.
+
 ### C. Uploader le nouveau code de l'API
 
 Dans `anatt-api/` (FTP), écrasez `app/`, `config/`, `database/`, `public/`, `resources/`,
@@ -419,16 +442,17 @@ confirme la liste établie en **B** :
 
 Le rapport distingue `Ran` (déjà jouée) de `Pending` (à jouer).
 
-**3. Migrez** — une seule tâche, qui purge les caches, migre, puis purge de nouveau :
+**3. Migrez** — une seule tâche, qui purge les caches, migre, purge de nouveau, puis sort de la
+maintenance (sans effet si elle n'était pas posée) :
 
 ```bash
-/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1
+/opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear > /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan migrate --force >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan optimize:clear >> /home/anatt/migration-run.log 2>&1 && /opt/cpanel/ea-php84/root/usr/bin/php /home/anatt/anatt-api/artisan up >> /home/anatt/migration-run.log 2>&1
 ```
 
 `--force` est obligatoire en production (il remplace la confirmation interactive, impossible en
 Cron). La première purge fait lire aux migrations la configuration **à jour** : avec une
 configuration en cache (`php artisan optimize`), elles liraient l'ancienne — en 1.4, la migration
-du fuseau ne décalerait alors rien. La redirection `> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
+du fuseau ne décalerait alors rien. Le `up` final n'est joué que si tout a réussi (§ B bis). La redirection `> ... 2>&1` est **essentielle** : sans SSH, ce fichier est votre seule
 fenêtre sur ce qui s'est passé.
 
 **4. Relisez le log**, confirmez que chaque migration attendue affiche `DONE`, puis
@@ -465,6 +489,7 @@ cd ~/anatt-api
 /opt/cpanel/ea-php84/root/usr/bin/php artisan optimize:clear
 /opt/cpanel/ea-php84/root/usr/bin/php artisan migrate --force
 /opt/cpanel/ea-php84/root/usr/bin/php artisan optimize:clear
+/opt/cpanel/ea-php84/root/usr/bin/php artisan up        # si la maintenance a été posée (§ B bis)
 ```
 
 ##### Repli B — Migration à blanc en local, puis réimport *(aucun PHP en ligne de commande côté serveur)*
@@ -560,9 +585,10 @@ Ce qui change pour la mise à jour d'une instance en 1.3 :
 
 | Élément | À faire |
 |---|---|
-| **Fuseau horaire (D2)** | L'application passe à l'heure du Bénin (`config/app.php` : `APP_TIMEZONE`, défaut `Africa/Porto-Novo`). La migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` décale d'**une heure** toutes les colonnes date-heure déjà enregistrées (UTC → heure du Bénin) : chaque horodatage garde le même instant, les dates seules (départ, retour) ne bougent pas. ⚠️ **Mettez l'application en maintenance avant d'envoyer le code** et migrez dans la foulée (§ D, commande qui purge les caches d'abord) : une écriture faite entre l'envoi de `config/app.php` et la migration serait déjà à l'heure du Bénin, puis décalée une seconde fois. La migration ne se joue qu'une fois ; elle s'annule par `migrate:rollback --step=1` (−1 h). Pour rester en UTC : `APP_TIMEZONE=UTC` dans le `.env` **avant** de migrer (la migration ne fait alors rien). |
+| **Fuseau horaire (D2)** | L'application passe à l'heure du Bénin (`config/app.php` : `APP_TIMEZONE`, défaut `Africa/Porto-Novo`). La migration `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif` décale d'**une heure** toutes les colonnes date-heure déjà enregistrées (UTC → heure du Bénin) : chaque horodatage garde le même instant, les dates seules (départ, retour) ne bougent pas. ⚠️ **Mettez l'application en maintenance avant d'envoyer le code** (§ B bis, `artisan down`) et migrez dans la foulée (§ D : la commande purge les caches d'abord et finit par `artisan up`) : une écriture faite entre l'envoi de `config/app.php` et la migration serait déjà à l'heure du Bénin, puis décalée une seconde fois. La migration ne se joue qu'une fois ; elle s'annule par `migrate:rollback --step=1` (−1 h). Pour rester en UTC : `APP_TIMEZONE=UTC` dans le `.env` **avant** de migrer (la migration ne fait alors rien). |
 | **Notifications (D1)** | Code seul. Elles visent les comptes actifs qui détiennent la permission de l'étape (droits effectifs), plus seulement les profils système : rôles personnalisés et droits accordés individuellement sont notifiés, un droit retiré ne l'est plus, le super administrateur ne l'est pas. Avec la matrice par défaut, les destinataires ne changent pas. |
-| **SPA (D3, D4)** | À redéployer (§ F) : dépendances inutilisées retirées (bundle inchangé à l'usage), et l'écran de génération recharge le lot après un échec (« Confirmer » ne reste plus affiché sur un lot passé en erreur). |
+| **SPA (D3, D4 et correctifs)** | À redéployer (§ F) : dépendances inutilisées retirées (bundle inchangé à l'usage) ; l'écran de génération recharge le lot après un échec (« Confirmer » ne reste plus affiché sur un lot passé en erreur) ; bandeau de l'écran Signatures lisible ; fiche et aperçu d'un OM amendé aux libellés du PDF ; écran Configuration e-mail listant les 7 notifications réelles ; fuseau affiché en lecture seule dans Paramètres ; une API en maintenance (503) ouvre l'écran Maintenance au lieu d'erreurs silencieuses. |
+| **Documentation** | Guide utilisateur (avec captures) et documentation technique régénérés en 1.4 ; galerie des écrans réels (`docs/00_galerie_index.html`). Rien à déployer. |
 | **`vendor/`** | **Inchangé** (`composer.lock` non modifié). |
 
 ### G. Vérification
@@ -599,6 +625,8 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 | Restauration « Échec » … *client mysql introuvable* | `mysql` hors du PATH | Renseigner `DB_RESTORE_BINARY` (ex. `/usr/bin/mysql`) |
 | Restauration « Sauvegarde de sécurité impossible » | `mysqldump` ou `exec()` indisponible | Corriger `DB_DUMP_BINARY` ; à défaut, restaurer par import phpMyAdmin (§ Mise à jour, H) |
 | Restauration interrompue (timeout, page d'erreur) | base volumineuse, `max_execution_time` | Relancer par tâche Cron `artisan db:restore <fichier> --force` (§ 9.1) |
+| Heures décalées d'**une heure** à l'écran après la mise à jour 1.4 | migration du fuseau jouée avec une configuration en cache encore en UTC (aucun décalage appliqué), ou jouée deux fois | `migrate:status` : si la migration est `Ran` sans effet, `migrate:rollback --step=1` puis `optimize:clear` et nouvelle migration (§ D) ; en cas de doute, restaurer le dump de l'étape A |
+| Le SPA reste sur « Maintenance en cours » | `artisan up` non joué (la migration a échoué, ou la tâche a été supprimée trop tôt) | Lire `/home/anatt/migration-run.log`, corriger, puis tâche Cron ponctuelle `artisan up` |
 | Lenteur 1er chargement | config non cachée | (Optionnel) `php artisan optimize`, par Terminal ou tâche Cron ponctuelle : il met en cache la configuration, les routes, les événements et les vues. Une fois la configuration en cache, une modification du `.env` reste **sans effet** jusqu'au prochain `optimize:clear` (§ Mise à jour, E). |
 
 ### Spécifique à la mise à jour (migrations sans SSH)

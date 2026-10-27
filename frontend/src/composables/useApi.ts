@@ -98,6 +98,16 @@ apiClient.interceptors.response.use(
         break
       }
 
+      case 503: {
+        // API en maintenance (php artisan down, pendant une mise à jour) : l'écran
+        // Maintenance sonde l'API et revient à la page demandée dès qu'elle répond.
+        const courante = router.currentRoute.value
+        if (courante.name !== 'maintenance') {
+          router.push({ name: 'maintenance', query: { redirect: courante.fullPath } })
+        }
+        break
+      }
+
       default: {
         if (!error.response) {
           const { error: toastError } = useToast()

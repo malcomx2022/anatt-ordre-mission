@@ -238,7 +238,7 @@ tableau(
         ["Maquettes", "Galerie et pages d'écran tirées des captures de l'application réelle (docs/capturer_ecrans.cjs, "
          "docs/generer_maquettes.py) ; remplacent les maquettes d'août 2026.", "§2.3"],
         ["Tests", "FuseauHoraireTest, NotificationModelesEcranTest (écran e-mail ↔ NotificationContenu), tests des "
-         "destinataires ; Pest 599, Vitest 133.", "§10"],
+         "destinataires, écran Maintenance sur 503 ; Pest 599, Vitest 135.", "§10"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -1128,7 +1128,7 @@ tableau(
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
         ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "599 tests au total (70 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "133 tests"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "135 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
