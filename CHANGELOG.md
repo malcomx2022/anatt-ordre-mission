@@ -9,6 +9,29 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### AGENTS.md mis à jour (27/10/2026)
+
+- Décisions D1–D4 appliquées (plus de « points ouverts » au §7 de la revue) ; `npm ci` obligatoire
+  (bêta Vue figée par le lock, script `start-dev.ps1` en ASCII) ; fuseau `Africa/Porto-Novo` et purge des
+  caches avant la migration ; piège de `Carbon::setTestNow` en UTC dans les tests ; ajout d'un type de
+  notification (`NotificationContenu`, permission, écran e-mail, `NotificationModelesEcranTest`) ;
+  `utils/repartition.ts` miroir de `PdfGenerator::libellesRepartition` ; rechargement de l'écran de
+  génération (D4) ; `AppAlert` ; captures de la galerie (build de production, `DemoCircuitSeeder`,
+  `settings.json`) et figures du guide.
+
+### README mis à jour (27/10/2026)
+
+- `README.md` confronté au dépôt : stack (Vue 3.6 bêta figée par le lock, heure du Bénin), `npm ci` au
+  démarrage manuel, notifications selon les droits effectifs, horodatages à l'heure du Bénin, libellés
+  d'un OM amendé, mise à jour en version 1.4 (maintenance, caches purgés avant `migrate`), structure
+  (`backend/README.md`, `frontend/README.md`, `utils/`), table de la documentation (documentation
+  technique v1.4, scénario rejoué, galerie et script de capture).
+- Chemin de menu corrigé : la restauration se fait depuis *Paramètres › Sauvegardes* (et non
+  *Administration › Sauvegardes*, absent du menu).
+- **`start-dev.ps1 -Install`** lançait `npm install` : avec `"vue": "beta"` dans `package.json`, la bêta de
+  Vue pouvait avancer à l'insu du développeur, contre la règle du projet (version figée par
+  `package-lock.json`). Le script lance désormais `npm ci`.
+
 ### Scénario de démonstration mis à jour (27/10/2026)
 
 - `docs/SCENARIO-DEMO.md` **rejoué sur l'API réelle** (base neuve, version 1.4) : fichiers MTN / Moov,

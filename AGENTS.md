@@ -5,7 +5,7 @@ High-signal notes for OpenCode sessions in this repo.
 ## First reads
 - Read `CLAUDE.md` first for business constraints and design-system rules; then verify against executable sources when in doubt.
 - Treat code/config as source of truth over prose. Example: the avance/reliquat split is NOT a hard-coded 70/30 — it reads `Parametres::partAvance()` (default 70) in `backend/app/Services/CalculIndemniteService.php`.
-- `docs/revue-projet-2026-10.md` lists what the October 2026 review fixed and why (defects n° 1–32), and §7 maps what is still open; read it before touching payments, états or amendments.
+- `docs/revue-projet-2026-10.md` lists what the October 2026 review fixed and why (defects n° 1–32); §7.1 records the four decisions D1–D4, all applied in version 1.4 (26/10/2026), and §7.2 the known debt. Read it before touching payments, états or amendments.
 - Repo language is French: user-facing text, code comments, commit messages, CHANGELOG entries and docs are written in French.
 
 ## Repo shape (easy to guess wrong)
@@ -23,6 +23,7 @@ High-signal notes for OpenCode sessions in this repo.
   - `phpoffice/phpspreadsheet` 1.30.2 declares `php <8.5.0`, so `composer install` refuses the lock under 8.5;
   - `platform_check.php` only checks the minimum and 64-bit, so a server on 8.5 would boot outside the supported range.
 - Node **20.19+ or 22.12+** (Vite 8 `engines`; CI uses Node 22).
+- Install frontend deps with **`npm ci`**, never `npm install`: `package.json` follows Vue's `beta` dist-tag and only `package-lock.json` pins `3.6.0-beta.9`. `start-dev.ps1 -Install` runs `npm ci` too (keep that script ASCII-only: Windows PowerShell 5.1 reads it as ANSI).
 - Backend tests run without a `.env`: `phpunit.xml` provides a test `APP_KEY` (phpdotenv then emits harmless warnings, exit code stays 0).
 - Playwright with an already-installed Chromium of another version: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:e2e`. In a container without a display, point it to the **headless shell** (e.g. `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`) and add `--project=chromium` like CI does; the full `chrome` binary fails with "Missing X server".
 
@@ -60,8 +61,11 @@ High-signal notes for OpenCode sessions in this repo.
 - The axios instance sends `Content-Type: application/json` by default: any `FormData` upload must pass `headers: { 'Content-Type': 'multipart/form-data' }` or axios serializes the file to `{}`.
 - Pagination: use `$this->getPerPage($request[, $default])` (bounded 5–100), never a raw `per_page`.
 - Dates in the SPA: build `YYYY-MM` with `moisLocal()` (`utils/benin.ts`), never `toISOString()` (UTC shifts the month in Benin, UTC+1).
+- Server timezone is `Africa/Porto-Novo` (`APP_TIMEZONE`, decision D2): DB datetimes are stored in Benin time and the API still serialises them in UTC (`…Z`). Rows written before 1.4 were shifted +1 h by `2026_10_26_090000_passer_horodatages_au_fuseau_applicatif`, which reads `config('app.timezone')`: deployments must run `optimize:clear` **before** `migrate` (a cached UTC config makes it a no-op).
+- Tests freezing time: pass the app zone, e.g. `Carbon::setTestNow(Carbon::parse('…Z')->setTimezone(config('app.timezone')))`. A test-now carrying UTC makes Eloquent read timestamps back in UTC (Carbon `createFromFormat` inherits the test-now zone) and the assertion lies.
 - The permission matrix is cached with `rememberForever` (`rbac.matrice`): any code path that writes `role_permissions` (or replaces the DB, like `db:restore`) must call `PermissionRepository::vider()`.
 - Permission changes (matrix or user overrides) take effect server-side on the **next API request**: Gates resolve rights per request, and `User::permissions()` is memoized per request only. Only the SPA menu/buttons wait for login or `/auth/me/permissions`. In tests, use `actingAs($user->fresh())` after a change, because the memo lives on the model instance.
+- `AppAlert` wraps its slot in a single block: its container is `flex`, so raw text mixed with `<strong>` used to split into columns (Signatures banner).
 - RBAC "ordonnateur/payeur" separation (`om.approuver` vs `paiements.generer|confirmer`) is enforced on profiles, on user overrides AND on every member's effective rights when a profile is edited or reset (`RoleController`).
 
 ## Payments/async gotchas
@@ -77,6 +81,8 @@ High-signal notes for OpenCode sessions in this repo.
 - Marking a lot ERREUR puts its versements back to EN_ATTENTE with the agent's CURRENT phone/operator.
 - A mission has TWO payment states (`etats_paiement`, one per tranche AVANCE/RELIQUAT), each with its own full validation circuit; reliquat état is refused until the avance état is VALIDÉ. A versement is eligible only when the état OF ITS TRANCHE is valid (missions without any état = legacy OM-level fallback, `/ordres/:id/valider|rejeter`).
 - The OM PDF takes its signature blocks from the OM itself first, else from the AVANCE état covering it (`PdfGenerator::etatSignataire`: OM listed in the état `lignes`, OM not REJETE/ANNULE, état not REJETE; never on a draft). The cache key includes the état status and the amendment count (`OM-{ref}-{statut}[-ETAT-{statut_etat}][-AMD{n}].pdf`) — `/pdf/download` serves the cached file as is, so any new input to the PDF must enter the key, or stale PDFs get served.
+- Avance/reliquat labels: `frontend/src/utils/repartition.ts` mirrors `PdfGenerator::libellesRepartition` (real share of the OM, then « Avance engagée » / « Reliquat (ajusté par amendement) » / « Trop-perçu ») for the OM fiche and the OM-07 preview; change both together.
+- `PaiementGeneration.vue` reloads the lot in the `catch` of a failed generation (D4): in `sync`, `failed()` may have turned the previous GENERE lot into ERREUR.
 - The reliquat état is signed at the PAYABLE amount (sum of positive reliquats); trop-perçus (negative reliquats) are shown apart on the PDF, never subtracted from the signed total.
 - Validating the avance état propagates VALIDE to the mission's OM except SOLDE/ANNULE/REJETE; rejecting an OM sets its EN_ATTENTE versements to ANNULE.
 - The closing "état général" (avances + reliquats) is NOT an entity: `EtatPaiementPdf::telechargerFinal()` synthesizes it from the two sealed snapshots once BOTH tranches are VALIDE (422 otherwise) — no third circuit, no migration.
@@ -95,8 +101,8 @@ High-signal notes for OpenCode sessions in this repo.
 - The name and function frozen at each état signature come from *Paramètres › Signatures* first, then from the signer's account, then from the post's default label (`EtatPaiementService::empreinte`, using `SignatureParametres::pour()['fonction_saisie']`, n° 30). `pour()['fonction']` is never empty (it carries the default), so do not use it as the "is it configured?" test.
 - `fonction` is not mass-assignable on `User`: in tests use `forceFill([...])->save()`. Seeders run unguarded.
 - `ComptesCircuitSeeder` aligns role and function of existing accounts but never touches a `SUPER_ADMIN` (n° 31), never resets a password and never reactivates an account. Its temporary passwords are printed once.
-- Notifications go to **active** accounts whose **effective** permissions hold the next step's key (`NotificationService::notifier`, decision D1: custom roles and individual grants included, revocations honoured, SUPER_ADMIN excluded, one notification per account); `SendNotification` also skips an account deactivated in between.
-- Server timezone is `Africa/Porto-Novo` (`APP_TIMEZONE`, decision D2); the API still serialises dates in UTC (`…Z`).
+- Notifications go to **active** accounts whose **effective** permissions hold the next step's key (`NotificationService::notifier`, decision D1: custom roles and individual grants included, revocations honoured, SUPER_ADMIN excluded, one notification per account); `SendNotification` also skips an account deactivated in between. Signature steps map role → key in `SIGNATURE_PAR_ROLE` (`om.valider` / `om.viser` / `om.approuver`).
+- A new notification type needs: its subject/body in `App\Support\NotificationContenu`, its target permission in `NotificationService`, and a row in `frontend/src/views/admin/EmailConfigView.vue` — `NotificationModelesEcranTest` fails when the screen and `NotificationContenu` diverge.
 
 ## Backups
 - `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`, together with `sanctum:prune-expired`; on cPanel the recommended Cron line is `schedule:run` every minute) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.
@@ -114,6 +120,9 @@ High-signal notes for OpenCode sessions in this repo.
 - Live checks against `php artisan serve`: the `login` limiter allows 5 attempts per minute per IP; reuse tokens, or `php artisan cache:clear` on the scratch DB between runs.
 - Tests that write `storage/app/settings.json` must delete it afterwards (other tests assume it is absent).
 - Generated Word docs: run `python docs/generer_guide_utilisateur.py` and `python docs/generer_documentation_technique.py` (python-docx) after editing the scripts — never edit the `.docx` by hand.
-- `docs/SCENARIO-DEMO.md` claims its amounts/files are real: replay changed flows against the API before editing it.
+- `docs/SCENARIO-DEMO.md` claims its amounts/files are real: replay changed flows against the API (fresh `migrate:fresh --seed`, SEMO references are unique) before editing it.
 - The screen pages (`docs/00_galerie_index.html` … `53_*.html`) are generated from real screenshots: `node docs/capturer_ecrans.cjs` (API + production SPA on fresh demo data, not replayable on the same DB) then `python3 docs/generer_maquettes.py`. When a screen changes, recapture; edit the screen table in `generer_maquettes.py`, never the HTML. The August 2026 mockups only survive in git history.
+  - Capture from a production build (`npm run build` + `vite preview`): the dev server shows the Vue devtools bar on every shot. The script logs in 6 accounts and waits out the 5/min `login` limiter by itself.
+  - It needs `DemoCircuitSeeder` (accounts `demo.controleur@/demo.daf@/demo.dg@`), which also writes `storage/app/settings.json` (git-ignored) — delete it afterwards if the local install should not keep those signatories.
+  - The Word user guide embeds 12 of these captures (`docs/ecrans/*.jpg`): recapture before regenerating it when a pictured screen changes.
 - Deployment notes: `DEPLOY-CPANEL.md` (incl. per-version notes), `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md`.

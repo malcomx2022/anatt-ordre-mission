@@ -9,7 +9,8 @@
       - Frontend : npm run dev                  -> http://localhost:5173
 
 .PARAMETER Install
-    Installe les dependances avant de demarrer (composer install + npm install).
+    Installe les dependances avant de demarrer (composer install + npm ci).
+    npm ci respecte package-lock.json : la beta de Vue reste celle du lock.
 
 .PARAMETER Fresh
     Reinitialise la base puis la re-seede (migrate:fresh --seed). DESTRUCTIF.
@@ -79,8 +80,10 @@ if (-not (Test-Path $envPath)) {
 if ($Install) {
     Write-Step 'composer install (backend)'
     Push-Location $Backend; composer install --no-interaction; Pop-Location
-    Write-Step 'npm install (frontend)'
-    Push-Location $Frontend; npm install; Pop-Location
+    # npm ci, et non npm install : package.json suit le dist-tag "beta" de Vue,
+    # que npm install pourrait faire avancer ; le lock fige la version (3.6.0-beta.9).
+    Write-Step 'npm ci (frontend)'
+    Push-Location $Frontend; npm ci; Pop-Location
 }
 if (-not (Test-Path (Join-Path $Backend 'vendor')))        { Fail 'vendor/ absent — relance avec -Install.' }
 if (-not (Test-Path (Join-Path $Frontend 'node_modules'))) { Fail 'node_modules/ absent — relance avec -Install.' }
