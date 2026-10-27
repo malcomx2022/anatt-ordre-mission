@@ -35,6 +35,8 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   réelle (base neuve) — réglage passé à 60 % : la mission déjà saisie garde 199 500 / 85 500 et « Avances (70 %) », une
   nouvelle mission est répartie 171 000 / 114 000 et affiche 60 % (état, aperçu du lot MTN à 171 000) ; étape C : les
   onglets de l'état portent la part de la mission.
+- **README** : répartition figée à la retranscription et part de la mission affichée sur ses écrans ; thème vert
+  ANaTT dans la stack ; variante §8.5 du scénario de démo.
 
 ### Guide du paramétrage de la part d'avance — version 1.4 (27/10/2026)
 
