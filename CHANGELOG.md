@@ -9,6 +9,16 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Scénario de démonstration mis à jour (27/10/2026)
+
+- `docs/SCENARIO-DEMO.md` **rejoué sur l'API réelle** (base neuve, version 1.4) : fichiers MTN / Moov,
+  montants, avenant, document de retenue et lot complémentaire identiques au rejeu du 23/10.
+  Vérifiés en plus : la notification reçue par chaque signataire à son tour puis par l'agent financier,
+  et la date de paiement enregistrée à l'heure du Bénin.
+- Ajouts : préparation de la démo (galerie des écrans, `DemoCircuitSeeder`), notifications du circuit
+  (étape C), heure du Bénin et état mensuel (étape F), libellés de la fiche d'un OM amendé (§7),
+  écran de génération rechargé après un échec (§8.1). Documentation technique (§10) régénérée.
+
 ### Documentation technique mise à jour (27/10/2026)
 
 - `docs/generer_documentation_technique.py` et le `.docx` régénéré, **version 1.4.0** :

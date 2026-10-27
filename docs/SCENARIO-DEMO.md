@@ -20,6 +20,11 @@
 > identiques (§3 à §8). Chemins de menu alignés sur le menu latéral, dont les libellés sont
 > désormais accentués (« États de paiement », « Générer MTN », « Matrice des permissions »…) ;
 > écart du transport d'ATCHA dans l'avance corrigé (**+7 000**, et non +6 500).
+> **Rejoué le 27 octobre 2026** (base neuve, API réelle, version 1.4) : fichiers et montants
+> identiques (§3 à §8). Vérifiés en plus : la notification reçue par chaque signataire à son tour,
+> puis par l'agent financier (§3, étape C) ; l'heure de confirmation, enregistrée à l'heure du Bénin.
+> Ajouts : libellés de la fiche d'un OM amendé (§7), écran de génération après un échec (§8.1),
+> galerie des écrans pour préparer la démonstration (§1).
 
 ---
 
@@ -36,6 +41,12 @@ est nécessaire pour rejouer le scénario, les références SEMO du §3 étant u
 | DAF | `daf@anatt.bj` | Étape 2 : apposer le visa « Vu » sur l'état |
 | Directeur Général | `dg@anatt.bj` | Étape 3 : valider définitivement l'état (numéro requis) |
 | Agent financier | `finance@anatt.bj` | Générer les fichiers MTN / Moov + confirmer |
+
+> **Préparer la démo** : la galerie `docs/00_galerie_index.html` montre chaque écran tel qu'il
+> apparaît dans l'application (captures réelles), utile pour repérer les boutons à l'avance.
+> Pour essayer le seul circuit de validation sur une mission déjà prête, il existe aussi
+> `php artisan db:seed --class=DemoCircuitSeeder` (comptes `demo.controleur@`, `demo.daf@`,
+> `demo.dg@`, mot de passe `CircuitTest2026!`) ; ce scénario-ci part, lui, des comptes ci-dessus.
 
 > 🔐 **Séparation des tâches** : les trois signataires du circuit (contrôleur, DAF,
 > DG) doivent être **trois personnes distinctes** — d'où les trois comptes dédiés. Le DAF
@@ -119,6 +130,11 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
    (un OM rejeté auparavant reste **REJETÉ**), fige l'avance de chacun et **ouvre les
    fichiers d'avance**.
 
+> 🔔 **Notifications** : à chaque étape, la cloche (et l'e-mail) prévient celui dont c'est le tour :
+> `controle@` après le récapitulatif, `daf@` après le contrôle, `dg@` après le visa, puis `finance@`
+> à la validation finale (« fichiers générables »). Les destinataires sont ceux qui détiennent la
+> permission de l'étape : un rôle personnalisé ou un droit accordé à une personne est prévenu aussi.
+
 > 📄 **Quel document montrer ?** Le document signé est le **PDF de l'état de paiement**
 > (bouton **« Télécharger l'état »** sur l'écran de l'état) : il porte les trois signatures,
 > le numéro et les paraphes. Le PDF de **chaque OM** reprend ces mêmes signatures (même
@@ -172,6 +188,8 @@ Les versements passent à **CONFIRME** et ne seront **jamais réinclus** dans un
 nouveau fichier (protection anti-double-paiement). Seul un lot au statut **GÉNÉRÉ**
 se confirme : un lot marqué « en erreur » doit d'abord être **régénéré**.
 Régénération possible tant que le lot n'est pas confirmé (voir la variante 8.1).
+La date de paiement est enregistrée à l'**heure du Bénin** : c'est elle qui range le versement
+dans l'état mensuel (`Rapports › Mensuel`), y compris juste après minuit le 1er du mois.
 
 > 💡 **Gros lot** : au-delà de 50 bénéficiaires, la génération part en arrière-plan ;
 > l'écran affiche une barre de progression puis télécharge le fichier tout seul.
@@ -266,7 +284,8 @@ Nouveau total   Avance (figée)   Reliquat
 
 Le versement **RELIQUAT** passe de 81 000 à **171 000** (statut `EN_ATTENTE`).
 Il sera payable une fois l'**état des reliquats** validé. Le **journal des
-amendements** de la fiche trace `6 j → 8 j`, delta **+90 000**.
+amendements** de la fiche trace `6 j → 8 j`, delta **+90 000**. La fiche affiche
+désormais **« Avance engagée »** et **« Reliquat (ajusté par amendement) »**, comme le PDF.
 
 **À montrer** : lien **« PDF de l'OM »** en haut de la fiche, puis **« Télécharger PDF »** → le PDF de l'OM est régénéré et indique
 « Avance engagée — 189 000 », « Reliquat (ajusté par amendement) — 171 000 », total
@@ -283,7 +302,8 @@ Nouveau total   Avance (figée)   Reliquat
 = 135 000                         = −54 000   ← trop-perçu
 ```
 
-- La fiche affiche le badge **« Trop-perçu »** ; le versement RELIQUAT bascule en
+- La fiche affiche le badge **« Trop-perçu »** et la ligne **« Trop-perçu (à recouvrer par
+  retenue sur salaire) — −54 000 »** (même libellé dans l'aperçu « PDF de l'OM ») ; le versement RELIQUAT bascule en
   **A_RECOUVRER** et **sort du périmètre payable** (il ne part jamais dans un
   fichier MTN / Moov).
 - Le **PDF de l'OM** affiche « Trop-perçu (à recouvrer par retenue sur salaire) —
@@ -342,6 +362,10 @@ HDR,SARALY,2,406000
 ```
 
 4. Déposer, puis **Confirmer le paiement** : le lot MTN AVANCE est **CONFIRMÉ**.
+
+> Si la **génération** elle-même échoue (message d'erreur à l'écran), l'écran recharge le lot de
+> lui-même : un lot passé en erreur n'affiche plus « Confirmer le paiement », et « Régénérer »
+> reste proposé. Inutile de recharger la page.
 
 ### 8.2 Un bénéficiaire change d'opérateur → lot complémentaire  ·  `gestion@` puis `finance@`
 
