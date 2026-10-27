@@ -5,13 +5,14 @@ import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
 import { exerciceDe } from '@/utils/exercice'
+import { NOTIFICATIONS_CIRCUIT } from '@/utils/notifications'
 
 const api = useApi()
 const { success: toastSuccess } = useToast()
 const loadingData = ref(true)
 const saving = ref(false)
 
-const appName = ref('Systeme de Paiement des Missions - ANaTT')
+const appName = ref('Système de paiement des missions - ANaTT')
 const appVersion = ref('1.0.0')
 // Année fiscale : dynamique (plus de liste figée). Sans année enregistrée, le
 // défaut est l'exercice EN COURS, déterminé comme le serveur
@@ -60,20 +61,18 @@ const forceHttps = ref(true)
 const logConnections = ref(true)
 const maintenanceMode = ref(false)
 
-const notifications = ref([
-  { key: 'mission_soumise', label: 'Nouvel ordre de mission', description: 'Notifier les validateurs', enabled: true },
-  { key: 'mission_validee', label: 'Validation effectuee', description: 'Notifier le createur de l\'OM', enabled: true },
-  { key: 'paiement_effectue', label: 'Paiement effectue', description: 'Notifier l\'agent', enabled: true },
-  { key: 'paiement_echec', label: 'Echec de paiement', description: 'Alerter les administrateurs', enabled: true },
-  { key: 'rapport_mensuel', label: 'Rapport mensuel auto', description: 'Generer et envoyer le 1er de chaque mois', enabled: false },
-])
+// Les notifications réellement envoyées (utils/notifications, miroir de NotificationContenu) :
+// la bascule est indicative, la description donne la permission des destinataires.
+const notifications = ref(NOTIFICATIONS_CIRCUIT.map((n) => ({
+  key: n.type, label: n.name, description: `Destinataires : ${n.destinataires}`, enabled: true,
+})))
 
 const activeSection = ref('general')
 const sections = [
-  { id: 'general', label: 'General', icon: 'building' },
+  { id: 'general', label: 'Général', icon: 'building' },
   { id: 'paiements', label: 'Paiements', icon: 'credit-card' },
   { id: 'notifications', label: 'Notifications', icon: 'bell' },
-  { id: 'securite', label: 'Securite', icon: 'shield' },
+  { id: 'securite', label: 'Sécurité', icon: 'shield' },
   { id: 'maintenance', label: 'Maintenance', icon: 'wrench' },
 ]
 
@@ -133,7 +132,7 @@ async function saveAll() {
     // s'applique aussitôt aux écrans, sans recharger la page.
     reinitialiserPartAvance()
     void chargerPartAvance()
-    toastSuccess('Parametres enregistres avec succes.')
+    toastSuccess('Paramètres enregistrés avec succès.')
   } catch {
     // Geree par useApi
   } finally {
@@ -143,7 +142,7 @@ async function saveAll() {
 </script>
 
 <template>
-  <AppLayout title="Parametres du Systeme" subtitle="Configuration generale de l'application">
+  <AppLayout title="Paramètres du système" subtitle="Configuration générale de l'application">
     <template #header-actions>
       <button :disabled="saving" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-60" @click="saveAll">
         <svg v-if="saving" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -172,7 +171,7 @@ async function saveAll() {
       <div class="flex-1 space-y-6">
         <!-- General -->
         <div v-show="activeSection === 'general'" class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up">
-          <h3 class="text-base font-display font-bold text-gray-800 mb-5">Parametres generaux</h3>
+          <h3 class="text-base font-display font-bold text-gray-800 mb-5">Paramètres généraux</h3>
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Nom de l'application</label><input v-model="appName" type="text" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
@@ -248,18 +247,18 @@ async function saveAll() {
 
         <!-- Security -->
         <div v-show="activeSection === 'securite'" class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up">
-          <h3 class="text-base font-display font-bold text-gray-800 mb-2">Securite</h3>
+          <h3 class="text-base font-display font-bold text-gray-800 mb-2">Sécurité</h3>
           <p class="text-[12px] text-gray-500 font-body mb-5">
             Réglages <span class="font-semibold text-gold-600">indicatifs</span> : enregistrés pour référence,
             pas encore appliqués automatiquement côté serveur.
           </p>
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Duree de session (minutes)</label><input v-model.number="sessionDuration" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
-              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Max tentatives connexion</label><input v-model.number="maxLoginAttempts" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Durée de session (minutes)</label><input v-model.number="sessionDuration" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Tentatives de connexion (max.)</label><input v-model.number="maxLoginAttempts" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
             </div>
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div><p class="text-sm font-display font-semibold text-gray-800">Forcer HTTPS</p><p class="text-[11px] text-gray-500 font-body">Rediriger toutes les requetes vers HTTPS</p></div>
+              <div><p class="text-sm font-display font-semibold text-gray-800">Forcer HTTPS</p><p class="text-[11px] text-gray-500 font-body">Rediriger toutes les requêtes vers HTTPS</p></div>
               <button @click="forceHttps = !forceHttps" :class="forceHttps ? 'bg-anatt-500' : 'bg-gray-300'" class="w-11 h-6 rounded-full relative transition-colors duration-300">
                 <span :class="forceHttps ? 'translate-x-5' : 'translate-x-0.5'" class="block w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
               </button>

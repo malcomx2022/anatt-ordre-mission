@@ -60,3 +60,25 @@ describe('SettingsView — exercice par défaut', () => {
     expect(exerciceAffiche(wrapper)).toContain('2027-2028')
   })
 })
+
+describe('SettingsView — onglet Notifications', () => {
+  it('liste les 7 notifications réellement envoyées, sans celles de l’ancien circuit', async () => {
+    get.mockResolvedValue({ data: { data: {} } })
+    const texte = (await monter()).text()
+    for (const nom of ['État à signer', 'État validé', 'État rejeté', 'OM validé (circuit par OM)',
+      'OM rejeté (circuit par OM)', 'Lot confirmé', 'Trop-perçu créé']) {
+      expect(texte).toContain(nom)
+    }
+    for (const ancien of ['Nouvel ordre de mission', 'Paiement effectue', 'Echec de paiement', 'Rapport mensuel auto']) {
+      expect(texte).not.toContain(ancien)
+    }
+  })
+
+  it('accentue ses libellés', async () => {
+    get.mockResolvedValue({ data: { data: {} } })
+    const texte = (await monter()).text()
+    expect(texte).toContain('Paramètres généraux')
+    expect(texte).toContain('Sécurité')
+    expect(texte).not.toMatch(/Parametres|Securite|Duree/)
+  })
+})
