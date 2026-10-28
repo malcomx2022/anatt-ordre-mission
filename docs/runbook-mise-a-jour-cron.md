@@ -28,7 +28,10 @@
 > jusque-là sans effet, sont appliqués **dès l'envoi du code** — y compris ceux déjà enregistrés dans
 > `settings.json` quand l'écran était « indicatif » (HTTPS forcé, mode maintenance, serveur SMTP, opérateur
 > fermé, durée de session). À relire avant l'étape 4 (étape 1) ; contrôles à l'étape 8. Une erreur passagère
-> de l'API au rechargement ne déconnecte plus (SPA).
+> de l'API au rechargement ne déconnecte plus (SPA). Un e-mail qui ne part pas (serveur SMTP faux ou
+> injoignable) n'interrompt plus l'action qui notifie — en `QUEUE_CONNECTION=sync`, une signature répondait
+> jusque-là en erreur 500 — : l'échec est seulement journalisé (`storage/logs/laravel-AAAA-MM-JJ.log`, journal quotidien de production) et la cloche reçue.
+> Un réglage refusé par *Paramètres* affiche son motif (et non « Donnees invalides. »).
 >
 > *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
 > `vendor/composer/platform_check.php`. *Relu le 27/10/2026 (version 1.4)* : fuseau dans le `.env`,
@@ -82,7 +85,8 @@
         écritures de l'API seraient refusées en 403) ;
       - `"maintenanceMode": true` → l'application resterait fermée à tous sauf au super administrateur ;
       - `"smtpHost"` renseigné → ce serveur **remplacera** le `MAIL_*` du `.env` pour tous les e-mails ;
-        le garder seulement s'il est juste (sinon le vider à l'étape 8, écran *Messagerie*) ;
+        le garder seulement s'il est juste (sinon le vider à l'étape 8, écran *Messagerie*). Faux, il ne
+        bloque plus les signatures, mais **aucun** e-mail ne partirait — seul l'e-mail de test le révèle ;
       - `"mtnEnabled"` / `"moovEnabled"` à `false` → génération refusée pour cet opérateur ;
       - `"sessionDuration"`, `"maxLoginAttempts"` : valeurs voulues (5-1440 min, 3-20 tentatives).
 
@@ -314,7 +318,11 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
         reçu dans la boîte du super administrateur (serveur de l'écran, ou `.env` si le champ est vide).
         Un échec affiche le message du serveur de messagerie : corriger, ou vider le serveur ;
       - recharger une page (<kbd>F5</kbd>) : on reste connecté, sur la même page ;
-      - *Paramètres* : plus aucune mention « indicatif » ; ne rien enregistrer sans avoir relu chaque onglet.
+      - *Paramètres* : plus aucune mention « indicatif » ; ne rien enregistrer sans avoir relu chaque onglet —
+        « Enregistrer tout » enregistre **et applique** tous les onglets d'un coup. Un refus affiche son
+        motif (ex. « Le pourcentage d'avance doit être un entier entre 0 et 100. ») et n'enregistre rien ;
+      - après un échec d'envoi, le journal du jour (`storage/logs/laravel-AAAA-MM-JJ.log`) porte « SendNotification: echec envoi email » :
+        l'action a abouti, seul l'e-mail manque — corriger *Messagerie* puis renvoyer un e-mail de test.
 
       Les autres contrôles sont dans la section *06 › Réglages de Paramètres et part de la mission* de la checklist.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
