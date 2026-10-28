@@ -65,6 +65,9 @@ class PaiementController extends Controller
             'operateur' => 'required|in:MTN,MOOV',
         ]);
 
+        // Opérateur désactivé : refusé avant toute mise en file (gros lot) comme en direct.
+        LotPaiementService::exigerOperateurActif($data['operateur']);
+
         $apercu = $this->lotService->previsualiser($data['mission_id'], $data['tranche'], $data['operateur']);
 
         // Gros lot -> traitement asynchrone sur la file « paiements ».

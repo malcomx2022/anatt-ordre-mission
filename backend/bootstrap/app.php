@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\ForcerHttps;
+use App\Http\Middleware\MaintenanceApplication;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authorize;
@@ -32,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Headers de securite pour les reponses API
         $middleware->append(SecurityHeaders::class);
+
+        // Réglages de Paramètres appliqués à toute l'API : HTTPS obligatoire, puis
+        // mode maintenance (503 sauf super administrateur).
+        $middleware->api(append: [ForcerHttps::class, MaintenanceApplication::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Toute route /api/* répond en JSON, même sans en-tête Accept (requête

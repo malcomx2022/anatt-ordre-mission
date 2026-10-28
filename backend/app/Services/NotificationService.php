@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Support\NotificationContenu;
+use App\Support\Parametres;
 
 /**
  * Notifications e-mail des handoffs internes du workflow.
@@ -123,6 +124,11 @@ class NotificationService
      */
     private function notifier(array $permissions, string $type, array $data): void
     {
+        // Notification coupée dans Paramètres › Notifications : ni cloche, ni e-mail.
+        if (! Parametres::notificationActive($type)) {
+            return;
+        }
+
         User::where('actif', true)
             ->where('role', '!=', User::ROLE_SUPER_ADMIN)
             ->with('permissionOverrides')

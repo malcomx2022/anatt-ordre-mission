@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Support\NotificationContenu;
+use App\Support\Parametres;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -55,7 +56,8 @@ class SendNotification implements ShouldQueue
 
     private function getSubject(): string
     {
-        return NotificationContenu::sujet($this->type, $this->data);
+        // Préfixé du nom de l'application (Paramètres › Général) : l'e-mail dit d'où il vient.
+        return '['.Parametres::nomApplication().'] '.NotificationContenu::sujet($this->type, $this->data);
     }
 
     private function getBody(): string

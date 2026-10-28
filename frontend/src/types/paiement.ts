@@ -59,6 +59,8 @@ export interface LotPreview {
   operateur: Operateur
   /** Part d'avance (%) des OM de la mission (null : exonérée). */
   part_avance?: number | null
+  /** Faux si l'opérateur est désactivé dans Paramètres › Paiements (génération refusée). */
+  operateur_actif?: boolean
   nb_lignes: number
   total: number
   beneficiaires: LotBeneficiaire[]

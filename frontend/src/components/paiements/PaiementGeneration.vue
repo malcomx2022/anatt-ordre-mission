@@ -39,8 +39,10 @@ const solde = computed(() => confirme.value && !apercu.value?.nb_lignes)
 // Dernier lot confirmé mais des versements devenus payables depuis : le serveur
 // les met dans un lot complémentaire (séquence suivante), sans réécrire le lot confirmé.
 const complementaire = computed(() => confirme.value && !solde.value)
+// Opérateur désactivé dans Paramètres › Paiements : aperçu consultable, génération refusée.
+const operateurFerme = computed(() => apercu.value?.operateur_actif === false)
 const peutGenerer = computed(
-  () => !!apercu.value && apercu.value.nb_lignes > 0 && !suivi.value,
+  () => !!apercu.value && apercu.value.nb_lignes > 0 && !suivi.value && !operateurFerme.value,
 )
 
 // Sélecteur de mission : recherche serveur débouncée (plus de chargement de
@@ -234,6 +236,11 @@ async function marquerErreur() {
     </AppCard>
 
     <!-- Statut du lot existant -->
+    <AppAlert v-if="operateurFerme" type="warning">
+      Les paiements <strong>{{ operateur }}</strong> sont désactivés dans les Paramètres : aucun fichier ne peut être
+      généré pour cet opérateur. Les lots déjà générés restent confirmables.
+    </AppAlert>
+
     <AppAlert v-if="lot" :type="confirme ? 'success' : lot.statut === 'ERREUR' ? 'error' : 'info'">
       <div class="flex items-center gap-2">
         <span>Lot {{ operateur }} / {{ tranche }} :</span>

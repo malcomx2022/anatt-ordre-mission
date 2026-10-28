@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\NotificationContenu;
 use App\Support\Parametres;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -107,6 +108,8 @@ class SettingsController extends Controller
             $entrant['fiscalYearStartMonth'] = $mois;
         }
 
+        $this->validerReglages($entrant);
+
         // Fusion avec l'existant : une sauvegarde partielle (ex. paramètres généraux)
         // ne doit pas effacer les autres clés (ex. configuration email).
         $existant = $this->lire();
@@ -131,6 +134,10 @@ class SettingsController extends Controller
             Parametres::invalidateCache();
         }
 
+        // Réglages d'exploitation (session, connexion, opérateurs, maintenance…) :
+        // relus au plus tard à la requête suivante.
+        Parametres::invalidateReglages();
+
         // Invalidation du cache de l'exercice si l'année ou son mois de début change.
         if (array_key_exists('fiscalYear', $entrant) || array_key_exists('fiscalYearStartMonth', $entrant)) {
             Parametres::invalidateAnneeFiscale();
@@ -138,6 +145,70 @@ class SettingsController extends Controller
 
         // Réponse masquée : ne jamais renvoyer le secret au client.
         return $this->success((object) $this->masquer($settings), 'Parametres enregistres.');
+    }
+
+    /**
+     * Réglages d'exploitation, appliqués par le serveur (Parametres) : une valeur
+     * hors domaine est refusée plutôt qu'enregistrée puis ignorée en silence.
+     *
+     * @param  array<string,mixed>  $entrant
+     */
+    private function validerReglages(array &$entrant): void
+    {
+        foreach (['mtnEnabled', 'moovEnabled', 'forceHttps', 'logConnections', 'maintenanceMode'] as $cle) {
+            if (array_key_exists($cle, $entrant) && ! is_bool($entrant[$cle])) {
+                throw ValidationException::withMessages([$cle => 'Valeur attendue : vrai ou faux.']);
+            }
+        }
+
+        $bornes = [
+            'maxLoginAttempts' => [Parametres::TENTATIVES_MIN, Parametres::TENTATIVES_MAX, 'Le nombre de tentatives de connexion'],
+            'sessionDuration' => [Parametres::SESSION_MIN, Parametres::SESSION_MAX, 'La durée de session (minutes)'],
+        ];
+        foreach ($bornes as $cle => [$min, $max, $libelle]) {
+            if (array_key_exists($cle, $entrant)) {
+                $n = $this->versEntier($entrant[$cle]);
+                if ($n === null || $n < $min || $n > $max) {
+                    throw ValidationException::withMessages([$cle => "{$libelle} doit être un entier entre {$min} et {$max}."]);
+                }
+                $entrant[$cle] = $n;
+            }
+        }
+
+        if (array_key_exists('appName', $entrant)) {
+            $nom = is_string($entrant['appName']) ? trim($entrant['appName']) : null;
+            if ($nom === null || $nom === '' || mb_strlen($nom) > 100) {
+                throw ValidationException::withMessages(['appName' => "Le nom de l'application est obligatoire (100 caractères au plus)."]);
+            }
+            $entrant['appName'] = $nom;
+        }
+
+        if (array_key_exists('notifications', $entrant)) {
+            $liste = $entrant['notifications'];
+            $valide = is_array($liste) && array_is_list($liste);
+            foreach ($valide ? $liste : [] as $n) {
+                $valide = $valide && is_array($n) && in_array($n['key'] ?? null, NotificationContenu::TYPES, true)
+                    && is_bool($n['enabled'] ?? null);
+            }
+            if (! $valide) {
+                throw ValidationException::withMessages(['notifications' => 'Liste de notifications invalide (type inconnu ou état non booléen).']);
+            }
+        }
+    }
+
+    /**
+     * Réglages publics utiles à tous les écrans (tout authentifié) : nom de
+     * l'application (onglet du navigateur) et opérateurs ouverts à la génération.
+     */
+    public function application(): JsonResponse
+    {
+        return $this->success([
+            'nom' => Parametres::nomApplication(),
+            'operateurs' => [
+                'MTN' => Parametres::operateurActif('MTN'),
+                'MOOV' => Parametres::operateurActif('MOOV'),
+            ],
+        ]);
     }
 
     /** Convertit un entier ou une chaîne numérique en int ; null sinon. */

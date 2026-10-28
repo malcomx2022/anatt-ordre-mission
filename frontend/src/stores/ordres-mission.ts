@@ -138,6 +138,15 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     return new Set([...vues.entries()].filter(([, n]) => n > 1).map(([ref]) => ref))
   })
 
+  /** Agents présents deux fois : le serveur refuse (ordres.*.agent_id distinct). */
+  const agentsEnDoublon = computed<Set<number>>(() => {
+    const vus = new Map<number, number>()
+    for (const b of beneficiaires.value) {
+      if (b.agent_id) vus.set(b.agent_id, (vus.get(b.agent_id) ?? 0) + 1)
+    }
+    return new Set([...vus.entries()].filter(([, n]) => n > 1).map(([id]) => id))
+  })
+
   const etape1Valide = computed(() =>
     !!contexte.value.objet.trim()
     && !!contexte.value.destination.trim()
@@ -152,6 +161,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     // Répartition valide : un type unique OU au moins une ligne détaillée > 0 jour.
     const aLignes = (b.lignes ?? []).some((l) => l.type && l.nb_jours > 0)
     return !!b.agent_id
+      && !agentsEnDoublon.value.has(b.agent_id)
       && !!ref
       && !referencesEnDoublon.value.has(ref)
       && !!b.categorie
@@ -168,6 +178,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     const aLignes = (b.lignes ?? []).some((l) => l.type && l.nb_jours > 0)
 
     if (!b.agent_id) manques.push('agent')
+    else if (agentsEnDoublon.value.has(b.agent_id)) manques.push('agent déjà présent dans la mission')
     if (!ref) manques.push('référence SEMO')
     else if (referencesEnDoublon.value.has(ref)) manques.push('référence SEMO en doublon')
     if (!b.categorie) manques.push('catégorie')
@@ -242,7 +253,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
 
   return {
     contexte, beneficiaires, baremes, submitting,
-    nbJoursMission, totalMission, referencesEnDoublon,
+    nbJoursMission, totalMission, referencesEnDoublon, agentsEnDoublon,
     etape1Valide, etape2Valide, beneficiairesIncomplets, champsManquants,
     chargerBaremes, taux, calculer, beneficiaireValide,
     ajouterBeneficiaire, retirerBeneficiaire, reset, construirePayload, enregistrer,

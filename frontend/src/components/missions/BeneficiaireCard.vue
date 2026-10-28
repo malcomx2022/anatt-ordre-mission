@@ -16,6 +16,8 @@ const props = defineProps<{
   perDiem: PerDiem
   exonere: boolean
   doublon: boolean
+  /** Agent déjà présent sur une autre fiche de la mission (refusé par le serveur). */
+  agentDoublon?: boolean
 }>()
 
 defineEmits<{ remove: [] }>()
@@ -100,7 +102,7 @@ const fmt = (v: number) => v.toLocaleString('fr-FR')
 <template>
   <div
     class="border rounded-xl p-5 transition-colors"
-    :class="doublon ? 'border-red-300 bg-red-50/40' : 'border-gray-200'"
+    :class="doublon || agentDoublon ? 'border-red-300 bg-red-50/40' : 'border-gray-200'"
   >
     <!-- En-tête : index, rôle, suppression -->
     <div class="flex items-center justify-between mb-4">
@@ -136,6 +138,7 @@ const fmt = (v: number) => v.toLocaleString('fr-FR')
           placeholder="Nom, matricule ou IFU…"
           @change="surChoixAgent"
         />
+        <p v-if="agentDoublon" class="text-[11px] text-red-500 mt-1">Agent déjà présent dans cette mission.</p>
       </div>
 
       <!-- Référence SEMO -->

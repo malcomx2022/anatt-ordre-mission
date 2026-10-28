@@ -177,6 +177,7 @@ function terminer() {
           :per-diem="store.calculer(b)"
           :exonere="exonere"
           :doublon="store.referencesEnDoublon.has(b.reference_semo.trim())"
+          :agent-doublon="!!b.agent_id && store.agentsEnDoublon.has(b.agent_id)"
           @remove="store.retirerBeneficiaire(i)"
         />
         <AppCard v-if="!store.beneficiaires.length">

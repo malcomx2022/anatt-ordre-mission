@@ -273,11 +273,33 @@ components:
           additionalProperties: { type: array, items: { type: string } }
     PaginationMeta:
       type: object
+      description: |
+        Méta du paginateur Laravel (`paginate()` + ressource). `GET /missions` et `GET /etats`
+        n'en renvoient que les quatre compteurs.
       properties:
         current_page: { type: integer }
+        from: { type: integer, nullable: true, description: "Rang du premier élément de la page ; null si vide." }
         last_page: { type: integer }
+        links: { type: array, items: { $ref: '#/components/schemas/PaginationLien' } }
+        path: { type: string }
         per_page: { type: integer }
+        to: { type: integer, nullable: true }
         total: { type: integer }
+    PaginationLiens:
+      type: object
+      description: Liens de navigation du paginateur Laravel (racine de la réponse).
+      properties:
+        first: { type: string, nullable: true }
+        last: { type: string, nullable: true }
+        prev: { type: string, nullable: true }
+        next: { type: string, nullable: true }
+    PaginationLien:
+      type: object
+      properties:
+        url: { type: string, nullable: true }
+        label: { type: string }
+        page: { type: integer, nullable: true }
+        active: { type: boolean }
     Suivi:
       type: object
       properties:
@@ -399,6 +421,8 @@ components:
       properties:
         type: { $ref: '#/components/schemas/TypePriseEnCharge' }
         nb_jours: { type: integer, minimum: 0 }
+        taux: { type: integer, readOnly: true, description: "Taux journalier du barème (réponse seulement, calculé)." }
+        montant: { type: integer, readOnly: true, description: "taux × nb_jours (réponse seulement, calculé)." }
 
     Signature:
       type: object
@@ -541,6 +565,7 @@ components:
         tranche: { $ref: '#/components/schemas/Tranche' }
         operateur: { $ref: '#/components/schemas/Operateur' }
         part_avance: { type: integer, nullable: true, description: "Part d'avance (%) des OM de la mission (Mission::partAvanceReelle), null si exonérée." }
+        operateur_actif: { type: boolean, description: "Faux si l'opérateur est désactivé (Paramètres › Paiements) : aperçu possible, génération refusée." }
         nb_lignes: { type: integer }
         total: { type: integer }
         beneficiaires:
@@ -613,7 +638,8 @@ components:
         nom: { type: string }
         prenoms: { type: string }
         nom_complet: { type: string }
-        fonction: { type: string }
+        fonction: { type: string, description: "Libellé saisi dans les Paramètres, sinon celui du poste par défaut." }
+        fonction_saisie: { type: string, description: "Saisie des Paramètres seule (vide si aucune)." }
         signature_enregistree: { type: boolean, description: "L'image elle-même n'est jamais renvoyée." }
 
     Signataires:
@@ -917,6 +943,7 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/Agent' } }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
+                  links: { $ref: '#/components/schemas/PaginationLiens' }
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Agents]
@@ -1056,6 +1083,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Agent' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
     delete:
       tags: [Agents]
@@ -1178,6 +1206,7 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/OrdreMission' } }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
+                  links: { $ref: '#/components/schemas/PaginationLiens' }
 
   /ordres/{ordre}:
     get:
@@ -1271,6 +1300,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -1319,6 +1349,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/OrdreMission' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /ordres/{ordre}/rejeter:
@@ -1346,6 +1377,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/OrdreMission' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   # ───────────────────────────── États de paiement ─────────────────────────────
@@ -1481,6 +1513,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/EtatPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /etats/{etat}/controler:
@@ -1499,6 +1532,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/EtatPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /etats/{etat}/viser:
@@ -1517,6 +1551,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/EtatPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /etats/{etat}/approuver:
@@ -1541,6 +1576,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/EtatPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /etats/{etat}/rejeter:
@@ -1568,6 +1604,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/EtatPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   # ───────────────────────────── Paiements ─────────────────────────────
@@ -1593,6 +1630,7 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/LotPaiement' } }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
+                  links: { $ref: '#/components/schemas/PaginationLiens' }
 
   /paiements/lots/previsualiser:
     get:
@@ -1709,6 +1747,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/LotPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /paiements/lots/{lot}/erreur:
@@ -1727,6 +1766,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/LotPaiement' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /paiements/statuts:
@@ -1779,6 +1819,7 @@ paths:
                       - type: object
                         properties:
                           total_montant: { type: integer }
+                  links: { $ref: '#/components/schemas/PaginationLiens' }
 
   /paiements/regularisations:
     get:
@@ -1802,7 +1843,15 @@ paths:
                   data: { type: array, items: { $ref: '#/components/schemas/Regularisation' } }
                   current_page: { type: integer }
                   last_page: { type: integer }
+                  first_page_url: { type: string }
+                  from: { type: integer, nullable: true }
+                  last_page_url: { type: string }
+                  links: { type: array, items: { $ref: '#/components/schemas/PaginationLien' } }
+                  next_page_url: { type: string, nullable: true }
+                  path: { type: string }
                   per_page: { type: integer }
+                  prev_page_url: { type: string, nullable: true }
+                  to: { type: integer, nullable: true }
                   total: { type: integer }
                   total_a_recouvrer: { type: integer }
 
@@ -1831,6 +1880,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -1857,6 +1907,7 @@ paths:
                 type: object
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/Bareme' } }
+                  message: { type: string, nullable: true, description: "Enveloppe des collections (`ApiResponse::success`) : null." }
     post:
       tags: [Barème]
       summary: Créer un taux
@@ -1883,6 +1934,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Bareme' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /baremes/{bareme}:
@@ -1923,6 +1975,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Bareme' }
+                  message: { type: string }
     delete:
       tags: [Barème]
       summary: Supprimer un taux
@@ -1945,6 +1998,7 @@ paths:
                 type: object
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/Bareme' } }
+                  message: { type: string, nullable: true, description: "Enveloppe des collections (`ApiResponse::success`) : null." }
 
   # ───────────────────────────── Rapports ─────────────────────────────
   /rapports/mensuel:
@@ -2042,6 +2096,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -2135,6 +2190,7 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/AuditLog' } }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
+                  links: { $ref: '#/components/schemas/PaginationLiens' }
 
   /audit/{audit}:
     get:
@@ -2174,6 +2230,7 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/User' } }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
+                  links: { $ref: '#/components/schemas/PaginationLiens' }
                   stats:
                     type: object
                     properties:
@@ -2209,6 +2266,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/User' }
+                  message: { type: string }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
@@ -2244,6 +2302,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/User' }
+                  message: { type: string }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/Unprocessable' }
     delete:
@@ -2281,6 +2340,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/User' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /admin/users/{user}/reset-password:
@@ -2305,6 +2365,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -2361,6 +2422,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -2426,6 +2488,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -2459,6 +2522,7 @@ paths:
                 type: object
                 properties:
                   data: { type: object, properties: { code: { type: string }, libelle: { type: string } } }
+                  message: { type: string }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/Unprocessable' }
     delete:
@@ -2498,6 +2562,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -2518,6 +2583,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  message: { type: string }
                   data:
                     type: object
                     properties:
@@ -2561,6 +2627,31 @@ paths:
                       mois_debut: { type: integer, example: 1 }
                       libelle: { type: string, example: "2026", description: "« 2026-2027 » pour un exercice à cheval." }
 
+  /admin/parametres/application:
+    get:
+      tags: [Paramètres]
+      summary: Nom de l'application et opérateurs ouverts (lecture, tout authentifié)
+      description: "Réglages `appName`, `mtnEnabled`, `moovEnabled` de `PUT /admin/settings`. Le nom sert de titre à l'onglet du navigateur et préfixe l'objet des e-mails ; un opérateur fermé refuse la génération (422)."
+      responses:
+        '200':
+          description: Réglages publics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [nom, operateurs]
+                    properties:
+                      nom: { type: string, example: "ANaTT Missions" }
+                      operateurs:
+                        type: object
+                        required: [MTN, MOOV]
+                        properties:
+                          MTN: { type: boolean }
+                          MOOV: { type: boolean }
+
   /admin/settings:
     get:
       tags: [Paramètres]
@@ -2593,6 +2684,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Settings' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /admin/signatures:
@@ -2635,6 +2727,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Signataires' }
+                  message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
     delete:
       tags: [Paramètres]
@@ -2649,6 +2742,7 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Signataires' }
+                  message: { type: string }
 
   /admin/backups:
     get:

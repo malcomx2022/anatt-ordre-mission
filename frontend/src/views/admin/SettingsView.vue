@@ -5,6 +5,7 @@ import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
 import { exerciceDe } from '@/utils/exercice'
+import { chargerApplication } from '@/composables/useApplication'
 import { NOTIFICATIONS_CIRCUIT } from '@/utils/notifications'
 
 const api = useApi()
@@ -51,18 +52,21 @@ const libelleExercice = computed(() =>
     : `${fiscalYear.value}-${fiscalYear.value + 1}`,
 )
 const timezone = ref('Africa/Porto-Novo (UTC+1)')
-const sessionDuration = ref(30)
+// Valeurs par défaut = celles du serveur quand le réglage n'est pas enregistré
+// (App\Support\Parametres) : 480 min = SANCTUM_EXPIRATION, 5 tentatives par minute.
+const sessionDuration = ref(480)
 const maxLoginAttempts = ref(5)
 const partAvance = ref(70)
 
 const mtnEnabled = ref(true)
 const moovEnabled = ref(true)
-const forceHttps = ref(true)
-const logConnections = ref(true)
+const forceHttps = ref(false)
+const logConnections = ref(false)
 const maintenanceMode = ref(false)
 
 // Les notifications réellement envoyées (utils/notifications, miroir de NotificationContenu) :
-// la bascule est indicative, la description donne la permission des destinataires.
+// une bascule coupée supprime la notification (cloche + e-mail) ; la description donne
+// la permission des destinataires.
 const notifications = ref(NOTIFICATIONS_CIRCUIT.map((n) => ({
   key: n.type, label: n.name, description: `Destinataires : ${n.destinataires}`, enabled: true,
 })))
@@ -132,6 +136,8 @@ async function saveAll() {
     // s'applique aussitôt aux écrans, sans recharger la page.
     reinitialiserPartAvance()
     void chargerPartAvance()
+    // Nouveau nom : titre de l'onglet mis à jour sans recharger.
+    void chargerApplication()
     toastSuccess('Paramètres enregistrés avec succès.')
   } catch {
     // Geree par useApi
@@ -208,8 +214,9 @@ async function saveAll() {
           <h3 class="text-base font-display font-bold text-gray-800 mb-2">Configuration des paiements</h3>
           <p class="text-[12px] text-gray-500 font-body mb-5">
             L'application <strong>génère les fichiers</strong> de paiement (MTN <code>.txt</code>, Moov <code>.xlsx</code>)
-            à déposer sur les plateformes des opérateurs. Elle ne se connecte à aucune API opérateur : ces préférences
-            sont <span class="font-semibold text-gold-600">indicatives</span>.
+            à déposer sur les plateformes des opérateurs ; elle ne se connecte à aucune API opérateur. Un opérateur
+            <strong>désactivé</strong> n'est plus ouvert à la génération de fichiers (l'aperçu reste consultable ; les lots
+            déjà générés peuvent toujours être confirmés ou passés en erreur).
           </p>
           <div class="space-y-5">
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -232,8 +239,8 @@ async function saveAll() {
           <h3 class="text-base font-display font-bold text-gray-800 mb-2">Notifications</h3>
           <p class="text-[12px] text-gray-500 font-body mb-5">
             Les notifications du circuit (validation, rejet, signature attendue, lot confirmé, trop-perçu) sont
-            <strong>émises automatiquement</strong> par e-mail et dans la cloche. Les bascules ci-dessous sont
-            <span class="font-semibold text-gold-600">indicatives</span> (préférences enregistrées, pas encore appliquées au tri des envois).
+            <strong>émises automatiquement</strong> par e-mail et dans la cloche. Une notification <strong>désactivée</strong>
+            n'est plus émise du tout, ni dans la cloche ni par e-mail. L'objet des e-mails est préfixé du nom de l'application.
           </p>
           <div class="space-y-3">
             <div v-for="notif in notifications" :key="notif.label" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -249,13 +256,14 @@ async function saveAll() {
         <div v-show="activeSection === 'securite'" class="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-up">
           <h3 class="text-base font-display font-bold text-gray-800 mb-2">Sécurité</h3>
           <p class="text-[12px] text-gray-500 font-body mb-5">
-            Réglages <span class="font-semibold text-gold-600">indicatifs</span> : enregistrés pour référence,
-            pas encore appliqués automatiquement côté serveur.
+            Appliqués par le serveur dès l'enregistrement (au plus tard une minute après). Durée de session : 5 à 1440
+            minutes après la connexion ; tentatives de connexion : 3 à 20 par minute. N'activez « Forcer HTTPS » qu'une
+            fois le certificat en place : en HTTP, l'API redirige alors les lectures et refuse les écritures.
           </p>
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Durée de session (minutes)</label><input v-model.number="sessionDuration" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
-              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Tentatives de connexion (max.)</label><input v-model.number="maxLoginAttempts" type="number" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Durée de session (minutes)</label><input v-model.number="sessionDuration" type="number" min="5" max="1440" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
+              <div><label class="block text-xs font-body font-medium text-gray-600 mb-1.5">Tentatives de connexion (max. par minute)</label><input v-model.number="maxLoginAttempts" type="number" min="3" max="20" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all duration-200"></div>
             </div>
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
               <div><p class="text-sm font-display font-semibold text-gray-800">Forcer HTTPS</p><p class="text-[11px] text-gray-500 font-body">Rediriger toutes les requêtes vers HTTPS</p></div>
@@ -264,7 +272,7 @@ async function saveAll() {
               </button>
             </div>
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div><p class="text-sm font-display font-semibold text-gray-800">Journaliser les connexions</p><p class="text-[11px] text-gray-500 font-body">Enregistrer toutes les tentatives de connexion</p></div>
+              <div><p class="text-sm font-display font-semibold text-gray-800">Journaliser les connexions</p><p class="text-[11px] text-gray-500 font-body">Tracer aussi les connexions échouées au journal d'audit (les réussies le sont toujours)</p></div>
               <button @click="logConnections = !logConnections" :class="logConnections ? 'bg-anatt-500' : 'bg-gray-300'" class="w-11 h-6 rounded-full relative transition-colors duration-300">
                 <span :class="logConnections ? 'translate-x-5' : 'translate-x-0.5'" class="block w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"></span>
               </button>
@@ -278,10 +286,10 @@ async function saveAll() {
           <div class="space-y-4">
             <div class="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl">
               <div>
-                <p class="text-sm font-display font-semibold text-gray-800">Mode maintenance <span class="text-[10px] font-body font-semibold text-gold-600 align-middle">(indicatif)</span></p>
+                <p class="text-sm font-display font-semibold text-gray-800">Mode maintenance</p>
                 <p class="text-[11px] text-amber-700 font-body flex items-center gap-1">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                  Réglage enregistré, pas encore appliqué automatiquement côté serveur
+                  L'application répond « en maintenance » à tous les comptes, sauf au super administrateur
                 </p>
               </div>
               <button @click="maintenanceMode = !maintenanceMode" :class="maintenanceMode ? 'bg-anatt-500' : 'bg-gray-300'" class="w-11 h-6 rounded-full relative transition-colors duration-300">
