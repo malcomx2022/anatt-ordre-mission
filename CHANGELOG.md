@@ -29,6 +29,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   variantes du scénario de démo.
 - **Checklist post-déploiement** (§06) : refus expliqué de *Paramètres* (part à 120 %, rien d'enregistré) ;
   sur la recette, action qui aboutit malgré un serveur de messagerie injoignable (cloche reçue, échec au journal).
+- **Runbook de mise à jour** : encadré « Réglages appliqués » (e-mail en échec sans effet sur l'action, refus
+  expliqués) ; étape 1, serveur SMTP faux révélé par le seul e-mail de test ; étape 8, « Enregistrer tout »
+  applique tous les onglets, refus expliqué, trace d'un échec d'envoi dans le journal du jour.
 
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 
