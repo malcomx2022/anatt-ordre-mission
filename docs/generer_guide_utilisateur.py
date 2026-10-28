@@ -289,6 +289,9 @@ tableau(
         ["Réglages de Paramètres", "Tous appliqués : opérateurs MTN / Moov, notifications par type, durée de "
          "session, tentatives de connexion, HTTPS forcé, journal des connexions échouées, mode maintenance, "
          "nom de l'application.", "13.2"],
+        ["Erreur passagère", "Un incident momentané du serveur (trop de requêtes, erreur, coupure réseau) "
+         "au rechargement d'une page ne vous déconnecte plus : l'écran d'erreur s'affiche et « Réessayer » "
+         "vous ramène à la page demandée, toujours connecté.", "3.4"],
         ["Saisie d'une mission", "Un même agent ajouté deux fois est signalé dès la saisie (« Agent déjà "
          "présent dans cette mission »).", "6.1"],
         ["Part de l'avance d'une mission", "L'écran d'un état de paiement (« Avances (70 %) » / « Reliquats "
@@ -464,6 +467,18 @@ para("À la création de votre compte ou après une réinitialisation par un adm
 etape("Saisissez votre mot de passe actuel (temporaire).")
 etape("Choisissez un nouveau mot de passe : au moins 12 caractères, avec majuscules, minuscules, chiffres et symboles.")
 etape("Confirmez. Vous accédez ensuite normalement à l'application.")
+
+h2("3.4 Erreur momentanée du serveur, maintenance")
+para("Si le serveur ne répond pas correctement au moment où vous ouvrez ou rechargez une page (trop de "
+     "requêtes en peu de temps, erreur passagère, coupure du réseau), l'application affiche l'écran "
+     "« Erreur serveur » au lieu de la page demandée. Votre session est conservée : vous n'avez pas à "
+     "vous reconnecter.")
+etape("Patientez quelques instants (une minute au plus après « Trop de tentatives »).")
+etape("Cliquez sur « Réessayer » : l'application vous ramène à la page que vous vouliez ouvrir.")
+para("Pendant une mise à jour ou lorsque le super administrateur active le mode maintenance, l'écran "
+     "« Maintenance en cours » s'affiche ; il revient de lui-même à votre page dès que le service reprend. "
+     "Seule une session réellement expirée (durée de session dépassée, compte désactivé, mot de passe "
+     "réinitialisé) vous renvoie à l'écran de connexion.")
 
 # =========================================================================
 # 4. TABLEAU DE BORD
@@ -857,6 +872,7 @@ bullet("Configuration e-mail (SMTP) : un serveur renseigné remplace, dès l'e-m
        "message du serveur de messagerie. Le mot de passe est stocké chiffré et n'est jamais réaffiché en clair. "
        "L'écran liste les sept notifications envoyées (état à signer, état validé ou rejeté, OM validé ou "
        "rejeté, lot confirmé, trop-perçu créé) avec la permission de leurs destinataires.")
+capture("51_config_email", "configuration e-mail : serveur SMTP, expéditeur et e-mail de test")
 bullet("Sauvegardes : création, téléchargement, restauration et suppression des sauvegardes de la "
        "base de données (voir chapitre 13.3).")
 
