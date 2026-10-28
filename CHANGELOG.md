@@ -32,6 +32,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Runbook de mise à jour** : encadré « Réglages appliqués » (e-mail en échec sans effet sur l'action, refus
   expliqués) ; étape 1, serveur SMTP faux révélé par le seul e-mail de test ; étape 8, « Enregistrer tout »
   applique tous les onglets, refus expliqué, trace d'un échec d'envoi dans le journal du jour.
+- **Guide des workflows par profil** : §2, « Enregistrer tout » et refus expliqués (SUPER_ADMIN), serveur de
+  messagerie faux révélé par le seul e-mail de test ; §8, une signature n'est jamais bloquée par un e-mail
+  qui ne part pas (cloche reçue).
 
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 

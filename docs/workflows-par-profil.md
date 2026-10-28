@@ -22,7 +22,8 @@
 >
 > **Complété le 28/10/2026** : réglages de *Paramètres* et de *Messagerie* appliqués par le serveur —
 > rôle du SUPER_ADMIN précisé (§2), effet du mode maintenance et de la durée de session sur tous les
-> profils (§7), e-mails envoyés par le serveur de *Messagerie* (§8).
+> profils (§7), e-mails envoyés par le serveur de *Messagerie* (§8) ; puis refus expliqués et
+> « Enregistrer tout » (§2), signature jamais bloquée par un e-mail qui ne part pas (§8).
 
 ---
 
@@ -234,8 +235,14 @@ Les réglages qu'il enregistre agissent pour **tous les profils** (depuis le 28/
 | *Paramètres › Maintenance* | Mode maintenance | Tous voient l'écran *Maintenance*, sauf lui ; ils reviennent seuls à leur page quand il le lève |
 | *Messagerie* (`/admin/email`) | Serveur SMTP, expéditeur | Les e-mails de tous partent par ce serveur (sinon le `.env`) ; « Envoyer un e-mail de test » le vérifie |
 
+Dans *Paramètres*, « Enregistrer tout » enregistre **et applique** tous les onglets d'un coup :
+il relit chacun avant d'enregistrer. Une valeur refusée (part d'avance à 120 % ; dans *Messagerie*, port à 70000)
+affiche son motif — « Le pourcentage d'avance doit être un entier entre 0 et 100. » — et rien
+n'est enregistré.
+
 Il n'est jamais notifié (§8) : c'est à lui de vérifier, après un changement de *Messagerie*,
-que l'e-mail de test arrive.
+que l'e-mail de test arrive. Un serveur faux ne bloque personne (§8) : seuls les e-mails
+manquent, et l'e-mail de test est le seul à le lui signaler.
 
 **Une exception à son omnipotence** : la séparation des tâches s'applique aussi à lui. Il
 ne peut pas porter deux signatures du même état.
@@ -418,3 +425,8 @@ peut **couper** un type dans *Paramètres › Notifications* : il n'est alors pl
 cloche ni e-mail). L'objet des e-mails est préfixé du nom de l'application. Les e-mails partent par
 le serveur SMTP réglé dans *Messagerie* ou, champ vide, par celui du `.env` ; le SUPER_ADMIN vérifie
 la configuration avec « Envoyer un e-mail de test ».
+
+Un e-mail qui ne part pas (serveur injoignable, identifiants refusés) **ne bloque jamais** l'action
+qui notifie : le `CONTROLEUR` qui contrôle, le `DAF` qui vise, le `DG` qui valide voient leur
+signature enregistrée normalement, et le destinataire trouve la notification dans sa **cloche**.
+Seul l'e-mail manque ; l'échec est journalisé côté serveur (`storage/logs/`) pour le SUPER_ADMIN.
