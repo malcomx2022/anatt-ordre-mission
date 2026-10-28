@@ -41,6 +41,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   s'affichait « Donnees invalides. », message générique des 422 ; l'écran affiche désormais le motif
   (`errors`), p. ex. « Échec de l'envoi : Connection could not be established… ». Constaté en rejouant le
   scénario ; le test Vitest simulait une réponse que l'API ne renvoie pas — il suit désormais la vraie forme.
+- **Documentation technique** (`.docx` régénéré) : §3.1 session restaurée (seul un 401 y met fin), §6.3 secret SMTP
+  déchiffré à l'envoi et session, §7.5 routes `settings/test-email` et `parametres/application`, §7.6 forme des
+  réponses 422 (message générique + `errors`) et code 503, §10 recette du 28/10, évolution « Messagerie, refus ».
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :

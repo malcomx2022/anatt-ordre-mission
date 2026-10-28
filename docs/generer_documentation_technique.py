@@ -258,6 +258,9 @@ tableau(
          "POST /admin/settings/test-email (422 si l'envoi échoue). Pest 670, Vitest 197.", "§6, §7"],
         ["Session (28/10)", "Une erreur passagère de l'API au rechargement (429, 5xx, réseau) ne déconnecte plus : le jeton est "
          "gardé et l'écran d'erreur revient à la page demandée ; seul un 401 met fin à la session. Vitest 205.", "§6"],
+        ["Messagerie, refus (28/10)", "L'écran Messagerie affiche le motif d'un refus 422 (champ errors : port invalide, "
+         "message du serveur SMTP) et non plus le message générique « Donnees invalides. ». Scénario de démo complété "
+         "(§8.6 messagerie, §8.7 maintenance), rejoué sur l'API réelle.", "§7.6, §10"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -524,6 +527,10 @@ para("Accès sécurisé par tokens Sanctum. Un changement de mot de passe peut �
 bullet("AUTH-01 — Connexion : email + mot de passe (message d'erreur neutre anti-énumération).")
 bullet("AUTH-02 — Mot de passe oublié : envoi d'un lien de réinitialisation.")
 bullet("AUTH-03 — Réinitialisation : nouveau mot de passe via token.")
+para("Session restaurée au rechargement d'une page (stores/auth.ts → fetchUser, garde du routeur) : seul un 401 "
+     "(jeton expiré ou révoqué) y met fin. Une erreur passagère de /auth/me (429, 5xx, réseau) garde le jeton et "
+     "ouvre l'écran 500, dont « Réessayer » revient à la page demandée (chemin interne seulement) ; un 503 ouvre "
+     "l'écran Maintenance. Avant le 28/10, toute erreur déconnectait et révoquait le jeton côté serveur.")
 
 h2("3.2 Module Tableau de bord")
 para("DASH-01 — KPIs (OM en cours, validés, paiements du mois), graphiques et actions rapides, filtrés "
@@ -869,7 +876,9 @@ bullet("Anti-énumération : message de connexion neutre et identique quelle que
 bullet("Rate limiting dédié : login, API globale, génération de paiement et exports (throttle).")
 bullet("Protection XSS : échappement Vue + Content Security Policy durcie (anti-vol de token).")
 bullet("Injection de formule neutralisée dans les exports tableurs ; garde anti-SSRF sur la génération PDF.")
-bullet("Secret SMTP chiffré au repos et jamais réaffiché en clair (masque ********).")
+bullet("Secret SMTP chiffré au repos et jamais réaffiché en clair (masque ********) ; déchiffré seulement au moment "
+       "d'envoyer (App\\Support\\Messagerie). Une APP_KEY changée le rend indéchiffrable : il est alors à ressaisir.")
+bullet("Session : seul un 401 met fin à une session restaurée ; une erreur passagère ne révoque plus le jeton (§3.1).")
 bullet("Super admin protégé : il existe toujours ≥ 1 SUPER_ADMIN actif ; le dernier ne peut être supprimé, désactivé ni rétrogradé.")
 bullet("Injection SQL : prévenue par l'ORM Eloquent (requêtes préparées).")
 bullet("Toute erreur d'une route /api/* répond en JSON, même sans en-tête Accept : 401 (aucune redirection vers "
@@ -1000,7 +1009,9 @@ tableau(
         ["GET", "/api/audit[/:id]", "Journal d'activité (audit.consulter)"],
         ["—", "/api/admin/users...", "Gestion des comptes (utilisateurs.gerer) ; overrides /users/:id/permissions (roles.gerer)"],
         ["—", "/api/admin/roles...", "Matrice et rôles personnalisés (lecture utilisateurs.gerer, écriture roles.gerer)"],
-        ["—", "/api/admin/settings", "Paramètres système (parametres.gerer)"],
+        ["GET / PUT", "/api/admin/settings", "Paramètres système, liste blanche, valeurs validées (422 hors domaine) (parametres.gerer)"],
+        ["POST", "/api/admin/settings/test-email", "E-mail de test au compte connecté avec la configuration enregistrée ; 422 (champ smtpHost) avec le message du serveur SMTP en cas d'échec (parametres.gerer)"],
+        ["GET", "/api/admin/parametres/application", "Nom de l'application et opérateurs ouverts (lecture publique)"],
         ["GET / POST / DELETE", "/api/admin/backups[/:name][/download|/restaurer]", "Sauvegardes : liste, création, téléchargement, restauration (confirmation), suppression (parametres.gerer)"],
     ],
     largeurs=[2.4, 8.0, 6.4],
@@ -1014,10 +1025,11 @@ tableau(
         ["202 Accepted", "Traitement asynchrone", "Génération de gros lot / export (tracking_id)"],
         ["401 / 403", "Non authentifié / interdit", "Token absent ou expiré (toujours en JSON sur /api/*) / permission insuffisante"],
         ["404 / 405", "Introuvable / méthode non permise", "Ressource ou route inexistante / ex. GET sur /api/auth/login (toujours en JSON)"],
-        ["422", "Erreur de validation", "Champ requis manquant, données invalides"],
+        ["422", "Erreur de validation", "Champ requis manquant, données invalides. Corps : message générique « Donnees invalides. » + errors { champ: [motif] } — l'écran affiche le motif"],
         ["423 Locked", "Changement de mot de passe requis", "Compte en must_change_password"],
         ["429", "Trop de requêtes", "Dépassement du rate limiting"],
         ["500", "Erreur serveur", "Erreur interne inattendue"],
+        ["503", "Service indisponible", "artisan down (mise à jour) ou mode maintenance de Paramètres (sauf SUPER_ADMIN) ; le SPA ouvre l'écran Maintenance"],
     ],
     largeurs=[3.2, 5.2, 8.4],
 )
@@ -1164,7 +1176,9 @@ bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTI
        "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme, puis de nouveau le "
        "27/10 en version 1.4 (mêmes fichiers et montants, notifications de chaque signataire). Le 25/10, réponses "
        "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32 ; "
-       "vérification automatisée en CI depuis le 28/10 (OpenApiReponsesTest).")
+       "vérification automatisée en CI depuis le 28/10 (OpenApiReponsesTest). Le 28/10, variantes messagerie et "
+       "maintenance du scénario rejouées sur l'API réelle (MariaDB, base neuve) : elles ont révélé l'affichage du "
+       "message générique des 422 à l'écran Messagerie, corrigé.")
 bullet("Défauts relevés par la revue d'octobre 2026 : 32, tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Les quatre décisions du §7.1 sont appliquées depuis la 1.4.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
