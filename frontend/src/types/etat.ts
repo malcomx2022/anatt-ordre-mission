@@ -47,6 +47,8 @@ export interface EtatPaiement {
   montant_reliquat: number
   /** Mention d'arrêt : total de la tranche en lettres. */
   montant_total_lettres: string
+  /** Part d'avance (%) des OM de la mission, figée à la retranscription (null : exonérée). */
+  part_avance?: number | null
   controle?: EtapeSignature | null
   visa_daf?: EtapeSignature | null
   validation_dg?: EtapeSignature | null

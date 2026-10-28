@@ -35,10 +35,6 @@ export default {
           green: '#1D9E4F',
           yellow: '#D4A843',
         },
-        app: {
-          primary: '#2563EB',
-          sidebar: '#0F172A',
-        },
         danger: {
           50: '#FEF2F2',
           500: '#EF3340',

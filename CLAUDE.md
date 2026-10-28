@@ -179,7 +179,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
   Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` retirés le 26/10/2026)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (135 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (139 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -192,7 +192,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (599 tests, 70 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (606 tests, 72 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -306,10 +306,13 @@ anatt-ordre-mission/
 3. `DM Sans` pour TOUT le corps de texte, paragraphes, inputs
 4. La `flag-bar` (barre tricolore) avant CHAQUE footer
 5. `card-hover` sur TOUTES les cartes cliquables
-6. Thème **vert** (#1D9E4F) pour l'interface publique / Thème **bleu** (#2563EB) pour l'app de gestion
-   > *Constat du 27/10/2026* : l'application de gestion est entièrement au **vert ANaTT** (barre latérale
-   > `anatt-800 → anatt-900`, boutons `anatt-500`) ; les couleurs `app.primary` / `app.sidebar` sont déclarées
-   > dans `tailwind.config.js` mais utilisées nulle part. Règle et code divergent : arbitrage à rendre.
+6. Thème **vert ANaTT** (#1D9E4F) partout, application de gestion comprise : barre latérale
+   `anatt-800 → anatt-900`, boutons et liens `anatt-500` (hover `anatt-600`)
+   > *Arbitrage du 27/10/2026* : le thème vert est conservé pour l'application de gestion ; l'ancienne
+   > règle d'un thème bleu (#2563EB) est abandonnée et les couleurs `app.primary` / `app.sidebar`,
+   > jamais utilisées, sont retirées de `tailwind.config.js`. Le bleu Tailwind standard (`blue-50` à
+   > `blue-800`) reste une couleur d'**accent** — badge « Brouillon », badges, toasts et bandeaux
+   > d'information, icônes —, jamais la couleur principale d'un écran ou d'un bouton d'action.
 7. Icônes SVG inline uniquement (style Lucide) — jamais d'emoji, jamais de font-icon
 
 ### Couleurs — Tailwind config
@@ -346,11 +349,7 @@ extend: {
       green:  '#1D9E4F',
       yellow: '#D4A843',
     },
-    // Couleurs interface app gestion (différent du site public)
-    app: {
-      primary: '#2563EB',   // Bleu application
-      sidebar: '#0F172A',   // Sidebar dark
-    }
+    // Pas de palette propre à l'app de gestion : elle suit le vert ANaTT (règle n° 6)
   },
   fontFamily: {
     display: ['Sora', 'sans-serif'],
@@ -874,6 +873,7 @@ GET    /api/ordres/:id/historique   → Journal d'audit de l'OM
 ```
 GET    /api/missions                      → Missions + avancement des deux états (avances / reliquats) — per_page 5-100, défaut 20
 GET    /api/missions/:id/etat             → { data: { avance: EtatPaiement|null, reliquat: EtatPaiement|null } }
+                                            (chaque état porte part_avance : part des OM de la mission, pas le réglage courant)
                                             (data: null si aucun récapitulatif établi)
 POST   /api/missions/:id/etat/recapituler → Établit/rafraîchit l'état d'une tranche en BROUILLON
                                             Body: { tranche?: 'AVANCE'|'RELIQUAT' } (défaut AVANCE)

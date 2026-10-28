@@ -285,6 +285,10 @@ tableau(
          "engagée », « Reliquat (ajusté par amendement) » ou « Trop-perçu ».", "6.3"],
         ["Configuration e-mail", "L'écran présente les notifications réellement envoyées, avec leurs "
          "destinataires.", "13.2"],
+        ["Part de l'avance d'une mission", "L'écran d'un état de paiement (« Avances (70 %) » / « Reliquats "
+         "(30 %) ») et le choix de la tranche à la génération affichent la part avec laquelle les OM de la "
+         "mission ont été retranscrits, et non le réglage du jour : changer la part dans « Paramètres » "
+         "ne modifie ni les montants ni les pourcentages d'une mission déjà saisie.", "7.1, 8, 9.1"],
         ["Fonction imprimée", "Sans fonction saisie dans « Signatures », l'état imprime celle du compte du "
          "signataire, puis le libellé du poste.", "7.4"],
         ["Menu", "Libellés accentués : « États de paiement », « Générer MTN », « Générer Moov », "
@@ -601,6 +605,9 @@ bullet("Le brouillon est téléchargeable en PDF : il porte le filigrane « BROU
        "ne comporte aucune signature. C'est l'épreuve que l'on relit avant d'engager le circuit.")
 bullet("Tant qu'aucune signature n'est apposée, « Rafraîchir » recalcule l'état si les OM ont changé.")
 bullet("La tranche Reliquats n'est proposée qu'après validation de l'état des avances.")
+bullet("Les onglets « Avances (… %) » et « Reliquats (… %) » indiquent la part de l'avance de la mission, "
+       "celle avec laquelle ses OM ont été retranscrits : elle ne change pas si la part est modifiée "
+       "ensuite dans « Paramètres ».")
 
 capture("18_file_etats", "file de travail des états de paiement (profil contrôleur)")
 
@@ -675,7 +682,9 @@ bullet("Répartition détaillée : un même bénéficiaire peut cumuler plusieur
 bullet("Transport : montant facultatif ajouté au total avant la répartition avance / reliquat. Il reste "
        "dû même si aucun jour n'est facturé (per diem à 0).")
 bullet("Avance = arrondi de (montant total × part de l'avance). La part est de 70 % par défaut et se "
-       "règle dans les Paramètres (SUPER_ADMIN) ; elle s'applique aux OM retranscrits ensuite.")
+       "règle dans les Paramètres (SUPER_ADMIN) ; elle s'applique aux OM retranscrits ensuite. Une mission "
+       "déjà saisie garde ses montants, et ses écrans (fiche et PDF de l'OM, état de paiement, génération "
+       "des fichiers) affichent la part avec laquelle elle a été retranscrite.")
 bullet("Reliquat = montant total − avance (30 % par défaut ; le reliquat absorbe l'arrondi).")
 bullet("Exonération (prise en charge par un tiers) : tous les montants sont à 0, transport compris, et "
        "aucun versement n'est créé.")
@@ -696,7 +705,7 @@ encadre("Préalable — éligibilité par tranche",
 
 h2("9.1 Générer un fichier de paiement (MTN ou Moov)")
 etape("Dans le menu Paiements, ouvrez « Générer MTN » ou « Générer Moov ».")
-etape("Sélectionnez la mission et la tranche (AVANCE ou RELIQUAT) : l'« Aperçu des bénéficiaires » éligibles s'affiche aussitôt.")
+etape("Sélectionnez la mission et la tranche (AVANCE ou RELIQUAT) : l'« Aperçu des bénéficiaires » éligibles s'affiche aussitôt. Une fois la mission choisie, la tranche est libellée avec la part de cette mission (par exemple « Avance (60 %) » pour une mission retranscrite à 60 %).")
 etape("Cliquez sur « Générer le fichier.txt » (MTN) ou « Générer le fichier.xlsx » (Moov) : le fichier est téléchargé et le lot passe au statut GÉNÉRÉ.")
 para("Pour un volume important (plus de 50 bénéficiaires), la génération peut se faire en arrière-plan : "
      "un bandeau de suivi s'affiche et le fichier se télécharge automatiquement dès qu'il est prêt. Restez "
@@ -801,9 +810,10 @@ bullet("Matrice des permissions : consultation par l'ADMIN ; édition à chaud p
        "un profil au défaut (voir chapitre 2.2).")
 bullet("Signatures : identités et paraphes scannés du contrôleur, du DAF et du Directeur Général, "
        "imprimés sur l'état de paiement (voir chapitre 7.4).")
-bullet("Paramètres : configuration générale de l'application, dont la part de l'avance (%) appliquée "
-       "à la répartition avance / reliquat (70 % par défaut). Le fuseau horaire (heure du Bénin) y est "
-       "affiché pour information : il est réglé sur le serveur.")
+bullet("Paramètres (onglet Général) : configuration générale de l'application, dont la part de l'avance "
+       "(%) appliquée à la répartition avance / reliquat (70 % par défaut). Elle ne vaut que pour les OM "
+       "retranscrits après la modification : les missions déjà saisies gardent leurs montants et leur part. "
+       "Le fuseau horaire (heure du Bénin) y est affiché pour information : il est réglé sur le serveur.")
 bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste dynamique) et mois de début "
        "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
        "différent produit un exercice à cheval, libellé « 2026-2027 ». À ce jour, ce réglage n'agit ni sur "

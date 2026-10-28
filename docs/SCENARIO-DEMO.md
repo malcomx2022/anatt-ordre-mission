@@ -25,6 +25,9 @@
 > puis par l'agent financier (§3, étape C) ; l'heure de confirmation, enregistrée à l'heure du Bénin.
 > Ajouts : libellés de la fiche d'un OM amendé (§7), écran de génération après un échec (§8.1),
 > galerie des écrans pour préparer la démonstration (§1).
+> **Complété le 27 octobre 2026** : variante §8.5 « changer la part de l'avance », rejouée sur l'API réelle
+> (base neuve) — une mission déjà saisie garde ses montants et sa part (70 %) quand le réglage passe à
+> 60 %, une mission saisie ensuite est répartie à 60 % ; montants §3 à §8 inchangés.
 
 ---
 
@@ -119,7 +122,9 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 1. **Établir le récapitulatif**  ·  `gestion@` — menu `Missions` (`/missions`) → la mission
    (écran de l'état, `/missions/:id/etat` ; aussi accessible par **« Établir l'état »** sur la fiche
    d'un OM), tranche **Avances**, cliquer **« Établir le récapitulatif des avances »** → l'état passe en
-   **BROUILLON** (PDF filigrané « BROUILLON — NON VALIDE » téléchargeable).
+   **BROUILLON** (PDF filigrané « BROUILLON — NON VALIDE » téléchargeable). Les onglets affichent
+   **« Avances (70 %) » / « Reliquats (30 %) »** : la part de **cette mission**, celle de sa
+   retranscription (§8.5).
 2. **Contrôler**  ·  `controle@` — menu `États de paiement` (`/etats`) → ouvrir l'état → **Contrôler**
    → **CONTRÔLÉ**.
 3. **Viser (Vu)**  ·  `daf@` — **Apposer le visa DAF** → **VISÉ DAF** (interdit au contrôleur :
@@ -424,6 +429,31 @@ sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.
 > Prérequis : le client `mysql` doit être accessible au serveur (`DB_RESTORE_BINARY`,
 > `exec()` autorisé) — cf. `DEPLOY-CPANEL.md` §9.1. Sans lui, la restauration échoue
 > proprement, base intacte.
+
+### 8.5 (Option) Changer la part de l'avance  ·  `superadmin@` puis `gestion@` et `finance@`
+
+À montrer après l'étape C (état des avances établi). Montants **réels**, rejoués sur l'API le
+27 octobre 2026 (base neuve, même barème que le §6, 1 repas + 6 journées complètes = 285 000).
+
+1. `superadmin@` — menu *Système* › **Paramètres** (`/admin/parametres`), onglet **Général** : passer
+   la **part de l'avance** de 70 à **60 %** → *Part du reliquat* affiche 40 %, **Enregistrer**.
+2. `gestion@` — rouvrir la mission *Dossiers de passation de marchés* : **rien ne bouge**. L'OM de
+   SOUMANOU garde **199 500 / 85 500** (sa répartition est figée à la retranscription), l'état des
+   avances reste à **199 500** et ses onglets affichent toujours **« Avances (70 %) »**.
+3. `gestion@` — retranscrire une **nouvelle** mission avec le même per diem (285 000) : l'aperçu du
+   per diem et l'OM enregistré sont à **171 000 / 114 000** (60 / 40 %), et l'état de cette mission
+   affiche **« Avances (60 %) »**.
+4. `finance@` — après validation de l'état de la nouvelle mission, `Paiements › Générer MTN` : la
+   tranche est libellée **« Avance (60 %) »**, le fichier porte **171 000**. Pour la première mission,
+   le même écran affiche toujours **« Avance (70 %) »**.
+
+| Mission | Saisie avec | Total | Avance | Reliquat | Part affichée |
+|---|---|---|---|---|---|
+| *Dossiers de passation de marchés* (SOUMANOU) | 70 % | 285 000 | 199 500 | 85 500 | 70 % — inchangée après le réglage |
+| Nouvelle mission (ATCHA, sans transport) | 60 % | 285 000 | 171 000 | 114 000 | 60 % |
+
+> Le message : **changer la part ne réécrit jamais une mission déjà saisie** — ni ses montants, ni les
+> pourcentages affichés sur ses écrans et son PDF. Remettre la part à **70 %** à la fin de la démonstration.
 
 ---
 

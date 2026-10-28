@@ -30,7 +30,7 @@ L'URL de l'API se règle **après build**, sans recompiler, dans `public/runtime
 ```bash
 npm run type-check        # vue-tsc
 npm run lint:check        # oxlint + ESLint, en vérification (npm run lint corrige)
-npx vitest run            # 135 tests ; « npm run test:unit » seul reste en mode surveillance
+npx vitest run            # 139 tests ; « npm run test:unit » seul reste en mode surveillance
 npm run build             # type-check + build de production dans dist/
 npm run test:e2e          # Playwright, parcours critique (e2e/parcours-critique.spec.ts), API simulée
 ```

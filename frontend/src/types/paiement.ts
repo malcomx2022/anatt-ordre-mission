@@ -57,6 +57,8 @@ export interface LotPreview {
   mission: string
   tranche: TrancheVersement
   operateur: Operateur
+  /** Part d'avance (%) des OM de la mission (null : exonérée). */
+  part_avance?: number | null
   nb_lignes: number
   total: number
   beneficiaires: LotBeneficiaire[]

@@ -11,8 +11,8 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 | Couche | Technologies |
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
-| Frontend | Vue **3.6 bêta** (Composition API, TypeScript), figée par `package-lock.json` · Vite 8 · Tailwind · Pinia |
-| Tests | Pest / PHPUnit (599 tests, 70 fichiers) · Vitest (135 tests) · Playwright (parcours critique e2e) |
+| Frontend | Vue **3.6 bêta** (Composition API, TypeScript), figée par `package-lock.json` · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
+| Tests | Pest / PHPUnit (606 tests, 72 fichiers) · Vitest (139 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -92,6 +92,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - **Per diem** = `taux_journalier(catégorie × zone × type) × nb_jours` selon le **barème officiel ANaTT**
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
   Répartition : **avance 70 %** / **reliquat 30 %** (part de l'avance **paramétrable** par le SUPER_ADMIN, 70 % par défaut ; le reliquat absorbe l'arrondi). Exonération si prise en charge par un tiers.
+  La répartition est **figée à la retranscription** : changer la part ne vaut que pour les OM saisis ensuite, et
+  les écrans d'une mission existante (fiche et PDF de l'OM, état de paiement, génération des fichiers) affichent
+  la part **de ses OM** (`part_avance` de l'API), pas le réglage du jour.
 - **Une mission** regroupe **N ordres de mission** (1 OM = 1 bénéficiaire). Le **CAV** (conducteur) est payé selon **sa** catégorie.
 - **Validation** : chaque mission porte **deux états de paiement** — l'état des **avances**, puis celui des
   **reliquats** — qui passent chacun le circuit **contrôleur → visa DAF → validation DG**. Un versement n'est
@@ -192,7 +195,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 599 tests (70 fichiers)
+.\vendor\bin\pest                 # 606 tests (72 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
@@ -222,7 +225,7 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `CHANGELOG.md` | Historique des modifications |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.4) — générée par `docs/generer_documentation_technique.py` |
-| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov, variantes), rejoué le 27/10/2026 |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov, variantes dont le changement de part d'avance §8.5), rejoué le 27/10/2026 |
 | `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
 | `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |

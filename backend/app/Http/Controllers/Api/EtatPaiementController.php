@@ -44,7 +44,7 @@ class EtatPaiementController extends Controller
             ->paginate($this->getPerPage($request, 20));
 
         return response()->json([
-            'data' => collect($etats->items())->map(fn (EtatPaiement $e) => $this->presenter($e)),
+            'data' => collect($etats->items())->map(fn (EtatPaiement $e) => $this->presenter($e, partAvance: false)),
             'meta' => [
                 'current_page' => $etats->currentPage(),
                 'last_page' => $etats->lastPage(),
@@ -181,7 +181,7 @@ class EtatPaiementController extends Controller
      *
      * @return array<string,mixed>
      */
-    private function presenter(EtatPaiement $etat): array
+    private function presenter(EtatPaiement $etat, bool $partAvance = true): array
     {
         return [
             'id' => $etat->id,
@@ -204,6 +204,10 @@ class EtatPaiementController extends Controller
             'montant_avance' => $etat->montant_avance,
             'montant_reliquat' => $etat->montant_reliquat,
             'montant_total_lettres' => MontantEnLettres::mention($etat->montant_total),
+            // Part d'avance des OM de la mission (null : exonérée) — l'écran l'affiche
+            // à la place du réglage courant, qui a pu changer depuis la retranscription.
+            // La file de travail (index) s'en passe : une requête de plus par ligne.
+            'part_avance' => $partAvance ? $etat->mission?->partAvanceReelle() : null,
             'controle' => $this->etape($etat->controle_nom, $etat->controle_fonction, $etat->controle_le, $etat->signature_controle_hash),
             'visa_daf' => $this->etape($etat->visa_daf_nom, $etat->visa_daf_fonction, $etat->visa_daf_le, $etat->signature_daf_hash),
             'validation_dg' => $this->etape($etat->valide_dg_nom, $etat->valide_dg_fonction, $etat->valide_dg_le, $etat->signature_dg_hash),

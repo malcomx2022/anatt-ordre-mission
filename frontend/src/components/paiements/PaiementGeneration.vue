@@ -15,9 +15,6 @@ import type { LotPaiement, LotPreview, Operateur, TrancheVersement } from '@/typ
 
 const props = defineProps<{ operateurInitial?: Operateur }>()
 const toast = useToast()
-// Part d'avance RÉACTIVE : se met à jour dès que la valeur serveur arrive.
-const { partAvance: avancePct } = usePartAvance()
-const reliquatPct = computed(() => 100 - avancePct.value)
 
 const missionId = ref<number | null>(null)
 const tranche = ref<TrancheVersement>('AVANCE')
@@ -27,6 +24,12 @@ const apercu = ref<LotPreview | null>(null)
 const lot = ref<LotPaiement | null>(null)
 const chargement = ref(false)
 const action = ref(false)
+
+// Part d'avance de la mission choisie (celle de ses OM, renvoyée par l'aperçu) ;
+// avant tout choix, ou pour une mission exonérée, le réglage courant (réactif).
+const { partAvance } = usePartAvance()
+const avancePct = computed(() => apercu.value?.part_avance ?? partAvance.value)
+const reliquatPct = computed(() => 100 - avancePct.value)
 
 const fmt = (v: number) => v.toLocaleString('fr-FR')
 const extension = computed(() => (operateur.value === 'MTN' ? '.txt' : '.xlsx'))

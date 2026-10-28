@@ -50,8 +50,13 @@ const etatGeneralDisponible = computed(
 
 const libelleTranche = computed(() => (trancheActive.value === 'AVANCE' ? 'des avances' : 'des reliquats'))
 
-// Part d'avance RÉACTIVE : se met à jour dès que la valeur serveur arrive.
-const { partAvance: avancePourcentage } = usePartAvance()
+// Part d'avance de la MISSION (celle de ses OM, renvoyée par l'API) : le réglage
+// a pu changer depuis la retranscription. Repli sur le réglage courant, réactif,
+// pour une mission exonérée (aucun montant à répartir).
+const { partAvance } = usePartAvance()
+const avancePourcentage = computed(
+  () => etats.value?.avance?.part_avance ?? etats.value?.reliquat?.part_avance ?? partAvance.value,
+)
 const reliquatPourcentage = computed(() => 100 - avancePourcentage.value)
 
 // Chaque bouton n'apparaît qu'à l'acteur concerné et au statut correspondant.
