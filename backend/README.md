@@ -58,7 +58,8 @@ Un test de régression doit échouer sans le correctif avant d'être retenu.
 - [`docs/openapi.yaml`](docs/openapi.yaml) — description OpenAPI 3.0.3 des routes réelles, avec la
   permission de chacune (`x-permission`). Toute nouvelle route doit y figurer : `OpenApiTest` échoue sinon.
 - [`docs/queues.md`](docs/queues.md) — files d'attente, modes `sync` / `database` / `redis`, comportement
-  à l'échec.
+  à l'échec. `SendNotification` journalise un e-mail en échec sans le relancer : en `sync`, l'action qui
+  notifie ne doit jamais répondre 500 pour un e-mail (test `MessagerieSmtpTest`).
 - Déploiement sur cPanel (sans SSH) : [`../DEPLOY-CPANEL.md`](../DEPLOY-CPANEL.md),
   [`../UPLOAD-VENDOR.md`](../UPLOAD-VENDOR.md), [`../docs/runbook-mise-a-jour-cron.md`](../docs/runbook-mise-a-jour-cron.md).
 

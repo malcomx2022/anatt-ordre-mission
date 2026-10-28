@@ -18,6 +18,15 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Guide de la part d'avance** (`docs/parametrage-part-avance.md`) : « Enregistrer tout » enregistre et
   applique aussi les autres onglets (à relire), refus expliqué, `settings.json` porte les réglages appliqués ;
   tests et historique.
+- **Guide utilisateur** (`.docx` régénéré) : nouveautés 1.4 « Refus expliqués » et « E-mail qui ne part pas » ;
+  §7.2 signature enregistrée même si l'e-mail ne part pas, type de notification coupé ; §9.5 alerte du
+  trop-perçu ; §13.2 refus expliqué et encadré « Enregistrer tout » (relire les autres onglets).
+- **Scénario de démo** : §8.5 refus expliqué d'une part à 120 % et bouton « Enregistrer tout » ; §8.6 variante —
+  validation qui aboutit malgré un serveur de messagerie injoignable (cloche reçue, seul l'e-mail manque).
+  Rejoué sur l'API réelle, base neuve, `QUEUE_CONNECTION=sync`.
+- **README** (racine, `backend/`) : refus expliqués et « Enregistrer tout » ; un e-mail en échec n'empêche jamais
+  l'action qui notifie (exploitation en `sync`, e-mail de test après une modification de *Messagerie*) ;
+  variantes du scénario de démo.
 
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 
