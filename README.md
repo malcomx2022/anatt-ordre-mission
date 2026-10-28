@@ -121,6 +121,11 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - **Notifications** (cloche + e-mail) : à chaque étape du circuit, elles vont aux comptes actifs qui
   **détiennent la permission** de l'étape suivante — droits effectifs, rôles personnalisés et droits
   individuels compris ; le SUPER_ADMIN n'est pas notifié.
+- **Réglages appliqués par le serveur** : tout ce qu'enregistrent les écrans *Paramètres* et *Messagerie*
+  agit réellement (opérateurs ouverts, notifications par type, durée de session, tentatives de connexion,
+  HTTPS forcé, journal des connexions échouées, mode maintenance, nom de l'application). Un serveur SMTP
+  saisi dans *Messagerie* **remplace** celui du `.env` dès l'e-mail suivant ; laissé vide, le `.env`
+  s'applique. Bouton « Envoyer un e-mail de test » : un échec affiche le message du serveur de messagerie.
 - **Heure** : les horodatages (paiements, signatures, journal) sont à l'heure du Bénin ; l'API les
   renvoie en UTC (`…Z`). Un paiement confirmé le 1er du mois juste après minuit compte dans ce mois.
 
@@ -136,6 +141,10 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - Accès par **permission** (Sanctum + middleware `permission:{clé}`), `Gate::before` pour le SUPER_ADMIN.
 - **Anti-double-paiement** : un versement `CONFIRME` — ou porté par un lot confirmé — n'est jamais
   réinclus (idempotence), et l'intégrité des états signés est scellée par **HMAC** (montants + tranche).
+- **Session** : seul un 401 (jeton expiré ou révoqué) déconnecte. Une erreur passagère au rechargement
+  (429, 5xx, réseau) garde la session : l'écran d'erreur s'ouvre et « Réessayer » ramène à la page demandée.
+- **Secret SMTP** : chiffré au repos avec l'`APP_KEY`, jamais renvoyé par l'API (masque `********`),
+  déchiffré seulement au moment d'envoyer ; à ressaisir si l'`APP_KEY` change.
 - **Séparation ordonnateur / payeur** : un profil ou un utilisateur qui valide l'état (`om.approuver`) ne
   peut pas générer ni confirmer les paiements ; la règle est aussi vérifiée pour chaque membre d'un profil
   modifié dans la matrice des permissions.
@@ -195,7 +204,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 652 tests (74 fichiers)
+.\vendor\bin\pest                 # 670 tests (75 fichiers)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
@@ -225,7 +234,7 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `CHANGELOG.md` | Historique des modifications |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.4) — générée par `docs/generer_documentation_technique.py` |
-| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov, variantes dont le changement de part d'avance §8.5), rejoué le 27/10/2026 |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5, configuration e-mail §8.6, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10 |
 | `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
 | `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
@@ -235,4 +244,4 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
 | `docs/00_galerie_index.html` … | Galerie des écrans réels : captures par `docs/capturer_ecrans.cjs`, pages par `docs/generer_maquettes.py` |
 | `backend/README.md`, `frontend/README.md` | Prise en main de l'API et du SPA (commandes, repères dans le code) |
-| `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest`) |
+| `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest` ; réponses réelles vérifiées par `OpenApiReponsesTest`) |
