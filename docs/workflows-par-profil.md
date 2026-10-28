@@ -386,4 +386,6 @@ qu'on la personnalise :
   ne reçoit qu'**une** notification.
 
 Les modèles (objet, texte) sont listés dans *Paramètres › Messagerie* (`/admin/email`), avec la
-permission visée par chacun ; détail dans `docs/rbac-flexible.md`.
+permission visée par chacun ; détail dans `docs/rbac-flexible.md`. Depuis le 28/10/2026, le SUPER_ADMIN
+peut **couper** un type dans *Paramètres › Notifications* : il n'est alors plus émis pour personne (ni
+cloche ni e-mail). L'objet des e-mails est préfixé du nom de l'application.

@@ -152,13 +152,16 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 > **Cohérence menu ↔ routes ↔ API.** Chaque entrée du menu latéral
 > (`components/shared/navigation.ts`) porte la **même** clé que le `meta.permission`
 > de sa route (`router/index.ts`), qui porte elle-même la clé exigée par l'API.
-> Les trois niveaux sont verrouillés par des tests (et `backend/docs/openapi.yaml` par `tests/Feature/OpenApiTest.php` : chaque route y est décrite avec sa permission) : `tests/Feature/RoutesPermissionsTest.php`
+> Les trois niveaux sont verrouillés par des tests (et `backend/docs/openapi.yaml` par `tests/Feature/OpenApiTest.php` : chaque route y est décrite avec sa permission ; `OpenApiReponsesTest` valide en plus les réponses réelles contre ses schémas, en mode strict) : `tests/Feature/RoutesPermissionsTest.php`
 > (aucune route API sans permission) et `src/__tests__/navigation.spec.ts`
 > (aucun lien mort, aucun écran hors menu, aucun 403 après un clic).
 
 > **Notifications** : adressées aux comptes **actifs** qui détiennent, dans leurs droits **effectifs**, la permission
 > de l'étape suivante (`NotificationService::notifier`) — rôles personnalisés et droits individuels compris, retraits
 > respectés, SUPER_ADMIN exclu, une seule notification par compte (table dans `docs/rbac-flexible.md`).
+> Un type coupé dans *Paramètres › Notifications* n'est plus émis (ni cloche ni e-mail) ; l'objet des e-mails
+> est préfixé du nom de l'application (`[nom] …`). Liste des 7 types : `utils/notifications.ts` (miroir de
+> `NotificationContenu::TYPES`, verrouillé par `NotificationModelesEcranTest`).
 
 > **Super admin** : accès implicite à tout ; il existe toujours ≥ 1 SUPER_ADMIN actif (le dernier ne peut être supprimé, désactivé ni rétrogradé). Comptes de démo (mdp `password`) : `superadmin@`, `admin@`, `gestion@`, `finance@`, `controle@`, `daf@`, `dg@`, `lecteur@anatt.bj`.
 
@@ -179,7 +182,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
   Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` retirés le 26/10/2026)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (139 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (194 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -192,7 +195,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (606 tests, 72 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (652 tests, 74 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -557,7 +560,7 @@ Composants : `AppLayout` · `AppSidebar` · `AppTopBar` (état du code au 27/10/
 | ADM-01 | `views/admin/UserManagementView.vue` | `/admin/utilisateurs` | CRUD complet utilisateurs + rôles (liste, filtres, statut, reset mot de passe, **édition du rôle** en modale — révoque les sessions) |
 | ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle, téléphone) |
 | ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
-| ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système : part de l'avance, exercice (année, mois de début), fuseau affiché en lecture seule ; onglets Général, Paiements, Notifications, Sécurité, Maintenance |
+| ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, **appliquée par le serveur** : nom de l'application, part de l'avance, exercice, fuseau (lecture seule) ; opérateurs MTN / Moov ouverts ; notifications par type ; durée de session, tentatives de connexion, HTTPS forcé, journal des connexions échouées ; mode maintenance |
 | ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP (indicative, l'envoi suit le `.env`) ; les 7 notifications réelles (`NotificationContenu`) et leurs destinataires |
 | ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration (confirmation par recopie du nom ; sauvegarde de sécurité préalable) |
 
@@ -804,6 +807,7 @@ GET    /api/admin/settings                    → Réglages (SUPER_ADMIN : param
 PUT    /api/admin/settings                    → Écrit une liste blanche de clés (dont partAvance, entier 0-100)
 GET    /api/admin/parametres/part-avance      → { data: <int> } Part de l'avance (LECTURE PUBLIQUE, tout authentifié)
 GET    /api/admin/parametres/annee-fiscale    → { data: { annee, mois_debut, libelle } } Exercice courant (LECTURE PUBLIQUE)
+GET    /api/admin/parametres/application      → { data: { nom, operateurs: { MTN, MOOV } } } (LECTURE PUBLIQUE : titre de l'onglet, opérateurs ouverts)
 GET    /api/admin/signatures                  → Signataires du circuit (nom, fonction ; l'image n'est jamais renvoyée) (parametres.gerer)
 POST   /api/admin/signatures/:poste           → Téléverse le paraphe d'un poste (controleur|daf|dg), multipart (parametres.gerer)
 DELETE /api/admin/signatures/:poste           → Retire le paraphe (parametres.gerer)
@@ -830,6 +834,19 @@ DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 > d'année de l'UI est dynamique (plus de liste figée) ; tant qu'aucune année n'est choisie explicitement, changer le
 > mois de début recalcule l'exercice courant (`utils/exercice.ts` → `exerciceDe`). **À ce jour, aucun écran ni traitement ne consomme
 > l'exercice** (rapports et exports filtrent par dates). Détail : `docs/annee-fiscale.md`.
+>
+> **Réglages d'exploitation** (`Parametres`, cache 60 s purgé à l'écriture ; absents = comportement d'avant,
+> valeur hors domaine = 422) — appliqués depuis le 28/10/2026 :
+> - `mtnEnabled` / `moovEnabled` : opérateur fermé → génération refusée (422), aperçu `operateur_actif: false` ;
+> - `maxLoginAttempts` (3-20, défaut 5) : limite par minute du login ;
+> - `sessionDuration` (5-1440 min) : remplace `SANCTUM_EXPIRATION` (callback `Sanctum::authenticateAccessTokensUsing`) ;
+> - `forceHttps` (défaut non) : en HTTP, lectures redirigées (301), écritures refusées (403) — middleware `ForcerHttps` ;
+>   à n'activer qu'avec le certificat en place (sinon corriger `settings.json` à la main) ;
+> - `logConnections` (défaut non) : connexions échouées tracées (`LOGIN_ECHEC`) ; les réussies le sont toujours ;
+> - `maintenanceMode` : 503 pour tous sauf le SUPER_ADMIN, connexion laissée ouverte — middleware
+>   `MaintenanceApplication` (distinct de `artisan down`, réservé aux mises à jour) ;
+> - `notifications` : `[{ key: <type>, enabled }]`, un type coupé n'est plus émis ;
+> - `appName` : titre de l'onglet du navigateur et préfixe de l'objet des e-mails.
 >
 > **Hors sauvegarde de la base** : `storage/app/settings.json` (réglages ci-dessus, signataires), les paraphes
 > (`storage/app/private/signatures/`) et les fichiers produits (PDF, paiements) vivent sur le disque ; `db:backup`
@@ -1164,7 +1181,8 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 27 octobre 2026 (version 1.4 : notifications par droits effectifs, heure du Bénin, libellés d'un
+*Dernière mise à jour : 28 octobre 2026 (réglages de Paramètres appliqués par le serveur, part d'avance de la
+mission sur ses écrans, thème vert confirmé, contrat OpenAPI vérifié en CI) — 27 octobre 2026 (version 1.4 : notifications par droits effectifs, heure du Bénin, libellés d'un
 OM amendé, galerie des écrans réels ; mise en page du §4 confrontée aux composants) — précédentes : 23 octobre 2026
 (stack et règles confrontées au code : Vue 3.6 bêta, PHP 8.4.x, solde et amendement après les correctifs n° 17 à 22),
 22 octobre 2026 (revue complète : intégrité des paiements, lots complémentaires, état des reliquats payable, restauration des sauvegardes ; puis PDF de l'OM signé par l'état, purge de la matrice à la restauration — cf. `docs/revue-projet-2026-10.md`)*  

@@ -311,6 +311,8 @@ Seconde étape, du 22 au 23/10 : chaque document a été relu contre le code, un
 | #172 | `CLAUDE.md` : version 1.4, mise en page du §4, constat sur la règle n° 6 (thème) ; `DEPLOY-CPANEL.md` et runbook : mise en maintenance sans SSH ; *(code)* écran Maintenance ouvert sur un 503 |
 | #173 | `UPLOAD-VENDOR.md` : échange de `vendor/` sous maintenance (`down --render`), versions 1.3 et 1.4 sans ré-upload ; checklist post-déploiement 1.4 (sortie de maintenance, cache des PDF d'OM à vider aussi en 1.4) ; runbook de mise à jour 1.4 (SPA servi pendant la maintenance, fuseau, retour arrière) ; workflows par profil : notifications par droits effectifs (§8) ; circuits de validation : PDF de l'OM (quatre blocs, cache), notifications ; amendement d'un OM : révisions 1.4 ; part d'avance : libellés d'un OM existant, limite de l'écran de l'état |
 | #174 | *(code)* part d'avance de la mission (`part_avance`) sur l'écran de l'état et le sélecteur de tranche ; chaîne des montants vérifiée à 55 % ; règle n° 6 tranchée : thème vert conservé, couleurs `app.*` retirées ; guide utilisateur et scénario de démo (§8.5) à jour |
+| #175 | *(code)* réglages de *Paramètres* appliqués par le serveur ; tests des écrans critiques (agent en double signalé dès la saisie) ; réponses de l'API validées contre `openapi.yaml` en CI |
+| #176 | Mise à jour finale des documents pour #174-#175 (CHANGELOG, `CLAUDE.md`, `AGENTS.md`, README, `DEPLOY-CPANEL.md`, checklist, guides, documentation technique et guide utilisateur régénérés) ; *(code)* message français sur un 429 |
 
 ### À faire côté exploitation
 
@@ -381,15 +383,20 @@ du §6.
 
 Ces points reprennent le §6, *Dette restante*, complété le 25/10.
 
-- **Tests frontend manquants** : `MissionCreateView`, `EtatDetailView`, `SignaturesView`, `RolesView`.
+- ~~**Tests frontend manquants** : `MissionCreateView`, `EtatDetailView`, `SignaturesView`, `RolesView`~~ —
+  **couverts** le 28/10 (#175 : 45 tests ; l'écriture des tests a révélé qu'un agent ajouté deux fois n'était
+  signalé qu'à l'enregistrement, corrigé).
 - **Correctifs sans test automatisé** : minuteurs, page de maintenance, garde de route au
   rechargement, `lockForUpdate` sous MySQL.
 - **Non exercé sur un vrai MySQL** : restauration (n° 10) et tri des sauvegardes (n° 14) ne sont
   couverts que par Pest, sur SQLite ou par simulation.
-- **Forme des réponses non vérifiée en CI** : `OpenApiTest` contrôle les routes et les permissions.
-  La conformité des réponses aux schémas n'a été vérifiée qu'à la main, le 25/10, avec
-  `openapi-core`. Une vérification en CI (test Pest qui valide les réponses, ou étape Python)
-  éviterait une nouvelle dérive.
+- ~~**Forme des réponses non vérifiée en CI**~~ — **vérifiée** depuis le 28/10 (#175) : `OpenApiReponsesTest`
+  valide les réponses réelles d'une trentaine de routes contre `openapi.yaml`, en mode strict (validateur
+  `tests/Support/OpenApiSchema.php`, sans dépendance Composer). `openapi.yaml` a été complété au passage.
+- ~~**Réglages de Paramètres sans effet**~~ (relevés le 27/10) — **appliqués** le 28/10 (#175) : opérateurs,
+  tentatives de connexion, durée de session, HTTPS forcé, journal des connexions échouées, mode
+  maintenance, notifications par type, nom de l'application (`ReglagesExploitationTest`). Reste indicative
+  la configuration SMTP de l'écran *Messagerie* : l'envoi suit le `.env` du serveur.
 - **Recette et rejeu de la démo hors dépôt** : les scripts de recette (83 contrôles) et de rejeu
   ne sont pas versionnés. Seuls Pest, Vitest et Playwright tournent en CI.
 

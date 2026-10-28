@@ -285,6 +285,11 @@ tableau(
          "engagée », « Reliquat (ajusté par amendement) » ou « Trop-perçu ».", "6.3"],
         ["Configuration e-mail", "L'écran présente les notifications réellement envoyées, avec leurs "
          "destinataires.", "13.2"],
+        ["Réglages de Paramètres", "Tous appliqués : opérateurs MTN / Moov, notifications par type, durée de "
+         "session, tentatives de connexion, HTTPS forcé, journal des connexions échouées, mode maintenance, "
+         "nom de l'application.", "13.2"],
+        ["Saisie d'une mission", "Un même agent ajouté deux fois est signalé dès la saisie (« Agent déjà "
+         "présent dans cette mission »).", "6.1"],
         ["Part de l'avance d'une mission", "L'écran d'un état de paiement (« Avances (70 %) » / « Reliquats "
          "(30 %) ») et le choix de la tranche à la génération affichent la part avec laquelle les OM de la "
          "mission ont été retranscrits, et non le réglage du jour : changer la part dans « Paramètres » "
@@ -523,7 +528,9 @@ bullet("Transport (facultatif) : renseignez un montant de transport ; il s'ajout
 bullet("Le per diem (per diem + transport = total, puis avance / reliquat) se calcule en temps réel "
        "pour chaque bénéficiaire.")
 bullet("Les doublons de référence SEMO sont détectés immédiatement.")
-bullet("Un même agent ne peut figurer qu'une fois dans une mission : un OM par bénéficiaire.")
+bullet("Un même agent ne peut figurer qu'une fois dans une mission : un OM par bénéficiaire. Un agent "
+       "ajouté deux fois est signalé sur sa fiche (« Agent déjà présent dans cette mission ») et bloque "
+       "le passage au récapitulatif.")
 h3("Étape 3 — Récapitulatif")
 bullet("Vérifiez les totaux (avance / reliquat) puis enregistrez.")
 para("À l'enregistrement, chaque OM est créé au statut IMPORTE, accompagné de ses versements AVANCE et "
@@ -810,10 +817,35 @@ bullet("Matrice des permissions : consultation par l'ADMIN ; édition à chaud p
        "un profil au défaut (voir chapitre 2.2).")
 bullet("Signatures : identités et paraphes scannés du contrôleur, du DAF et du Directeur Général, "
        "imprimés sur l'état de paiement (voir chapitre 7.4).")
-bullet("Paramètres (onglet Général) : configuration générale de l'application, dont la part de l'avance "
-       "(%) appliquée à la répartition avance / reliquat (70 % par défaut). Elle ne vaut que pour les OM "
-       "retranscrits après la modification : les missions déjà saisies gardent leurs montants et leur part. "
-       "Le fuseau horaire (heure du Bénin) y est affiché pour information : il est réglé sur le serveur.")
+bullet("Paramètres (onglet Général) : nom de l'application (titre de l'onglet du navigateur, et préfixe de "
+       "l'objet des e-mails) et part de l'avance (%) appliquée à la répartition avance / reliquat (70 % par "
+       "défaut). La part ne vaut que pour les OM retranscrits après la modification : les missions déjà "
+       "saisies gardent leurs montants et leur part. Le fuseau horaire (heure du Bénin) y est affiché pour "
+       "information : il est réglé sur le serveur.")
+para("Tous les réglages de l'écran Paramètres sont appliqués par le serveur dès l'enregistrement (au plus "
+     "tard une minute après). Un réglage jamais enregistré garde le comportement par défaut ; une valeur "
+     "hors limites est refusée.")
+tableau(
+    ["Onglet", "Réglage", "Effet"],
+    [
+        ["Paiements", "MTN / Moov activé", "Un opérateur désactivé n'est plus ouvert à la génération de fichiers : "
+         "l'écran de génération l'indique et grise le bouton. L'aperçu reste consultable et les lots déjà "
+         "générés restent confirmables."],
+        ["Notifications", "Une bascule par notification", "Une notification désactivée n'est plus émise du tout, "
+         "ni dans la cloche ni par e-mail."],
+        ["Sécurité", "Durée de session (5 à 1440 min)", "Durée de validité d'une connexion ; au-delà, l'utilisateur "
+         "doit se reconnecter (480 min par défaut)."],
+        ["Sécurité", "Tentatives de connexion (3 à 20 par minute)", "Au-delà, la connexion est momentanément "
+         "refusée : « Trop de tentatives en peu de temps » (5 par défaut)."],
+        ["Sécurité", "Forcer HTTPS", "L'application refuse toute requête non chiffrée. À n'activer que si "
+         "l'adresse de l'application commence déjà par https://."],
+        ["Sécurité", "Journaliser les connexions", "Les connexions échouées sont aussi tracées au journal "
+         "d'audit (e-mail saisi, motif) ; les connexions réussies le sont toujours."],
+        ["Maintenance", "Mode maintenance", "Tous les utilisateurs voient l'écran « Maintenance en cours », sauf "
+         "le super administrateur, qui peut continuer à travailler puis lever le mode."],
+    ],
+    largeurs=[2.6, 4.6, 9.6],
+)
 bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste dynamique) et mois de début "
        "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
        "différent produit un exercice à cheval, libellé « 2026-2027 ». À ce jour, ce réglage n'agit ni sur "

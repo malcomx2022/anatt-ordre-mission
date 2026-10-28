@@ -16,6 +16,7 @@
 >
 > *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 32 ajoutés (§06, *Correctifs
 > des 23 au 25/10* ; n° 29 à 32 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
+> *Complété le 28/10/2026* : réglages de *Paramètres* appliqués et part de la mission (§06, dernière sous-section).
 > *Relu le 27/10/2026 (version 1.4)* : sortie de maintenance (§01), cache des PDF d'OM à vider aussi en 1.4
 > (§04), comportement réel de l'écran Maintenance (§05), contrôles de la 1.4 précisés (§06).
 
@@ -169,6 +170,23 @@ Sans création de données :
 - [ ] **Maintenance** : pendant une mise à jour (`artisan down`), toute action dans le SPA ouvre l'écran « Maintenance en cours » ; après `artisan up`, il revient seul à la page demandée (au plus 30 s). Ce comportement est celui du SPA **1.4** : lors de la mise à jour 1.3 → 1.4, c'est encore le SPA 1.3 qui est servi pendant la maintenance (il n'est remplacé qu'après), et ses écrans échouent sans message. Constat possible dès la mise à jour **suivante**, ou sur la recette (`artisan down`, puis une action dans le SPA 1.4) ; en production, seul le contrôle de sortie de maintenance (§01) se vérifie après coup.
 - [ ] **Cache des PDF d'OM** : sur une mission validée par le circuit, l'heure de signature du DG est la **même** sur le PDF de l'état et sur celui d'un de ses OM. Une heure d'écart = `storage/app/private/ordres/` non vidé (§04).
 - [ ] **Échec de génération** : après l'échec d'une génération sur un lot déjà généré, l'écran affiche le lot en erreur, sans bouton « Confirmer le paiement », sans recharger la page.
+
+### Réglages de Paramètres et part de la mission (27-28/10/2026, code seul)
+
+Sans création de données :
+
+- [ ] **Réglages publics** : connecté avec n'importe quel profil, `GET /api/admin/parametres/application` répond `200` avec `nom` et `operateurs` (`MTN`, `MOOV` à `true` tant qu'ils n'ont pas été désactivés). L'onglet du navigateur porte le nom de l'application.
+- [ ] **Écran Paramètres** (`/admin/parametres`) : plus aucune mention « indicatif » ; l'onglet *Notifications* liste les **7** notifications réelles (« État à signer »…). Relire chaque onglet **avant** le premier « Enregistrer tout » : les valeurs affichées seront appliquées (« Forcer HTTPS » seulement si le site répond déjà en `https://`).
+- [ ] **Part de la mission** : l'écran d'un état (`/missions/:id/etat`) titre ses onglets « Avances (… %) » avec la part de **ses** OM ; l'écran de génération libelle la tranche de même, une fois la mission choisie.
+
+#### Sur l'instance de recette uniquement
+
+- [ ] **Opérateur fermé** : désactiver MTN dans *Paramètres › Paiements* → l'écran *Générer MTN* affiche le bandeau « désactivés dans les Paramètres » et grise le bouton ; Moov reste ouvert. Réactiver.
+- [ ] **Mode maintenance** : l'activer → un compte gestionnaire voit l'écran *Maintenance* ; le super administrateur continue de travailler et le désactive ; le gestionnaire revient seul à sa page.
+- [ ] **Notification coupée** : désactiver « Lot confirmé », confirmer un lot → aucune cloche ni e-mail de ce type ; les autres notifications partent. Réactiver.
+- [ ] **Journal des connexions** : l'activer, échouer une connexion → l'audit (`/audit`) trace `LOGIN_ECHEC` avec l'e-mail saisi.
+- [ ] **Tentatives et session** : régler 3 tentatives → la 4e connexion manquée de la minute répond « trop de tentatives » ; une durée de session de 5 min déconnecte au-delà. Remettre les valeurs voulues (défaut : 5 tentatives, 480 min).
+- [ ] **Saisie d'une mission** : ajouter deux fois le même agent dans l'assistant → « Agent déjà présent dans cette mission », étape bloquée avant l'enregistrement.
 
 ---
 
