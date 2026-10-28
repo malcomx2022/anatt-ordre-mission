@@ -28,6 +28,9 @@
 > **Complété le 27 octobre 2026** : variante §8.5 « changer la part de l'avance », rejouée sur l'API réelle
 > (base neuve) — une mission déjà saisie garde ses montants et sa part (70 %) quand le réglage passe à
 > 60 %, une mission saisie ensuite est répartie à 60 % ; montants §3 à §8 inchangés.
+> **Complété le 28 octobre 2026** (base neuve, API réelle) : variantes §8.6 « configuration e-mail »
+> (e-mail de test, refus d'un port invalide, échec d'envoi expliqué) et §8.7 « mode maintenance,
+> erreur passagère » ; réglages de la messagerie hors sauvegarde (§8.4). Montants §3 à §8 inchangés.
 
 ---
 
@@ -423,7 +426,7 @@ réversible). À ne montrer que sur une base de démonstration.
 Pour une démonstration parlante : prendre une sauvegarde, retirer une permission à un
 profil dans **Matrice des permissions** (menu *Utilisateurs › Matrice des permissions*), puis restaurer → la matrice revient à son état
 d'avant **dès la requête suivante** (la restauration purge la matrice mise en cache).
-Les réglages de `Paramètres` (part d'avance, exercice) ne font **pas** partie de la
+Les réglages de `Paramètres` (part d'avance, exercice, messagerie) ne font **pas** partie de la
 sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.
 
 > Prérequis : le client `mysql` doit être accessible au serveur (`DB_RESTORE_BINARY`,
@@ -454,6 +457,39 @@ sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.
 
 > Le message : **changer la part ne réécrit jamais une mission déjà saisie** — ni ses montants, ni les
 > pourcentages affichés sur ses écrans et son PDF. Remettre la part à **70 %** à la fin de la démonstration.
+
+### 8.6 (Option) Configuration e-mail  ·  `superadmin@`
+
+Menu *Système* › **Paramètres › Messagerie** (`/admin/email`). Réponses **réelles**, relevées sur l'API
+le 28 octobre 2026 (base neuve).
+
+1. Champ **Serveur SMTP** laissé vide → **Envoyer un e-mail de test** : « E-mail de test envoyé à
+   superadmin@anatt.bj. ». C'est le fichier `.env` du serveur qui s'applique (sur la démo,
+   `MAIL_MAILER=log` : le message est écrit dans le journal du serveur, pas envoyé).
+2. Saisir **Adresse d'expéditeur** `missions@anatt.bj`, puis renvoyer le test : le message part
+   désormais de **missions@anatt.bj** au lieu de l'adresse du `.env`.
+3. Saisir un **Port** `70000` → **Enregistrer** : refus, « Le port SMTP doit être un entier entre 1
+   et 65535. » ; rien n'est enregistré.
+4. Saisir un serveur injoignable (`127.0.0.1`, port `2`, chiffrement **Aucun**) → **Envoyer un e-mail
+   de test** : l'écran affiche le message du serveur de messagerie, « Échec de l'envoi : Connection
+   could not be established with host "127.0.0.1:2"… ». Les notifications du circuit partiraient
+   de la même façon : l'échec se voit ici, avant le premier e-mail perdu.
+5. **Vider le champ Serveur SMTP** et l'adresse d'expéditeur, **Enregistrer** : retour au `.env`.
+
+> Le message : un serveur saisi à l'écran **remplace** celui du `.env` dès l'e-mail suivant (pour les
+> notifications et le lien de mot de passe oublié) ; laissé vide, rien ne change.
+
+### 8.7 (Option) Mode maintenance, erreur passagère  ·  `superadmin@` puis `gestion@`
+
+1. `superadmin@` — **Paramètres**, onglet **Maintenance** : activer le **mode maintenance**, **Enregistrer**.
+2. `gestion@` (autre navigateur) — toute action ouvre l'écran **« Maintenance en cours »** (l'API répond
+   503 : « Application en maintenance. Merci de réessayer plus tard. »). Le super administrateur, lui,
+   continue de travailler.
+3. `superadmin@` — désactiver le mode : l'écran de `gestion@` revient **seul** à sa page, sans reconnexion.
+
+Une **erreur passagère** du serveur au rechargement d'une page (trop de requêtes en une minute, erreur,
+coupure réseau) ne déconnecte plus : l'écran **« Erreur serveur »** s'affiche, la session est gardée et
+**Réessayer** ramène à la page demandée. Seule une session réellement expirée renvoie à la connexion.
 
 ---
 
