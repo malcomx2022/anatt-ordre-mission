@@ -356,8 +356,14 @@ router.beforeEach(async (to) => {
     if (auth.token) {
       try {
         await auth.fetchUser()
-      } catch {
-        // token invalid
+      } catch (e) {
+        // Erreur passagère de l'API (429, 5xx, réseau) : la session est conservée,
+        // l'écran d'erreur propose de revenir à la page demandée. 503 : l'intercepteur
+        // ouvre déjà l'écran Maintenance, qui y revient seul.
+        const statut = (e as { response?: { status?: number } } | null)?.response?.status
+        return statut === 503
+          ? { name: 'maintenance', query: { redirect: to.fullPath } }
+          : { name: 'server-error', query: { redirect: to.fullPath } }
       }
     }
     // Session restaurée (rechargement) : on poursuit vers les mêmes contrôles

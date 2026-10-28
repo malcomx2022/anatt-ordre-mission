@@ -182,7 +182,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
   Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` retirés le 26/10/2026)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (197 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (205 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -757,6 +757,8 @@ POST   /api/notifications/:id/lu    → Marquer une notification lue
 > Le login renvoie `{ token, user, permissions[] }` et met à jour `derniere_connexion`.
 > Toute route `/api/*` non authentifiée répond **401 en JSON**, même sans en-tête `Accept` (aucune redirection vers une page de login) ;
 > il en va de même de ses autres erreurs (405, 404, 403, 422, 500 — correctif n° 29, `bootstrap/app.php`).
+> Côté SPA, seul un **401** met fin à la session restaurée au rechargement (`stores/auth.ts` → `fetchUser`) : une erreur
+> passagère (429, 5xx, réseau) garde le jeton et ouvre l'écran d'erreur, dont « Réessayer » revient à la page demandée (503 : écran Maintenance).
 
 ### Utilisateurs (administration — `utilisateurs.gerer`)
 ```

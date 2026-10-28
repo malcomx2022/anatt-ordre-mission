@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
+const route = useRoute()
 const router = useRouter()
 
+/**
+ * Réessayer : revient à la page demandée quand l'erreur est survenue en y allant
+ * (rechargement interrompu par une erreur passagère de l'API), sinon recharge.
+ * Seul un chemin interne est suivi (« /… », jamais « //hôte »).
+ */
 function reload() {
-  window.location.reload()
+  const cible = route.query.redirect
+  if (typeof cible === 'string' && cible.startsWith('/') && !cible.startsWith('//')) {
+    window.location.assign(cible)
+  } else {
+    window.location.reload()
+  }
 }
 </script>
 
@@ -57,7 +68,7 @@ function reload() {
         </div>
 
         <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Erreur serveur</h1>
-        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Le moteur a cale ! Notre serveur rencontre un probleme temporaire. Nos techniciens sont deja sur le coup.</p>
+        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Le moteur a calé ! Le serveur rencontre un problème temporaire. Réessayez dans un instant : votre session est conservée.</p>
 
         <!-- Suggestion Cards -->
         <div class="grid grid-cols-3 gap-3 mb-8 max-w-md mx-auto">
@@ -65,7 +76,7 @@ function reload() {
             <div class="w-10 h-10 bg-anatt-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-anatt-100 transition-colors">
               <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
             </div>
-            <p class="text-xs font-display font-semibold text-gray-700">Reessayer</p>
+            <p class="text-xs font-display font-semibold text-gray-700">Réessayer</p>
           </button>
           <router-link to="/" class="bg-white border border-gray-100 rounded-xl p-4 hover:border-gold-400 hover:shadow-md transition-all group">
             <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-amber-100 transition-colors">
@@ -85,7 +96,7 @@ function reload() {
         <div class="flex items-center justify-center gap-4">
           <button @click="router.back()" class="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-display font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-            Page precedente
+            Page précédente
           </button>
           <button @click="reload" class="px-5 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>

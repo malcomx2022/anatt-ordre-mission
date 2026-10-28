@@ -6,6 +6,11 @@ import { chargerApplication } from '@/composables/useApplication'
 import { useNotificationsStore } from '@/stores/notifications'
 import type { User } from '@/types'
 
+/** Statut HTTP d'une erreur Axios (undefined : réseau injoignable ou autre erreur). */
+function statutHttp(e: unknown): number | undefined {
+  return (e as { response?: { status?: number } } | null)?.response?.status
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('auth_token'))
@@ -55,8 +60,14 @@ export const useAuthStore = defineStore('auth', () => {
       // Session restaurée (rechargement) : recharge aussi le pourcentage d'avance
       // (sauf mot de passe à changer : l'API répondrait 423).
       if (!mustChangePassword.value) { void chargerPartAvance(); void chargerApplication() }
-    } catch {
-      await logout()
+    } catch (e) {
+      // Seul un 401 (jeton expiré ou révoqué) met fin à la session. Une erreur
+      // passagère (429, 5xx, réseau) la garde : logout() révoquerait le jeton.
+      if (statutHttp(e) === 401) {
+        await logout()
+        return
+      }
+      throw e
     }
   }
 
