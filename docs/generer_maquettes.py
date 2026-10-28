@@ -146,7 +146,7 @@ ECRANS = [
     ("50_signatures.html", "50_signatures", "adm", "Signatures", "admin/SignaturesView.vue",
      "Identités et paraphes des titulaires des postes du circuit, imprimés sur les états.", None),
     ("51_config_email.html", "51_config_email", "adm", "Configuration e-mail", "admin/EmailConfigView.vue",
-     "Paramètres SMTP indicatifs (l'envoi réel suit le .env du serveur).", None),
+     "Serveur SMTP et expéditeur appliqués à l'envoi (vide : le .env du serveur) ; e-mail de test ; notifications envoyées.", None),
     ("52_sauvegardes.html", "52_sauvegardes", "adm", "Sauvegardes", "admin/BackupView.vue",
      "Création, téléchargement et restauration (confirmation par recopie du nom, sauvegarde de sécurité préalable).", None),
     ("53_moov.html", "53_moov", "pay", "Génération du fichier Moov", "paiements/PaiementMoovView.vue (PaiementGeneration.vue)",

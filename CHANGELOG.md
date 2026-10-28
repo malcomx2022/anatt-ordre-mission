@@ -27,6 +27,10 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - À la mise à jour : un serveur déjà saisi à l'écran **s'applique** désormais — le vérifier (checklist
   post-déploiement). `MessagerieSmtpTest` (18 tests, vus en échec avant) ; Vitest `admin-email-backup.spec.ts`.
   Compteurs : Pest 670 / 75 fichiers, Vitest 197.
+- **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
+  configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
+  recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :
+  l'écran Sauvegardes avait été capturé sur la page de connexion).
 
 ### Réglages de Paramètres appliqués, écrans testés, contrat OpenAPI en CI (28/10/2026)
 
