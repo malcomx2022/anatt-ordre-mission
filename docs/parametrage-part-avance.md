@@ -18,6 +18,11 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 > l'écran corrigé (menu *Système*, onglet *Général*). Le même jour, l'écran de l'état et le sélecteur de
 > tranche de la génération passent à la part **de la mission** (`part_avance`), et la chaîne des montants
 > est vérifiée de bout en bout par un test à 55 %.
+>
+> *Complété le 28/10/2026* : les autres réglages de l'écran *Paramètres* sont désormais appliqués par le
+> serveur — « Enregistrer tout » les enregistre **avec** la part d'avance (à relire avant) ; un refus du
+> serveur affiche son motif (« Le pourcentage d'avance doit être un entier entre 0 et 100. ») au lieu du
+> message générique « Donnees invalides. ».
 
 ## Où se règle-t-il
 
@@ -27,7 +32,12 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 - **Stockage** : clé `partAvance` dans `storage/app/settings.json` (fichier, **pas** la
   base de données).
 - **Validation** : entier de 0 à 100, contrôlé par `SettingsController::update` (422 sinon :
-  hors bornes ou non entier).
+  hors bornes ou non entier). L'écran affiche le motif du refus (champ `errors` de la réponse) et
+  n'enregistre **rien** : une valeur refusée bloque aussi les autres réglages envoyés avec elle.
+- **Enregistrer tout** : le bouton envoie **tous** les onglets de l'écran à la fois (part d'avance,
+  exercice, opérateurs, notifications, sécurité, maintenance). Depuis le 28/10/2026, chacun est
+  appliqué par le serveur : relire les autres onglets avant de changer la part (« Forcer HTTPS »
+  seulement si le site répond déjà en `https://`).
 
 ## API
 
@@ -166,6 +176,8 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   part de la mission (60 %) malgré un réglage à 70 %, repli sur le réglage sans part renvoyée.
 - `frontend/src/__tests__/repartition.spec.ts` — part réelle de l'OM et non le paramètre courant ;
   repli sur le paramètre pour un OM à montant nul ; libellés après amendement et trop-perçu.
+- `frontend/src/__tests__/settings-refus.spec.ts` — une part d'avance refusée (422) affiche le motif
+  du serveur, pas le message générique ; aucun succès annoncé.
 - `frontend/src/__tests__/part-avance.spec.ts` — pas de mise en cache du défaut sur
   erreur ; pas de chargement pendant le changement de mot de passe imposé, relecture après.
 - `tests/Feature/MissionsIndexTest.php` — distinction état des avances / état des
@@ -186,6 +198,8 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 | #125 | Revue d'octobre 2026 : pas de cache sur échec, relecture après le changement de mot de passe imposé, lectures réactives |
 | #167 | Version 1.4 : fiche et aperçu de l'OM aux libellés du PDF (part tirée des montants de l'OM, `utils/repartition.ts`) |
 | #174 | Part de la mission (`Mission::partAvanceReelle`, `part_avance`) sur l'écran de l'état et le sélecteur de tranche ; chaîne des montants vérifiée à 55 % |
+| #175 | Autres réglages de *Paramètres* appliqués par le serveur, enregistrés avec la part d'avance (« Enregistrer tout ») |
+| (28/10) | Motif d'un refus affiché à l'écran *Paramètres* (au lieu de « Donnees invalides. ») |
 
 ## Exploitation
 
@@ -193,5 +207,7 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   base (`db:backup`) et une restauration (`db:restore`) ne le modifie pas. Le conserver
   avec le reste de `storage/` lors d'une mise à jour (ne jamais écraser `storage/`, cf.
   `docs/runbook-mise-a-jour-cron.md`) et le sauvegarder à part si le réglage diffère de 70.
+  Il porte aussi les autres réglages de *Paramètres* et de *Messagerie*, appliqués depuis le 28/10 :
+  à relire avant une mise à jour (runbook, étape 1).
 - Changer la part en cours d'exercice n'a d'effet que sur les OM retranscrits ensuite :
   les états de paiement déjà établis gardent les montants de leurs OM.
