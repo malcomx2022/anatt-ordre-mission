@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Support\Messagerie;
 use App\Support\Parametres;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -139,6 +140,7 @@ class AuthController extends Controller
 
         // Anti-énumération : on déclenche l'envoi mais on renvoie TOUJOURS la même réponse,
         // que l'email existe ou non (ne pas révéler l'existence d'un compte).
+        Messagerie::appliquer(); // serveur et expéditeur de Paramètres › Messagerie
         Password::sendResetLink($request->only('email'));
 
         return $this->success(null, 'Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.');

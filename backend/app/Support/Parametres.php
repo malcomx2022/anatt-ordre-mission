@@ -3,7 +3,10 @@
 namespace App\Support;
 
 use Carbon\Carbon;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Paramètres généraux de l'application, lus depuis settings.json.
@@ -164,6 +167,69 @@ class Parametres
         }
 
         return true;
+    }
+
+    /** Chiffrements proposés par l'écran Messagerie. */
+    public const CHIFFREMENTS_SMTP = ['TLS', 'SSL', 'Aucun'];
+
+    /**
+     * Serveur SMTP de l'écran Messagerie, au format de config('mail.mailers.smtp') ;
+     * null tant qu'aucun serveur n'est renseigné (le transport du .env s'applique).
+     * Le mot de passe, chiffré au repos, n'est déchiffré qu'ici, au moment d'envoyer.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function smtp(): ?array
+    {
+        $r = self::reglages();
+        $hote = trim((string) ($r['smtpHost'] ?? ''));
+        if ($hote === '') {
+            return null;
+        }
+
+        $chiffrement = in_array($r['smtpEncryption'] ?? null, self::CHIFFREMENTS_SMTP, true) ? $r['smtpEncryption'] : 'TLS';
+        $port = self::versEntier($r['smtpPort'] ?? null);
+        $port = $port !== null && $port >= 1 && $port <= 65535 ? $port : ($chiffrement === 'SSL' ? 465 : 587);
+
+        $motDePasse = null;
+        if (! empty($r['smtpPassword'])) {
+            try {
+                $motDePasse = Crypt::decryptString((string) $r['smtpPassword']);
+            } catch (DecryptException) {
+                // APP_KEY changée depuis l'enregistrement : le secret est à ressaisir.
+                Log::warning('Messagerie : mot de passe SMTP indéchiffrable (APP_KEY changée ?), à ressaisir dans Paramètres › Messagerie.');
+            }
+        }
+
+        $utilisateur = trim((string) ($r['smtpUser'] ?? ''));
+
+        return [
+            'transport' => 'smtp',
+            'url' => null,
+            'host' => $hote,
+            'port' => $port,
+            'username' => $utilisateur !== '' ? $utilisateur : null,
+            'password' => $motDePasse,
+            // SSL : TLS implicite (smtps) ; TLS : STARTTLS exigé ; Aucun : en clair, sans STARTTLS.
+            'scheme' => $chiffrement === 'SSL' ? 'smtps' : 'smtp',
+            'require_tls' => $chiffrement === 'TLS',
+            'auto_tls' => $chiffrement !== 'Aucun',
+        ];
+    }
+
+    /**
+     * Expéditeur réglé dans l'écran Messagerie : seules les parties renseignées
+     * remplacent MAIL_FROM_ADDRESS / MAIL_FROM_NAME.
+     *
+     * @return array{address?:string,name?:string}
+     */
+    public static function expediteur(): array
+    {
+        $r = self::reglages();
+        $adresse = trim((string) ($r['fromAddress'] ?? ''));
+        $nom = trim((string) ($r['fromName'] ?? ''));
+
+        return array_filter(['address' => $adresse, 'name' => $nom], fn ($v) => $v !== '');
     }
 
     /** Invalidation du cache des réglages d'exploitation après écriture. */

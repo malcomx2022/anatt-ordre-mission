@@ -688,13 +688,13 @@ components:
         logConnections: { type: boolean }
         maintenanceMode: { type: boolean }
         notifications: { type: object }
-        smtpHost: { type: string }
-        smtpPort: { type: integer }
+        smtpHost: { type: string, description: "Serveur SMTP (Paramètres › Messagerie). Renseigné, il remplace le transport du .env ; vide : retour au .env." }
+        smtpPort: { type: integer, minimum: 1, maximum: 65535 }
         smtpUser: { type: string }
         smtpPassword: { type: string }
-        smtpEncryption: { type: string }
-        fromAddress: { type: string }
-        fromName: { type: string }
+        smtpEncryption: { type: string, enum: [TLS, SSL, Aucun], description: "TLS : STARTTLS exigé ; SSL : TLS implicite (port 465) ; Aucun : en clair." }
+        fromAddress: { type: string, description: "Expéditeur (remplace MAIL_FROM_ADDRESS s'il est renseigné ; adresse e-mail valide ou vide)." }
+        fromName: { type: string, maxLength: 100 }
         controleurNom: { type: string }
         controleurPrenoms: { type: string }
         controleurFonction: { type: string }
@@ -2684,6 +2684,29 @@ paths:
                 type: object
                 properties:
                   data: { $ref: '#/components/schemas/Settings' }
+                  message: { type: string }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /admin/settings/test-email:
+    post:
+      tags: [Paramètres]
+      summary: Envoyer un e-mail de test au super administrateur connecté
+      description: "Utilise la configuration ENREGISTRÉE (serveur de Paramètres › Messagerie, sinon le .env). Un échec d'envoi répond 422 (champ `smtpHost`) avec le message du serveur."
+      x-permission: parametres.gerer
+      responses:
+        '200':
+          description: E-mail de test envoyé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [destinataire, transport]
+                    properties:
+                      destinataire: { type: string, example: "superadmin@anatt.bj" }
+                      transport: { type: string, example: "smtp", description: "Mailer effectivement utilisé (smtp si un serveur est réglé, sinon MAIL_MAILER)." }
                   message: { type: string }
         '422': { $ref: '#/components/responses/Unprocessable' }
 

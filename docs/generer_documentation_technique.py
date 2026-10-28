@@ -253,6 +253,9 @@ tableau(
          "complété (pagination, régularisations, LignePerDiem, Signataire, enveloppe message).", "§7, §10"],
         ["Tests (28/10)", "45 tests des écrans critiques (saisie de mission, état, signatures, matrice des permissions) ; "
          "agent en double signalé dès la saisie ; message français sur un 429. Pest 652, Vitest 194.", "§10"],
+        ["Messagerie (28/10)", "Configuration SMTP de l'écran Messagerie appliquée à l'envoi (App\\Support\\Messagerie) : serveur "
+         "renseigné → remplace le transport du .env, expéditeur renseigné → remplace MAIL_FROM_* ; e-mail de test "
+         "POST /admin/settings/test-email (422 si l'envoi échoue). Pest 670, Vitest 197.", "§6, §7"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -1068,7 +1071,7 @@ tableau(
         ["DB_DATABASE / DB_USERNAME / DB_PASSWORD", "Connexion MySQL"],
         ["CACHE_STORE / SESSION_DRIVER / QUEUE_CONNECTION", "Production mutualisée : file / file / sync (aucun worker ni Redis) ; database ou redis si un worker traite la file"],
         ["SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD", "Super admin initial (mot de passe OBLIGATOIRE en production)"],
-        ["MAIL_MAILER / MAIL_HOST / MAIL_FROM_ADDRESS", "Configuration SMTP"],
+        ["MAIL_MAILER / MAIL_HOST / MAIL_FROM_ADDRESS", "Configuration SMTP (remplacée par l'écran Messagerie si un serveur y est renseigné)"],
         ["APP_KEY", "Chiffrement et scellés HMAC des états — ne jamais régénérer en production"],
         ["DB_DUMP_BINARY / DB_RESTORE_BINARY", "Binaires mysqldump / mysql utilisés par db:backup / db:restore"],
         ["SANCTUM_STATEFUL_DOMAINS", "Laissée vide : authentification par jeton Bearer, sans cookie inter-domaines"],
@@ -1141,8 +1144,8 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "652 tests au total (74 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "194 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "670 tests au total (75 fichiers)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "197 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
