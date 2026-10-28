@@ -395,8 +395,8 @@ Ces points reprennent le §6, *Dette restante*, complété le 25/10.
   `tests/Support/OpenApiSchema.php`, sans dépendance Composer). `openapi.yaml` a été complété au passage.
 - ~~**Réglages de Paramètres sans effet**~~ (relevés le 27/10) — **appliqués** le 28/10 (#175) : opérateurs,
   tentatives de connexion, durée de session, HTTPS forcé, journal des connexions échouées, mode
-  maintenance, notifications par type, nom de l'application (`ReglagesExploitationTest`). Reste indicative
-  la configuration SMTP de l'écran *Messagerie* : l'envoi suit le `.env` du serveur.
+  maintenance, notifications par type, nom de l'application (`ReglagesExploitationTest`). La configuration SMTP
+  de l'écran *Messagerie* l'est aussi depuis le 28/10 (serveur et expéditeur, e-mail de test ; `MessagerieSmtpTest`).
 - **Recette et rejeu de la démo hors dépôt** : les scripts de recette (83 contrôles) et de rejeu
   ne sont pas versionnés. Seuls Pest, Vitest et Playwright tournent en CI.
 

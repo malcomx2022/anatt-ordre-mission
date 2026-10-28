@@ -177,6 +177,7 @@ Sans création de données :
 
 - [ ] **Réglages publics** : connecté avec n'importe quel profil, `GET /api/admin/parametres/application` répond `200` avec `nom` et `operateurs` (`MTN`, `MOOV` à `true` tant qu'ils n'ont pas été désactivés). L'onglet du navigateur porte le nom de l'application.
 - [ ] **Écran Paramètres** (`/admin/parametres`) : plus aucune mention « indicatif » ; l'onglet *Notifications* liste les **7** notifications réelles (« État à signer »…). Relire chaque onglet **avant** le premier « Enregistrer tout » : les valeurs affichées seront appliquées (« Forcer HTTPS » seulement si le site répond déjà en `https://`).
+- [ ] **Écran Messagerie** (`/admin/email`) : la configuration SMTP n'est plus « indicative ». Si un serveur y figure (saisi avant la mise à jour), il **remplace** désormais le `.env` : le vérifier, ou vider le champ pour revenir au `.env`, puis « Envoyer un e-mail de test » → le message arrive dans la boîte du super administrateur.
 - [ ] **Part de la mission** : l'écran d'un état (`/missions/:id/etat`) titre ses onglets « Avances (… %) » avec la part de **ses** OM ; l'écran de génération libelle la tranche de même, une fois la mission choisie.
 
 #### Sur l'instance de recette uniquement

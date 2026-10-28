@@ -9,6 +9,25 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Configuration SMTP de l'écran Messagerie appliquée (28/10/2026)
+
+- **Écran Messagerie** (`/admin/email`) : la configuration SMTP, jusque-là « indicative », est **appliquée à
+  l'envoi** (`App\Support\Messagerie::appliquer()`, appelé par `SendNotification`, le lien de réinitialisation
+  et l'e-mail de test) :
+  - **serveur renseigné** : il remplace le transport du `.env` (`MAIL_MAILER` / `MAIL_*`) ; chiffrement `TLS`
+    (STARTTLS exigé), `SSL` (TLS implicite) ou `Aucun` ; mot de passe déchiffré au moment d'envoyer seulement ;
+  - **serveur vide** ou jamais saisi : le `.env` s'applique, comme avant ; **expéditeur** renseigné : il remplace
+    `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` (champ « Nom d'expéditeur » ajouté à l'écran) ;
+  - relu à chaque envoi : un worker de file en cours prend le changement dès l'e-mail suivant.
+- **Valeurs validées** à l'écriture (422) : nom d'hôte, port 1-65535, chiffrement, adresse d'expéditeur valide.
+  L'écran affiche désormais le refus du serveur (il le taisait).
+- **E-mail de test** : `POST /api/admin/settings/test-email` (`parametres.gerer`) écrit au compte connecté avec
+  la configuration enregistrée ; un échec répond 422 avec le message du serveur SMTP. Bouton « Envoyer un e-mail
+  de test » (enregistre puis teste).
+- À la mise à jour : un serveur déjà saisi à l'écran **s'applique** désormais — le vérifier (checklist
+  post-déploiement). `MessagerieSmtpTest` (18 tests, vus en échec avant) ; Vitest `admin-email-backup.spec.ts`.
+  Compteurs : Pest 670 / 75 fichiers, Vitest 197.
+
 ### Réglages de Paramètres appliqués, écrans testés, contrat OpenAPI en CI (28/10/2026)
 
 - **Réglages de l'écran Paramètres appliqués par le serveur** (#175) — enregistrés jusque-là sans effet

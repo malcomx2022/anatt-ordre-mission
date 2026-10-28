@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\Messagerie;
 use App\Support\NotificationContenu;
 use App\Support\Parametres;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -183,6 +187,8 @@ class SettingsController extends Controller
             $entrant['appName'] = $nom;
         }
 
+        $this->validerMessagerie($entrant);
+
         if (array_key_exists('notifications', $entrant)) {
             $liste = $entrant['notifications'];
             $valide = is_array($liste) && array_is_list($liste);
@@ -194,6 +200,86 @@ class SettingsController extends Controller
                 throw ValidationException::withMessages(['notifications' => 'Liste de notifications invalide (type inconnu ou état non booléen).']);
             }
         }
+    }
+
+    /**
+     * Configuration de l'écran Messagerie, appliquée à l'envoi (App\Support\Messagerie).
+     * Un serveur ou un expéditeur vide est accepté : il rend la main au .env.
+     *
+     * @param  array<string,mixed>  $entrant
+     */
+    private function validerMessagerie(array &$entrant): void
+    {
+        $textes = [
+            'smtpHost' => [255, 'Le serveur SMTP'],
+            'smtpUser' => [255, "Le nom d'utilisateur SMTP"],
+            'fromAddress' => [255, "L'adresse d'expéditeur"],
+            'fromName' => [100, "Le nom d'expéditeur"],
+        ];
+        foreach ($textes as $cle => [$max, $libelle]) {
+            if (! array_key_exists($cle, $entrant)) {
+                continue;
+            }
+            $valeur = $entrant[$cle] ?? '';
+            if (! is_string($valeur) || mb_strlen(trim($valeur)) > $max) {
+                throw ValidationException::withMessages([$cle => "{$libelle} doit être un texte de {$max} caractères au plus."]);
+            }
+            $entrant[$cle] = trim($valeur);
+        }
+
+        // Nom d'hôte ou adresse IP : lettres, chiffres, points, tirets (pas d'espace ni de schéma).
+        if (($entrant['smtpHost'] ?? '') !== '' && ! preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$/', $entrant['smtpHost'])) {
+            throw ValidationException::withMessages(['smtpHost' => 'Le serveur SMTP doit être un nom d\'hôte ou une adresse IP (ex. mail.anatt.bj).']);
+        }
+
+        if (($entrant['fromAddress'] ?? '') !== '' && filter_var($entrant['fromAddress'], FILTER_VALIDATE_EMAIL) === false) {
+            throw ValidationException::withMessages(['fromAddress' => "L'adresse d'expéditeur doit être une adresse e-mail valide."]);
+        }
+
+        if (array_key_exists('smtpPort', $entrant)) {
+            $port = $this->versEntier($entrant['smtpPort']);
+            if ($port === null || $port < 1 || $port > 65535) {
+                throw ValidationException::withMessages(['smtpPort' => 'Le port SMTP doit être un entier entre 1 et 65535.']);
+            }
+            $entrant['smtpPort'] = $port;
+        }
+
+        if (array_key_exists('smtpEncryption', $entrant) && ! in_array($entrant['smtpEncryption'], Parametres::CHIFFREMENTS_SMTP, true)) {
+            throw ValidationException::withMessages(['smtpEncryption' => 'Chiffrement attendu : TLS, SSL ou Aucun.']);
+        }
+    }
+
+    /**
+     * Envoie un e-mail de test au super administrateur connecté, avec la
+     * configuration ENREGISTRÉE (serveur de Messagerie, sinon le .env). Un échec
+     * est rendu en 422 avec le message du serveur, au lieu d'être découvert au
+     * premier e-mail perdu du circuit.
+     */
+    public function testEmail(Request $request): JsonResponse
+    {
+        $destinataire = (string) $request->user()->email;
+        $sujet = '['.Parametres::nomApplication().'] Test de la configuration e-mail';
+
+        Messagerie::appliquer();
+
+        try {
+            Mail::raw(
+                "Ce message confirme que la configuration e-mail de l'application fonctionne.\n"
+                .'Les notifications du circuit de validation partiront de la même façon.',
+                fn ($message) => $message->to($destinataire)->subject($sujet),
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Messagerie : échec de l\'e-mail de test - '.$e->getMessage());
+
+            throw ValidationException::withMessages([
+                'smtpHost' => "Échec de l'envoi : ".Str::limit($e->getMessage(), 300),
+            ]);
+        }
+
+        return $this->success([
+            'destinataire' => $destinataire,
+            'transport' => Messagerie::transport(),
+        ], "E-mail de test envoyé à {$destinataire}.");
     }
 
     /**

@@ -218,6 +218,8 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
             // Paramètres système (liste blanche de clés, secret SMTP chiffré/masqué).
             Route::get('settings', [SettingsController::class, 'show']);
             Route::put('settings', [SettingsController::class, 'update']);
+            // E-mail de test avec la configuration enregistrée (Paramètres › Messagerie).
+            Route::post('settings/test-email', [SettingsController::class, 'testEmail']);
 
             // Sauvegardes de la base de données.
             Route::get('backups', [BackupController::class, 'index']);

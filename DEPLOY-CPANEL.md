@@ -190,7 +190,8 @@ Copiez `backend/.env.production.example` en `anatt-api/.env` (via l'éditeur de 
 - `DB_DUMP_BINARY=` chemin mysqldump de l'hébergeur si vous utilisez les sauvegardes (sinon laissez `mysqldump`)
 - `DB_RESTORE_BINARY=` chemin du client `mysql` de l'hébergeur, utilisé par la **restauration** d'une
   sauvegarde (écran *Sauvegardes* ou `artisan db:restore`) ; sinon laissez `mysql`
-- Bloc `MAIL_*` (SMTP de l'hébergeur)
+- Bloc `MAIL_*` (SMTP de l'hébergeur). Il sert tant que l'écran *Paramètres › Messagerie* n'a pas de serveur
+  renseigné ; un serveur saisi à l'écran le remplace dès l'e-mail suivant (bouton « Envoyer un e-mail de test »).
 - `APP_TIMEZONE=Africa/Porto-Novo` (valeur du gabarit) : heure du Bénin pour les horodatages et les
   rapports par mois ; l'API renvoie toujours les dates en UTC. À fixer **avant** la première migration.
 - `MTN_COMPTE` — compte payeur de l'en-tête `HDR` du fichier MTN. Le gabarit propose `SARALY` :

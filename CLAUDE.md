@@ -182,7 +182,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
   Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` retirés le 26/10/2026)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (194 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (197 tests) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -195,7 +195,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (652 tests, 74 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (670 tests, 75 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -561,7 +561,7 @@ Composants : `AppLayout` · `AppSidebar` · `AppTopBar` (état du code au 27/10/
 | ADM-02 | `views/admin/UserCreateView.vue` | `/admin/utilisateurs/nouveau` | Formulaire de création d'un utilisateur (nom, email, rôle, téléphone) |
 | ADM-03 | `views/admin/RolesView.vue` | `/admin/roles` | Matrice permissions par rôle |
 | ADM-04 | `views/admin/SettingsView.vue` | `/admin/parametres` | Config système, **appliquée par le serveur** : nom de l'application, part de l'avance, exercice, fuseau (lecture seule) ; opérateurs MTN / Moov ouverts ; notifications par type ; durée de session, tentatives de connexion, HTTPS forcé, journal des connexions échouées ; mode maintenance |
-| ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP (indicative, l'envoi suit le `.env`) ; les 7 notifications réelles (`NotificationContenu`) et leurs destinataires |
+| ADM-05 | `views/admin/EmailConfigView.vue` | `/admin/email` | Config SMTP **appliquée à l'envoi** (serveur renseigné → remplace le transport `MAIL_*` du `.env` ; vide → `.env`) et expéditeur ; « Envoyer un e-mail de test » ; les 7 notifications réelles (`NotificationContenu`) et leurs destinataires |
 | ADM-06 | `views/admin/BackupView.vue` | `/admin/sauvegardes` | Sauvegardes BDD, téléchargement, restauration (confirmation par recopie du nom ; sauvegarde de sécurité préalable) |
 
 ### Pages SYSTÈME (4 écrans)
@@ -805,6 +805,7 @@ DELETE /api/admin/roles/:role                  → Supprime un rôle personnalis
 ```
 GET    /api/admin/settings                    → Réglages (SUPER_ADMIN : parametres.gerer ; secret SMTP masqué)
 PUT    /api/admin/settings                    → Écrit une liste blanche de clés (dont partAvance, entier 0-100)
+POST   /api/admin/settings/test-email         → E-mail de test au compte connecté avec la config enregistrée (422 + message du serveur en cas d'échec)
 GET    /api/admin/parametres/part-avance      → { data: <int> } Part de l'avance (LECTURE PUBLIQUE, tout authentifié)
 GET    /api/admin/parametres/annee-fiscale    → { data: { annee, mois_debut, libelle } } Exercice courant (LECTURE PUBLIQUE)
 GET    /api/admin/parametres/application      → { data: { nom, operateurs: { MTN, MOOV } } } (LECTURE PUBLIQUE : titre de l'onglet, opérateurs ouverts)
@@ -846,7 +847,11 @@ DELETE /api/admin/backups/:name               → Supprime une sauvegarde
 > - `maintenanceMode` : 503 pour tous sauf le SUPER_ADMIN, connexion laissée ouverte — middleware
 >   `MaintenanceApplication` (distinct de `artisan down`, réservé aux mises à jour) ;
 > - `notifications` : `[{ key: <type>, enabled }]`, un type coupé n'est plus émis ;
-> - `appName` : titre de l'onglet du navigateur et préfixe de l'objet des e-mails.
+> - `appName` : titre de l'onglet du navigateur et préfixe de l'objet des e-mails ;
+> - `smtpHost` / `smtpPort` / `smtpUser` / `smtpPassword` / `smtpEncryption` (`TLS` STARTTLS exigé · `SSL` implicite · `Aucun`)
+>   et `fromAddress` / `fromName` (écran *Messagerie*, depuis le 28/10/2026) : serveur renseigné → il remplace le transport
+>   du `.env` ; expéditeur renseigné → il remplace `MAIL_FROM_*`. Appliqués à chaque envoi par `App\Support\Messagerie::appliquer()`
+>   (notifications, lien de réinitialisation, e-mail de test) : un worker en cours prend le changement à l'e-mail suivant.
 >
 > **Hors sauvegarde de la base** : `storage/app/settings.json` (réglages ci-dessus, signataires), les paraphes
 > (`storage/app/private/signatures/`) et les fichiers produits (PDF, paiements) vivent sur le disque ; `db:backup`

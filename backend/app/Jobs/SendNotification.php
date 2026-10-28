@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\User;
+use App\Support\Messagerie;
 use App\Support\NotificationContenu;
 use App\Support\Parametres;
 use Illuminate\Bus\Queueable;
@@ -40,6 +41,9 @@ class SendNotification implements ShouldQueue
 
         $subject = $this->getSubject();
         $body = $this->getBody();
+
+        // Serveur et expéditeur de Paramètres › Messagerie (sinon le .env).
+        Messagerie::appliquer();
 
         try {
             Mail::raw($body, function ($message) use ($user, $subject) {

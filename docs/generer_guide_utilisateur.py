@@ -283,8 +283,9 @@ tableau(
          "plus besoin de recharger la page.", "9.1"],
         ["Fiche et aperçu de l'OM amendé", "Ils affichent les mêmes libellés que le PDF officiel : « Avance "
          "engagée », « Reliquat (ajusté par amendement) » ou « Trop-perçu ».", "6.3"],
-        ["Configuration e-mail", "L'écran présente les notifications réellement envoyées, avec leurs "
-         "destinataires.", "13.2"],
+        ["Configuration e-mail", "Le serveur SMTP et l'expéditeur saisis à l'écran sont appliqués à l'envoi "
+         "(sinon le .env du serveur) ; bouton « Envoyer un e-mail de test ». L'écran présente aussi les "
+         "notifications réellement envoyées, avec leurs destinataires.", "13.2"],
         ["Réglages de Paramètres", "Tous appliqués : opérateurs MTN / Moov, notifications par type, durée de "
          "session, tentatives de connexion, HTTPS forcé, journal des connexions échouées, mode maintenance, "
          "nom de l'application.", "13.2"],
@@ -850,7 +851,10 @@ bullet("Année fiscale : l'exercice en cours est paramétrable — année (liste
        "d'exercice. Par défaut, l'exercice coïncide avec l'année civile (début janvier) ; un mois de début "
        "différent produit un exercice à cheval, libellé « 2026-2027 ». À ce jour, ce réglage n'agit ni sur "
        "les montants, ni sur les rapports, ni sur les documents, qui se filtrent par dates.")
-bullet("Configuration e-mail (SMTP) : le mot de passe est stocké chiffré et n'est jamais réaffiché en clair. "
+bullet("Configuration e-mail (SMTP) : un serveur renseigné remplace, dès l'e-mail suivant, celui du fichier "
+       ".env du serveur (laissé vide, c'est le .env qui s'applique) ; l'adresse et le nom d'expéditeur aussi. "
+       "Le bouton « Envoyer un e-mail de test » enregistre puis écrit à votre adresse : un échec affiche le "
+       "message du serveur de messagerie. Le mot de passe est stocké chiffré et n'est jamais réaffiché en clair. "
        "L'écran liste les sept notifications envoyées (état à signer, état validé ou rejeté, OM validé ou "
        "rejeté, lot confirmé, trop-perçu créé) avec la permission de leurs destinataires.")
 bullet("Sauvegardes : création, téléchargement, restauration et suppression des sauvegardes de la "
