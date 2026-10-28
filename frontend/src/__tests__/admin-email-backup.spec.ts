@@ -21,10 +21,16 @@ const toastError = vi.fn()
 vi.mock('../composables/useApi', () => ({
   useApi: () => ({ get, put, post, delete: del }),
   getErrorMessage: (e: { response?: { data?: { message?: string } } }) => e.response?.data?.message ?? 'Erreur',
+  getValidationErrors: (e: { response?: { data?: { errors?: Record<string, string[]> } } }) => e.response?.data?.errors ?? {},
 }))
 vi.mock('../composables/useToast', () => ({
   useToast: () => ({ success: toastSuccess, error: toastError, warning: vi.fn() }),
 }))
+
+/** Refus 422 tel que l'API le renvoie : message générique, motif dans errors. */
+const refus = (champ: string, motif: string) => ({
+  response: { status: 422, data: { message: 'Donnees invalides.', errors: { [champ]: [motif] } } },
+})
 
 const stubs = {
   AppLayout: defineComponent({ setup: (_, { slots }) => () => h('div', [slots.default?.(), slots['header-actions']?.()]) }),
@@ -68,7 +74,7 @@ describe('EmailConfigView — configuration appliquée', () => {
   })
 
   it('affiche le refus du serveur au lieu de le taire', async () => {
-    put.mockRejectedValue({ response: { data: { message: 'Le port SMTP doit être un entier entre 1 et 65535.' } } })
+    put.mockRejectedValue(refus('smtpPort', 'Le port SMTP doit être un entier entre 1 et 65535.'))
     const w = await monter()
     await bouton(w, 'Enregistrer').trigger('click')
     await flushPromises()
@@ -87,14 +93,14 @@ describe('EmailConfigView — configuration appliquée', () => {
   })
 
   it('n’envoie pas de test si l’enregistrement est refusé, et rend compte d’un échec d’envoi', async () => {
-    put.mockRejectedValueOnce({ response: { data: { message: 'Chiffrement attendu : TLS, SSL ou Aucun.' } } })
+    put.mockRejectedValueOnce(refus('smtpEncryption', 'Chiffrement attendu : TLS, SSL ou Aucun.'))
     const w = await monter()
     await bouton(w, 'e-mail de test').trigger('click')
     await flushPromises()
     expect(post).not.toHaveBeenCalled()
 
     put.mockResolvedValue({ data: { data: {} } })
-    post.mockRejectedValue({ response: { data: { message: "Échec de l'envoi : Connection refused" } } })
+    post.mockRejectedValue(refus('smtpHost', "Échec de l'envoi : Connection refused"))
     await bouton(w, 'e-mail de test').trigger('click')
     await flushPromises()
     expect(toastError).toHaveBeenLastCalledWith("Échec de l'envoi : Connection refused")

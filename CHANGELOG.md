@@ -35,6 +35,12 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Guide utilisateur** (`.docx` régénéré) : nouveau §3.4 « Erreur momentanée du serveur, maintenance »
   (session conservée, « Réessayer » ramène à la page demandée), nouveauté 1.4 « Erreur passagère », capture de
   l'écran Configuration e-mail au §13.2.
+- **Scénario de démo** : variantes §8.6 « configuration e-mail » et §8.7 « mode maintenance, erreur passagère »,
+  relevées sur l'API réelle (base neuve) ; réglages de la messagerie hors sauvegarde (§8.4).
+- **Écart corrigé (écran Messagerie)** : un refus du serveur (port invalide, échec de l'e-mail de test)
+  s'affichait « Donnees invalides. », message générique des 422 ; l'écran affiche désormais le motif
+  (`errors`), p. ex. « Échec de l'envoi : Connection could not be established… ». Constaté en rejouant le
+  scénario ; le test Vitest simulait une réponse que l'API ne renvoie pas — il suit désormais la vraie forme.
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :

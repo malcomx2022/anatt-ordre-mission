@@ -2,7 +2,7 @@
 import { NOTIFICATIONS_CIRCUIT } from '@/utils/notifications'
 import { ref, onMounted } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
-import { useApi, getErrorMessage } from '@/composables/useApi'
+import { useApi, getErrorMessage, getValidationErrors } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 
 const api = useApi()
@@ -42,6 +42,14 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Motif d'un refus : l'API répond 422 « Données invalides. » et met la raison
+ * (champ refusé, message du serveur SMTP) dans `errors` — c'est elle qu'on affiche.
+ */
+function motif(e: unknown): string {
+  return Object.values(getValidationErrors(e))[0]?.[0] ?? getErrorMessage(e)
+}
+
 /** Enregistre la configuration ; true si le serveur l'a acceptée (422 sinon, affiché). */
 async function saveConfig(silencieux = false): Promise<boolean> {
   saving.value = true
@@ -63,7 +71,7 @@ async function saveConfig(silencieux = false): Promise<boolean> {
     return true
   } catch (e) {
     // Valeur refusée par le serveur (422) : le message dit laquelle.
-    toastError(getErrorMessage(e))
+    toastError(motif(e))
     return false
   } finally {
     saving.value = false
@@ -78,7 +86,7 @@ async function envoyerTest() {
     const { data } = await api.post('/api/admin/settings/test-email')
     toastSuccess(data.message || 'E-mail de test envoyé.')
   } catch (e) {
-    toastError(getErrorMessage(e))
+    toastError(motif(e))
   } finally {
     testing.value = false
   }
