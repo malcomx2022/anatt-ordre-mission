@@ -292,6 +292,11 @@ tableau(
         ["Erreur passagère", "Un incident momentané du serveur (trop de requêtes, erreur, coupure réseau) "
          "au rechargement d'une page ne vous déconnecte plus : l'écran d'erreur s'affiche et « Réessayer » "
          "vous ramène à la page demandée, toujours connecté.", "3.4"],
+        ["Refus expliqués", "Quand l'écran Paramètres ou Messagerie refuse une valeur (part d'avance hors "
+         "0-100, port invalide…), il indique laquelle et pourquoi, au lieu de « Données invalides ».", "13.2"],
+        ["E-mail qui ne part pas", "Si le serveur de messagerie ne répond pas, valider, signer, rejeter ou "
+         "amender n'affiche plus d'erreur : l'action est faite, la notification apparaît dans la cloche, "
+         "seul l'e-mail manque (à vérifier avec « Envoyer un e-mail de test »).", "13.2"],
         ["Saisie d'une mission", "Un même agent ajouté deux fois est signalé dès la saisie (« Agent déjà "
          "présent dans cette mission »).", "6.1"],
         ["Part de l'avance d'une mission", "L'écran d'un état de paiement (« Avances (70 %) » / « Reliquats "
@@ -660,7 +665,10 @@ bullet("Notifications (cloche et e-mail) : à chaque étape, sont prévenus les 
        "la permission de l'étape suivante — contrôler, viser, puis valider ; à la validation finale, ceux qui "
        "génèrent les fichiers de paiement ; en cas de rejet, ceux qui retranscrivent les missions. Un rôle "
        "personnalisé ou un droit accordé à titre individuel est donc notifié ; un droit retiré ne l'est plus. "
-       "Le super administrateur n'est pas notifié, et un compte désactivé ne l'est jamais.")
+       "Le super administrateur n'est pas notifié, et un compte désactivé ne l'est jamais. Si le serveur de "
+       "messagerie ne répond pas, la signature est tout de même enregistrée et la cloche prévient le "
+       "suivant : seul l'e-mail manque. Un type de notification coupé dans « Paramètres » n'est plus "
+       "émis ; la file de travail des états montre toujours ce qui attend chacun.")
 capture("17_etat_paiement", "état des avances validé : numéro, montants et circuit signé")
 encadre("Rejet possible à chaque étape",
         "Le contrôleur, le DAF ou le DG peuvent rejeter l'état avec un motif (≥ 10 caractères). Le rejet "
@@ -769,6 +777,9 @@ para("Quand un OM est amendé à la baisse après paiement de l'avance, son reli
      "l'agent a été trop payé. Ce trop-perçu ne part jamais en Mobile Money ; il est récupéré par retenue "
      "sur salaire, hors application. L'écran « Régularisations » (module Paiements) centralise ces cas.")
 bullet("Le versement concerné bascule automatiquement au statut À RECOUVRER et sort du périmètre payable.")
+bullet("Les comptes qui constatent les recouvrements (« Paiements — confirmer », l'agent financier par défaut) "
+       "en sont prévenus dans la cloche et par e-mail, sauf si cette notification est coupée dans "
+       "« Paramètres » : l'écran « Régularisations » reste alors la seule alerte.")
 etape("Ouvrez « Régularisations » : la liste des trop-perçus (à recouvrer / recouvrés) s'affiche, filtrable et paginée.")
 etape("Cliquez sur « Document » pour télécharger le « document de retenue sur salaire » (PDF) à remettre à la RH ; il porte le montant à retenir, en chiffres et en toutes lettres, et le motif du dernier amendement.")
 etape("Une fois la retenue appliquée par la RH, cliquez sur « Marquer recouvré » : le versement passe au statut RECOUVRÉ. Si l'avance de l'OM est payée, l'OM passe SOLDÉ.")
@@ -840,7 +851,13 @@ bullet("Paramètres (onglet Général) : nom de l'application (titre de l'onglet
        "information : il est réglé sur le serveur.")
 para("Tous les réglages de l'écran Paramètres sont appliqués par le serveur dès l'enregistrement (au plus "
      "tard une minute après). Un réglage jamais enregistré garde le comportement par défaut ; une valeur "
-     "hors limites est refusée.")
+     "hors limites est refusée : l'écran indique laquelle et pourquoi (par exemple « Le pourcentage d'avance "
+     "doit être un entier entre 0 et 100. ») et n'enregistre rien.")
+encadre("« Enregistrer tout »",
+        "Le bouton enregistre tous les onglets en une fois, et chacun s'applique aussitôt. Avant de changer "
+        "un seul réglage (la part de l'avance, par exemple), relisez les autres onglets : n'activez « Forcer "
+        "HTTPS » que si l'adresse de l'application commence déjà par https://, et vérifiez que le mode "
+        "maintenance est bien désactivé.")
 tableau(
     ["Onglet", "Réglage", "Effet"],
     [
