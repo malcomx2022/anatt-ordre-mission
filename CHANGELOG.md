@@ -48,6 +48,17 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   conservée sur erreur passagère, secret SMTP, forme des 422 ; compteurs Pest 670 / 75 fichiers (la section
   *Tests* et `backend/README.md` indiquaient encore 652 / 74) ; scénario de démo §8.6-8.7 ; galerie des écrans
   réels (`frontend/README.md` parlait encore des maquettes d'origine).
+- **Checklist post-déploiement** : §05 routes `/admin/email` et `/500?redirect=` (13 routes) ; §06 refus
+  expliqués de l'écran Messagerie, session conservée au rechargement ; en recette, échec d'envoi expliqué et
+  erreur passagère simulée (requête `/api/auth/me` bloquée dans le navigateur).
+- **Runbook de mise à jour** : encadré « Réglages appliqués (28/10) » ; étape 1, relire `settings.json` avant
+  l'envoi du code (HTTPS forcé, maintenance, serveur SMTP, opérateur fermé, session : les valeurs déjà
+  enregistrées s'appliquent aussitôt) ; étape 8, e-mail de test et session au rechargement ; retour arrière.
+  `DEPLOY-CPANEL.md` (notes 1.4) corrigé : il disait que rien ne changeait tant que les réglages n'étaient
+  pas enregistrés, alors que les valeurs déjà présentes s'appliquent.
+- **Workflows par profil** (`docs/workflows-par-profil.md`) : réglages du SUPER_ADMIN et leur effet sur les
+  autres profils (§2, tableau) ; session, erreur passagère et maintenance pour tous les profils (§7) ;
+  e-mails envoyés par le serveur de *Messagerie* (§8).
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :

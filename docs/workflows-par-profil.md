@@ -19,6 +19,10 @@
 > **Relu le 27/10/2026 (version 1.4)** : matrice (§3) et menu (§7) toujours conformes à
 > `config/profils.php` et `navigation.ts` ; §8 réécrit — les notifications suivent désormais les
 > **droits effectifs** (décision D1), plus les profils système.
+>
+> **Complété le 28/10/2026** : réglages de *Paramètres* et de *Messagerie* appliqués par le serveur —
+> rôle du SUPER_ADMIN précisé (§2), effet du mode maintenance et de la durée de session sur tous les
+> profils (§7), e-mails envoyés par le serveur de *Messagerie* (§8).
 
 ---
 
@@ -220,6 +224,19 @@ signataires, les sauvegardes et la matrice des permissions (`roles.gerer`). Il e
 toujours au moins un super admin actif : le dernier ne peut être ni supprimé, ni désactivé,
 ni rétrogradé.
 
+Les réglages qu'il enregistre agissent pour **tous les profils** (depuis le 28/10/2026) :
+
+| Écran | Ce qu'il règle | Effet sur les autres profils |
+|---|---|---|
+| *Paramètres › Paiements* | MTN / Moov ouverts | Un opérateur fermé ne peut plus être généré par l'`AGENT_FINANCIER` (bandeau, bouton grisé) |
+| *Paramètres › Notifications* | Une bascule par type | Un type coupé n'est plus émis pour personne (§8) |
+| *Paramètres › Sécurité* | Durée de session, tentatives de connexion, HTTPS forcé, journal des connexions échouées | Reconnexion au-delà de la durée ; connexion refusée une minute après trop d'échecs |
+| *Paramètres › Maintenance* | Mode maintenance | Tous voient l'écran *Maintenance*, sauf lui ; ils reviennent seuls à leur page quand il le lève |
+| *Messagerie* (`/admin/email`) | Serveur SMTP, expéditeur | Les e-mails de tous partent par ce serveur (sinon le `.env`) ; « Envoyer un e-mail de test » le vérifie |
+
+Il n'est jamais notifié (§8) : c'est à lui de vérifier, après un changement de *Messagerie*,
+que l'e-mail de test arrive.
+
 **Une exception à son omnipotence** : la séparation des tâches s'applique aussi à lui. Il
 ne peut pas porter deux signatures du même état.
 
@@ -354,6 +371,16 @@ Le menu est piloté par les permissions renvoyées par `/api/auth/me/permissions
 profil ne voit jamais une entrée qu'il ne peut pas ouvrir (verrouillé par
 `frontend/src/__tests__/navigation.spec.ts`).
 
+Pour **tous les profils** :
+
+- **Session** : elle dure le temps réglé dans *Paramètres › Sécurité* (480 min par défaut) ; au-delà,
+  ou si le compte est désactivé, son rôle changé ou son mot de passe réinitialisé, retour à la connexion.
+- **Erreur passagère** : un incident momentané de l'API au rechargement d'une page (trop de requêtes,
+  erreur, coupure réseau) ne déconnecte pas. L'écran *Erreur serveur* s'ouvre et « Réessayer » ramène à
+  la page demandée.
+- **Maintenance** : pendant une mise à jour ou le mode maintenance de *Paramètres*, l'écran
+  *Maintenance* s'affiche (sauf pour le SUPER_ADMIN en mode maintenance) et revient seul à la page.
+
 ---
 
 ## 8. Qui est notifié
@@ -388,4 +415,6 @@ qu'on la personnalise :
 Les modèles (objet, texte) sont listés dans *Paramètres › Messagerie* (`/admin/email`), avec la
 permission visée par chacun ; détail dans `docs/rbac-flexible.md`. Depuis le 28/10/2026, le SUPER_ADMIN
 peut **couper** un type dans *Paramètres › Notifications* : il n'est alors plus émis pour personne (ni
-cloche ni e-mail). L'objet des e-mails est préfixé du nom de l'application.
+cloche ni e-mail). L'objet des e-mails est préfixé du nom de l'application. Les e-mails partent par
+le serveur SMTP réglé dans *Messagerie* ou, champ vide, par celui du `.env` ; le SUPER_ADMIN vérifie
+la configuration avec « Envoyer un e-mail de test ».

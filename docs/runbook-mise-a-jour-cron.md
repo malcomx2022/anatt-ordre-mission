@@ -23,6 +23,13 @@
 > **inchangé**, cache des PDF d'OM à vider (étape 6), SPA **à redéployer**. Encadrés « 1.4 » ci-dessous ;
 > détail dans les *Notes de version 1.4* de `DEPLOY-CPANEL.md`.
 >
+> **Réglages appliqués (28/10/2026)** : code seul (`app/`, `bootstrap/app.php`, `routes/`, SPA), **aucune
+> migration**, `vendor/` inchangé, SPA **à redéployer**. Les réglages de *Paramètres* et de *Messagerie*,
+> jusque-là sans effet, sont appliqués **dès l'envoi du code** — y compris ceux déjà enregistrés dans
+> `settings.json` quand l'écran était « indicatif » (HTTPS forcé, mode maintenance, serveur SMTP, opérateur
+> fermé, durée de session). À relire avant l'étape 4 (étape 1) ; contrôles à l'étape 8. Une erreur passagère
+> de l'API au rechargement ne déconnecte plus (SPA).
+>
 > *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
 > `vendor/composer/platform_check.php`. *Relu le 27/10/2026 (version 1.4)* : fuseau dans le `.env`,
 > SPA servi pendant la maintenance, sortie de maintenance vérifiée, recette et retour arrière 1.4.
@@ -69,6 +76,18 @@
 - [ ] **Réglages et paraphes** — télécharger `anatt-api/storage/app/settings.json` et
       `anatt-api/storage/app/private/signatures/` : ils ne sont pas dans le dump de la base
       (`DEPLOY-CPANEL.md` § *Mise à jour*, A.4).
+- [ ] **Relire `settings.json`** (réglages appliqués, 28/10) — ouvrir la copie téléchargée : chaque valeur
+      qui s'y trouve **prendra effet** dès l'étape 4. Points à vérifier :
+      - `"forceHttps": true` seulement si `https://api-omsemo.anatt.bj` répond déjà (sinon toutes les
+        écritures de l'API seraient refusées en 403) ;
+      - `"maintenanceMode": true` → l'application resterait fermée à tous sauf au super administrateur ;
+      - `"smtpHost"` renseigné → ce serveur **remplacera** le `MAIL_*` du `.env` pour tous les e-mails ;
+        le garder seulement s'il est juste (sinon le vider à l'étape 8, écran *Messagerie*) ;
+      - `"mtnEnabled"` / `"moovEnabled"` à `false` → génération refusée pour cet opérateur ;
+      - `"sessionDuration"`, `"maxLoginAttempts"` : valeurs voulues (5-1440 min, 3-20 tentatives).
+
+      Une valeur à corriger avant la mise à jour : modifier `settings.json` dans le Gestionnaire de
+      fichiers (clé à `false` ou chaîne vide), effet sous une minute.
 - [ ] **Relever les tâches Cron permanentes** (cPanel > Cron Jobs) : planificateur `schedule:run`
       chaque minute (sauvegarde de 02:00 + purge des jetons) **ou** l'ancienne ligne `db:backup` à 02:00,
       et, si `QUEUE_CONNECTION=database`, `queue:work` chaque minute. Elles
@@ -290,6 +309,14 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       - *Configuration e-mail* (`/admin/email`) liste les 7 notifications et leurs destinataires.
 
       Les autres contrôles 1.4 sont dans la section *06 › Version 1.4* de la checklist.
+- [ ] **Réglages appliqués (28/10)** :
+      - *Messagerie* (`/admin/email`) : plus de bandeau « indicatif ». **Envoyer un e-mail de test** →
+        reçu dans la boîte du super administrateur (serveur de l'écran, ou `.env` si le champ est vide).
+        Un échec affiche le message du serveur de messagerie : corriger, ou vider le serveur ;
+      - recharger une page (<kbd>F5</kbd>) : on reste connecté, sur la même page ;
+      - *Paramètres* : plus aucune mention « indicatif » ; ne rien enregistrer sans avoir relu chaque onglet.
+
+      Les autres contrôles sont dans la section *06 › Réglages de Paramètres et part de la mission* de la checklist.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu
       (voir la section *06* de la checklist et les *Notes de version* 1.3 / 1.4 de `DEPLOY-CPANEL.md`).
@@ -342,3 +369,7 @@ Si la recette échoue et que le correctif n'est pas immédiat :
 > UTC) **puis** le code 1.3 — dans cet ordre : le rollback a besoin du fichier de migration et calcule
 > son décalage sur la configuration 1.4 (heure du Bénin).
 > Videz aussi `storage/app/private/ordres/` : les PDF régénérés sous la 1.4 imprimeraient l'heure du Bénin.
+>
+> **Réglages appliqués (28/10)** : aucune migration à défaire. Revenir au code précédent rend les réglages
+> de *Paramètres* et de *Messagerie* de nouveau sans effet ; `settings.json` n'est pas modifié (le restaurer
+> depuis la copie de l'étape 1 seulement si une valeur a été changée pendant la recette).
