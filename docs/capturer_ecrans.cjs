@@ -170,6 +170,15 @@ function ecrans(ids) {
   ]
 }
 
+/** Contexte de navigation, connecté au compte s'il y en a un (jeton posé avant le chargement du SPA). */
+async function nouveauContexte(navigateur, compte) {
+  const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-FR', timezoneId: 'Africa/Porto-Novo' })
+  if (compte) {
+    await contexte.addInitScript((jeton) => localStorage.setItem('auth_token', jeton), jetons[compte])
+  }
+  return contexte
+}
+
 async function main() {
   fs.mkdirSync(SORTIE, { recursive: true })
   const ids = await preparer()
@@ -177,12 +186,20 @@ async function main() {
   const index = []
 
   for (const [fichier, route, compte, action] of ecrans(ids)) {
-    const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-FR', timezoneId: 'Africa/Porto-Novo' })
-    if (compte) {
-      await contexte.addInitScript((jeton) => localStorage.setItem('auth_token', jeton), jetons[compte])
-    }
-    const page = await contexte.newPage()
+    let contexte = await nouveauContexte(navigateur, compte)
+    let page = await contexte.newPage()
     await page.goto(APP + route, { waitUntil: 'networkidle' })
+    // Session perdue (limite de 60 requêtes/min par compte : un 429 au rechargement déconnecte
+    // le SPA, qui révoque le jeton) : nouvelle connexion après la minute, puis nouvel essai.
+    if (compte && page.url().includes('/login')) {
+      await contexte.close()
+      await new Promise((ok) => setTimeout(ok, 61000))
+      await connecter(compte)
+      contexte = await nouveauContexte(navigateur, compte)
+      page = await contexte.newPage()
+      await page.goto(APP + route, { waitUntil: 'networkidle' })
+      if (page.url().includes('/login')) throw new Error(`${fichier} : session perdue deux fois`)
+    }
     if (action) await action(page)
     await page.waitForTimeout(1200) // animations d'entrée (fadeUp) et graphiques
     const cible = path.join(SORTIE, `${fichier}.jpg`)
