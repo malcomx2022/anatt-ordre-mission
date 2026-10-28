@@ -16,7 +16,8 @@
 >
 > *Relu le 24/10/2026 contre le code* : contrôles des correctifs n° 17 à 32 ajoutés (§06, *Correctifs
 > des 23 au 25/10* ; n° 29 à 32 le 25/10) — code seul, **aucune migration de plus** que celle de la 1.3.
-> *Complété le 28/10/2026* : réglages de *Paramètres* appliqués et part de la mission (§06, dernière sous-section).
+> *Complété le 28/10/2026* : réglages de *Paramètres* appliqués et part de la mission (§06, dernière sous-section) ;
+> puis messagerie appliquée (e-mail de test, motif des refus), session conservée sur erreur passagère et écran 500 (§05, §06).
 > *Relu le 27/10/2026 (version 1.4)* : sortie de maintenance (§01), cache des PDF d'OM à vider aussi en 1.4
 > (§04), comportement réel de l'écran Maintenance (§05), contrôles de la 1.4 précisés (§06).
 
@@ -97,12 +98,14 @@ Connecté en Super Administrateur. Chaque route rend son écran, **sans page bla
 | `/paiements/regularisations` | Liste des trop-perçus (vide sur une instance neuve), total à recouvrer |
 | `/admin/roles` | Matrice des permissions (8 profils système) |
 | `/admin/sauvegardes` | Liste des sauvegardes ; boutons Télécharger / Restaurer |
+| `/admin/email` | Configuration e-mail : bandeau « Serveur renseigné… Serveur vide… », boutons « Envoyer un e-mail de test » et « Enregistrer », 7 notifications |
+| `/500?redirect=/ordres` | Écran « Erreur serveur » (accents corrects) ; « Réessayer » ouvre `/ordres`, toujours connecté |
 | `/maintenance` | Écran Maintenance : nouvelle vérification de l'API dans 30 s, puis retour seul à l'accueil (l'API répond) ; heure de fin affichée seulement avec `?fin=` |
 
 > `/missions/1/etat` suppose qu'une mission n° 1 existe ; sur une instance neuve, prendre l'identifiant
 > d'une mission réelle ou passer cette ligne.
 
-- [ ] Les 11 routes ci-dessus rendent leur écran, zéro page blanche.
+- [ ] Les 13 routes ci-dessus rendent leur écran, zéro page blanche.
 - [ ] Console navigateur sans erreur rouge sur ces pages.
 
 ---
@@ -178,6 +181,8 @@ Sans création de données :
 - [ ] **Réglages publics** : connecté avec n'importe quel profil, `GET /api/admin/parametres/application` répond `200` avec `nom` et `operateurs` (`MTN`, `MOOV` à `true` tant qu'ils n'ont pas été désactivés). L'onglet du navigateur porte le nom de l'application.
 - [ ] **Écran Paramètres** (`/admin/parametres`) : plus aucune mention « indicatif » ; l'onglet *Notifications* liste les **7** notifications réelles (« État à signer »…). Relire chaque onglet **avant** le premier « Enregistrer tout » : les valeurs affichées seront appliquées (« Forcer HTTPS » seulement si le site répond déjà en `https://`).
 - [ ] **Écran Messagerie** (`/admin/email`) : la configuration SMTP n'est plus « indicative ». Si un serveur y figure (saisi avant la mise à jour), il **remplace** désormais le `.env` : le vérifier, ou vider le champ pour revenir au `.env`, puis « Envoyer un e-mail de test » → le message arrive dans la boîte du super administrateur.
+- [ ] **Refus expliqués (Messagerie)** : saisir le port `70000` puis « Enregistrer » → le message « Le port SMTP doit être un entier entre 1 et 65535. » s'affiche (et non « Donnees invalides. ») ; rien n'est enregistré. Remettre le port.
+- [ ] **Session conservée au rechargement** : recharger (F5) une page quelconque → on reste connecté, sur la même page. Seule une session expirée (durée de session dépassée, compte désactivé) renvoie à la connexion.
 - [ ] **Part de la mission** : l'écran d'un état (`/missions/:id/etat`) titre ses onglets « Avances (… %) » avec la part de **ses** OM ; l'écran de génération libelle la tranche de même, une fois la mission choisie.
 
 #### Sur l'instance de recette uniquement
@@ -187,6 +192,8 @@ Sans création de données :
 - [ ] **Notification coupée** : désactiver « Lot confirmé », confirmer un lot → aucune cloche ni e-mail de ce type ; les autres notifications partent. Réactiver.
 - [ ] **Journal des connexions** : l'activer, échouer une connexion → l'audit (`/audit`) trace `LOGIN_ECHEC` avec l'e-mail saisi.
 - [ ] **Tentatives et session** : régler 3 tentatives → la 4e connexion manquée de la minute répond « trop de tentatives » ; une durée de session de 5 min déconnecte au-delà. Remettre les valeurs voulues (défaut : 5 tentatives, 480 min).
+- [ ] **Échec d'envoi expliqué** : dans *Messagerie*, serveur `127.0.0.1`, port `2`, chiffrement *Aucun* → « Envoyer un e-mail de test » affiche « Échec de l'envoi : Connection could not be established… ». **Vider le serveur** ensuite (retour au `.env`) et renvoyer un test, reçu.
+- [ ] **Erreur passagère** : outils de développement du navigateur › *Réseau* › bloquer l'URL `*/api/auth/me`, recharger une page (`/ordres`) → écran « Erreur serveur », pas l'écran de connexion. Débloquer, cliquer « Réessayer » → retour sur `/ordres`, toujours connecté.
 - [ ] **Saisie d'une mission** : ajouter deux fois le même agent dans l'assistant → « Agent déjà présent dans cette mission », étape bloquée avant l'enregistrement.
 
 ---

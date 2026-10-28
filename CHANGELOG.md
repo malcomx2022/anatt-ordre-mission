@@ -48,6 +48,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   conservée sur erreur passagère, secret SMTP, forme des 422 ; compteurs Pest 670 / 75 fichiers (la section
   *Tests* et `backend/README.md` indiquaient encore 652 / 74) ; scénario de démo §8.6-8.7 ; galerie des écrans
   réels (`frontend/README.md` parlait encore des maquettes d'origine).
+- **Checklist post-déploiement** : §05 routes `/admin/email` et `/500?redirect=` (13 routes) ; §06 refus
+  expliqués de l'écran Messagerie, session conservée au rechargement ; en recette, échec d'envoi expliqué et
+  erreur passagère simulée (requête `/api/auth/me` bloquée dans le navigateur).
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :
