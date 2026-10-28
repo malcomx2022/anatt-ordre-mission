@@ -53,8 +53,10 @@ class SendNotification implements ShouldQueue
 
             Log::info("SendNotification: email '{$this->type}' envoye a {$user->email}");
         } catch (\Exception $e) {
+            // Journalisé, jamais relancé : en file sync (production mutualisée), l'e-mail part
+            // pendant la requête qui notifie — une signature ne doit pas échouer en 500 parce que
+            // le serveur SMTP ne répond pas. La notification de la cloche est déjà enregistrée.
             Log::error("SendNotification: echec envoi email a {$user->email} - ".$e->getMessage());
-            throw $e;
         }
     }
 

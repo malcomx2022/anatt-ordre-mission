@@ -1,6 +1,8 @@
 <?php
 
 use App\Jobs\SendNotification;
+use App\Models\Notification;
+use App\Models\OrdreMission;
 use App\Models\User;
 use App\Support\Messagerie;
 use App\Support\Parametres;
@@ -158,4 +160,21 @@ it('rend compte d’un échec d’envoi au lieu de le taire', function () {
 it('réserve l’e-mail de test au super administrateur', function () {
     $this->actingAs(User::factory()->admin()->create())->postJson('/api/admin/settings/test-email')
         ->assertForbidden();
+});
+
+it('ne fait pas échouer une signature quand l’e-mail ne part pas (file sync)', function () {
+    // Production mutualisée : QUEUE_CONNECTION=sync, l'e-mail part pendant la requête qui notifie.
+    config(['queue.default' => 'sync']);
+    reglagesMail(['smtpHost' => '127.0.0.1', 'smtpPort' => 2, 'smtpEncryption' => 'Aucun']);
+    $financiers = User::factory()->agentFinancier()->count(2)->create();
+    $controleur = User::factory()->controleur()->create();
+    $om = OrdreMission::factory()->create(['statut' => 'IMPORTE']);
+
+    $this->actingAs($controleur)->postJson("/api/ordres/{$om->id}/valider")->assertOk();
+
+    expect($om->fresh()->statut)->toBe('VALIDE');
+    // Chaque destinataire garde sa notification dans la cloche, l'échec du premier e-mail n'arrête pas la boucle.
+    foreach ($financiers as $f) {
+        expect(Notification::pour($f->id)->where('type', 'om_valide')->count())->toBe(1);
+    }
 });

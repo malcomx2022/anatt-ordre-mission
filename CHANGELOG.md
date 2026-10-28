@@ -9,6 +9,19 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
+
+- **Écart corrigé** : avec `QUEUE_CONNECTION=sync` (production mutualisée), un e-mail de notification qui ne
+  part pas (serveur SMTP injoignable, mal saisi dans *Messagerie*) faisait répondre **500** à la requête qui
+  notifie — validation d'un OM, signature ou rejet d'un état, confirmation d'un lot — alors que l'opération était
+  enregistrée ; les destinataires suivants n'étaient pas notifiés (cloche comprise). `SendNotification` relançait
+  l'exception après l'avoir journalisée, contrairement à `backend/docs/queues.md`. Elle est désormais journalisée
+  seulement. Trouvé en relisant `docs/circuits-validation.md` ; risque accru depuis la configuration SMTP à l'écran.
+  Test `MessagerieSmtpTest` (vu en échec avant) ; Pest 671.
+- **Circuits de validation** (`docs/circuits-validation.md`) : réglages qui touchent les circuits — notification
+  coupée, e-mails par le serveur de *Messagerie* (un échec n'annule pas la signature), mode maintenance (§1) ;
+  opérateur fermé à la porte de paiement (§3) ; références (§8).
+
 ### Configuration SMTP de l'écran Messagerie appliquée (28/10/2026)
 
 - **Écran Messagerie** (`/admin/email`) : la configuration SMTP, jusque-là « indicative », est **appliquée à

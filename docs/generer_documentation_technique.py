@@ -258,6 +258,9 @@ tableau(
          "POST /admin/settings/test-email (422 si l'envoi échoue). Pest 670, Vitest 197.", "§6, §7"],
         ["Session (28/10)", "Une erreur passagère de l'API au rechargement (429, 5xx, réseau) ne déconnecte plus : le jeton est "
          "gardé et l'écran d'erreur revient à la page demandée ; seul un 401 met fin à la session. Vitest 205.", "§6"],
+        ["E-mail en échec (28/10)", "Un e-mail de notification qui ne part pas (serveur SMTP injoignable) n'est plus relancé "
+         "par SendNotification : en file sync, la signature ou la validation qui notifie répondait 500 alors que "
+         "l'opération était enregistrée, et les destinataires suivants n'étaient pas notifiés. Pest 671.", "§4.2"],
         ["Messagerie, refus (28/10)", "L'écran Messagerie affiche le motif d'un refus 422 (champ errors : port invalide, "
          "message du serveur SMTP) et non plus le message générique « Donnees invalides. ». Scénario de démo complété "
          "(§8.6 messagerie, §8.7 maintenance), rejoué sur l'API réelle.", "§7.6, §10"],
@@ -1158,7 +1161,7 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "670 tests au total (75 fichiers)"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "671 tests au total (75 fichiers)"],
         ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "205 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],

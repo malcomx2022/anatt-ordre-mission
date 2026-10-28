@@ -8,6 +8,10 @@
 > *Relu le 27/10/2026 contre le code (version 1.4)* : notifications de chaque étape par droits
 > effectifs (§1), quatre blocs de signature sur le PDF de l'OM, heure du Bénin et purge du cache
 > des PDF à une mise à jour de version (§7). Références (§8) vérifiées une à une.
+>
+> *Complété le 28/10/2026* (réglages de *Paramètres* et de *Messagerie* appliqués) : notification d'une
+> étape coupable, e-mails par le serveur de *Messagerie*, mode maintenance (§1) ; opérateur fermé à la
+> porte de paiement (§3) ; références (§8).
 
 ---
 
@@ -31,6 +35,18 @@ permission de l'étape suivante — rôles personnalisés et droits individuels 
 respectés, SUPER_ADMIN exclu (`NotificationService::notifier`). Avec la matrice par défaut, ce sont le
 contrôleur, le DAF, le DG, l'agent financier et le gestionnaire OM, comme avant (détail :
 `docs/workflows-par-profil.md` §8).
+
+Depuis le 28/10/2026, trois réglages du SUPER_ADMIN touchent le déroulé des circuits, **sans
+en changer les règles** :
+
+- **Notifications** (*Paramètres › Notifications*) : un type coupé (« État à signer », « OM validé »…)
+  n'est plus émis, ni cloche ni e-mail (`Parametres::notificationActive`). L'étape reste ouverte ;
+  c'est la **file de travail** (`/etats`) qui la montre au signataire suivant.
+- **Messagerie** (`/admin/email`) : les e-mails des notifications partent par le serveur SMTP qui y est
+  réglé, sinon par celui du `.env` (`App\Support\Messagerie`). Un envoi en échec n'annule pas la
+  signature : la notification de la cloche est déjà enregistrée.
+- **Mode maintenance** (*Paramètres › Maintenance*) : l'API répond 503 à tous sauf au SUPER_ADMIN ;
+  aucune signature, aucun rejet, aucune génération pendant ce temps (`MaintenanceApplication`).
 
 **Séparation des tâches** (`config/workflow.php` → `separation_des_taches`, activée par
 défaut, `Workflow::separationDesTaches()`) : sur un même état, le DAF ne vise pas un état
@@ -126,6 +142,11 @@ Conséquences :
   dès sa validation, dans les deux circuits — par `EtatPaiementService::propager` sur le circuit
   par état, par `MissionService::valider` sur le circuit par OM (défaut n° 24 : il restait
   `VALIDE` sur ce dernier).
+- **Opérateur fermé** (*Paramètres › Paiements*, depuis le 28/10/2026) : la génération d'un fichier
+  pour un opérateur désactivé est refusée (422, avant toute mise en file ;
+  `LotPaiementService::exigerOperateurActif`), quel que soit le circuit. L'aperçu reste consultable
+  (`operateur_actif: false`) et un lot déjà généré reste confirmable : le réglage ne retire rien de
+  l'éligibilité, il ferme seulement l'écriture de nouveaux fichiers.
 - Seconde barrière (défense en profondeur) : même si un OM est forcé à `VALIDE`
   hors circuit, aucun fichier n'est écrit tant que l'état de la tranche n'est pas
   validé (`FileGenerator::exigerEtatValide`, appelée avant toute écriture) — couvert par
@@ -295,6 +316,8 @@ régénéré (`docs/runbook-mise-a-jour-cron.md`, étape 6). Tests : `tests/Feat
 | Porte de paiement unifiée | `Versement::scopeEligiblesLot()`, `FileGenerator::exigerEtatValide()` |
 | Signatures de l'état sur le PDF de l'OM | `PdfGenerator::etatSignataire()`, `PdfGenerator::signatureEtat()` |
 | Notifications de chaque étape (droits effectifs) | `NotificationService::notifier()` ; tests `tests/Feature/NotificationTest.php` |
+| Réglages qui touchent les circuits (notification coupée, opérateur fermé, mode maintenance) | `App\Support\Parametres`, `LotPaiementService::exigerOperateurActif()`, middleware `MaintenanceApplication` ; tests `tests/Feature/ReglagesExploitationTest.php` |
+| E-mails des notifications (serveur de *Messagerie*) | `App\Support\Messagerie::appliquer()`, `SendNotification` ; tests `tests/Feature/MessagerieSmtpTest.php` |
 | Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
 | Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `LotPaiementService::marquerRecouvre()`, `MissionService::amender()` (règle commune `OrdreMission::solderSiRegle()`), `MissionService::valider()` (exonéré), `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `tests/Feature/RegularisationTest.php`, `tests/Feature/CircuitValidationTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
