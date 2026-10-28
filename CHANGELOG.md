@@ -9,6 +9,15 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Circuit de validation : motif d'un refus affiché (28/10/2026)
+
+- **Écart corrigé (tous les écrans, circuit en tête)** : un refus du serveur (422) n'affichait que
+  « Donnees invalides. » — au DAF qui avait contrôlé l'état (séparation des tâches), au DG sans numéro de
+  registre, à un numéro déjà attribué. `getErrorMessage` et l'avertissement global d'un 422 donnent désormais
+  le premier motif de `errors` ; un même message n'est plus affiché deux fois (avertissement global repris
+  par l'écran). Test `refus-motif.spec.ts` (vu en échec avant) ; Vitest 209.
+- **Guide des circuits de validation** : §1 « Refus expliqués » (motifs du circuit), en-tête, références (§8).
+
 ### Paramètres : motif d'un refus affiché ; guide de la part d'avance (28/10/2026)
 
 - **Écart corrigé (écran Paramètres)** : un réglage refusé par le serveur (part d'avance à 120 %, durée de
