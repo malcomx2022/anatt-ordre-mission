@@ -21,6 +21,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Guide utilisateur** (`.docx` régénéré) : nouveautés 1.4 « Refus expliqués » et « E-mail qui ne part pas » ;
   §7.2 signature enregistrée même si l'e-mail ne part pas, type de notification coupé ; §9.5 alerte du
   trop-perçu ; §13.2 refus expliqué et encadré « Enregistrer tout » (relire les autres onglets).
+- **Scénario de démo** : §8.5 refus expliqué d'une part à 120 % et bouton « Enregistrer tout » ; §8.6 variante —
+  validation qui aboutit malgré un serveur de messagerie injoignable (cloche reçue, seul l'e-mail manque).
+  Rejoué sur l'API réelle, base neuve, `QUEUE_CONNECTION=sync`.
 
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 

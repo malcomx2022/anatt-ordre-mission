@@ -31,6 +31,9 @@
 > **Complété le 28 octobre 2026** (base neuve, API réelle) : variantes §8.6 « configuration e-mail »
 > (e-mail de test, refus d'un port invalide, échec d'envoi expliqué) et §8.7 « mode maintenance,
 > erreur passagère » ; réglages de la messagerie hors sauvegarde (§8.4). Montants §3 à §8 inchangés.
+> **Complété le soir du 28 octobre 2026** (base neuve, API réelle, `QUEUE_CONNECTION=sync` comme en
+> production) : refus expliqué d'une part d'avance hors bornes (§8.5) ; validation qui aboutit malgré un
+> serveur de messagerie injoignable (§8.6).
 
 ---
 
@@ -438,8 +441,11 @@ sauvegarde : ils vivent dans `storage/app/settings.json` et ne bougent pas.
 À montrer après l'étape C (état des avances établi). Montants **réels**, rejoués sur l'API le
 27 octobre 2026 (base neuve, même barème que le §6, 1 repas + 6 journées complètes = 285 000).
 
-1. `superadmin@` — menu *Système* › **Paramètres** (`/admin/parametres`), onglet **Général** : passer
-   la **part de l'avance** de 70 à **60 %** → *Part du reliquat* affiche 40 %, **Enregistrer**.
+1. `superadmin@` — menu *Système* › **Paramètres** (`/admin/parametres`), onglet **Général** : saisir
+   d'abord **120** → **Enregistrer tout** : refus, « Le pourcentage d'avance doit être un entier entre 0
+   et 100. », rien n'est enregistré. Puis passer la **part de l'avance** de 70 à **60 %** → *Part du
+   reliquat* affiche 40 %, **Enregistrer tout** (ce bouton enregistre aussi les autres onglets : les
+   laisser tels quels).
 2. `gestion@` — rouvrir la mission *Dossiers de passation de marchés* : **rien ne bouge**. L'OM de
    SOUMANOU garde **199 500 / 85 500** (sa répartition est figée à la retranscription), l'état des
    avances reste à **199 500** et ses onglets affichent toujours **« Avances (70 %) »**.
@@ -474,10 +480,15 @@ le 28 octobre 2026 (base neuve).
    de test** : l'écran affiche le message du serveur de messagerie, « Échec de l'envoi : Connection
    could not be established with host "127.0.0.1:2"… ». Les notifications du circuit partiraient
    de la même façon : l'échec se voit ici, avant le premier e-mail perdu.
+   *Variante* : garder ce serveur, puis `controle@` **valide** un OM d'une mission sans état
+   (fiche OM › **Valider**) : la validation **aboutit** (OM « Validé »), et `finance@` trouve dans sa
+   cloche « OM … validé — paiement préparable ». Seul l'e-mail manque ; l'échec est écrit dans le
+   journal du serveur. Rejoué sur l'API réelle (DEMO-CIRCUIT-001).
 5. **Vider le champ Serveur SMTP** et l'adresse d'expéditeur, **Enregistrer** : retour au `.env`.
 
 > Le message : un serveur saisi à l'écran **remplace** celui du `.env` dès l'e-mail suivant (pour les
-> notifications et le lien de mot de passe oublié) ; laissé vide, rien ne change.
+> notifications et le lien de mot de passe oublié) ; laissé vide, rien ne change. Un serveur en panne ne
+> bloque jamais le travail : signatures et validations passent, la cloche prévient.
 
 ### 8.7 (Option) Mode maintenance, erreur passagère  ·  `superadmin@` puis `gestion@`
 
