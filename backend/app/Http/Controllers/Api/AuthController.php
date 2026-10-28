@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Support\Parametres;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -41,6 +43,15 @@ class AuthController extends Controller
 
         // Message unique : ne jamais révéler si l'email existe ni si le compte est désactivé.
         if (! $user || ! $motDePasseValide || ! $user->actif) {
+            // Paramètres › Sécurité « Journaliser les connexions » : trace aussi l'échec
+            // (e-mail saisi, IP via le journal) ; le motif n'est pas révélé à l'appelant.
+            if (Parametres::journaliserConnexions()) {
+                AuditService::log($user, 'LOGIN_ECHEC', 'session', null, [
+                    'email' => Str::lower((string) $request->email),
+                    'motif' => ! $user ? 'compte inconnu' : (! $motDePasseValide ? 'mot de passe incorrect' : 'compte désactivé'),
+                ]);
+            }
+
             throw ValidationException::withMessages([
                 'email' => ['Identifiants incorrects.'],
             ]);

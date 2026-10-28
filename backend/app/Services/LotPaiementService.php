@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Versement;
 use App\Services\Paiement\MoovFileGenerator;
 use App\Services\Paiement\MtnFileGenerator;
+use App\Support\Parametres;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -50,6 +51,8 @@ class LotPaiementService
             'operateur' => $operateur,
             // Part d'avance réelle de la mission (et non le réglage courant).
             'part_avance' => $mission->partAvanceReelle(),
+            // Opérateur désactivé dans Paramètres › Paiements : aperçu possible, génération refusée.
+            'operateur_actif' => Parametres::operateurActif($operateur),
             'nb_lignes' => $lignes->count(),
             'total' => (int) $lignes->sum('montant'),
             'beneficiaires' => $lignes,
@@ -64,9 +67,24 @@ class LotPaiementService
      */
     public function generer(int $missionId, string $tranche, string $operateur, User $user): array
     {
+        self::exigerOperateurActif($operateur);
+
         $generateur = $operateur === 'MTN' ? $this->mtnGenerator : $this->moovGenerator;
 
         return $generateur->generer($missionId, $tranche, $user);
+    }
+
+    /**
+     * Paramètres › Paiements : un opérateur désactivé n'est plus ouvert à la
+     * génération (lots déjà générés : confirmation et passage en erreur restent possibles).
+     */
+    public static function exigerOperateurActif(string $operateur): void
+    {
+        if (! Parametres::operateurActif($operateur)) {
+            throw ValidationException::withMessages([
+                'operateur' => "Les paiements {$operateur} sont désactivés dans les Paramètres : aucun fichier ne peut être généré.",
+            ]);
+        }
     }
 
     /**

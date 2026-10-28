@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Support\Parametres;
 use App\Support\PermissionRepository;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\Sanctum;
 use Laravel\Telescope\TelescopeServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -45,20 +48,35 @@ class AppServiceProvider extends ServiceProvider
             return $base.'/reinitialiser/'.$token.'?email='.urlencode($notifiable->getEmailForPasswordReset());
         });
 
+        // Durée de session (Paramètres › Sécurité) : quand elle est réglée, elle remplace
+        // SANCTUM_EXPIRATION — un jeton expire N minutes après la connexion, que la durée
+        // soit plus courte ou plus longue. Non réglée : la validité calculée par Sanctum.
+        Sanctum::authenticateAccessTokensUsing(function ($jeton, bool $valide): bool {
+            $duree = Parametres::dureeSession();
+            if ($duree === null) {
+                return $valide;
+            }
+
+            return $jeton->tokenable instanceof User
+                && (! $jeton->expires_at || ! $jeton->expires_at->isPast())
+                && $jeton->created_at->gt(now()->subMinutes($duree));
+        });
+
         // Rate limiting global API: 60 req/min par utilisateur
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Rate limiting strict pour login : 5 tentatives/min, verrou combiné email + IP.
+        // Rate limiting strict pour login : 5 tentatives/min par défaut (Paramètres ›
+        // Sécurité, 3 à 20), verrou combiné email + IP.
         // Le verrou par identifiant bloque le credential stuffing ciblé multi-IP ;
         // le verrou par IP bloque le balayage d'emails depuis une même source.
         RateLimiter::for('login', function (Request $request) {
             $email = Str::lower((string) $request->input('email'));
 
             return [
-                Limit::perMinute(5)->by('login|'.$request->ip()),
-                Limit::perMinute(5)->by('login|'.$email.'|'.$request->ip()),
+                Limit::perMinute(Parametres::tentativesConnexion())->by('login|'.$request->ip()),
+                Limit::perMinute(Parametres::tentativesConnexion())->by('login|'.$email.'|'.$request->ip()),
             ];
         });
 

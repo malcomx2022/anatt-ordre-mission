@@ -11,6 +11,12 @@ namespace App\Support;
  */
 final class NotificationContenu
 {
+    /** Types émis par NotificationService (bascules de Paramètres › Notifications). */
+    public const TYPES = [
+        'etat_attend_signature', 'etat_valide', 'etat_rejete',
+        'om_valide', 'om_rejete', 'lot_confirme', 'trop_percu_cree',
+    ];
+
     /** @param  array<string,mixed>  $data */
     public static function sujet(string $type, array $data): string
     {

@@ -87,6 +87,97 @@ class Parametres
         Cache::forget('parametres.mois_debut_exercice');
     }
 
+    // ── Réglages d'exploitation (écran Paramètres) ────────────────────────────
+    //
+    // Un réglage absent de settings.json garde le comportement d'avant son
+    // introduction : rien ne change sur une instance qui ne l'a jamais enregistré.
+
+    /** Bornes des réglages numériques : une valeur hors bornes est refusée à l'écriture. */
+    public const TENTATIVES_MIN = 3;
+
+    public const TENTATIVES_MAX = 20;
+
+    public const SESSION_MIN = 5;
+
+    public const SESSION_MAX = 1440;
+
+    /** Nom de l'application : onglet du navigateur et objet des e-mails. */
+    public static function nomApplication(): string
+    {
+        $nom = trim((string) (self::reglages()['appName'] ?? ''));
+
+        return $nom !== '' ? $nom : (string) config('app.name');
+    }
+
+    /** L'opérateur (MTN / MOOV) est-il ouvert à la génération des fichiers de paiement ? */
+    public static function operateurActif(string $operateur): bool
+    {
+        $cle = ['MTN' => 'mtnEnabled', 'MOOV' => 'moovEnabled'][strtoupper($operateur)] ?? null;
+
+        return $cle === null || (self::reglages()[$cle] ?? true) !== false;
+    }
+
+    /** Tentatives de connexion par minute (par IP, et par e-mail × IP) ; 5 par défaut. */
+    public static function tentativesConnexion(): int
+    {
+        $n = self::versEntier(self::reglages()['maxLoginAttempts'] ?? null);
+
+        return $n !== null && $n >= self::TENTATIVES_MIN && $n <= self::TENTATIVES_MAX ? $n : 5;
+    }
+
+    /**
+     * Durée de validité d'une session (jeton Sanctum), en minutes après la
+     * connexion ; null si non réglée (SANCTUM_EXPIRATION s'applique).
+     */
+    public static function dureeSession(): ?int
+    {
+        $n = self::versEntier(self::reglages()['sessionDuration'] ?? null);
+
+        return $n !== null && $n >= self::SESSION_MIN && $n <= self::SESSION_MAX ? $n : null;
+    }
+
+    /** Refuser l'API en HTTP (redirection des lectures, 403 pour les écritures). */
+    public static function forcerHttps(): bool
+    {
+        return (self::reglages()['forceHttps'] ?? false) === true;
+    }
+
+    /** Tracer aussi les connexions ÉCHOUÉES au journal d'audit (les réussies le sont toujours). */
+    public static function journaliserConnexions(): bool
+    {
+        return (self::reglages()['logConnections'] ?? false) === true;
+    }
+
+    /** Mode maintenance : l'API répond 503 à tous, sauf au super administrateur. */
+    public static function maintenance(): bool
+    {
+        return (self::reglages()['maintenanceMode'] ?? false) === true;
+    }
+
+    /** Une notification de ce type (cloche + e-mail) est-elle émise ? Oui par défaut. */
+    public static function notificationActive(string $type): bool
+    {
+        foreach ((array) (self::reglages()['notifications'] ?? []) as $n) {
+            if (is_array($n) && ($n['key'] ?? null) === $type) {
+                return ($n['enabled'] ?? true) !== false;
+            }
+        }
+
+        return true;
+    }
+
+    /** Invalidation du cache des réglages d'exploitation après écriture. */
+    public static function invalidateReglages(): void
+    {
+        Cache::forget('parametres.reglages');
+    }
+
+    /** @return array<string,mixed> */
+    private static function reglages(): array
+    {
+        return Cache::remember('parametres.reglages', 60, fn () => self::charger());
+    }
+
     // ── Lecture disque ────────────────────────────────────────────────────────
 
     private static function lire(): int

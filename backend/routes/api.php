@@ -231,5 +231,7 @@ Route::middleware(['auth:sanctum', 'throttle:api', ForcePasswordChange::class])-
         Route::get('parametres/part-avance', [SettingsController::class, 'partAvance']);
         // Exercice courant (année fiscale déterminée + mois de début) — lecture publique.
         Route::get('parametres/annee-fiscale', [SettingsController::class, 'anneeFiscale']);
+        // Nom de l'application et opérateurs ouverts à la génération — lecture publique.
+        Route::get('parametres/application', [SettingsController::class, 'application']);
     });
 });

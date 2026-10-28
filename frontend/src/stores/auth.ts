@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { authService } from '@/services/auth'
 import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
+import { chargerApplication } from '@/composables/useApplication'
 import { useNotificationsStore } from '@/stores/notifications'
 import type { User } from '@/types'
 
@@ -32,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Pré-charge le pourcentage d'avance paramétrable dès la session ouverte
       // (idempotent) : les écrans le liront sans latence ni retour à 70 %.
       // Pas pendant un changement de mot de passe imposé : l'API répond 423.
-      if (!mustChangePassword.value) void chargerPartAvance()
+      if (!mustChangePassword.value) { void chargerPartAvance(); void chargerApplication() }
     } finally {
       loading.value = false
     }
@@ -53,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (devaitChanger && !mustChangePassword.value) reinitialiserPartAvance()
       // Session restaurée (rechargement) : recharge aussi le pourcentage d'avance
       // (sauf mot de passe à changer : l'API répondrait 423).
-      if (!mustChangePassword.value) void chargerPartAvance()
+      if (!mustChangePassword.value) { void chargerPartAvance(); void chargerApplication() }
     } catch {
       await logout()
     }

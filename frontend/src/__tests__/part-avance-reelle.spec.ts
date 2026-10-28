@@ -101,3 +101,21 @@ describe('PaiementGeneration — part d’avance de la mission choisie', () => {
     expect(options).toContain('Avance (70 %)')
   })
 })
+
+describe('PaiementGeneration — opérateur désactivé dans les Paramètres', () => {
+  it('affiche le bandeau et désactive la génération', async () => {
+    previsualiser.mockResolvedValue({ part_avance: 70, operateur_actif: false, nb_lignes: 1, total: 60000, beneficiaires: [] })
+    const wrapper = await monterGeneration()
+    expect(wrapper.text()).toContain('sont désactivés dans les Paramètres')
+    const bouton = wrapper.findAll('button').find((b) => b.text().includes('Générer le fichier'))
+    expect(bouton?.attributes('disabled')).toBeDefined()
+  })
+
+  it('laisse générer un opérateur ouvert', async () => {
+    previsualiser.mockResolvedValue({ part_avance: 70, operateur_actif: true, nb_lignes: 1, total: 60000, beneficiaires: [] })
+    const wrapper = await monterGeneration()
+    expect(wrapper.text()).not.toContain('sont désactivés')
+    const bouton = wrapper.findAll('button').find((b) => b.text().includes('Générer le fichier'))
+    expect(bouton?.attributes('disabled')).toBeUndefined()
+  })
+})

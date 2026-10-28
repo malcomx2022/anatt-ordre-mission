@@ -82,3 +82,12 @@ describe('SettingsView — onglet Notifications', () => {
     expect(texte).not.toMatch(/Parametres|Securite|Duree/)
   })
 })
+
+describe('SettingsView — réglages appliqués par le serveur', () => {
+  it('ne présente plus aucun réglage comme « indicatif »', async () => {
+    get.mockResolvedValue({ data: { data: {} } })
+    const texte = (await monter()).text()
+    expect(texte).not.toMatch(/indicati|pas encore appliqu/)
+    expect(texte).toContain("sauf au super administrateur")
+  })
+})
