@@ -44,6 +44,10 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Documentation technique** (`.docx` régénéré) : §3.1 session restaurée (seul un 401 y met fin), §6.3 secret SMTP
   déchiffré à l'envoi et session, §7.5 routes `settings/test-email` et `parametres/application`, §7.6 forme des
   réponses 422 (message générique + `errors`) et code 503, §10 recette du 28/10, évolution « Messagerie, refus ».
+- **README** (racine, `backend/`, `frontend/`) : réglages de Paramètres et de Messagerie appliqués, session
+  conservée sur erreur passagère, secret SMTP, forme des 422 ; compteurs Pest 670 / 75 fichiers (la section
+  *Tests* et `backend/README.md` indiquaient encore 652 / 74) ; scénario de démo §8.6-8.7 ; galerie des écrans
+  réels (`frontend/README.md` parlait encore des maquettes d'origine).
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :

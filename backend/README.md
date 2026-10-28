@@ -32,7 +32,7 @@ Comptes de démonstration (local et tests uniquement, mot de passe `password`) :
 ## Vérifier
 
 ```bash
-./vendor/bin/pest                                   # 652 tests, 74 fichiers — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pest                                   # 670 tests, 75 fichiers — sans .env (APP_KEY de test dans phpunit.xml)
 ./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
 ./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php   # filets RBAC et OpenAPI
 ```
@@ -66,7 +66,11 @@ Un test de régression doit échouer sans le correctif avant d'être retenu.
 
 - L'API ne crée pas les OM (elle les **retranscrit** depuis SEMO) et ne paie rien : elle **génère** des
   fichiers, déposés à la main sur les plateformes MTN / Moov, puis confirmés manuellement.
-- Toute erreur d'une route `/api/*` répond en JSON, même sans en-tête `Accept`.
+- Toute erreur d'une route `/api/*` répond en JSON, même sans en-tête `Accept`. Un 422 porte le message
+  générique « Donnees invalides. » et le motif par champ dans `errors` : c'est ce dernier qu'un écran affiche.
+- Les réglages de `settings.json` sont relus par `App\Support\Parametres` (cache 60 s, purgé à l'écriture) ;
+  la messagerie est appliquée à chaque envoi par `App\Support\Messagerie::appliquer()` (serveur SMTP de
+  l'écran *Messagerie*, sinon le `.env`). Un réglage ajouté doit agir et avoir son test (`AGENTS.md`).
 - `storage/app/settings.json` (part d'avance, exercice, SMTP, signataires), les paraphes et les fichiers
   produits vivent sur le disque : `db:backup` ne les inclut pas.
 - `package.json` et `vite.config.js` de ce dossier sont ceux du gabarit Laravel ; l'interface de

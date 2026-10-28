@@ -61,4 +61,10 @@ Sans écran, pointez sur le binaire *headless shell* et ajoutez `--project=chrom
   sinon axios sérialise le fichier en `{}`.
 - **Charte** : Sora pour les titres et libellés, DM Sans pour le texte, icônes SVG en ligne
   uniquement, `flag-bar` avant chaque pied de page.
-- Les maquettes HTML de `../docs/` sont celles d'origine (août 2026) : l'application fait foi.
+- **Session** : `stores/auth.ts` → `fetchUser` ne met fin à la session que sur un 401 ; une erreur passagère
+  est relancée sans toucher au jeton, et le garde du routeur ouvre l'écran 500 (« Réessayer » ramène à la page
+  demandée) ou, sur un 503, l'écran Maintenance.
+- **Refus 422** : l'API renvoie « Donnees invalides. » et le motif dans `errors` ; afficher le motif
+  (`getValidationErrors`), pas le message générique.
+- Les pages d'écran de `../docs/` (`00_galerie_index.html` …) sont tirées de captures de l'application réelle
+  (`docs/capturer_ecrans.cjs`) ; à refaire quand un écran change.
