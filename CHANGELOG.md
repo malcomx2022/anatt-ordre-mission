@@ -27,6 +27,8 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **README** (racine, `backend/`) : refus expliqués et « Enregistrer tout » ; un e-mail en échec n'empêche jamais
   l'action qui notifie (exploitation en `sync`, e-mail de test après une modification de *Messagerie*) ;
   variantes du scénario de démo.
+- **Checklist post-déploiement** (§06) : refus expliqué de *Paramètres* (part à 120 %, rien d'enregistré) ;
+  sur la recette, action qui aboutit malgré un serveur de messagerie injoignable (cloche reçue, échec au journal).
 
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 
