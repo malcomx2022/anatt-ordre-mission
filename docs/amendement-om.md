@@ -1,7 +1,7 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
 > **Statut : fonctionnalité complète — Phases 1 à 6 livrées, document de retenue RH inclus,
-> durcie par la revue d'octobre 2026 (version 1.3), relue en version 1.4 (27/10/2026).**
+> durcie par la revue d'octobre 2026 (version 1.3), relue en version 1.4 (27/10/2026), complétée le 28/10/2026.**
 > Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
@@ -123,6 +123,16 @@
 >   le document de retenue sont à l'heure du Bénin ; les amendements antérieurs ont été décalés d'une
 >   heure par la migration du fuseau (même instant). D'où la purge du cache des PDF d'OM à la mise à
 >   jour (§4.6).
+>
+> **Révisé (28/10/2026, réglages de *Paramètres* et de *Messagerie* appliqués)** :
+> - **e-mail du trop-perçu en échec** : avec `QUEUE_CONNECTION=sync` (production mutualisée), un e-mail
+>   qui ne partait pas (serveur SMTP injoignable) faisait répondre **500** à l'amendement, alors que
+>   l'amendement et le trop-perçu étaient enregistrés ; l'utilisateur pouvait croire à un échec et
+>   recommencer. L'échec est désormais seulement journalisé (`SendNotification`, §4.4) ;
+> - **notification coupable** : le type `trop_percu_cree` peut être coupé dans *Paramètres ›
+>   Notifications* ; le trop-perçu est alors seulement visible sur l'écran *Régularisations* (§4.4) ;
+> - **mode maintenance** : pendant le mode maintenance de *Paramètres*, l'API répond 503 à tous sauf au
+>   SUPER_ADMIN — aucun amendement ni constat de recouvrement ne passe.
 
 ---
 
@@ -265,7 +275,11 @@ Body: { nb_jours? , lignes? , motif }
     avec la matrice par défaut, plus tout rôle personnalisé ou droit individuel équivalent) sont
     avertis dans l'application (cloche) et par e-mail (`NotificationService::tropPercuCree`,
     type `trop_percu_cree`) — la régularisation ne dépend pas d'une consultation manuelle de
-    l'écran. Rien n'est envoyé quand le reliquat reste positif.
+    l'écran. Rien n'est envoyé quand le reliquat reste positif. Depuis le 28/10/2026 :
+    l'e-mail part par le serveur réglé dans *Messagerie* (sinon le `.env`) et un envoi en échec
+    ne fait plus échouer l'amendement ; si le SUPER_ADMIN coupe ce type dans *Paramètres ›
+    Notifications*, rien n'est émis (ni cloche ni e-mail) et seul l'écran *Régularisations*
+    signale le trop-perçu.
 
 ### 4.5 État des reliquats
 
@@ -385,7 +399,7 @@ Questions de gestion posées au cadrage, et la réponse retenue :
 | Amendement et gardes | `MissionService::amender()`, `MissionService::exigerAmendementPossible()` |
 | Solde d'un OM (après paiement, recouvrement ou amendement) | `OrdreMission::solderSiRegle()`, `docs/circuits-validation.md` §3 |
 | Régularisations et document de retenue | `LotPaiementService::regularisations()`, `PdfGenerator::genererDocumentRetenue()` |
-| Notification du trop-perçu (droits effectifs) | `NotificationService::tropPercuCree()`, tests `NotificationTest` |
+| Notification du trop-perçu (droits effectifs) | `NotificationService::tropPercuCree()`, tests `NotificationTest` ; type coupable (`Parametres::notificationActive`, `ReglagesExploitationTest`) ; e-mail par le serveur de *Messagerie*, échec sans effet sur l'amendement (`SendNotification`, `MessagerieSmtpTest`) |
 | Libellés de la répartition à l'écran | `frontend/src/utils/repartition.ts` (miroir de `PdfGenerator::libellesRepartition`), tests `repartition.spec.ts`, `mission-detail.spec.ts` |
 | PDF de l'OM amendé | `PdfGenerator::donnees()`, `PdfGenerator::libellesRepartition()`, gabarit `pdf.ordre-mission` |
 | Endpoints et permissions | `backend/docs/openapi.yaml` (`POST /ordres/{ordre}/amender`, tag *Paiements* pour les régularisations) |

@@ -21,6 +21,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Circuits de validation** (`docs/circuits-validation.md`) : réglages qui touchent les circuits — notification
   coupée, e-mails par le serveur de *Messagerie* (un échec n'annule pas la signature), mode maintenance (§1) ;
   opérateur fermé à la porte de paiement (§3) ; références (§8).
+- **Amendement d'un OM** (`docs/amendement-om.md`) : révision du 28/10 — un e-mail de trop-perçu en échec ne fait
+  plus répondre 500 à l'amendement (même correctif), notification `trop_percu_cree` coupable, mode maintenance ;
+  §4.4 et références (§8).
 
 ### Configuration SMTP de l'écran Messagerie appliquée (28/10/2026)
 
