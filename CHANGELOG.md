@@ -27,6 +27,11 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - À la mise à jour : un serveur déjà saisi à l'écran **s'applique** désormais — le vérifier (checklist
   post-déploiement). `MessagerieSmtpTest` (18 tests, vus en échec avant) ; Vitest `admin-email-backup.spec.ts`.
   Compteurs : Pest 670 / 75 fichiers, Vitest 197.
+- **Écart corrigé (SPA) : déconnexion sur erreur passagère.** Au rechargement d'une page, toute erreur de
+  `/auth/me` (429 au-delà de 60 requêtes/min, 500, réseau) déconnectait l'utilisateur — et `logout()` **révoquait**
+  son jeton côté serveur. Seul un 401 met désormais fin à la session ; sinon le jeton est gardé et l'écran d'erreur
+  s'ouvre, son bouton « Réessayer » revenant à la page demandée (503 : écran Maintenance). Accents de l'écran 500
+  rétablis. `session-erreur-passagere.spec.ts` (8 tests, vus en échec avant) ; Vitest 205.
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :

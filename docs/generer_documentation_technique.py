@@ -256,6 +256,8 @@ tableau(
         ["Messagerie (28/10)", "Configuration SMTP de l'écran Messagerie appliquée à l'envoi (App\\Support\\Messagerie) : serveur "
          "renseigné → remplace le transport du .env, expéditeur renseigné → remplace MAIL_FROM_* ; e-mail de test "
          "POST /admin/settings/test-email (422 si l'envoi échoue). Pest 670, Vitest 197.", "§6, §7"],
+        ["Session (28/10)", "Une erreur passagère de l'API au rechargement (429, 5xx, réseau) ne déconnecte plus : le jeton est "
+         "gardé et l'écran d'erreur revient à la page demandée ; seul un 401 met fin à la session. Vitest 205.", "§6"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -1145,7 +1147,7 @@ tableau(
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
         ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "670 tests au total (75 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "197 tests"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "205 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
