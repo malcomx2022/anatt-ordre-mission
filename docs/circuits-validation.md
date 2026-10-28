@@ -61,6 +61,9 @@ le numéro de l'état avant la validation finale. », « Le numéro « … » es
 état. », « Cet état (statut « … ») ne peut pas passer à « … ». ». Jusque-là, les écrans du circuit
 n'affichaient que « Donnees invalides. » : l'API met le motif par champ dans `errors`, que
 `getErrorMessage` (et l'avertissement global d'un 422) reprend désormais (`composables/useApi.ts`).
+Les règles génériques (motif de rejet trop court, champ manquant) ont des messages français
+(`backend/resources/lang/fr/validation.php`) : en production (`APP_LOCALE=fr`), elles renvoyaient leur
+clé brute (« validation.required »).
 
 **Le circuit par ÉTAT est le circuit officiel de l'ANaTT.** Une seule signature sur
 l'état (scellée HMAC, avec paraphe archivé et numéro de registre par tranche) vaut

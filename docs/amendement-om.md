@@ -132,7 +132,12 @@
 > - **notification coupable** : le type `trop_percu_cree` peut être coupé dans *Paramètres ›
 >   Notifications* ; le trop-perçu est alors seulement visible sur l'écran *Régularisations* (§4.4) ;
 > - **mode maintenance** : pendant le mode maintenance de *Paramètres*, l'API répond 503 à tous sauf au
->   SUPER_ADMIN — aucun amendement ni constat de recouvrement ne passe.
+>   SUPER_ADMIN — aucun amendement ni constat de recouvrement ne passe ;
+> - **refus expliqués** : un amendement refusé affichait « Donnees invalides. » sur la fiche OM, quelle
+>   que soit la garde (fichier en attente de dépôt, état en cours de signature, reliquat payé…). L'écran
+>   donne désormais le **motif** du serveur (`getErrorMessage`, §4.3), et les règles génériques (motif
+>   trop court, nombre de jours invalide) sont rédigées en français (`resources/lang/fr/validation.php`) —
+>   en production, elles renvoyaient jusque-là leur clé brute (« validation.min.string »).
 
 ---
 
@@ -253,6 +258,11 @@ Body: { nb_jours? , lignes? , motif }
     l'amendement (`avance_engagee`), seul le reliquat absorbe l'écart ;
   - autorisé si l'état est en `BROUILLON` (le récapitulatif se rafraîchit) ou si les
     avances sont `VALIDE` (l'avance se fige, seul le reliquat bouge).
+- **Refus à l'écran** : chaque garde répond `422` avec son motif dans `errors` ; la modale
+  *Amender* l'affiche tel quel — par exemple « Un fichier de paiement contenant cet ordre de
+  mission est en attente de dépôt : confirmez le lot ou passez-le en erreur avant d'amender. »
+  (et non plus « Donnees invalides. », jusqu'au 28/10/2026). Motif de moins de 10 caractères :
+  « Le champ motif doit contenir au moins 10 caractères. » (le bouton reste grisé avant).
 - **Après l'amendement**, le statut suit ce qui reste à régler (`OrdreMission::solderSiRegle`, la
   règle de la confirmation d'un lot) : un OM `VALIDE` dont tous les versements sont réglés — avance
   payée et reliquat ramené à 0 — passe `SOLDE` ; un OM `SOLDE` (avance à 100 % payée, reliquat
@@ -402,6 +412,7 @@ Questions de gestion posées au cadrage, et la réponse retenue :
 | Notification du trop-perçu (droits effectifs) | `NotificationService::tropPercuCree()`, tests `NotificationTest` ; type coupable (`Parametres::notificationActive`, `ReglagesExploitationTest`) ; e-mail par le serveur de *Messagerie*, échec sans effet sur l'amendement (`SendNotification`, `MessagerieSmtpTest`) |
 | Libellés de la répartition à l'écran | `frontend/src/utils/repartition.ts` (miroir de `PdfGenerator::libellesRepartition`), tests `repartition.spec.ts`, `mission-detail.spec.ts` |
 | PDF de l'OM amendé | `PdfGenerator::donnees()`, `PdfGenerator::libellesRepartition()`, gabarit `pdf.ordre-mission` |
+| Motif d'un refus à l'écran | `frontend/src/composables/useApi.ts` (`getErrorMessage`), tests `refus-motif.spec.ts` ; messages génériques en français `backend/resources/lang/fr/validation.php`, tests `ValidationFrancaisTest` |
 | Endpoints et permissions | `backend/docs/openapi.yaml` (`POST /ordres/{ordre}/amender`, tag *Paiements* pour les régularisations) |
 | Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest`, `OmPdfAmendementTest` |
 | Revue d'octobre 2026 | `docs/revue-projet-2026-10.md` (§3 n° 3, §4 *Intégrité des paiements*) |

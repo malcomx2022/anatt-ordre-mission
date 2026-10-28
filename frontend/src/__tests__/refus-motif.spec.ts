@@ -26,6 +26,12 @@ describe('getErrorMessage — refus 422', () => {
     expect(getErrorMessage(refus({ signataire: [SEPARATION] }))).toBe(SEPARATION)
   })
 
+  it('donne le motif d’un amendement refusé (fiche OM)', async () => {
+    const { getErrorMessage } = await import('@/composables/useApi')
+    const motif = 'Un fichier de paiement contenant cet ordre de mission est en attente de dépôt : confirmez le lot ou passez-le en erreur avant d\'amender.'
+    expect(getErrorMessage(refus({ versement: [motif] }))).toBe(motif)
+  })
+
   it('garde le message quand le refus ne porte aucun motif par champ', async () => {
     const { getErrorMessage } = await import('@/composables/useApi')
     expect(getErrorMessage(refus())).toBe('Donnees invalides.')
