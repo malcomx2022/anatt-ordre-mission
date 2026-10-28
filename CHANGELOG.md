@@ -56,6 +56,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   enregistrées s'appliquent aussitôt) ; étape 8, e-mail de test et session au rechargement ; retour arrière.
   `DEPLOY-CPANEL.md` (notes 1.4) corrigé : il disait que rien ne changeait tant que les réglages n'étaient
   pas enregistrés, alors que les valeurs déjà présentes s'appliquent.
+- **Workflows par profil** (`docs/workflows-par-profil.md`) : réglages du SUPER_ADMIN et leur effet sur les
+  autres profils (§2, tableau) ; session, erreur passagère et maintenance pour tous les profils (§7) ;
+  e-mails envoyés par le serveur de *Messagerie* (§8).
 - **Galerie des écrans recapturée** (`docs/ecrans/`, pages `docs/*.html`) : écran Messagerie avec sa
   configuration appliquée et le bouton d'e-mail de test. `capturer_ecrans.cjs` reconnecte le compte et
   recommence la capture quand une page retombe sur la connexion (limite de 60 requêtes/min par compte :
