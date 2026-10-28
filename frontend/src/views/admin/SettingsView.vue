@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import AppLayout from '@/components/shared/AppLayout.vue'
-import { useApi } from '@/composables/useApi'
+import { useApi, getErrorMessage, getValidationErrors } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { chargerPartAvance, reinitialiser as reinitialiserPartAvance } from '@/composables/usePartAvance'
 import { exerciceDe } from '@/utils/exercice'
@@ -9,7 +9,7 @@ import { chargerApplication } from '@/composables/useApplication'
 import { NOTIFICATIONS_CIRCUIT } from '@/utils/notifications'
 
 const api = useApi()
-const { success: toastSuccess } = useToast()
+const { success: toastSuccess, error: toastError } = useToast()
 const loadingData = ref(true)
 const saving = ref(false)
 
@@ -139,8 +139,10 @@ async function saveAll() {
     // Nouveau nom : titre de l'onglet mis à jour sans recharger.
     void chargerApplication()
     toastSuccess('Paramètres enregistrés avec succès.')
-  } catch {
-    // Geree par useApi
+  } catch (e) {
+    // Réglage refusé (422) : l'API répond « Donnees invalides. » et met le motif
+    // par champ dans `errors` — c'est lui qui dit quel réglage corriger.
+    toastError(Object.values(getValidationErrors(e))[0]?.[0] ?? getErrorMessage(e))
   } finally {
     saving.value = false
   }

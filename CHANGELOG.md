@@ -9,6 +9,16 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Paramètres : motif d'un refus affiché ; guide de la part d'avance (28/10/2026)
+
+- **Écart corrigé (écran Paramètres)** : un réglage refusé par le serveur (part d'avance à 120 %, durée de
+  session hors bornes…) n'affichait que « Donnees invalides. », sans dire lequel corriger ; l'écran affiche
+  désormais le motif (`errors`), comme l'écran Messagerie. Test `settings-refus.spec.ts` (vu en échec avant) ;
+  Vitest 206.
+- **Guide de la part d'avance** (`docs/parametrage-part-avance.md`) : « Enregistrer tout » enregistre et
+  applique aussi les autres onglets (à relire), refus expliqué, `settings.json` porte les réglages appliqués ;
+  tests et historique.
+
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 
 - **Écart corrigé** : avec `QUEUE_CONNECTION=sync` (production mutualisée), un e-mail de notification qui ne
