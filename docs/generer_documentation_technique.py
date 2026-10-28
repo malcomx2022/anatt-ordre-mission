@@ -239,6 +239,20 @@ tableau(
          "docs/generer_maquettes.py) ; remplacent les maquettes d'août 2026.", "§2.3"],
         ["Tests", "FuseauHoraireTest, NotificationModelesEcranTest (écran e-mail ↔ NotificationContenu), tests des "
          "destinataires, écran Maintenance sur 503 ; Pest 599, Vitest 135.", "§10"],
+        ["Part de la mission (27/10)", "Mission::partAvanceReelle (Σ avances / Σ montants des OM, hors rejetés, annulés et "
+         "amendés à avance engagée), exposée en part_avance (état, récapitulatif, aperçu d'un lot) : l'écran de l'état et "
+         "le choix de la tranche affichent la part des OM, pas le réglage du jour. Chaîne des montants vérifiée à 55 %.", "§5"],
+        ["Réglages de Paramètres (28/10)", "Appliqués par le serveur (App\\Support\\Parametres, cache 60 s, absents = "
+         "comportement d'avant, 422 hors domaine) : opérateurs MTN / Moov (génération refusée), tentatives de connexion "
+         "(limiteur login), durée de session (callback Sanctum, remplace SANCTUM_EXPIRATION), HTTPS forcé (middleware "
+         "ForcerHttps), connexions échouées journalisées (LOGIN_ECHEC), mode maintenance (middleware "
+         "MaintenanceApplication : 503 sauf SUPER_ADMIN), notifications par type, nom de l'application (route publique "
+         "GET /admin/parametres/application, titre de l'onglet, objet des e-mails).", "§6, §7"],
+        ["Contrat d'API (28/10)", "OpenApiReponsesTest : réponses réelles d'une trentaine de routes validées contre "
+         "openapi.yaml en mode strict (validateur tests/Support/OpenApiSchema.php, sans dépendance) ; openapi.yaml "
+         "complété (pagination, régularisations, LignePerDiem, Signataire, enveloppe message).", "§7, §10"],
+        ["Tests (28/10)", "45 tests des écrans critiques (saisie de mission, état, signatures, matrice des permissions) ; "
+         "agent en double signalé dès la saisie ; message français sur un 429. Pest 652, Vitest 194.", "§10"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -1127,22 +1141,25 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "606 tests au total (72 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "139 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "652 tests au total (74 fichiers)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "194 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
     largeurs=[3.2, 4.2, 6.6, 2.8],
 )
 bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permission), OpenApiTest "
-       "(openapi.yaml ↔ routes ↔ permissions), NotificationModelesEcranTest (écran Configuration e-mail ↔ "
-       "NotificationContenu) et navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
+       "(openapi.yaml ↔ routes ↔ permissions), OpenApiReponsesTest (réponses réelles ↔ schémas d'openapi.yaml, "
+       "mode strict), NotificationModelesEcranTest (utils/notifications.ts ↔ NotificationContenu, utilisé par "
+       "les écrans e-mail et Paramètres), ReglagesExploitationTest (chaque réglage de Paramètres appliqué) et "
+       "navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
 bullet("Fuseau : FuseauHoraireTest (heure du Bénin, rapport du 1er du mois à 0 h 30, sérialisation UTC, "
        "migration aller-retour) ; migration éprouvée sur MariaDB avec les données de démonstration.")
 bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
        "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme, puis de nouveau le "
        "27/10 en version 1.4 (mêmes fichiers et montants, notifications de chaque signataire). Le 25/10, réponses "
-       "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32.")
+       "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32 ; "
+       "vérification automatisée en CI depuis le 28/10 (OpenApiReponsesTest).")
 bullet("Défauts relevés par la revue d'octobre 2026 : 32, tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Les quatre décisions du §7.1 sont appliquées depuis la 1.4.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "

@@ -9,6 +9,39 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Réglages de Paramètres appliqués, écrans testés, contrat OpenAPI en CI (28/10/2026)
+
+- **Réglages de l'écran Paramètres appliqués par le serveur** (#175) — enregistrés jusque-là sans effet
+  (« indicatifs ») ; absents de `settings.json`, ils gardent le comportement d'avant, hors domaine → 422 :
+  - **MTN / Moov** : opérateur fermé → génération refusée (422, avant toute mise en file) ; l'aperçu renvoie
+    `operateur_actif`, l'écran affiche un bandeau et grise le bouton ; lots déjà générés confirmables ;
+  - **tentatives de connexion** (3-20/min, défaut 5) : limiteur du login ;
+  - **durée de session** (5-1440 min) : remplace `SANCTUM_EXPIRATION` (callback Sanctum) ;
+  - **forcer HTTPS** (défaut non) : middleware `ForcerHttps`, lectures redirigées (301), écritures refusées (403) ;
+  - **journaliser les connexions** (défaut non) : échecs tracés (`LOGIN_ECHEC`) ;
+  - **mode maintenance** : middleware `MaintenanceApplication`, 503 pour tous sauf le SUPER_ADMIN ;
+  - **notifications** par type : un type coupé n'est plus émis (cloche ni e-mail) ;
+  - **nom de l'application** : titre de l'onglet (route publique `GET /admin/parametres/application`) et préfixe
+    de l'objet des e-mails. `ReglagesExploitationTest` (20 tests, vus en échec avant).
+- **Écrans critiques testés** (#175, dette §7.2) : `MissionCreateView`, `EtatDetailView`, `SignaturesView`,
+  `RolesView` — 45 tests Vitest. **Écart corrigé** : un même agent ajouté deux fois n'était signalé qu'au 422
+  de l'enregistrement ; l'assistant le signale désormais sur la fiche et bloque l'étape.
+- **Contrat OpenAPI vérifié en CI** (#175) : `OpenApiReponsesTest` (26 tests) valide les réponses réelles d'une
+  trentaine de routes contre `openapi.yaml`, en mode strict (validateur `tests/Support/OpenApiSchema.php`,
+  `composer.lock` inchangé) ; `openapi.yaml` complété (pagination Laravel, régularisations, `LignePerDiem`,
+  `Signataire`, enveloppe `message`, `Apercu`, nouvelle route).
+- **Écart corrigé (SPA)** : une limite de requêtes atteinte (429 : connexion au-delà des tentatives réglées,
+  exports) affichait le message anglais du serveur (« Too Many Attempts. ») ; `getErrorMessage` le traduit.
+  Test `erreur-429.spec.ts`, vu en échec avant.
+- Documentation finale : `CLAUDE.md` (§1 notifications, §5 ADM-04, §7 réglages d'exploitation et nouvelle
+  route), `AGENTS.md` (règle des réglages, contrat OpenAPI), README et compteurs (Pest 652 / 74 fichiers,
+  Vitest 194), `DEPLOY-CPANEL.md` (note *Réglages de Paramètres*, précaution HTTPS, quatre lignes de dépannage),
+  checklist post-déploiement (§06), `docs/workflows-par-profil.md` §8 et `docs/rbac-flexible.md` (notifications
+  coupables), guide utilisateur (§13.2 : tableau des réglages ; §6.1 ; nouveautés) et documentation technique
+  régénérés, revue (#175, #176 ; dette §7.2 levée pour les tests d'écrans et le contrat d'API).
+- Galerie des écrans réels **recapturée** (`docs/capturer_ecrans.cjs`, données de démonstration, build de production)
+  et pages régénérées (`docs/generer_maquettes.py`) : écran *Paramètres* accentué, sans mention « indicatif ».
+
 ### Pourcentages et montants alignés sur le réglage de la part d'avance ; thème vert confirmé (27/10/2026)
 
 - **Écart corrigé (SPA + API)** : l'écran d'un état de paiement (« Avances (70 %) », montant de la tranche) et le

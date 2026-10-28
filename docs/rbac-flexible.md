@@ -319,7 +319,8 @@ nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
   la clé de l'étape suivante. Un rôle personnalisé ou un droit accordé individuellement est donc
   notifié ; un membre du profil à qui l'on a retiré la permission ne l'est plus. Le SUPER_ADMIN,
   dont l'accès implicite n'est pas une responsabilité du circuit, n'est pas visé. Un compte visé à
-  deux titres (lot confirmé) ne reçoit qu'une notification.
+  deux titres (lot confirmé) ne reçoit qu'une notification. Un type coupé dans *Paramètres ›
+  Notifications* (28/10/2026) n'est plus émis du tout, quels que soient les droits.
 
   | Notification | Permission visée |
   |---|---|

@@ -35,7 +35,7 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~606 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, ~652 tests)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
@@ -49,6 +49,7 @@ High-signal notes for OpenCode sessions in this repo.
 
 ## Critical implementation constraints
 - Do not add API routes without `permission:` middleware unless intentionally public/self-service; `RoutesPermissionsTest` fails on accidental exposure.
+- Settings of the Paramètres screen are applied server-side (`App\Support\Parametres`, `settings.json`): an absent key must keep the previous behaviour, out-of-range values are rejected (422) in `SettingsController::validerReglages`, and every new key needs a test in `ReglagesExploitationTest`. Do not add a setting the server does not apply.
 - Every API route must be described in `backend/docs/openapi.yaml` with its permission as `x-permission` (omit it for self-service/public routes); `OpenApiTest` fails on any missing, extra or mismatched operation. Quote YAML scalars that contain `: `, `#`, commas or `?` inside `{ }`.
 - Do not add authenticated frontend routes without `meta.permission` (except explicit self-service routes like profile/password-change); `navigation.spec.ts` enforces this.
 - Keep unique Vue route names (historical collision between `/ordres` and `/missions` caused wrong-screen navigation).
@@ -117,7 +118,7 @@ High-signal notes for OpenCode sessions in this repo.
 
 ## Docs that must follow functional changes
 - `CHANGELOG.md` (French, Keep a Changelog), `CLAUDE.md`, `README.md`, `AGENTS.md`; a new defect gets the next number in the CHANGELOG index and in `docs/revue-projet-2026-10.md` §3.
-- `backend/docs/openapi.yaml`: `OpenApiTest` checks routes and permissions only, not response shapes. In OpenAPI 3.0, `nullable` next to a lone `$ref`/`allOf` has no effect: express null with an inline enum including `null`, or `oneOf: [{ $ref }, { type: object, nullable: true, enum: [null] }]`. `backend/docs/queues.md` for job behaviour.
+- `backend/docs/openapi.yaml`: `OpenApiTest` checks routes and permissions; `OpenApiReponsesTest` (validator `tests/Support/OpenApiSchema.php`, strict mode) checks real response bodies of ~30 endpoints against the schemas — a field returned but not documented fails CI, so document every new response field. In OpenAPI 3.0, `nullable` next to a lone `$ref`/`allOf` has no effect: express null with an inline enum including `null`, or `oneOf: [{ $ref }, { type: object, nullable: true, enum: [null] }]`. `backend/docs/queues.md` for job behaviour.
 - Live checks against `php artisan serve`: the `login` limiter allows 5 attempts per minute per IP; reuse tokens, or `php artisan cache:clear` on the scratch DB between runs.
 - Tests that write `storage/app/settings.json` must delete it afterwards (other tests assume it is absent).
 - Generated Word docs: run `python docs/generer_guide_utilisateur.py` and `python docs/generer_documentation_technique.py` (python-docx) after editing the scripts — never edit the `.docx` by hand.
