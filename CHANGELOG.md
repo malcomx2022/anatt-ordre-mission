@@ -24,6 +24,9 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Scénario de démo** : §8.5 refus expliqué d'une part à 120 % et bouton « Enregistrer tout » ; §8.6 variante —
   validation qui aboutit malgré un serveur de messagerie injoignable (cloche reçue, seul l'e-mail manque).
   Rejoué sur l'API réelle, base neuve, `QUEUE_CONNECTION=sync`.
+- **README** (racine, `backend/`) : refus expliqués et « Enregistrer tout » ; un e-mail en échec n'empêche jamais
+  l'action qui notifie (exploitation en `sync`, e-mail de test après une modification de *Messagerie*) ;
+  variantes du scénario de démo.
 
 ### E-mail de notification en échec : la signature ne répond plus 500 (28/10/2026)
 

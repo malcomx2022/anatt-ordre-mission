@@ -126,6 +126,11 @@ npm run dev                     # http://localhost:5173  (terminal C)
   HTTPS forcé, journal des connexions échouées, mode maintenance, nom de l'application). Un serveur SMTP
   saisi dans *Messagerie* **remplace** celui du `.env` dès l'e-mail suivant ; laissé vide, le `.env`
   s'applique. Bouton « Envoyer un e-mail de test » : un échec affiche le message du serveur de messagerie.
+  Une valeur refusée (part d'avance hors 0-100, port invalide…) est expliquée à l'écran et rien n'est
+  enregistré ; « Enregistrer tout » applique **tous** les onglets de *Paramètres* à la fois.
+- **E-mails** : un e-mail de notification qui ne part pas (serveur SMTP injoignable) est journalisé et
+  **n'empêche jamais** l'action qui notifie — validation, signature, rejet, amendement, confirmation d'un lot ;
+  la notification reste dans la cloche.
 - **Heure** : les horodatages (paiements, signatures, journal) sont à l'heure du Bénin ; l'API les
   renvoie en UTC (`…Z`). Un paiement confirmé le 1er du mois juste après minuit compte dans ce mois.
 
@@ -159,6 +164,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
   jetons de connexion expirés (`sanctum:prune-expired`).
 - **Files d'attente** : en mutualisé, `QUEUE_CONNECTION=sync` (aucun worker ; cf.
   `backend/.env.production.example`) ; avec un worker, voir [`backend/docs/queues.md`](backend/docs/queues.md).
+  En `sync`, l'e-mail part pendant la requête : un serveur SMTP lent la ralentit, sans la faire échouer.
+  Après une modification de *Messagerie*, envoyer un e-mail de test (le super administrateur n'est jamais
+  notifié, il ne verrait pas une panne autrement).
 - **Restauration** : écran *Paramètres › Sauvegardes* (SUPER_ADMIN, confirmation par recopie du nom du
   fichier) ou `php artisan db:restore <fichier> --force`. Une **sauvegarde de sécurité** de l'état courant
   est prise avant d'écraser la base. Requiert `mysqldump` et `mysql` (`DB_DUMP_BINARY` /
@@ -234,7 +242,7 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `CHANGELOG.md` | Historique des modifications |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.4) — générée par `docs/generer_documentation_technique.py` |
-| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5, configuration e-mail §8.6, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10 |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5 avec refus expliqué, configuration e-mail §8.6 avec validation malgré un SMTP en panne, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10 |
 | `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
 | `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
