@@ -403,7 +403,7 @@ h3("2.2.1 Frontend (interface utilisateur)")
 tableau(
     ["Technologie", "Version", "Usage"],
     [
-        ["Vue.js", "3.6 bêta (Composition API)", "Framework JavaScript principal — version figée par package-lock.json (3.6.0-beta.9) : installer avec npm ci"],
+        ["Vue.js", "3.5.44 stable (Composition API)", "Framework JavaScript principal — version épinglée (sortie de la 3.6 bêta le 29/10/2026) : installer avec npm ci"],
         ["TypeScript", "6.x", "Typage statique strict (vue-tsc)"],
         ["Vite", "8.x", "Build et serveur de développement"],
         ["Tailwind CSS", "3.4+", "Framework CSS utilitaire (charte ANaTT)"],
@@ -1128,7 +1128,7 @@ code("# Backend (Laravel)\n"
      "php artisan schedule:run           # cron chaque minute : db:backup 02:00, purge des tokens\n"
      "php artisan db:restore <fichier>   # restauration (sauvegarde de sécurité préalable)\n\n"
      "# Frontend (Vue)\n"
-     "cd frontend && npm ci && npm run build      # npm ci : garde la bêta Vue figée par le lock\n\n"
+     "cd frontend && npm ci && npm run build      # npm ci : versions exactes du lock\n\n"
      "# Windows : environnement de dev complet (API, worker, Vite)\n"
      ".\\start-dev.ps1 [-Install -Fresh]   /   .\\stop-dev.ps1")
 

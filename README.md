@@ -11,7 +11,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 | Couche | Technologies |
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
-| Frontend | Vue **3.6 bêta** (Composition API, TypeScript), figée par `package-lock.json` · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
+| Frontend | Vue **3.5.44 stable** (Composition API, TypeScript), épinglée · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
 | Tests | Pest / PHPUnit (691 tests, 76 fichiers) · Vitest (215 tests) · Playwright (parcours critique e2e) |
 
 ---
@@ -80,7 +80,7 @@ php artisan queue:work --queue=paiements,etats,default --tries=3   # (terminal B
 
 # 2) Frontend
 cd ..\frontend
-npm ci                          # première fois — pas npm install : garde la bêta Vue du lock
+npm ci                          # première fois — installe exactement les versions du lock
 npm run dev                     # http://localhost:5173  (terminal C)
 ```
 

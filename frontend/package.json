@@ -23,7 +23,7 @@
     "axios": "^1.19.0",
     "chart.js": "^4.5.1",
     "pinia": "^3.0.4",
-    "vue": "beta",
+    "vue": "3.5.44",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^5.0.4"
   },
@@ -60,18 +60,16 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "overrides": {
-    "vue": "beta",
-    "@vue/compiler-core": "beta",
-    "@vue/compiler-dom": "beta",
-    "@vue/compiler-sfc": "beta",
-    "@vue/compiler-ssr": "beta",
-    "@vue/compiler-vapor": "beta",
-    "@vue/reactivity": "beta",
-    "@vue/runtime-core": "beta",
-    "@vue/runtime-dom": "beta",
-    "@vue/runtime-vapor": "beta",
-    "@vue/server-renderer": "beta",
-    "@vue/shared": "beta",
-    "@vue/compat": "beta"
+    "vue": "3.5.44",
+    "@vue/compiler-core": "3.5.44",
+    "@vue/compiler-dom": "3.5.44",
+    "@vue/compiler-sfc": "3.5.44",
+    "@vue/compiler-ssr": "3.5.44",
+    "@vue/reactivity": "3.5.44",
+    "@vue/runtime-core": "3.5.44",
+    "@vue/runtime-dom": "3.5.44",
+    "@vue/server-renderer": "3.5.44",
+    "@vue/shared": "3.5.44",
+    "@vue/compat": "3.5.44"
   }
 }

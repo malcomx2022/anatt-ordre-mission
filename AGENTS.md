@@ -23,7 +23,7 @@ High-signal notes for OpenCode sessions in this repo.
   - `phpoffice/phpspreadsheet` 1.30.2 declares `php <8.5.0`, so `composer install` refuses the lock under 8.5;
   - `platform_check.php` only checks the minimum and 64-bit, so a server on 8.5 would boot outside the supported range.
 - Node **20.19+ or 22.12+** (Vite 8 `engines`; CI uses Node 22).
-- Install frontend deps with **`npm ci`**, never `npm install`: `package.json` follows Vue's `beta` dist-tag and only `package-lock.json` pins `3.6.0-beta.9`. `start-dev.ps1 -Install` runs `npm ci` too (keep that script ASCII-only: Windows PowerShell 5.1 reads it as ANSI).
+- Install frontend deps with **`npm ci`**, never `npm install`: Vue is pinned to `3.5.44` stable (dependency and `@vue/*` overrides, no dist-tag) and `package-lock.json` is the reference; do not reintroduce the `beta` dist-tag nor `@vue/*-vapor` packages. `start-dev.ps1 -Install` runs `npm ci` too (keep that script ASCII-only: Windows PowerShell 5.1 reads it as ANSI).
 - Backend tests run without a `.env`: `phpunit.xml` provides a test `APP_KEY` (phpdotenv then emits harmless warnings, exit code stays 0).
 - Playwright with an already-installed Chromium of another version: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:e2e`. In a container without a display, point it to the **headless shell** (e.g. `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell`) and add `--project=chromium` like CI does; the full `chrome` binary fails with "Missing X server".
 

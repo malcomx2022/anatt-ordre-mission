@@ -170,9 +170,9 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 ## 2. STACK TECHNIQUE
 
 ### Frontend
-- **Framework** : Vue.js **3.6 bêta** (Composition API) + TypeScript strict — `package.json` suit le dist-tag `beta`
-  (+ `overrides` des paquets `@vue/*`) ; la version effective est figée par `package-lock.json` (`3.6.0-beta.9`) :
-  installer avec `npm ci` pour ne pas changer de bêta
+- **Framework** : Vue.js **3.5.44 stable** (Composition API) + TypeScript strict — version **épinglée** dans `package.json`
+  (dépendance et `overrides` des paquets `@vue/*`), sortie de la 3.6 bêta le 29/10/2026 (aucune fonctionnalité 3.6 utilisée ;
+  3.6 stable non publiée à cette date) ; installer avec `npm ci` (lock reproductible)
 - **Build** : Vite 8 (TypeScript 6, `vue-tsc`)
 - **CSS** : Tailwind CSS 3.4+ (config personnalisée ANaTT)
 - **State** : Pinia 3
@@ -1108,7 +1108,7 @@ public function store(CreateOrdreMissionRequest $request): JsonResponse
 ```bash
 # Frontend
 cd frontend
-npm ci                   # installe la version figée par package-lock.json (Vue 3.6 bêta)
+npm ci                   # installe les versions figées par package-lock.json (Vue 3.5.44)
 npm run dev              # http://localhost:5173
 npm run build            # type-check + build
 npm run test:unit -- --run

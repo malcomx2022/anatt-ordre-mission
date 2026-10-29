@@ -10,8 +10,8 @@ paiement Mobile Money. Elle consomme l'API Laravel de `../backend/`.
 ## Prérequis
 
 - **Node 20.19+ ou 22.12+** (exigé par Vite 8 ; la CI utilise Node 22).
-- Vue **3.6 bêta**, figée par `package-lock.json` : installez avec `npm ci`, pas `npm install`, pour ne
-  pas changer de bêta.
+- Vue **3.5.44 stable**, épinglée dans `package.json` (dépendance et `overrides` `@vue/*`) : installez avec `npm ci`
+  pour retrouver exactement le lock.
 
 ## Démarrer en local
 
