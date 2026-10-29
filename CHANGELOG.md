@@ -9,6 +9,13 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation technique après la dette (29/10/2026)
+
+- `.docx` régénéré : évolutions 1.4 « Dette soldée (29/10) » (Vue 3.5.44, tests MySQL et recette en CI, n° 50 à 55)
+  et « Documents après la dette » ; §2.3 arborescence (`tests/Mysql`, `scripts/recette/`) ; §4.1 dates inversées
+  refusées ; §4.7 sauvegardes rapprochées (suffixe `-2`) et restauration vérifiée sur MySQL 8 ; §9 correctifs
+  n° 33 à 55, SPA en Vue 3.5.44 ; §11 galerie recapturée en Vue 3.5.44.
+
 ### README après la dette (29/10/2026)
 
 - `README.md` : encadré « État » (1.4 terminée, ce qui reste côté exploitation) ; refus expliqués complétés
