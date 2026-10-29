@@ -9,6 +9,21 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Galerie des écrans recapturée en Vue 3.5.44 (29/10/2026)
+
+- 46 captures refaites sur les données de démonstration avec le SPA en Vue 3.5.44 stable, 53 pages régénérées :
+  rendu identique à la galerie précédente, hormis les dates et les données du jour (journal d'audit, historique).
+- `docs/capturer_ecrans.cjs` attend le chargement effectif de Sora et de DM Sans avant chaque capture et s'arrête
+  sinon : une première passe avait photographié l'écran *Régularisations* en police de repli.
+
+### Guide utilisateur après la dette (29/10/2026)
+
+- `docs/Guide-Utilisateur-ANaTT.docx` régénéré : nouveautés 1.4 « Refus expliqués (suite) » (barème et exports
+  donnent la raison d'un échec ; agent sans indice ni salaire brut ; date de retour antérieure au départ — n° 50,
+  54, 55) et « Sauvegardes rapprochées » (n° 53) ; §3.5 (trois refus de plus, message général réservé au
+  serveur injoignable), §5.2 (refus à la création d'un agent), §10 et §11 (taux et période refusés expliqués),
+  §13.3 (noms distincts des sauvegardes d'une même seconde).
+
 ### Dette technique soldée (29/10/2026)
 
 - **Vue 3.5.44 stable** (#196) : sortie de la `3.6.0-beta.9` ; version épinglée (dépendance et `overrides` des

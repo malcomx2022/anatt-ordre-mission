@@ -206,6 +206,14 @@ async function main() {
     }
     if (action) await action(page)
     await page.waitForTimeout(1200) // animations d'entrée (fadeUp) et graphiques
+    // Polices Google (Sora, DM Sans) : sans elles, la capture montre la police de repli.
+    const polices = await page.evaluate(async () => {
+      await Promise.all([document.fonts.load('700 16px Sora'), document.fonts.load('400 16px "DM Sans"')])
+      await document.fonts.ready
+      const chargee = (nom) => [...document.fonts].some((f) => f.family.includes(nom) && f.status === 'loaded')
+      return chargee('Sora') && chargee('DM Sans')
+    })
+    if (!polices) throw new Error(`${fichier} : polices Sora / DM Sans non chargées`)
     const cible = path.join(SORTIE, `${fichier}.jpg`)
     await page.screenshot({ path: cible, type: 'jpeg', quality: 80, fullPage: true })
     index.push({ fichier, route, compte: compte ? COMPTES[compte][0] : null, url: page.url().replace(APP, '') })

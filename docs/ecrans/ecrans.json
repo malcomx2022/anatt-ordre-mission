@@ -1,5 +1,5 @@
 {
-  "capture_le": "2026-10-29T01:17:36.613Z",
+  "capture_le": "2026-10-29T06:48:43.795Z",
   "ecrans": [
     {
       "fichier": "01_login",
@@ -147,9 +147,9 @@
     },
     {
       "fichier": "30_detail_action_audit",
-      "route": "/audit/53",
+      "route": "/audit/54",
       "compte": "superadmin@anatt.bj",
-      "url": "/audit/53"
+      "url": "/audit/54"
     },
     {
       "fichier": "31_gestion_utilisateurs",
