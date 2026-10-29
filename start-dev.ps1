@@ -10,7 +10,7 @@
 
 .PARAMETER Install
     Installe les dependances avant de demarrer (composer install + npm ci).
-    npm ci respecte package-lock.json : la beta de Vue reste celle du lock.
+    npm ci respecte package-lock.json : versions exactes du lock (Vue 3.5.44).
 
 .PARAMETER Fresh
     Reinitialise la base puis la re-seede (migrate:fresh --seed). DESTRUCTIF.
@@ -65,7 +65,7 @@ try {
     $client.Close()
 } catch { $mysqlUp = $false }
 if ($mysqlUp) { Write-Ok 'MySQL repond.' }
-else { Write-Warn2 'MySQL ne repond pas sur 3306 — demarre WAMP (icone verte) avant de continuer.' }
+else { Write-Warn2 'MySQL ne repond pas sur 3306 - demarre WAMP (icone verte) avant de continuer.' }
 
 # --- .env backend ---
 $envPath = Join-Path $Backend '.env'
@@ -80,13 +80,13 @@ if (-not (Test-Path $envPath)) {
 if ($Install) {
     Write-Step 'composer install (backend)'
     Push-Location $Backend; composer install --no-interaction; Pop-Location
-    # npm ci, et non npm install : package.json suit le dist-tag "beta" de Vue,
-    # que npm install pourrait faire avancer ; le lock fige la version (3.6.0-beta.9).
+    # npm ci, et non npm install : installe exactement les versions du lock
+    # (Vue 3.5.44 epinglee) sans le reecrire.
     Write-Step 'npm ci (frontend)'
     Push-Location $Frontend; npm ci; Pop-Location
 }
-if (-not (Test-Path (Join-Path $Backend 'vendor')))        { Fail 'vendor/ absent — relance avec -Install.' }
-if (-not (Test-Path (Join-Path $Frontend 'node_modules'))) { Fail 'node_modules/ absent — relance avec -Install.' }
+if (-not (Test-Path (Join-Path $Backend 'vendor')))        { Fail 'vendor/ absent - relance avec -Install.' }
+if (-not (Test-Path (Join-Path $Frontend 'node_modules'))) { Fail 'node_modules/ absent - relance avec -Install.' }
 
 # --- Migrations / seed ---
 Push-Location $Backend
