@@ -182,7 +182,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **PDF** : générés par le serveur (DomPDF) ; l'écran OM-07 affiche un aperçu HTML et télécharge le PDF.
   Aucune visionneuse PDF n'est utilisée (`vue-pdf-embed`, `lucide-vue-next`, `@vueuse/core` retirés le 26/10/2026)
 - **Node** : `^20.19.0 || >=22.12.0` (`engines`, Vite 8)
-- **Tests** : Vitest 4 + Vue Test Utils (215 tests) ; Playwright (parcours critique e2e, API mockée)
+- **Tests** : Vitest 4 + Vue Test Utils (241 tests, 48 fichiers) ; Playwright (parcours critique e2e, API mockée)
 
 ### Backend
 - **Framework** : Laravel 12
@@ -195,13 +195,13 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (691 tests, 76 fichiers ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (702 tests, 79 fichiers : 693 sur SQLite + groupe `mysql` de 9 tests sur un vrai MySQL ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
 - Développement : WAMP + `start-dev.ps1` / `stop-dev.ps1` (API, worker, Vite)
 - Production : hébergement **cPanel mutualisé** (FTP + phpMyAdmin + tâches Cron, AutoSSL) — `DEPLOY-CPANEL.md`
-- GitHub Actions (`.github/workflows/ci.yml`) : Lint, Pest, Vitest + type-check, Playwright, build `frontend-dist`
+- GitHub Actions (`.github/workflows/ci.yml`) : Lint, Pest (SQLite), Pest MySQL (sauvegarde/restauration réelles, verrous), Vitest + type-check, Playwright, **Recette · API réelle** (`scripts/recette/` : rejeu du scénario de démo + recette transverse, 273 contrôles), build `frontend-dist`
 - Pas de Docker dans le dépôt (aucun `docker-compose.yml`)
 
 ---
@@ -215,6 +215,7 @@ anatt-ordre-mission/
 ├── DEPLOY-CPANEL.md · UPLOAD-VENDOR.md   ← déploiement / mise à jour (cPanel)
 ├── start-dev.ps1 · stop-dev.ps1          ← environnement de dev (Windows ; -Install lance composer install + npm ci)
 ├── .github/workflows/ci.yml
+├── scripts/recette/             ← rejeu du scénario de démo + recette transverse sur l'API réelle (Node, exécutés en CI)
 ├── frontend/                    ← Application Vue 3
 │   ├── src/
 │   │   ├── assets/
@@ -281,7 +282,7 @@ anatt-ordre-mission/
 │   │   ├── migrations/
 │   │   └── seeders/
 │   ├── docs/                   ← queues.md, openapi.yaml
-│   ├── tests/{Feature,Unit}    ← Pest
+│   ├── tests/{Feature,Unit,Mysql} ← Pest (Mysql : groupe `mysql`, vrai MySQL, ignoré ailleurs)
 │   └── routes/
 │       ├── api.php
 │       └── console.php         ← planification (db:backup 02:00, purge des tokens)
@@ -1191,7 +1192,8 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 29 octobre 2026 (motif de tout refus affiché une fois et en français ; point final de la
+*Dernière mise à jour : 29 octobre 2026 (dette technique soldée : Vue 3.5.44 stable, tests Pest sur MySQL réel et recette
+`scripts/recette/` exécutés en CI, défauts n° 50 à 55 ; motif de tout refus affiché une fois et en français ; point final de la
 revue d'octobre, `docs/revue-projet-2026-10.md` §8 ; textes accentués et galerie recapturée) — 28 octobre 2026 (réglages de Paramètres appliqués par le serveur, part d'avance de la
 mission sur ses écrans, thème vert confirmé, contrat OpenAPI vérifié en CI) — 27 octobre 2026 (version 1.4 : notifications par droits effectifs, heure du Bénin, libellés d'un
 OM amendé, galerie des écrans réels ; mise en page du §4 confrontée aux composants) — précédentes : 23 octobre 2026

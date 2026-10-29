@@ -48,7 +48,11 @@ class StoreAgentRequest extends FormRequest
             'grade' => 'nullable|string|max:255',
             'indice' => 'nullable|integer|min:0',
             'salaire_brut' => 'nullable|integer|min:0',
-            'categorie' => 'required|'.CategorieIndice::regleIn(),
+            // Déduite de l'indice ou du salaire (prepareForValidation). Sans l'un ni
+            // l'autre, le seul motif utile est « L'indice ou le salaire brut est
+            // requis… » (withValidator) : réclamer la catégorie le masquerait, la SPA
+            // n'affichant que le premier motif.
+            'categorie' => 'required_with:indice,salaire_brut|nullable|'.CategorieIndice::regleIn(),
             // Téléphone national : 10 chiffres débutant par 01.
             'telephone' => ['required', 'string', 'regex:'.config('benin.telephone.regex'), 'unique:agents,telephone'],
             'operateur' => 'required|in:MTN,MOOV',

@@ -143,6 +143,13 @@ return [
         'email' => [
             'unique' => 'Cette adresse e-mail est déjà utilisée.',
         ],
+        // Le générique « égale au :date » ne s'accorde pas avec « la date de … ».
+        'date_retour' => [
+            'after_or_equal' => 'La date de retour doit être postérieure ou égale à la date de départ.',
+        ],
+        'date_fin' => [
+            'after_or_equal' => 'La date de fin doit être postérieure ou égale à la date de début.',
+        ],
     ],
 
     // Noms de champs lisibles dans les messages génériques.

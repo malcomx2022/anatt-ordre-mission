@@ -181,6 +181,87 @@ jobs:
         # Les variables DB_* du job priment sur les <env> de phpunit.xml (non forcées).
         run: vendor/bin/pest --group=mysql --colors=always
 
+  # Recette de bout en bout contre l'API Laravel RÉELLEMENT servie (php artisan serve),
+  # sur une base SQLite neuve seedée (comptes de démonstration) : rejeu de
+  # docs/SCENARIO-DEMO.md puis contrôles transverses (RBAC, fichiers téléchargés,
+  # idempotence, régularisations…). Cf. scripts/recette/README.md.
+  recette:
+    name: Recette · API réelle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite, intl, bcmath, gd, zip
+          ini-values: memory_limit=512M
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # `php artisan serve` ne transmet pas les variables d'environnement au serveur
+      # quand un .env existe : la configuration de recette est donc écrite dans le .env.
+      - name: Prepare environment (SQLite neuve, file sync)
+        run: |
+          cp .env.example .env
+          sed -i \
+            -e 's#^DB_CONNECTION=.*#DB_CONNECTION=sqlite#' \
+            -e "s#^DB_DATABASE=.*#DB_DATABASE=${RUNNER_TEMP}/recette.sqlite#" \
+            -e 's#^QUEUE_CONNECTION=.*#QUEUE_CONNECTION=sync#' \
+            -e 's#^CACHE_STORE=.*#CACHE_STORE=file#' \
+            -e 's#^APP_URL=.*#APP_URL=http://127.0.0.1:8000#' \
+            .env
+          php artisan key:generate --ansi
+          touch "${RUNNER_TEMP}/recette.sqlite"
+          php artisan migrate:fresh --seed --force
+
+      - name: Start API
+        run: |
+          QUEUE_CONNECTION=sync nohup php artisan serve --host=127.0.0.1 --port=8000 > "${RUNNER_TEMP}/serve.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/up > /dev/null; then echo "API prête"; exit 0; fi
+            sleep 1
+          done
+          echo "L'API ne répond pas" ; cat "${RUNNER_TEMP}/serve.log" ; exit 1
+
+      - name: Rejeu du scénario de démonstration
+        working-directory: .
+        env:
+          API_URL: http://127.0.0.1:8000
+        run: node scripts/recette/rejeu-scenario.cjs
+
+      - name: Recette API transverse
+        working-directory: .
+        env:
+          API_URL: http://127.0.0.1:8000
+        run: node scripts/recette/recette-api.cjs
+
+      - name: Server logs (on failure)
+        if: ${{ failure() }}
+        run: |
+          cat "${RUNNER_TEMP}/serve.log" || true
+          tail -n 200 storage/logs/laravel.log || true
   frontend:
     name: Frontend · Vitest + type-check
     runs-on: ubuntu-latest

@@ -44,7 +44,9 @@ High-signal notes for OpenCode sessions in this repo.
   - `cd frontend && npx vitest run` (or `npx vitest run src/__tests__/navigation.spec.ts` for the RBAC net). Plain `npm run test:unit` starts **watch mode** and never returns: add `-- --run`.
   - `cd frontend && npm run build` (includes type-check via script)
   - `cd frontend && npm run test:e2e` (Playwright critical path, API mocked)
-- CI (`.github/workflows/ci.yml`) runs Lint, Pest, Vitest + type-check, Playwright and the `frontend-dist` build on every PR.
+- CI (`.github/workflows/ci.yml`) runs Lint, Pest (SQLite), **Pest MySQL** (`--group=mysql` on a MySQL 8 service), Vitest + type-check, Playwright, **Recette · API réelle** (`scripts/recette/rejeu-scenario.cjs` then `recette-api.cjs` against `php artisan serve` on a fresh seeded SQLite, `QUEUE_CONNECTION=sync`) and the `frontend-dist` build on every PR.
+- `tests/Mysql` (group `mysql`) is skipped unless the connection is mysql/mariadb **and** the database name contains « test » (it runs `migrate:fresh`). Locally: `DB_CONNECTION=mysql DB_DATABASE=anatt_test_mysql vendor/bin/pest --group=mysql`.
+- A change to an API message, amount or file format that the demo scenario shows must keep `scripts/recette/` green (see its README); update the script with the scenario.
 - For a regression test, prove it fails without the fix (e.g. `git stash push -- app` then rerun) before relying on it.
 
 ## Critical implementation constraints
@@ -109,7 +111,7 @@ High-signal notes for OpenCode sessions in this repo.
 
 ## Backups
 - `artisan db:backup --compress` (scheduled 02:00 in `routes/console.php`, together with `sanctum:prune-expired`; on cPanel the recommended Cron line is `schedule:run` every minute) and `artisan db:restore <file> --force` (takes a safety backup first; aborts if it fails). Binaries: `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`.
-- Tests mock `Artisan::call` for the HTTP restore; `BackupControllerTest` also runs `db:restore` end-to-end with a fake POSIX `mysql` script (skipped on Windows). A real MySQL restore is never exercised in CI.
+- Tests mock `Artisan::call` for the HTTP restore; `BackupControllerTest` also runs `db:restore` end-to-end with a fake POSIX `mysql` script (skipped on Windows). A real MySQL backup/restore round trip is exercised by `tests/Mysql/SauvegardeRestaurationTest.php` (CI job Backend · Pest MySQL). `db:backup` never overwrites an existing name (suffix `-2`, `-3`…).
 - `db:restore` purges the cached permission matrix after success. The dump covers the DB only: `storage/app/settings.json` (partAvance, fiscal year, SMTP, signatories), paraphes (`storage/app/private/signatures/`) and generated files live on disk and are neither backed up nor restored.
 
 ## Seed/data expectations

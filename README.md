@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
 | Frontend | Vue **3.5.44 stable** (Composition API, TypeScript), épinglée · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
-| Tests | Pest / PHPUnit (691 tests, 76 fichiers) · Vitest (215 tests) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (702 tests, 79 fichiers, dont 9 sur MySQL réel) · Vitest (241 tests) · recette sur l'API réelle (273 contrôles, `scripts/recette/`) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -217,7 +217,7 @@ anatt-ordre-mission/
 
 ```powershell
 cd backend
-.\vendor\bin\pest                 # 691 tests (76 fichiers)
+.\vendor\bin\pest                 # 693 tests sur SQLite (79 fichiers ; le groupe mysql, 9 tests, est ignoré hors MySQL)
 .\vendor\bin\pint --test          # style de code (vérification ; sans --test : corrige)
 
 cd ..\frontend
@@ -226,10 +226,18 @@ npm run test:unit -- --run        # Vitest
 npm run lint:check                # ESLint + oxlint (vérification ; `npm run lint` corrige)
 npm run build                     # build de production
 npm run test:e2e                  # Playwright — parcours critique (API mockée, aucun backend requis)
+
+cd ..
+node scripts/recette/rejeu-scenario.cjs   # API servie sur une base neuve seedée (cf. scripts/recette/README.md)
+node scripts/recette/recette-api.cjs      # recette transverse (rejouable sur la même base)
 ```
 
 > Le CI exécute ces mêmes vérifications à chaque PR : un job **Lint** (Pint + ESLint/oxlint, en mode
-> vérification), les suites Pest et Vitest, le build et le parcours Playwright.
+> vérification), les suites Pest et Vitest, le build et le parcours Playwright ; s'y ajoutent
+> **Backend · Pest MySQL** (groupe `mysql` sur un service MySQL 8 : sauvegarde puis restauration réelles,
+> tri des sauvegardes, verrou de l'amendement) et **Recette · API réelle** (l'API servie par
+> `php artisan serve`, base SQLite neuve, `QUEUE_CONNECTION=sync` : rejeu du scénario de démo, 119
+> contrôles, puis recette transverse, 154 contrôles).
 >
 > La suite Pest s'exécute **sans `.env`** (`phpunit.xml` fournit une `APP_KEY` de test). Pour Playwright
 > avec un Chromium déjà installé d'une autre version : `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/chromium`.

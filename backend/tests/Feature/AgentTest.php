@@ -47,6 +47,20 @@ it('exige l’indice ou le salaire brut', function () {
     ])->assertStatus(422);
 });
 
+it('motive le refus sans indice ni salaire par l’indice, pas par la catégorie', function () {
+    // La catégorie se DÉDUIT de l'indice ou du salaire : le premier motif (celui que
+    // la SPA affiche) doit dire quoi saisir, et non réclamer la catégorie (recette API).
+    $reponse = $this->actingAs($this->gestion)->postJson('/api/agents', [
+        'nom' => 'X', 'prenoms' => 'Y', 'matricule' => 'ANT-12',
+        'telephone' => '0190000000', 'operateur' => 'MTN',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['indice'])
+        ->assertJsonMissingValidationErrors(['categorie']);
+
+    expect(collect($reponse->json('errors'))->flatten()->first())
+        ->toBe("L'indice ou le salaire brut est requis pour déterminer la catégorie.");
+});
+
 it('recherche un agent par nom pour l’autocomplétion', function () {
     Agent::factory()->create(['nom' => 'KOUASSI', 'prenoms' => 'Jean', 'matricule' => 'ANT-K1']);
 
