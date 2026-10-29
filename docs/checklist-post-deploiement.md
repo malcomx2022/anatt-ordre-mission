@@ -20,7 +20,10 @@
 > puis messagerie appliquée (e-mail de test, motif des refus), session conservée sur erreur passagère et écran 500 (§05, §06).
 > puis motif d'un refus affiché par *Paramètres* et e-mail en échec sans effet sur l'action qui notifie (§06).
 > *Complété le 29/10/2026* : motif de **tout** refus affiché une fois, en français (§06, *Refus expliqués*) ;
-> puis textes accentués, pages d'erreur et création d'un agent (§06, *Textes et pages d'erreur*).
+> puis textes accentués et pages d'erreur (§06, *Textes et pages d'erreur*) ;
+> puis, après la dette technique (n° 50 à 55) : refus du barème et des exports, agent sans indice,
+> mission aux dates inversées, sauvegardes rapprochées, restauration chez l'hébergeur et recette
+> automatisée facultative (§06, *Dette technique soldée*) — code seul, **aucune migration**.
 > *Relu le 27/10/2026 (version 1.4)* : sortie de maintenance (§01), cache des PDF d'OM à vider aussi en 1.4
 > (§04), comportement réel de l'écran Maintenance (§05), contrôles de la 1.4 précisés (§06).
 
@@ -188,7 +191,6 @@ Sans création de données :
 - [ ] **Refus expliqués (Paramètres)** : onglet *Général*, part de l'avance `120` puis « Enregistrer tout » → « Le pourcentage d'avance doit être un entier entre 0 et 100. » (et non « Donnees invalides. ») ; rien n'est enregistré, **aucun** onglet. Recharger la page : la part d'avant est affichée.
 - [ ] **Refus expliqués (tous les écrans, messages en français)** : *Utilisateurs › Nouvel utilisateur*, saisir l'adresse d'un compte existant (ex. celle du super administrateur) puis « Créer » → « Cette adresse e-mail est déjà utilisée. » sous le champ et dans l'avertissement en haut à droite, et non « Donnees invalides. » ni une clé du type `validation.unique` (fichier `resources/lang/fr/validation.php` absent ou non envoyé). Rien n'est créé.
 - [ ] **Textes et pages d'erreur** (29/10) : ouvrir une adresse inexistante (`/page-inexistante`) → « Page non trouvée », trois raccourcis (« Tableau de bord », « Paiements », « Personnel ») avec **trois icônes différentes**, boutons « Page précédente » et « Retour à l'accueil » accentués. *Mot de passe oublié*, saisir une adresse quelconque puis « Envoyer le lien » → « E-mail envoyé ! » et « Un lien de réinitialisation a été envoyé à votre adresse e-mail. Vérifiez votre boîte de réception. ». Un texte sans accents (« Page non trouvee », « Acces interdit ») signale un SPA non redéployé.
-- [ ] **Création d'un agent sans indice** : *Personnel › Nouvel agent*, remplir l'identité et le téléphone sans indice ni salaire brut → « L'indice ou le salaire brut est requis pour déterminer la catégorie. » ; rien n'est créé (la catégorie se déduit de l'un des deux).
 - [ ] **Session conservée au rechargement** : recharger (F5) une page quelconque → on reste connecté, sur la même page. Seule une session expirée (durée de session dépassée, compte désactivé) renvoie à la connexion.
 - [ ] **Part de la mission** : l'écran d'un état (`/missions/:id/etat`) titre ses onglets « Avances (… %) » avec la part de **ses** OM ; l'écran de génération libelle la tranche de même, une fois la mission choisie.
 
@@ -203,6 +205,30 @@ Sans création de données :
 - [ ] **E-mail en échec sans effet sur l'action** : même serveur injoignable, valider un OM d'une mission sans état (ou signer un état) → l'action aboutit, sans erreur ; la cloche de l'étape suivante (profil financier, ou signataire) porte la notification ; l'échec figure dans le journal du jour (`storage/logs/laravel-AAAA-MM-JJ.log` en production, `LOG_STACK=daily` ; `laravel.log` sinon) (« SendNotification: echec envoi email »). **Vider le serveur** ensuite.
 - [ ] **Erreur passagère** : outils de développement du navigateur › *Réseau* › bloquer l'URL `*/api/auth/me`, recharger une page (`/ordres`) → écran « Erreur serveur », pas l'écran de connexion. Débloquer, cliquer « Réessayer » → retour sur `/ordres`, toujours connecté.
 - [ ] **Saisie d'une mission** : ajouter deux fois le même agent dans l'assistant → « Agent déjà présent dans cette mission », étape bloquée avant l'enregistrement.
+
+### Dette technique soldée (29/10/2026, n° 50 à 55, code seul)
+
+Trois fichiers de l'API changent (`app/Console/Commands/DatabaseBackup.php`,
+`app/Http/Requests/StoreAgentRequest.php`, `resources/lang/fr/validation.php`), plus le SPA, reconstruit
+avec **Vue 3.5.44 stable** (au lieu de la 3.6 bêta) : aucune migration, `vendor/` inchangé, aucun
+changement de comportement attendu du passage de version de Vue. `start-dev.ps1` (n° 51) ne sert qu'au
+poste de développement ; le retrait des crochets de navigation d'`AppNavProgress` (n° 52) est invisible :
+ni l'un ni l'autre ne se contrôle sur le serveur.
+
+Sans création de données :
+
+- [ ] **SPA reconstruit** : les `assets/*.js` portent de nouveaux hachages (§04) et le parcours de fumée (§05) passe sans page blanche ni erreur rouge en console. C'est le seul contrôle du passage à Vue 3.5.44.
+- [ ] **Création d'un agent sans indice** (n° 54) : *Personnel › Nouvel agent*, remplir l'identité et le téléphone sans indice ni salaire brut, puis enregistrer → « L'indice ou le salaire brut est requis pour déterminer la catégorie. » sous le champ *Catégorie* et dans l'avertissement en haut à droite (avant : « Le champ categorie est obligatoire. ») ; rien n'est créé. Le résultat est le même si une catégorie est choisie à la main : elle se déduit de l'indice ou du salaire, l'un des deux reste exigé.
+- [ ] **Export sur une période inversée** : *Rapports › Export* (écran « Export personnalisé », `/rapports/export`), « Du » postérieur à « Au » → « La date « Au » doit être postérieure à « Du ». » sous les dates et bouton « Générer & télécharger » grisé ; même comportement sur *Rapports › Par agent* (`/rapports/agents`, boutons Excel et PDF). L'écran bloque la demande avant l'envoi : le motif accordé du serveur (« La date de fin doit être postérieure ou égale à la date de début. », n° 55) n'y apparaît pas, il est couvert par les tests (`backend/tests/Feature/ValidationFrancaisTest.php`).
+
+#### Sur l'instance de recette uniquement
+
+- [ ] **Barème refusé** (n° 50) : *Barèmes › Configurer* (écran « Modifier le barème », `/taux/configurer`), saisir `-5` sur **une seule** ligne puis « Enregistrer les modifications » → « Le champ taux journalier doit être supérieur ou égal à 0. », et non « Échec de l'enregistrement. » (ce message ne sert plus que si le serveur ne répond pas). Recharger : l'ancien taux est affiché. Une seule ligne, car chaque taux modifié part dans sa propre requête : une autre ligne modifiée en même temps, elle, serait enregistrée.
+- [ ] **Export refusé** (n° 50) : *Rapports › Export*, « Générer & télécharger » onze fois dans la minute (limite de 10 exports par minute et par compte) → « Trop de tentatives en peu de temps : patientez une minute avant de réessayer. », et non « Échec de la génération de l'export. ». Les dix premiers fichiers sont écrits dans `storage/app/private/rapports/`.
+- [ ] **Mission aux dates inversées** (n° 55) : *Ordres de Mission › Retranscrire* (`/ordres/nouveau`), date de retour antérieure à la date de départ. L'assistant laisse passer l'étape 1 (période affichée « 1 j ») ; à « Enregistrer la mission », l'encadré « Corrigez les points suivants : » porte « La date de retour doit être postérieure ou égale à la date de départ. » (avant : « … égale au date de départ ») ; rien n'est créé.
+- [ ] **Deux sauvegardes rapprochées** (n° 53) : *Sauvegardes*, « Nouvelle sauvegarde » deux fois de suite → **deux** lignes, aucune ne remplace l'autre. Si les deux tombent dans la même seconde, la seconde s'appelle `backup_AAAA-MM-JJ_HHMMSS-2.sql.gz` ; sinon les noms diffèrent par l'heure, ce qui est tout aussi conforme. Supprimer ensuite ces deux sauvegardes (icône de suppression, confirmation) : elles disparaissent de la liste.
+- [ ] **Restauration chez l'hébergeur** (n° 53) : créer une sauvegarde puis la **restaurer aussitôt** → la restauration réussit, le fichier restauré est toujours dans la liste (re-téléchargeable) et la sauvegarde de sécurité y figure sous un autre nom (suffixe `-2` si elle a été prise dans la même seconde). Avant ce correctif, une sauvegarde de sécurité prise dans la même seconde écrasait le fichier choisi puis le supprimait : la restauration échouait. Le mécanisme (aller-retour `mysqldump` / `mysql`, sauvegarde de sécurité restaurable, même seconde, purge de la matrice) est vérifié en CI sur MySQL 8.0 (job « Backend · Pest MySQL », `backend/tests/Mysql`) ; reste à l'éprouver ici avec les binaires de l'hébergeur (`DB_DUMP_BINARY`, `DB_RESTORE_BINARY`), `exec()` et `gzip`. Une sauvegarde en `.sql` (et non `.sql.gz`) signale l'absence de `gzip` : elle reste valide. Échec ou délai dépassé : `DEPLOY-CPANEL.md` §9.1 et §10.
+- [ ] *(Facultatif)* **Recette automatisée** : `API_URL=<racine de l'API, sans /api> node scripts/recette/recette-api.cjs` (Node ≥ 22) → « Recette de l'API : 154 contrôles conformes. », en 4 minutes environ (attentes sur les limites de débit comprises). **Jamais contre la production** : le script crée des agents, des missions, des lots et leurs fichiers, et change le numéro d'agents qu'il a lui-même créés. Il est rejouable sur une même base ; `rejeu-scenario.cjs`, lui, exige une base neuve. Prérequis (`scripts/recette/README.md`) : les **8 comptes de démonstration** (`superadmin@` … `lecteur@anatt.bj`) avec un même mot de passe (`password`, ou `RECETTE_PASSWORD`), qui n'existent que si la base a été seedée en `APP_ENV=local` ; `QUEUE_CONNECTION=sync` ; réglages et matrice des permissions par défaut (part d'avance 70, compte MTN `SARALY`, MTN et Moov ouverts, « Forcer HTTPS » inactif). Le script contrôle aussi l'absence d'en-tête HSTS : l'API en envoie un dès qu'elle est servie en HTTPS, et il s'arrête alors à ce contrôle, avant les contrôles métier. Il se joue donc contre une API servie en **HTTP**, comme en CI : en pratique une copie de la base de recette sur un poste (`php artisan serve`, commandes du README).
 
 ---
 

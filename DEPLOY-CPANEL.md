@@ -11,6 +11,8 @@ Guide pas-à-pas pour déployer **sans accès SSH** (FTP + phpMyAdmin), avec :
 > `routes/console.php`, `vendor/composer/platform_check.php`, 34 migrations, mode maintenance
 > (`artisan down` / `up`, éprouvé). La version **1.3** comprend les correctifs n° 1 à 32 ; la
 > **1.4** les décisions D1 à D4 et la migration du fuseau horaire (*Notes de version 1.3* et *1.4*).
+> *Complété le 29/10/2026* : correctifs de la dette technique (n° 50 à 55, code seul, aucune migration),
+> Vue 3.5.44 épinglée (§ 2), nom de la sauvegarde de sécurité d'une restauration (§ 9.1).
 
 ```
 public_html/                 -> SPA Vue (contenu de frontend/dist/)
@@ -112,6 +114,10 @@ cd frontend
 npm ci
 npm run build      # produit frontend/dist/
 ```
+
+> `npm ci` installe exactement les versions du `package-lock.json` : Vue y est épinglé en **3.5.44**
+> stable depuis le 29/10/2026 (`frontend/package.json`, dépendance et `overrides` des paquets `@vue/*`).
+> `npm install` pourrait résoudre d'autres versions que celles testées en CI.
 
 **Option 2 — artefact CI (aucun build local)** : sur GitHub, ouvrez le dernier run
 CI de la branche `main` (onglet **Actions**) et téléchargez l'artefact **`frontend-dist`**.
@@ -297,7 +303,11 @@ Depuis la version 1.3, l'écran **Paramètres › Sauvegardes** (SUPER_ADMIN) sa
 restauration passe par `artisan db:restore`, qui :
 
 1. prend d'abord une **sauvegarde de sécurité** de l'état courant (`db:backup` — si elle échoue,
-   la restauration est annulée et la base n'est pas touchée) ;
+   la restauration est annulée et la base n'est pas touchée). Elle porte toujours un nom nouveau :
+   `backup_AAAA-MM-JJ_HHMMSS.sql.gz`, suffixé `-2`, `-3`… si une sauvegarde de la même seconde
+   existe déjà. Elle n'écrase donc jamais le fichier que l'on restaure (correctif n° 53 du 29/10/2026 :
+   avant, une sauvegarde prise dans la même seconde était écrasée puis supprimée, et la restauration
+   échouait) ;
 2. décompresse le `.sql.gz` en PHP, puis rejoue le dump avec le client `mysql`
    (`DB_RESTORE_BINARY`, via `exec()`) ;
 3. purge la matrice des permissions mise en cache (sans expiration) : les droits d'accès de la
@@ -311,7 +321,10 @@ restauration passe par `artisan db:restore`, qui :
 > restaurez-le en même temps que la base si vous revenez à un état antérieur.
 
 Elle a donc les **mêmes prérequis** que la sauvegarde (`exec()` autorisé, `mysqldump` **et**
-`mysql` accessibles). Sur un mutualisé, une restauration lancée depuis l'écran tourne dans la
+`mysql` accessibles). Le mécanisme est vérifié en CI sur un vrai MySQL 8.0 (job « Backend · Pest
+MySQL », `backend/tests/Mysql`) ; les binaires et les limites de l'hébergeur ne le sont pas : d'où
+l'essai sur une base de recette (`docs/checklist-post-deploiement.md` §06). Sur un mutualisé, une
+restauration lancée depuis l'écran tourne dans la
 requête HTTP : pour une base volumineuse, elle peut dépasser le `max_execution_time` de PHP.
 Préférez alors une **tâche Cron ponctuelle** (même méthode qu'au § Mise à jour, D) :
 
@@ -598,6 +611,7 @@ Ce qui change pour la mise à jour d'une instance en 1.3 :
 | **SPA (D3, D4 et correctifs)** | À redéployer (§ F) : dépendances inutilisées retirées (bundle inchangé à l'usage) ; l'écran de génération recharge le lot après un échec (« Confirmer » ne reste plus affiché sur un lot passé en erreur) ; bandeau de l'écran Signatures lisible ; fiche et aperçu d'un OM amendé aux libellés du PDF ; écran Configuration e-mail listant les 7 notifications réelles ; fuseau affiché en lecture seule dans Paramètres ; une API en maintenance (503) ouvre l'écran Maintenance au lieu d'erreurs silencieuses. |
 | **Réglages de Paramètres (28/10)** | Code seul (`app/`, `bootstrap/app.php`, `routes/`, SPA), **aucune migration**. Les réglages de l'écran *Paramètres*, jusque-là sans effet, sont appliqués : opérateurs MTN / Moov ouverts à la génération, tentatives de connexion par minute, durée de session, HTTPS forcé, journal des connexions échouées, mode maintenance, notifications par type, nom de l'application (titre de l'onglet, objet des e-mails). **Un réglage jamais enregistré ne change rien** ; mais les valeurs **déjà présentes** dans `settings.json` (enregistrées quand l'écran était « indicatif ») s'appliquent dès l'envoi du code — à relire avant la mise à jour (runbook, étape 1). La configuration SMTP de l'écran *Messagerie* l'est aussi : un serveur renseigné remplace le `MAIL_*` du `.env`. ⚠️ Relisez l'écran avant le premier « Enregistrer tout » : les valeurs affichées seront appliquées. En particulier, **« Forcer HTTPS » ne s'active qu'une fois AutoSSL en place** — en HTTP, l'API refuserait ensuite la requête qui le désactive (dépannage ci-dessous). Le **mode maintenance** de l'écran (503 sauf super administrateur) ne remplace pas `artisan down` pour une mise à jour (§ B bis). |
 | **Refus expliqués (28-29/10)** | Code seul (`resources/lang/fr/validation.php` nouveau, SPA), **aucune migration**. Tout refus de l'API (422) s'affiche avec son motif, une seule fois et en français (« Cette adresse e-mail est déjà utilisée. », « Vous avez contrôlé cet état : le visa DAF revient à une autre personne. »). Le fichier de traduction part avec `resources/`, déjà écrasé à chaque mise à jour (§ C) ; sans lui, l'écran montrerait des clés brutes (`validation.unique`), `APP_LOCALE` et `APP_FALLBACK_LOCALE` valant `fr`. |
+| **Dette technique soldée (29/10)** | Code seul, **aucune migration**, `.env` et `vendor/` inchangés. Trois fichiers de l'API : `app/Console/Commands/DatabaseBackup.php` (n° 53 : deux sauvegardes de la même seconde ne s'écrasent plus, la seconde prend le suffixe `-2` ; cf. § 9.1), `app/Http/Requests/StoreAgentRequest.php` (n° 54 : un agent sans indice ni salaire brut est refusé avec « L'indice ou le salaire brut est requis pour déterminer la catégorie. ») et `resources/lang/fr/validation.php` (n° 55 : « La date de retour doit être postérieure ou égale à la date de départ. », « La date de fin doit être postérieure ou égale à la date de début. »). Ils partent avec `app/` et `resources/` (§ C). SPA à redéployer (§ F) : reconstruit avec Vue **3.5.44** stable au lieu de la 3.6 bêta (build par `npm ci`, § 2 ; aucun changement de comportement attendu), et l'écran du barème comme les exports de rapports affichent le motif du serveur à l'échec (n° 50). Contrôles : `docs/checklist-post-deploiement.md` §06, *Dette technique soldée*. |
 | **Documentation** | Guide utilisateur (avec captures) et documentation technique régénérés en 1.4 ; galerie des écrans réels (`docs/00_galerie_index.html`). Rien à déployer. |
 | **`vendor/`** | **Inchangé** (`composer.lock` non modifié). |
 
