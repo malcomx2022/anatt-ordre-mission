@@ -9,6 +9,12 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Checklist post-déploiement (29/10/2026)
+
+- `docs/checklist-post-deploiement.md` §06 : contrôles des pages d'erreur et des textes accentués (404 et ses trois
+  icônes, message du mot de passe oublié ; texte sans accents = SPA non redéployé) et de la création d'un agent sans
+  indice ni salaire brut (refus expliqué, rien n'est créé).
+
 ### Documentation technique finale ; clôture (29/10/2026)
 
 - **Documentation technique** (`.docx` régénéré) : évolutions 1.4 du 29/10 (textes accentués n° 48, pages d'erreur
