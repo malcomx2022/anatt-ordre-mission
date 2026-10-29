@@ -28,6 +28,10 @@ Ils tournent en CI dans le job **« Recette · API réelle »** (`.github/workfl
   `recette-api.cjs` crée ses propres agents et références (suffixe par exécution) : il est rejouable
   sur la même base.
 - Jobs exécutés dans la requête : `QUEUE_CONNECTION=sync` (comme en production cPanel).
+- API servie en **HTTP** (`php artisan serve`, copie locale ou instance de recette sans TLS) :
+  `recette-api.cjs` vérifie qu'aucun en-tête HSTS n'est envoyé en HTTP et s'arrête donc derrière HTTPS,
+  où `SecurityHeaders` l'envoie à bon droit. **Jamais contre la production** : les deux scripts créent des
+  données (agents, missions, lots, paiements confirmés).
 
 > `php artisan serve` ne transmet pas les variables d'environnement au serveur quand un `.env`
 > existe : écrire `DB_*`, `QUEUE_CONNECTION=sync`… **dans le `.env`** (ce que fait le job CI).

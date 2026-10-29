@@ -32,13 +32,13 @@ Comptes de démonstration (local et tests uniquement, mot de passe `password`) :
 ## Vérifier
 
 ```bash
-./vendor/bin/pest                                   # 702 tests en 79 fichiers : 693 passent sur SQLite, les 9 du groupe mysql sont ignorés (« skipped ») — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pest                                   # 703 tests en 79 fichiers : 694 passent sur SQLite, les 9 du groupe mysql sont ignorés (« skipped ») — sans .env (APP_KEY de test dans phpunit.xml)
 ./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
 DB_CONNECTION=mysql DB_DATABASE=anatt_test_mysql ./vendor/bin/pest --group=mysql   # 9 tests sur un vrai MySQL / MariaDB (base dont le nom contient « test », remise à zéro)
 ./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php tests/Feature/OpenApiReponsesTest.php   # filets RBAC et OpenAPI
 ```
 
-Répartition : `tests/Unit` 129 tests (5 fichiers), `tests/Feature` 564 (71 fichiers), `tests/Mysql` 9 (3 fichiers :
+Répartition : `tests/Unit` 129 tests (5 fichiers), `tests/Feature` 565 (71 fichiers), `tests/Mysql` 9 (3 fichiers :
 aller-retour réel `db:backup` / `db:restore`, tri des sauvegardes, verrou `lockForUpdate` de l'amendement). La suite
 `mysql` exige `mysqldump` / `mysql` dans le `PATH` (ou `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`) ; garde-fou et mode
 d'emploi dans `tests/Support/MysqlReel.php`. La CI la joue dans le job **Backend · Pest MySQL** (MySQL 8).

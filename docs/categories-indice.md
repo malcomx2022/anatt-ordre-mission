@@ -39,7 +39,7 @@ aucun écran ne l'appelle aujourd'hui.
 |---|---|---|
 | Création d'un agent | catégorie transmise retenue (ancien code traduit) ; **absente**, elle est déduite de l'indice ou du salaire. L'indice ou le salaire brut est **exigé** dans tous les cas : sans l'un ni l'autre, refus 422 « L'indice ou le salaire brut est requis pour déterminer la catégorie. » (champ `indice`) ; la catégorie elle-même n'est plus réclamée (`required_with:indice,salaire_brut`) | `StoreAgentRequest::prepareForValidation`, `withValidator` |
 | Modification d'un agent | **recalculée d'office** dès que l'indice ou le salaire brut figure dans la requête, même si une catégorie est envoyée ; sinon la catégorie transmise est retenue | `UpdateAgentRequest::prepareForValidation` |
-| Import CSV/XLSX | colonne `categorie` retenue (ancien code traduit) ; vide, elle est déduite. Sans indice ni salaire brut, la ligne est rejetée avec le même motif ; le rapport d'import liste aussi « Le champ categorie est obligatoire. » si la colonne est vide | `AgentService::normaliserLigne`, `validerLigne` |
+| Import CSV/XLSX | colonne `categorie` retenue (ancien code traduit) ; vide, elle est déduite. Sans indice ni salaire brut, la ligne est rejetée avec le même motif, seul (n° 58 : la catégorie n'est plus réclamée en plus, comme à la création) | `AgentService::normaliserLigne`, `validerLigne` |
 | Formulaire d'agent (écran) | suggestion en temps réel depuis l'indice ou le salaire (`categorieDeduite`), modifiable avant l'enregistrement | `components/agents/AgentForm.vue` |
 | Retranscription d'un OM | catégorie de l'OM **reprise de SEMO** si elle est saisie pour ce bénéficiaire, sinon celle de l'agent ; elle est ensuite **figée sur l'OM** | `MissionService` (`ordres.*.categorie`) |
 
@@ -160,7 +160,7 @@ cd frontend && npm run test:unit -- --run && npm run type-check && npm run lint:
 |---|---|
 | `backend/tests/Feature/CategorieIndiceTransitionTest.php` | vocabulaire produit, anciens codes acceptés (création, filtres agents et barème, import CSV), code inconnu rejeté |
 | `backend/tests/Unit/CategorieTest.php` | normalisation, libellés, plages, seuils |
-| `backend/tests/Feature/ImportModeleAgentsTest.php` | modèles d'import distribués (3 catégories, 2 opérateurs) |
+| `backend/tests/Feature/ImportModeleAgentsTest.php` | modèles d'import distribués (3 catégories, 2 opérateurs) ; ligne sans indice ni salaire brut : motif porté par l'indice seul (n° 58) |
 | `backend/tests/Feature/AgentTest.php` | indice ou salaire brut exigé ; sans l'un ni l'autre, motif porté par l'indice, pas par la catégorie |
 | `frontend/src/__tests__/benin.spec.ts` | seuils d'indice prioritaires sur le salaire, champ indice vidé ignoré |
 

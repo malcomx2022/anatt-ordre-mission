@@ -106,10 +106,13 @@ récapitulatif** de l'état des avances, qui part au contrôle.
   est donc refusée, avec sous le champ *Indice* le motif « L'indice ou le salaire brut est requis pour
   déterminer la catégorie. ». Le premier motif affiché réclamait jusque-là la catégorie (« Le champ
   categorie est obligatoire. »), que l'écran ne fait pas saisir (`StoreAgentRequest`, test `AgentTest`).
-- **Retranscription aux dates inversées** (retour avant le départ) : l'assistant laisse passer l'étape
-  *Contexte*, mais l'enregistrement est refusé et l'encadré « Corrigez les points suivants » donne « La
-  date de retour doit être postérieure ou égale à la date de départ. » (le message générique disait
-  « … égale au date de départ » ; `resources/lang/fr/validation.php`, test `ValidationFrancaisTest`).
+- **Retranscription aux dates inversées** (retour avant le départ) : l'assistant s'arrête dès l'étape
+  *Contexte* — « La date de retour doit être postérieure ou égale à la date de départ. » sous le champ et
+  en avertissement à « Suivant » (n° 56, `stores/ordres-mission.ts`, test `mission-create.spec.ts`). C'est
+  le motif du serveur, qui refuse de même une requête directe (le message générique disait « … égale au
+  date de départ » ; `resources/lang/fr/validation.php`, test `ValidationFrancaisTest`). À
+  l'enregistrement, un refus motivé ne s'affiche qu'une fois : encadré « Corrigez les points suivants »
+  et avertissement, sans toast « Échec… » en plus.
 
 **Amendement** : refusé pour un reliquat déjà payé ou un trop-perçu déjà recouvré (avenant formel,
 hors application), un état en cours de signature ou un fichier en attente de dépôt. Un amendement
@@ -244,7 +247,7 @@ qui détiennent tous `rapports.consulter`) : depuis le 29/10/2026, l'écran donn
 de 10 exports par minute, c'est « Trop de tentatives en peu de temps : patientez une minute avant de
 réessayer. » (limite `throttle:export`). « Échec de l'export. » / « Échec de la génération de l'export. »
 ne s'affichent plus qu'en repli, serveur muet. Une période inversée est arrêtée par l'écran avant tout
-envoi (bouton grisé, « La date « Au » doit être postérieure à « Du ». ») ; l'API, appelée directement,
+envoi (bouton grisé, « La date « Au » doit être postérieure ou égale à « Du ». ») ; l'API, appelée directement,
 répond « La date de fin doit être postérieure ou égale à la date de début. ».
 
 ---

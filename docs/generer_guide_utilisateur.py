@@ -583,7 +583,10 @@ para("Réservé au GESTIONNAIRE_OM (permission « OM — retranscrire »). Une m
      "bénéficiaires (participants + CAV).")
 capture("12_om_creation", "assistant de retranscription, étape 1")
 h3("Étape 1 — Contexte de la mission")
-bullet("Objet, destination, zone (déduite de la destination), dates de départ et de retour.")
+bullet("Objet, destination, zone (déduite de la destination), dates de départ et de retour. Une date de "
+       "retour antérieure au départ est signalée sous le champ et « Suivant » refuse d'avancer : « La date de "
+       "retour doit être postérieure ou égale à la date de départ. » (une mission d'un jour, retour le jour du "
+       "départ, est acceptée).")
 bullet("Indiquez s'il y a prise en charge par un tiers (exonération : aucun frais alloué).")
 h3("Étape 2 — Bénéficiaires")
 bullet("Ajoutez chaque bénéficiaire (participant ou CAV) avec sa référence SEMO unique et son type de prise en charge.")
@@ -843,7 +846,8 @@ para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montant
 h1("10. Barème per diem")
 bullet("Consultation : profils disposant de « Barème — consulter » (tous sauf le LECTEUR, par défaut).")
 bullet("Modification des taux : réservée à l'ADMIN (« Barème — modifier »). Un taux refusé (valeur négative, "
-       "par exemple) est signalé avec sa raison ; rien n'est enregistré.")
+       "par exemple) est signalé avec sa raison. Si plusieurs taux sont modifiés à la fois, les taux valides sont "
+       "enregistrés (« N taux mis à jour. ») et seul le taux refusé reste en orange, avec sa saisie, à corriger.")
 para("Le détail complet des taux figure en Annexe B.")
 
 # =========================================================================

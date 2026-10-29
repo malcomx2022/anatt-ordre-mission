@@ -31,8 +31,9 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > le point de ce qui reste.
 >
 > **Point final du 29/10/2026.** La relecture document par document a continué du 27 au 29/10
-> (PR #166 à #193) et fait apparaître dix-sept défauts de plus (n° 33 à 49), tous corrigés avec un test.
-> Pest compte 702 tests (79 fichiers : 693 sur SQLite + 9 sur un vrai MySQL), Vitest 241, Playwright 3, recette sur l'API réelle 273 contrôles. Le §8 fait le point final : ce qui
+> (PR #166 à #193) et fait apparaître dix-sept défauts de plus (n° 33 à 49), puis neuf en soldant la dette (n° 50 à 58, PR #195 à
+> #204), tous corrigés avec un test.
+> Pest compte 703 tests (79 fichiers : 694 sur SQLite + 9 sur un vrai MySQL), Vitest 245, Playwright 3, recette sur l'API réelle 273 contrôles. Le §8 fait le point final : ce qui
 > a été corrigé, l'état de chaque document et **ce qui reste** (gestes d'exploitation, dette connue).
 >
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
@@ -433,7 +434,7 @@ mise à jour couvre désormais les correctifs n° 1 à 32, sans autre migration 
 
 ## 8. Point final (29/10/2026)
 
-### 8.1 Défauts n° 33 à 55 (27-29/10)
+### 8.1 Défauts n° 33 à 58 (27-29/10)
 
 Relevés en confrontant les documents, les captures et le scénario de démo au code ; chacun est
 corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
@@ -463,6 +464,9 @@ corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
 | 53 | 29/10 | *(relevé par la suite MySQL)* `db:backup` nommait ses fichiers à la seconde : restaurer une sauvegarde de la même seconde la faisait écraser par la sauvegarde de sécurité, puis supprimer (#198) | Suffixe `-2`, `-3`… ; `tests/Mysql/SauvegardeRestaurationTest.php` |
 | 54 | 29/10 | *(relevé par la recette versionnée)* Agent sans indice ni salaire brut : premier motif « Le champ categorie est obligatoire. » au lieu de « L'indice ou le salaire brut est requis… » (#199) | Catégorie exigée seulement avec un indice ou un salaire ; `AgentTest` |
 | 55 | 29/10 | *(idem)* « … postérieure ou égale au date de départ » (accord du message générique) (#199) | Messages propres à `date_retour` / `date_fin` ; `ValidationFrancaisTest` |
+| 56 | 29/10 | *(relevé en confrontant les guides au code)* Assistant de retranscription : dates inversées admises à l'étape 1 (« 1 j »), refus seulement à l'enregistrement, affiché deux fois (avertissement 422 + « Échec de l'enregistrement de la mission. ») (#204) | Étape 1 refusée avec le motif du serveur ; un refus motivé ne s'affiche qu'une fois ; `mission-create.spec.ts` |
+| 57 | 29/10 | *(idem)* Barème : un taux refusé laissait les autres enregistrés sans recharger la liste ni retirer leur marque « modifié » (#204) | `Promise.allSettled`, taux enregistrés rechargés, refusés conservés avec leur motif ; `echec-motif-ecrans.spec.ts` |
+| 58 | 29/10 | *(idem)* Import d'agents : ligne sans indice ni salaire brut, « Le champ categorie est obligatoire. » en plus du motif utile (le n° 54 ne valait que pour la création) (#204) | Règle alignée sur `StoreAgentRequest` ; `ImportModeleAgentsTest` |
 
 ### 8.2 État de la documentation
 
@@ -470,17 +474,18 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 
 | Document | Dernière mise à jour |
 |----------|----------------------|
-| `README.md`, `backend/README.md`, `frontend/README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | 29/10 (clôture de la dette : Vue 3.5.44, compteurs, jobs CI, `scripts/recette/`) |
-| `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | 29/10 (#190) |
-| `docs/circuits-validation.md`, `docs/amendement-om.md` | 28/10 (#188) |
-| `docs/workflows-par-profil.md` | 29/10 (#190) |
+| `README.md`, `backend/README.md`, `frontend/README.md`, `scripts/recette/README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | 29/10 (#204, après audit de cohérence de tout le dépôt : compteurs mesurés, jobs CI, recette en HTTP seulement) |
+| `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | 29/10 (#204 : cinq fichiers de l'API, contrôles des n° 50 à 58, restauration chez l'hébergeur, recette facultative sur une instance de recette) |
+| `docs/circuits-validation.md`, `docs/amendement-om.md` | 29/10 (#204 : verrou de l'amendement éprouvé sur MySQL réel, recette) |
+| `docs/workflows-par-profil.md` | 29/10 (#204 : refus expliqués par profil, sauvegardes rapprochées) |
 | `docs/SCENARIO-DEMO.md` | Rejoué sur l'API réelle le 29/10 (#192) : montants inchangés ; étape A corrigée (indice ou salaire brut, catégorie déduite). Rejeu désormais versionné et exécuté en CI (`scripts/recette/rejeu-scenario.cjs`, #199) ; rejoué de nouveau sur MariaDB après la dette (119 contrôles), dates inversées et sauvegardes rapprochées ajoutées |
 | `docs/parametrage-part-avance.md` | 29/10 (#189) |
-| `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
-| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée ») | Régénéré le 29/10 (#190, captures et compteurs #191 ; après la dette : motifs du barème et des exports, agent sans indice, date de retour, sauvegardes rapprochées — n° 50, 53 à 55) |
+| `docs/rbac-flexible.md`, `docs/categories-indice.md` | 29/10 (#204 : restauration éprouvée sur MySQL ; motif d'un agent sans indice, création et import) |
+| `docs/annee-fiscale.md` | 27-28/10 (relu le 29/10 : rien ne le touche) |
+| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée ») | Régénéré le 29/10 (#190, captures et compteurs #191 ; après la dette : motifs du barème et des exports, agent sans indice, date de retour, sauvegardes rapprochées — n° 50, 53 à 55 ; puis étape 1 de l'assistant et barème partiel — n° 56, 57) |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée le 29/10 (#193, puis à la clôture de la dette) : chapitre 11 « État du projet et reste à faire », stack Vue 3.5.44, tests MySQL et recette en CI ; puis évolutions « Dette soldée » et « Documents après la dette », arborescence, dates inversées (§4.1), sauvegardes rapprochées et vérification sur MySQL (§4.7) |
 | Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 29/10 (#191) après les n° 48 et 49 ; champs de date au format français (`LANG` passé au navigateur de capture). Recapturée de nouveau après la dette, SPA en Vue 3.5.44 : 46 écrans identiques hormis dates et données du jour ; le script attend désormais les polices Sora et DM Sans avant chaque capture |
-| `backend/docs/openapi.yaml`, `backend/docs/queues.md` | 28/10 ; validés en CI (`OpenApiReponsesTest`) |
+| `backend/docs/openapi.yaml`, `backend/docs/queues.md` | `openapi.yaml` 29/10 (`categorie` non requise à la création, #199), `queues.md` relu le 29/10 ; validés en CI (`OpenApiReponsesTest`) |
 
 ### 8.3 Ce qui reste
 
@@ -519,9 +524,10 @@ tranchée (`CLAUDE.md` §4).
 
 ### 8.4 Clôture (29/10/2026)
 
-Le projet est **terminé côté développement** : la dette technique est soldée (§8.3, PR #195 à #199), rien n'est en
-cours ; `main` porte la version 1.4 complète, CI verte sur sept jobs (Lint, Pest 693 sur SQLite, Pest MySQL 9,
-Vitest 241 et type-check, Playwright 3, Recette · API réelle 273 contrôles, build `frontend-dist`).
+Le projet est **terminé côté développement** : la dette technique est soldée (§8.3, PR #195 à #199) et la relecture
+finale de tous les documents, menée en parallèle par trois relecteurs puis intégrée (#204), n'a laissé que trois
+petits défauts, corrigés (n° 56 à 58). Rien n'est en cours ; `main` porte la version 1.4 complète, CI verte sur sept jobs (Lint, Pest 694 sur SQLite, Pest MySQL 9,
+Vitest 245 et type-check, Playwright 3, Recette · API réelle 273 contrôles, build `frontend-dist`).
 
 | Étape | Qui | Référence |
 |-------|-----|-----------|

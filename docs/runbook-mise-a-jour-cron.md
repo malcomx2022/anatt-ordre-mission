@@ -35,7 +35,7 @@
 > tout refus affiche son motif, une fois et en français — nouveau fichier `resources/lang/fr/validation.php`,
 > envoyé avec `resources/` à l'étape 4 (rien à ajouter) ; contrôle à l'étape 8.
 >
-> **Dette technique soldée (29/10/2026, n° 50 à 55)** : code seul, **aucune migration**, rien à changer en
+> **Dette technique soldée (29/10/2026, n° 50 à 58)** : code seul, **aucune migration**, rien à changer en
 > base ni dans le `.env`, `vendor/` inchangé. Trois fichiers de l'API changent (liste à l'étape 4) ; le SPA est
 > **à redéployer** (reconstruit avec Vue 3.5.44 stable, motif du serveur sur les refus du barème et des
 > exports). Pas de maintenance obligatoire, pas de cache de PDF à vider. Contrôles à l'étape 8.
@@ -203,12 +203,13 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php`.
       Ces fichiers ont été retirés du dépôt, mais un envoi FTP écrase sans jamais rien effacer.
       Laissés en place, ils restent inertes : aucune route ne les charge.
-- [ ] **29/10 (dette technique)** : l'envoi des dossiers ci-dessus comprend les trois fichiers modifiés :
+- [ ] **29/10 (dette technique)** : l'envoi des dossiers ci-dessus comprend les cinq fichiers modifiés :
       `app/Console/Commands/DatabaseBackup.php` (n° 53 : deux sauvegardes de la même seconde ne
       s'écrasent plus, la seconde prend le suffixe `-2`), `app/Http/Requests/StoreAgentRequest.php`
-      (n° 54 : motif d'un agent sans indice ni salaire brut) et `resources/lang/fr/validation.php`
-      (n° 55 : motifs des dates inversées). Sur une instance déjà à jour du code précédent, envoyer ces
-      trois fichiers seuls suffit ; en cas de doute, envoyer les dossiers entiers. Rien d'autre côté API.
+      (n° 54 : motif d'un agent sans indice ni salaire brut), `resources/lang/fr/validation.php`
+      (n° 55 : motifs des dates inversées), `app/Services/AgentService.php` (n° 58 : même motif à
+      l'import) et `app/Http/Controllers/Api/BackupController.php` (messages accentués). Sur une
+      instance déjà à jour du code précédent, envoyer ces cinq fichiers seuls suffit ; en cas de doute, envoyer les dossiers entiers. Rien d'autre côté API.
 
 > Le code doit être en place **avant** de migrer : les fichiers de migration que vous venez
 > d'envoyer sont précisément ce que l'étape 5 exécutera.
@@ -351,7 +352,7 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 - [ ] **Dette technique (29/10, contrôles en lecture seule)** :
       - *Personnel › Nouvel agent* sans indice ni salaire brut → « L'indice ou le salaire brut est requis pour
         déterminer la catégorie. » ; rien n'est créé ;
-      - *Rapports › Export* avec « Du » postérieur à « Au » → « La date « Au » doit être postérieure à « Du ». »
+      - *Rapports › Export* avec « Du » postérieur à « Au » → « La date « Au » doit être postérieure ou égale à « Du ». »
         et bouton grisé ;
       - le parcours de fumée de la checklist (§05) passe sans page blanche (SPA reconstruit en Vue 3.5.44).
 
@@ -416,7 +417,7 @@ Si la recette échoue et que le correctif n'est pas immédiat :
 > de *Paramètres* et de *Messagerie* de nouveau sans effet ; `settings.json` n'est pas modifié (le restaurer
 > depuis la copie de l'étape 1 seulement si une valeur a été changée pendant la recette).
 >
-> **Dette technique (29/10)** : aucune migration à défaire, base inchangée. Réenvoyer les trois fichiers de
+> **Dette technique (29/10)** : aucune migration à défaire, base inchangée. Réenvoyer les cinq fichiers de
 > l'étape 4 dans leur version précédente et réextraire le SPA précédent suffit. L'ancien `db:backup` reprend
 > alors le défaut n° 53 (une sauvegarde prise dans la même seconde qu'une autre l'écrase) : évitez d'enchaîner
 > sauvegardes et restaurations tant que le correctif n'est pas revenu. Les sauvegardes suffixées `-2` créées
