@@ -9,6 +9,13 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Galerie des écrans recapturée en Vue 3.5.44 (29/10/2026)
+
+- 46 captures refaites sur les données de démonstration avec le SPA en Vue 3.5.44 stable, 53 pages régénérées :
+  rendu identique à la galerie précédente, hormis les dates et les données du jour (journal d'audit, historique).
+- `docs/capturer_ecrans.cjs` attend le chargement effectif de Sora et de DM Sans avant chaque capture et s'arrête
+  sinon : une première passe avait photographié l'écran *Régularisations* en police de repli.
+
 ### Guide utilisateur après la dette (29/10/2026)
 
 - `docs/Guide-Utilisateur-ANaTT.docx` régénéré : nouveautés 1.4 « Refus expliqués (suite) » (barème et exports
