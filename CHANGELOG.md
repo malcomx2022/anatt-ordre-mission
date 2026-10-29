@@ -9,6 +9,14 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Scénario de démo après la dette (29/10/2026)
+
+- `docs/SCENARIO-DEMO.md` rejoué sur MariaDB (base neuve, `QUEUE_CONNECTION=sync`) avec
+  `scripts/recette/rejeu-scenario.cjs` : 119 contrôles conformes, montants et fichiers identiques.
+- En-tête : rejeu automatisé à chaque PR ; §1 « Vérifier avant la démo » (script, puis base à refaire) ;
+  étape B : refus de dates inversées, motif accordé (n° 55) ; §8.4 : sauvegardes rapprochées, suffixe `-2` (n° 53),
+  vérifiés sur l'API réelle.
+
 ### Galerie des écrans recapturée en Vue 3.5.44 (29/10/2026)
 
 - 46 captures refaites sur les données de démonstration avec le SPA en Vue 3.5.44 stable, 53 pages régénérées :
