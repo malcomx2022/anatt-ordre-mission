@@ -29,8 +29,14 @@ class DatabaseBackup extends Command
             return self::FAILURE;
         }
 
+        // Nom à la seconde ; deux sauvegardes dans la même seconde (dont la sauvegarde de
+        // sécurité de db:restore) ne doivent jamais écraser un fichier existant : suffixe -2, -3…
         $timestamp = now()->format('Y-m-d_His');
-        $filename = "backup_{$timestamp}.sql";
+        $base = "backup_{$timestamp}";
+        for ($n = 2; is_file("{$dir}/{$base}.sql") || is_file("{$dir}/{$base}.sql.gz"); $n++) {
+            $base = "backup_{$timestamp}-{$n}";
+        }
+        $filename = "{$base}.sql";
         $filepath = $dir.DIRECTORY_SEPARATOR.$filename;
         $errfile = $filepath.'.err';
 

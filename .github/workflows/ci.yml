@@ -106,6 +106,81 @@ jobs:
         # phpunit.xml force sqlite ":memory:" en env `testing` : rien à provisionner.
         run: vendor/bin/pest --colors=always
 
+  # Ce que SQLite ne sait pas prouver : aller-retour réel db:backup / db:restore
+  # (binaires mysqldump / mysql, défauts n° 10 et 14) et verrou lockForUpdate de
+  # l'amendement (InnoDB). Seul le groupe « mysql » (tests/Mysql) est exécuté ;
+  # ces tests sont ignorés par le job « Backend · Pest » (SQLite).
+  backend-mysql:
+    name: Backend · Pest MySQL
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          # Le nom doit contenir « test » (garde-fou de tests/Support/MysqlReel.php).
+          MYSQL_DATABASE: anatt_test_mysql
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: anatt_test_mysql
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_DUMP_BINARY: mysqldump
+      DB_RESTORE_BINARY: mysql
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_mysql, sqlite3, pdo_sqlite, intl, bcmath, gd, zip
+          ini-values: memory_limit=512M
+          coverage: none
+          tools: composer:v2
+
+      - name: Client MySQL (mysqldump / mysql)
+        run: |
+          if ! command -v mysqldump >/dev/null || ! command -v mysql >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends default-mysql-client
+          fi
+          mysqldump --version
+          mysql --version
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Run Pest (groupe mysql)
+        # Les variables DB_* du job priment sur les <env> de phpunit.xml (non forcées).
+        run: vendor/bin/pest --group=mysql --colors=always
+
   frontend:
     name: Frontend · Vitest + type-check
     runs-on: ubuntu-latest

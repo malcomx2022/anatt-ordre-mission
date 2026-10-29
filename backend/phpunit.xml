@@ -11,6 +11,10 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!-- Vrai MySQL / MariaDB : ignorée sous SQLite (cf. tests/Support/MysqlReel.php). -->
+        <testsuite name="Mysql">
+            <directory>tests/Mysql</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
