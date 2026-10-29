@@ -4,6 +4,12 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 > **Règle d'or** — l'application **ne crée pas** les OM (SEMO les émet) et **ne réalise pas** les paiements (faits sur les plateformes MTN/Moov). Elle **retranscrit** les OM et **génère** les fichiers de paiement à déposer manuellement. Aucune API SEMO, aucune API opérateur, aucun réimport de fichier résultat.
 
+> **État (29/10/2026)** — version 1.4 terminée côté développement : 55 défauts relevés par la revue d'octobre
+> corrigés avec un test, dette technique soldée, CI verte sur sept jobs (dont Pest sur MySQL réel et recette sur
+> l'API réelle). Reste l'exploitation : mettre l'instance à jour ([runbook](docs/runbook-mise-a-jour-cron.md)), la
+> contrôler ([checklist](docs/checklist-post-deploiement.md) §06), éprouver une restauration chez l'hébergeur —
+> détail dans [`docs/revue-projet-2026-10.md`](docs/revue-projet-2026-10.md) §8.
+
 ---
 
 ## Stack
@@ -89,7 +95,8 @@ npm run dev                     # http://localhost:5173  (terminal C)
 ## Concepts métier clés
 
 - **Catégorie** d'agent = `INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400`, déduite de l'indice (ou du salaire brut), reprise de SEMO :
-  la fiche d'un agent exige l'un des deux, la catégorie ne se choisit pas.
+  la fiche d'un agent exige l'un des deux, la catégorie ne se choisit pas (sans l'un ni l'autre : « L'indice ou le
+  salaire brut est requis pour déterminer la catégorie. »).
 - **Per diem** = `taux_journalier(catégorie × zone × type) × nb_jours` selon le **barème officiel ANaTT**
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
   Répartition : **avance 70 %** / **reliquat 30 %** (part de l'avance **paramétrable** par le SUPER_ADMIN, 70 % par défaut ; le reliquat absorbe l'arrondi). Exonération si prise en charge par un tiers.
@@ -131,7 +138,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
   enregistré ; « Enregistrer tout » applique **tous** les onglets de *Paramètres* à la fois.
 - **Refus expliqués** : tout refus du serveur affiche son motif, une fois et en français — signature refusée
   par la séparation des tâches, numéro d'état manquant ou déjà attribué, amendement impossible, adresse
-  e-mail déjà utilisée… (`resources/lang/fr/validation.php` pour les règles génériques). Textes de l'interface et
+  e-mail déjà utilisée, taux du barème ou période d'export refusés, dates de mission inversées (« La date de retour
+  doit être postérieure ou égale à la date de départ. »)… (`resources/lang/fr/validation.php` pour les règles
+  génériques). Un message général (« Échec de l'export. ») n'apparaît que si le serveur ne répond pas. Textes de l'interface et
   messages de l'API sont accentués (« Accès interdit », « Agent créé avec succès. »), y compris sur les pages d'erreur.
 - **E-mails** : un e-mail de notification qui ne part pas (serveur SMTP injoignable) est journalisé et
   **n'empêche jamais** l'action qui notifie — validation, signature, rejet, amendement, confirmation d'un lot ;
@@ -175,8 +184,10 @@ npm run dev                     # http://localhost:5173  (terminal C)
 - **Restauration** : écran *Paramètres › Sauvegardes* (SUPER_ADMIN, confirmation par recopie du nom du
   fichier) ou `php artisan db:restore <fichier> --force`. Une **sauvegarde de sécurité** de l'état courant
   est prise avant d'écraser la base. Requiert `mysqldump` et `mysql` (`DB_DUMP_BINARY` /
-  `DB_RESTORE_BINARY` dans le `.env`). À tester sur une base de recette avant d'en avoir besoin.
-  La matrice des permissions de la sauvegarde s'applique dès la requête suivante (cache purgé).
+  `DB_RESTORE_BINARY` dans le `.env`). Le mécanisme est vérifié en CI sur MySQL 8 (aller-retour réel) ; à
+  éprouver une fois avec les binaires et les droits de l'hébergeur. La matrice des permissions de la sauvegarde
+  s'applique dès la requête suivante (cache purgé). Deux sauvegardes de la même seconde ne s'écrasent pas
+  (suffixe `-2`, `-3`…).
 - **Hors sauvegarde de la base** : `storage/app/settings.json` (part d'avance, exercice, SMTP…), les paraphes
   des signataires et les fichiers produits (PDF, fichiers de paiement) vivent sur le disque. Les conserver
   en sauvegardant `storage/` ; ne jamais écraser ce dossier lors d'une mise à jour.
@@ -201,13 +212,14 @@ anatt-ordre-mission/
 ├── backend/             # API Laravel
 │   ├── app/{Http,Models,Services,Jobs}
 │   ├── database/{migrations,seeders,factories}
-│   ├── tests/{Feature,Unit}
+│   ├── tests/{Feature,Unit,Mysql}   # Mysql : groupe `mysql`, vrai MySQL (ignoré ailleurs)
 │   ├── docs/            # queues.md (files), openapi.yaml (référence API)
 │   └── README.md        # prise en main de l'API
 ├── frontend/            # SPA Vue 3
 │   ├── src/{views,components,stores,services,types,utils}
 │   ├── e2e/             # parcours critique Playwright
 │   └── README.md        # prise en main du SPA
+├── scripts/recette/     # rejeu du scénario de démo + recette transverse sur l'API réelle (exécutés en CI)
 └── docs/                # guides, procédures, revue, galerie des écrans
 ```
 
@@ -253,16 +265,17 @@ node scripts/recette/recette-api.cjs      # recette transverse (rejouable sur la
 | `CLAUDE.md` | Modèles de données, endpoints API, règles métier, design system |
 | `AGENTS.md` | Consignes de contribution : environnement, vérifications, règles à ne pas casser |
 | `CHANGELOG.md` | Historique des modifications |
-| `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
+| `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4, à jour au 29/10/2026) — généré par `docs/generer_guide_utilisateur.py` |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.4) — générée par `docs/generer_documentation_technique.py` |
-| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5 avec refus expliqué, configuration e-mail §8.6 avec validation malgré un SMTP en panne, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10, rejoué le 29/10 |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5 avec refus expliqué, configuration e-mail §8.6 avec validation malgré un SMTP en panne, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10, rejoué le 29/10 ; rejoué automatiquement à chaque PR par `scripts/recette/rejeu-scenario.cjs` |
 | `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
 | `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
 | `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Droits d'accès et parcours par profil |
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
-| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
+| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, défauts n° 1 à 55 corrigés, dette soldée, ce qui reste côté exploitation : §8) |
+| `scripts/recette/README.md` | Recette sur l'API réelle : prérequis, commandes, sortie attendue (119 + 154 contrôles) |
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
-| `docs/00_galerie_index.html` … | Galerie des écrans réels (46 écrans, recapturée le 29/10/2026) : captures par `docs/capturer_ecrans.cjs` (base de démonstration neuve, build de production, navigateur en `LANG=fr_FR.UTF-8`), pages par `docs/generer_maquettes.py` |
+| `docs/00_galerie_index.html` … | Galerie des écrans réels (46 écrans, recapturée le 29/10/2026 avec le SPA en Vue 3.5.44) : captures par `docs/capturer_ecrans.cjs` (base de démonstration neuve, build de production, navigateur en `LANG=fr_FR.UTF-8`, polices Sora et DM Sans attendues), pages par `docs/generer_maquettes.py` |
 | `backend/README.md`, `frontend/README.md` | Prise en main de l'API et du SPA (commandes, repères dans le code) |
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest` ; réponses réelles vérifiées par `OpenApiReponsesTest`) |
