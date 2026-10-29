@@ -11,8 +11,9 @@ sur l'hébergement mutualisé (`backend/.env.production.example`).
 | `database` | worker (`queue:work`, table `jobs`) | 3 tentatives, backoff `[10, 30, 60]` s | mutualisé à gros volumes (Cron chaque minute) |
 | `redis` | worker (`queue:work redis`) | idem | serveur dédié avec Redis |
 
-> *Relu le 25/10/2026 contre le code* : jobs, contrôleurs, `PaiementGeneration.vue` et
-> `AsyncGenerationTest`. Le comportement en `sync` décrit ci-dessous est verrouillé par deux tests.
+> *Relu le 29/10/2026 contre le code* : jobs (`$tries`, `$backoff`, durées du suivi), `config/paiement.php`,
+> `PaiementGeneration.vue` (sondage), `SendNotification` et `AsyncGenerationTest`. Le comportement en `sync`
+> décrit ci-dessous est verrouillé par deux tests.
 >
 > **En `sync`**, le job tourne pendant le `POST` lui-même.
 > - **S'il réussit**, le gros lot répond `202 + tracking_id` comme avec un worker. Le premier
@@ -31,13 +32,13 @@ sur l'hébergement mutualisé (`backend/.env.production.example`).
 |-----|------|------|
 | `App\Jobs\GenererLotPaiementJob` | `paiements` | Génère un **gros lot** de paiement (.txt MTN / .xlsx Moov) |
 | `App\Jobs\GenererEtatJob` | `etats` | Produit un **export de rapport** (xlsx/pdf) — sans lien avec le circuit des états de paiement, malgré son nom |
-| `App\Jobs\SendNotification` | `default` | Envoie l'e-mail d'une notification. La notification en base est créée avant, hors job. Aucun e-mail n'est envoyé à un compte désactivé entre-temps (correctif n° 27). |
+| `App\Jobs\SendNotification` | `default` | Envoie l'e-mail d'une notification, objet préfixé du nom de l'application, par le serveur de *Paramètres › Messagerie* (`Messagerie::appliquer()`, sinon le `.env`). La notification en base est créée avant, hors job ; un type coupé dans *Paramètres › Notifications* n'est pas émis du tout. Aucun e-mail n'est envoyé à un compte désactivé entre-temps (correctif n° 27). |
 
 `GenererLotPaiementJob` et `GenererEtatJob` : `$tries = 3`, `$backoff = [10, 30, 60]`,
 suivi par `tracking_id` dans le **cache** (clés `lot_job:{id}` / `etat_job:{id}` ;
 `EN_COURS` 1 h, résultat 24 h). `SendNotification` n'a pas de suivi. Une erreur d'envoi SMTP est
 interceptée dans le job et journalisée (`storage/logs`) : le job ne la fait jamais échouer, et elle
-n'est pas rejouée.
+n'est pas rejouée (correctif n° 43, `MessagerieSmtpTest`).
 
 > En `sync`, l'e-mail part **pendant** la requête qui notifie, par exemple la validation d'un état
 > par le DG. Un serveur SMTP lent ralentit donc cette action, sans jamais la faire échouer.

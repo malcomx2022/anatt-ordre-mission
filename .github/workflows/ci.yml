@@ -1,8 +1,9 @@
 name: CI
 
 # Bloque le merge d'une PR ou d'un push sur main dès qu'un test casse.
-# Deux suites : Pest (backend Laravel) et Vitest (frontend Vue).
-# Ces deux garde-fous sont issus de l'incident du 30/07 où un merge silencieux
+# Sept jobs : Lint, Pest (SQLite), Pest MySQL, Vitest + type-check, Playwright,
+# Recette · API réelle (scripts/recette/) et build du SPA (artefact frontend-dist).
+# Les deux premiers garde-fous (Pest et Vitest) sont issus de l'incident du 30/07 où un merge silencieux
 # avait écrasé `normaliserErreurBlob` et le garde-fou `etat.statut` : les tests
 # existaient déjà, il ne leur manquait qu'un CI pour être exécutés à chaque PR.
 

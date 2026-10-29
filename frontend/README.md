@@ -30,9 +30,9 @@ L'URL de l'API se règle **après build**, sans recompiler, dans `public/runtime
 ```bash
 npm run type-check        # vue-tsc
 npm run lint:check        # oxlint + ESLint, en vérification (npm run lint corrige)
-npx vitest run            # 241 tests ; « npm run test:unit » seul reste en mode surveillance
+npx vitest run            # 241 tests en 48 fichiers ; « npm run test:unit » seul reste en mode surveillance (ajouter -- --run)
 npm run build             # type-check + build de production dans dist/
-npm run test:e2e          # Playwright, parcours critique (e2e/parcours-critique.spec.ts), API simulée
+npm run test:e2e          # Playwright, 3 tests du parcours critique (e2e/parcours-critique.spec.ts), API simulée
 ```
 
 Playwright avec un Chromium déjà installé : `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/chromium npm run test:e2e`.
@@ -47,8 +47,8 @@ Sans écran, pointez sur le binaire *headless shell* et ajoutez `--project=chrom
 | `src/components/paiements/PaiementGeneration.vue` | Génération MTN / Moov, lots complémentaires, suivi des gros lots |
 | `src/router/index.ts` | Routes et `meta.permission` |
 | `src/services/` | Un client par domaine ; `http.ts` partage l'instance axios et normalise la pagination |
-| `src/stores/`, `src/composables/` | Pinia (`auth`, `notifications`, `ordres-mission`) ; `useApi` (instance axios : URL de l'API, jeton Bearer, verrou 423), `useAuth`, `usePartAvance`, `useSearch`, `useToast` |
-| `src/utils/` | `benin.ts` (téléphone, catégorie, `moisLocal`), `permissions.ts`, `roles.ts`, `etats.ts`, `exercice.ts` |
+| `src/stores/`, `src/composables/` | Pinia (`auth`, `notifications`, `ordres-mission`) ; `useApi` (instance axios : URL de l'API, jeton Bearer, verrou 423 ; `getErrorMessage`, `getValidationErrors`), `useApplication` (nom de l'application en titre d'onglet), `useAuth`, `usePartAvance`, `useSearch`, `useToast` |
+| `src/utils/` | `benin.ts` (téléphone, catégorie, `moisLocal`), `permissions.ts`, `roles.ts`, `etats.ts`, `exercice.ts` (miroir de `Parametres::anneeFiscalePour`), `repartition.ts` (libellés avance / reliquat, miroir de `PdfGenerator::libellesRepartition`), `notifications.ts` (les 7 types, miroir de `NotificationContenu`) |
 | `src/__tests__/`, `e2e/` | Vitest ; Playwright |
 
 ## Points d'attention
@@ -67,6 +67,9 @@ Sans écran, pointez sur le binaire *headless shell* et ajoutez `--project=chrom
 - **Refus 422** : l'API renvoie « Donnees invalides. » et le motif dans `errors`. `getErrorMessage` renvoie
   le premier motif et l'intercepteur l'affiche une fois (`useToast` n'empile pas deux messages identiques) ;
   `getValidationErrors` sert aux erreurs par champ d'un formulaire (`refus-motif.spec.ts`).
+  Un écran qui a son propre message d'échec le passe en **repli** : `getErrorMessage(e, "Échec de l'export.")`.
+  Le motif du serveur reste prioritaire ; le repli ne s'affiche que si le serveur ne dit rien (réseau coupé,
+  réponse sans message). Ne jamais afficher le message de l'écran à la place du motif (`echec-motif-ecrans.spec.ts`).
 - Les pages d'écran de `../docs/` (`00_galerie_index.html` …) sont tirées de captures de l'application réelle
   (`docs/capturer_ecrans.cjs`, sur une base de démonstration neuve et un build de production ; le script lance
   Chromium en `LANG=fr_FR.UTF-8` pour des champs de date au format français) ; à refaire quand un écran change.
