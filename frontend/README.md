@@ -30,7 +30,7 @@ L'URL de l'API se règle **après build**, sans recompiler, dans `public/runtime
 ```bash
 npm run type-check        # vue-tsc
 npm run lint:check        # oxlint + ESLint, en vérification (npm run lint corrige)
-npx vitest run            # 210 tests ; « npm run test:unit » seul reste en mode surveillance
+npx vitest run            # 211 tests ; « npm run test:unit » seul reste en mode surveillance
 npm run build             # type-check + build de production dans dist/
 npm run test:e2e          # Playwright, parcours critique (e2e/parcours-critique.spec.ts), API simulée
 ```
@@ -64,7 +64,8 @@ Sans écran, pointez sur le binaire *headless shell* et ajoutez `--project=chrom
 - **Session** : `stores/auth.ts` → `fetchUser` ne met fin à la session que sur un 401 ; une erreur passagère
   est relancée sans toucher au jeton, et le garde du routeur ouvre l'écran 500 (« Réessayer » ramène à la page
   demandée) ou, sur un 503, l'écran Maintenance.
-- **Refus 422** : l'API renvoie « Donnees invalides. » et le motif dans `errors` ; afficher le motif
-  (`getValidationErrors`), pas le message générique.
+- **Refus 422** : l'API renvoie « Donnees invalides. » et le motif dans `errors`. `getErrorMessage` renvoie
+  le premier motif et l'intercepteur l'affiche une fois (`useToast` n'empile pas deux messages identiques) ;
+  `getValidationErrors` sert aux erreurs par champ d'un formulaire (`refus-motif.spec.ts`).
 - Les pages d'écran de `../docs/` (`00_galerie_index.html` …) sont tirées de captures de l'application réelle
   (`docs/capturer_ecrans.cjs`) ; à refaire quand un écran change.

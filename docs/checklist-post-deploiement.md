@@ -19,6 +19,7 @@
 > *Complété le 28/10/2026* : réglages de *Paramètres* appliqués et part de la mission (§06, dernière sous-section) ;
 > puis messagerie appliquée (e-mail de test, motif des refus), session conservée sur erreur passagère et écran 500 (§05, §06).
 > puis motif d'un refus affiché par *Paramètres* et e-mail en échec sans effet sur l'action qui notifie (§06).
+> *Complété le 29/10/2026* : motif de **tout** refus affiché une fois, en français (§06, *Refus expliqués*).
 > *Relu le 27/10/2026 (version 1.4)* : sortie de maintenance (§01), cache des PDF d'OM à vider aussi en 1.4
 > (§04), comportement réel de l'écran Maintenance (§05), contrôles de la 1.4 précisés (§06).
 
@@ -184,6 +185,7 @@ Sans création de données :
 - [ ] **Écran Messagerie** (`/admin/email`) : la configuration SMTP n'est plus « indicative ». Si un serveur y figure (saisi avant la mise à jour), il **remplace** désormais le `.env` : le vérifier, ou vider le champ pour revenir au `.env`, puis « Envoyer un e-mail de test » → le message arrive dans la boîte du super administrateur.
 - [ ] **Refus expliqués (Messagerie)** : saisir le port `70000` puis « Enregistrer » → le message « Le port SMTP doit être un entier entre 1 et 65535. » s'affiche (et non « Donnees invalides. ») ; rien n'est enregistré. Remettre le port.
 - [ ] **Refus expliqués (Paramètres)** : onglet *Général*, part de l'avance `120` puis « Enregistrer tout » → « Le pourcentage d'avance doit être un entier entre 0 et 100. » (et non « Donnees invalides. ») ; rien n'est enregistré, **aucun** onglet. Recharger la page : la part d'avant est affichée.
+- [ ] **Refus expliqués (tous les écrans, messages en français)** : *Utilisateurs › Nouvel utilisateur*, saisir l'adresse d'un compte existant (ex. celle du super administrateur) puis « Créer » → « Cette adresse e-mail est déjà utilisée. » sous le champ et dans l'avertissement en haut à droite, et non « Donnees invalides. » ni une clé du type `validation.unique` (fichier `resources/lang/fr/validation.php` absent ou non envoyé). Rien n'est créé.
 - [ ] **Session conservée au rechargement** : recharger (F5) une page quelconque → on reste connecté, sur la même page. Seule une session expirée (durée de session dépassée, compte désactivé) renvoie à la connexion.
 - [ ] **Part de la mission** : l'écran d'un état (`/missions/:id/etat`) titre ses onglets « Avances (… %) » avec la part de **ses** OM ; l'écran de génération libelle la tranche de même, une fois la mission choisie.
 

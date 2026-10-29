@@ -30,6 +30,11 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > pour chacune ; D2 avec reprise des horodatages). Pest compte 598 tests, Vitest 124. Le §7 dresse
 > le point de ce qui reste.
 >
+> **Point final du 29/10/2026.** La relecture document par document a continué du 27 au 29/10
+> (PR #166 à #190) et fait apparaître quinze défauts de plus (n° 33 à 47), tous corrigés avec un test.
+> Pest compte 690 tests (76 fichiers), Vitest 211, Playwright 3. Le §8 fait le point final : ce qui
+> a été corrigé, l'état de chaque document et **ce qui reste** (gestes d'exploitation, dette connue).
+>
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
 > colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
 > état, avec 9 sondes supplémentaires sur les correctifs n° 19 et 22.
@@ -425,4 +430,78 @@ correction des écarts. La date et la PR sont celles de la dernière relecture.
 
 Les six gestes du §6, *À faire côté exploitation*, restent à faire sur l'instance en ligne. La
 mise à jour couvre désormais les correctifs n° 1 à 32, sans autre migration que celle de la 1.3.
+
+## 8. Point final (29/10/2026)
+
+### 8.1 Défauts n° 33 à 47 (27-29/10)
+
+Relevés en confrontant les documents, les captures et le scénario de démo au code ; chacun est
+corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
+
+| N° | Date | Défaut | Correctif et test |
+|----|------|--------|-------------------|
+| 33 | 27/10 | Bandeau de l'écran *Signatures* coupé en colonnes | `AppAlert.vue` (contenu du slot en un bloc) ; `app-alert.spec.ts` |
+| 34 | 27/10 | Fiche et aperçu d'un OM amendé : « Avance (70 %) / Reliquat (30 %) » au paramètre courant, même pour un trop-perçu | `utils/repartition.ts`, miroir de `PdfGenerator::libellesRepartition` ; `repartition.spec.ts` |
+| 35 | 27/10 | Modèles de notification de l'ancien circuit sur l'écran *Configuration e-mail* | Les 7 notifications réelles ; `NotificationModelesEcranTest` |
+| 36 | 27/10 | Écran d'un état et choix de la tranche à la part **courante** (pourcentage faux après un changement de réglage) | `Mission::partAvanceReelle`, `part_avance` (#174) ; `PartAvanceReelleTest`, `part-avance-reelle.spec.ts` |
+| 37 | 28/10 | Réglages de *Paramètres* enregistrés sans effet (« indicatifs ») | Appliqués par le serveur (#175) ; `ReglagesExploitationTest` |
+| 38 | 28/10 | Agent ajouté deux fois à une mission signalé seulement à l'enregistrement | Signalé à la saisie, étape bloquée (#175) ; `mission-agent-doublon.spec.ts` |
+| 39 | 28/10 | Limite de requêtes (429) affichée en anglais (« Too Many Attempts. ») | `getErrorMessage` (#175) ; `erreur-429.spec.ts` |
+| 40 | 28/10 | Configuration SMTP de *Messagerie* sans effet | `App\Support\Messagerie::appliquer()`, e-mail de test ; `MessagerieSmtpTest` |
+| 41 | 28/10 | *Messagerie* : refus affiché « Donnees invalides. » | Motif de `errors` ; `admin-email-backup.spec.ts` |
+| 42 | 28/10 | Déconnexion (et jeton révoqué) sur une erreur passagère au rechargement | Seul un 401 met fin à la session ; `session-erreur-passagere.spec.ts` |
+| 43 | 28/10 | E-mail de notification en échec : la signature répondait 500 en `sync` (#184) | `SendNotification` journalise sans relancer ; `MessagerieSmtpTest` |
+| 44 | 28/10 | *Paramètres* : refus affiché « Donnees invalides. » (#185) | Motif de `errors` ; `settings-refus.spec.ts` |
+| 45 | 28/10 | Tous les écrans : motif d'un refus 422 perdu, « Donnees invalides. » affiché deux fois (#188) | `getErrorMessage`, intercepteur, `useToast` sans doublon ; `refus-motif.spec.ts` |
+| 46 | 28/10 | Règles de validation génériques : clé brute (`validation.unique`) en production (#188) | `resources/lang/fr/validation.php` ; `ValidationFrancaisTest` |
+| 47 | 29/10 | *Matrice des permissions* : réinitialisation refusée (ordonnateur-payeur) affichée « La réinitialisation a échoué. » sans motif (#190) | `RolesView.vue` (`messageErreur`) ; `roles-matrice.spec.ts` |
+
+### 8.2 État de la documentation
+
+Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a de reste à faire.
+
+| Document | Dernière mise à jour |
+|----------|----------------------|
+| `README.md`, `backend/README.md`, `frontend/README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | 29/10 (#190) |
+| `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | 29/10 (#190) |
+| `docs/circuits-validation.md`, `docs/amendement-om.md` | 28/10 (#188) |
+| `docs/workflows-par-profil.md`, `docs/SCENARIO-DEMO.md` | 29/10 (#190) |
+| `docs/parametrage-part-avance.md` | 29/10 (#189) |
+| `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
+| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée »), `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérés le 29/10 (#190) |
+| Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 28/10 ; les correctifs n° 45 à 47 ne changent que des messages éphémères, non capturés |
+| `backend/docs/openapi.yaml`, `backend/docs/queues.md` | 28/10 ; validés en CI (`OpenApiReponsesTest`) |
+
+### 8.3 Ce qui reste
+
+**À faire côté exploitation** (sur l'instance en ligne ; rien d'autre n'est à développer) :
+
+1. **Mettre à jour l'instance vers la 1.4** avec `docs/runbook-mise-a-jour-cron.md` : une migration
+   (fuseau, application **en maintenance**), `vendor/` inchangé, SPA à redéployer ; le nouveau fichier
+   `resources/lang/fr/validation.php` part avec `resources/`.
+2. **Relire `storage/app/settings.json` avant d'envoyer le code** (runbook, étape 1) : les réglages de
+   *Paramètres* et de *Messagerie* qu'il contient s'appliquent dès lors (HTTPS forcé, maintenance, serveur SMTP).
+3. **Contrôler** avec `docs/checklist-post-deploiement.md` §06 (en lecture seule en production ; les
+   contrôles qui créent des données sur une instance de recette).
+4. **Vider le cache des PDF d'OM** (`storage/app/private/ordres/`) et **envoyer un e-mail de test** depuis
+   *Messagerie*.
+5. **Éprouver la restauration sur une base MySQL de recette** (`db:restore`, n° 10 et 14).
+6. **Sauvegarder `storage/` avec la base** : réglages, paraphes et fichiers produits ne sont pas dans le dump.
+7. Si la file passe en `QUEUE_CONNECTION=database` : tâche Cron `queue:work` nommant les trois files.
+
+**Dette technique connue** (sans effet sur le fonctionnement) :
+
+- Correctifs sans test automatisé : minuteurs, page de maintenance, garde de route au rechargement,
+  `lockForUpdate` sous MySQL.
+- Restauration et tri des sauvegardes couverts seulement par Pest (SQLite, simulation).
+- Scripts de recette (83 contrôles) et de rejeu de la démo non versionnés : seuls Pest, Vitest et
+  Playwright tournent en CI.
+- Trois écrans (barème, exports de rapports) gardent un message d'échec générique à côté du motif ; depuis
+  le n° 45, l'avertissement global donne le motif réel, rien ne se perd.
+- Vue reste en `3.6.0-beta.9` (figée par le lock) : passer à la 3.6 stable quand elle paraîtra, CI rejouée.
+- `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md` sont historiques (marqués comme
+  tels) : à archiver si le client le souhaite.
+
+**Aucune décision n'est en attente** : D1 à D4 sont appliquées (§7.1), la règle n° 6 (thème vert) est
+tranchée (`CLAUDE.md` §4).
 

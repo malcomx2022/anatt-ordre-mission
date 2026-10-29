@@ -217,7 +217,7 @@ doc.add_page_break()
 # =========================================================================
 # ÉVOLUTIONS
 # =========================================================================
-h1("Évolutions de la version 1.4 (26-27 octobre 2026)")
+h1("Évolutions de la version 1.4 (26-28 octobre 2026)")
 para("Cette version applique les quatre décisions du §7.1 de la revue (docs/revue-projet-2026-10.md), corrige "
      "trois défauts d'interface et remplace les maquettes d'août 2026 par les écrans réels.")
 tableau(
@@ -264,6 +264,12 @@ tableau(
         ["Messagerie, refus (28/10)", "L'écran Messagerie affiche le motif d'un refus 422 (champ errors : port invalide, "
          "message du serveur SMTP) et non plus le message générique « Donnees invalides. ». Scénario de démo complété "
          "(§8.6 messagerie, §8.7 maintenance), rejoué sur l'API réelle.", "§7.6, §10"],
+        ["Refus expliqués (28/10)", "getErrorMessage et l'intercepteur Axios d'un 422 donnent le premier motif de errors, "
+         "sur tous les écrans (séparation des tâches, numéro d'état, gardes de l'amendement…), au lieu de « Donnees "
+         "invalides. » affiché deux fois ; useToast n'empile plus un message identique. refus-motif.spec.ts.", "§7.6"],
+        ["Messages de validation (28/10)", "resources/lang/fr/validation.php : en production (APP_LOCALE=fr, "
+         "APP_FALLBACK_LOCALE=fr), une règle générique renvoyait sa clé brute (« validation.unique »). Messages et noms "
+         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests). Pest 690, Vitest 210 (211 le 29/10).", "§7.6, §9.6"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -1028,7 +1034,7 @@ tableau(
         ["202 Accepted", "Traitement asynchrone", "Génération de gros lot / export (tracking_id)"],
         ["401 / 403", "Non authentifié / interdit", "Token absent ou expiré (toujours en JSON sur /api/*) / permission insuffisante"],
         ["404 / 405", "Introuvable / méthode non permise", "Ressource ou route inexistante / ex. GET sur /api/auth/login (toujours en JSON)"],
-        ["422", "Erreur de validation", "Champ requis manquant, données invalides. Corps : message générique « Donnees invalides. » + errors { champ: [motif] } — l'écran affiche le motif"],
+        ["422", "Erreur de validation", "Champ requis manquant, données invalides. Corps : message générique « Donnees invalides. » + errors { champ: [motif] }, motifs en français (resources/lang/fr) — l'écran affiche le premier motif (getErrorMessage)"],
         ["423 Locked", "Changement de mot de passe requis", "Compte en must_change_password"],
         ["429", "Trop de requêtes", "Dépassement du rate limiting"],
         ["500", "Erreur serveur", "Erreur interne inattendue"],
@@ -1152,6 +1158,9 @@ bullet("Purger les caches AVANT migrate (optimize:clear) : avec une configuratio
 bullet("Contrôle : un date_paiement relevé avant la mise à jour a pris une heure en base, et l'écran affiche la "
        "même heure qu'avant (docs/checklist-post-deploiement.md §06, Version 1.4).")
 bullet("vendor/ inchangé ; SPA à redéployer (dépendances retirées, écran de génération, correctifs d'interface).")
+bullet("Correctifs des 27-29/10 (n° 33 à 47) : code seul, aucune migration de plus. Relire storage/app/settings.json "
+       "avant l'envoi du code : les réglages de Paramètres et de Messagerie qu'il contient s'appliquent dès lors. "
+       "Le nouveau fichier resources/lang/fr/validation.php part avec resources/, déjà envoyé à chaque mise à jour.")
 
 # =========================================================================
 # 10. QUALITÉ ET TESTS
@@ -1161,8 +1170,8 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "671 tests au total (75 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "206 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "690 tests au total (76 fichiers)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "211 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
@@ -1182,8 +1191,10 @@ bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTI
        "vérification automatisée en CI depuis le 28/10 (OpenApiReponsesTest). Le 28/10, variantes messagerie et "
        "maintenance du scénario rejouées sur l'API réelle (MariaDB, base neuve) : elles ont révélé l'affichage du "
        "message générique des 422 à l'écran Messagerie, corrigé.")
-bullet("Défauts relevés par la revue d'octobre 2026 : 32, tous corrigés avec un test vu en échec sans le "
-       "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3). Les quatre décisions du §7.1 sont appliquées depuis la 1.4.")
+bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 15 de plus du 27 au 29/10 (n° 33 à 47, en "
+       "confrontant la documentation au code et à l'interface), tous corrigés avec un test vu en échec sans le "
+       "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3 et §8). Les quatre décisions du §7.1 "
+       "sont appliquées depuis la 1.4.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
        "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
 bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")

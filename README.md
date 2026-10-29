@@ -12,7 +12,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
 | Frontend | Vue **3.6 bêta** (Composition API, TypeScript), figée par `package-lock.json` · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
-| Tests | Pest / PHPUnit (690 tests, 76 fichiers) · Vitest (210 tests) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (690 tests, 76 fichiers) · Vitest (211 tests) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -128,6 +128,9 @@ npm run dev                     # http://localhost:5173  (terminal C)
   s'applique. Bouton « Envoyer un e-mail de test » : un échec affiche le message du serveur de messagerie.
   Une valeur refusée (part d'avance hors 0-100, port invalide…) est expliquée à l'écran et rien n'est
   enregistré ; « Enregistrer tout » applique **tous** les onglets de *Paramètres* à la fois.
+- **Refus expliqués** : tout refus du serveur affiche son motif, une fois et en français — signature refusée
+  par la séparation des tâches, numéro d'état manquant ou déjà attribué, amendement impossible, adresse
+  e-mail déjà utilisée… (`resources/lang/fr/validation.php` pour les règles génériques).
 - **E-mails** : un e-mail de notification qui ne part pas (serveur SMTP injoignable) est journalisé et
   **n'empêche jamais** l'action qui notifie — validation, signature, rejet, amendement, confirmation d'un lot ;
   la notification reste dans la cloche.

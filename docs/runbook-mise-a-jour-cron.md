@@ -31,7 +31,9 @@
 > de l'API au rechargement ne déconnecte plus (SPA). Un e-mail qui ne part pas (serveur SMTP faux ou
 > injoignable) n'interrompt plus l'action qui notifie — en `QUEUE_CONNECTION=sync`, une signature répondait
 > jusque-là en erreur 500 — : l'échec est seulement journalisé (`storage/logs/laravel-AAAA-MM-JJ.log`, journal quotidien de production) et la cloche reçue.
-> Un réglage refusé par *Paramètres* affiche son motif (et non « Donnees invalides. »).
+> Un réglage refusé par *Paramètres* affiche son motif (et non « Donnees invalides. »). *Complété le 29/10* :
+> tout refus affiche son motif, une fois et en français — nouveau fichier `resources/lang/fr/validation.php`,
+> envoyé avec `resources/` à l'étape 4 (rien à ajouter) ; contrôle à l'étape 8.
 >
 > *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
 > `vendor/composer/platform_check.php`. *Relu le 27/10/2026 (version 1.4)* : fuseau dans le `.env`,
@@ -322,7 +324,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
         « Enregistrer tout » enregistre **et applique** tous les onglets d'un coup. Un refus affiche son
         motif (ex. « Le pourcentage d'avance doit être un entier entre 0 et 100. ») et n'enregistre rien ;
       - après un échec d'envoi, le journal du jour (`storage/logs/laravel-AAAA-MM-JJ.log`) porte « SendNotification: echec envoi email » :
-        l'action a abouti, seul l'e-mail manque — corriger *Messagerie* puis renvoyer un e-mail de test.
+        l'action a abouti, seul l'e-mail manque — corriger *Messagerie* puis renvoyer un e-mail de test ;
+      - *Utilisateurs › Nouvel utilisateur* avec l'adresse d'un compte existant → « Cette adresse e-mail est
+        déjà utilisée. » (une clé `validation.unique` à l'écran : `resources/lang/` n'a pas été envoyé).
 
       Les autres contrôles sont dans la section *06 › Réglages de Paramètres et part de la mission* de la checklist.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.

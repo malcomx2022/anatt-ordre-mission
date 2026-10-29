@@ -220,6 +220,23 @@ describe('RolesView — édition (SUPER_ADMIN)', () => {
   })
 })
 
+describe('RolesView — réinitialisation refusée', () => {
+  beforeEach(() => {
+    droits = ['utilisateurs.gerer', 'roles.gerer']
+  })
+
+  it('affiche le motif du refus (membre devenu ordonnateur-payeur), pas un échec générique', async () => {
+    const motif = 'Séparation ordonnateur/payeur : un profil qui valide l’état (om.approuver) ne peut pas aussi générer ou confirmer les paiements.'
+    reinitialiser.mockRejectedValue({ response: { status: 422, data: { message: 'Donnees invalides.', errors: { permissions: [motif] } } } })
+    const w = await monter()
+
+    await bouton(w, 'Réinitialiser Directeur Général')!.trigger('click')
+    await flushPromises()
+
+    expect(toastError).toHaveBeenCalledWith(motif)
+  })
+})
+
 describe('RolesView — rôles personnalisés', () => {
   beforeEach(() => {
     droits = ['utilisateurs.gerer', 'roles.gerer']
