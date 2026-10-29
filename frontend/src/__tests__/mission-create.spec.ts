@@ -30,7 +30,7 @@ vi.mock('@/composables/useApi', () => ({
   useApi: () => ({}),
   getValidationErrors: (e: unknown) =>
     (e as { response?: { data?: { errors?: Record<string, string[]> } } }).response?.data?.errors ?? {},
-  getErrorMessage: () => 'Erreur',
+  getErrorMessage: (_e: unknown, repli?: string) => repli ?? 'Erreur',
 }))
 vi.mock('@/composables/useToast', () => ({
   useToast: () => ({ success: vi.fn(), error: toastError, warning: toastWarning, show: vi.fn() }),
@@ -294,6 +294,48 @@ describe('MissionCreateView — récapitulatif et enregistrement', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Référence SEMO déjà retranscrite.')
+    // Le motif est dans l'encadré (et l'avertissement global du 422) : pas de toast générique en plus.
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('garde un message de repli quand le serveur ne répond pas', async () => {
+    creer.mockRejectedValue({ isAxiosError: true })
+    const { wrapper, store } = await monter()
+    await allerEtape2(wrapper, store)
+    remplirBeneficiaire(store, 0, 'SEMO-001')
+    await flushPromises()
+    await bouton(wrapper, 'Suivant').trigger('click')
+    await bouton(wrapper, 'Enregistrer la mission').trigger('click')
+    await flushPromises()
+
+    expect(toastError).toHaveBeenCalledTimes(1)
     expect(toastError).toHaveBeenCalledWith("Échec de l'enregistrement de la mission.")
+  })
+})
+
+describe('MissionCreateView — dates de la mission', () => {
+  it('refuse dès l’étape 1 une date de retour antérieure au départ, avec le motif du serveur', async () => {
+    const { wrapper, store } = await monter()
+    remplirContexte(store)
+    Object.assign(store.contexte, { date_depart: '2026-11-04', date_retour: '2026-11-02' })
+    await flushPromises()
+
+    const motif = 'La date de retour doit être postérieure ou égale à la date de départ.'
+    expect(wrapper.text()).toContain(motif)
+    expect(store.nbJoursMission).toBe(0)
+    expect(store.etape1Valide).toBe(false)
+    await bouton(wrapper, 'Suivant').trigger('click')
+    expect(toastWarning).toHaveBeenCalledWith(motif)
+    expect(wrapper.text()).not.toContain('Enregistrer la mission')
+  })
+
+  it('accepte une mission d’un jour (retour le jour du départ)', async () => {
+    const { store } = await monter()
+    remplirContexte(store)
+    Object.assign(store.contexte, { date_depart: '2026-11-04', date_retour: '2026-11-04' })
+    await flushPromises()
+    expect(store.datesInversees).toBe(false)
+    expect(store.nbJoursMission).toBe(1)
+    expect(store.etape1Valide).toBe(true)
   })
 })

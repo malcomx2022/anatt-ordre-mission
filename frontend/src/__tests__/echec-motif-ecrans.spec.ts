@@ -17,8 +17,9 @@ vi.mock('@/services/rapports', () => ({
   rapportsService: { export: (...a: unknown[]) => exporter(...a), telechargerExport: vi.fn(), parDimension: vi.fn().mockResolvedValue([]) },
 }))
 const toastError = vi.fn()
+const toastSuccess = vi.fn()
 vi.mock('@/composables/useToast', () => ({
-  useToast: () => ({ success: vi.fn(), error: toastError, warning: vi.fn(), show: vi.fn() }),
+  useToast: () => ({ success: toastSuccess, error: toastError, warning: vi.fn(), show: vi.fn() }),
 }))
 
 const stubs = {
@@ -41,6 +42,32 @@ async function enregistrerBareme() {
   await w.findAll('button').find((b) => b.text().includes('Enregistrer'))!.trigger('click')
   await flushPromises()
 }
+
+describe('Enregistrement partiel du barème', () => {
+  it('garde le taux refusé et sa saisie, recharge les taux enregistrés', async () => {
+    list.mockResolvedValue([
+      { id: 1, categorie: 'INDICE_SUP_800', zone_code: 'INTERIEUR', type_prise_en_charge: 'UN_REPAS', taux_journalier: 15000 },
+      { id: 2, categorie: 'INDICE_SUP_800', zone_code: 'INTERIEUR', type_prise_en_charge: 'DEUX_REPAS', taux_journalier: 30000 },
+    ])
+    update.mockImplementation((id: number) => (id === 2 ? Promise.reject(refus('Taux refusé par le serveur.')) : Promise.resolve({})))
+    const { default: View } = await import('../views/taux/TauxEditView.vue')
+    const w = mount(View, { global: { stubs } })
+    await flushPromises()
+    const [premier, second] = w.findAll('input[type="number"]')
+    await premier!.setValue('16000')
+    await second!.setValue('-5')
+    await w.findAll('button').find((b) => b.text().includes('Enregistrer'))!.trigger('click')
+    await flushPromises()
+
+    expect(toastSuccess).toHaveBeenCalledWith('1 taux mis à jour.')
+    expect(toastError).toHaveBeenCalledWith('Taux refusé par le serveur.')
+    expect(list).toHaveBeenCalledTimes(2) // rechargé après l'enregistrement partiel
+    const apres = w.findAll('input[type="number"]')
+    expect((apres[1]!.element as HTMLInputElement).value).toBe('-5') // saisie refusée conservée
+    expect(apres[1]!.classes()).toContain('border-gold-400') // toujours marquée modifiée
+    expect(apres[0]!.classes()).not.toContain('border-gold-400')
+  })
+})
 
 async function genererExport() {
   const { default: View } = await import('../views/rapports/RapportExportView.vue')

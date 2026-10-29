@@ -39,10 +39,19 @@ async function enregistrer() {
   if (!ids.length) { toast.warning('Aucune modification.'); return }
   saving.value = true
   try {
-    await Promise.all(ids.map((id) => baremesService.update(id, { taux_journalier: modifies.value[id]! })))
-    toast.success(`${ids.length} taux mis à jour.`)
-    modifies.value = {}
-    baremes.value = await baremesService.list()
+    // Une requête par taux : un refus n'annule pas les autres. Les taux enregistrés quittent
+    // la liste des modifications, les refusés y restent (saisie conservée) avec le motif.
+    const resultats = await Promise.allSettled(
+      ids.map((id) => baremesService.update(id, { taux_journalier: modifies.value[id]! })),
+    )
+    const echecs = resultats.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    const enregistres = ids.filter((_, i) => resultats[i]!.status === 'fulfilled')
+    for (const id of enregistres) delete modifies.value[id]
+    if (enregistres.length) {
+      toast.success(`${enregistres.length} taux mis à jour.`)
+      baremes.value = await baremesService.list()
+    }
+    if (echecs.length) toast.error(getErrorMessage(echecs[0]!.reason, "Échec de l'enregistrement."))
   } catch (e) {
     toast.error(getErrorMessage(e, "Échec de l'enregistrement."))
   } finally {
@@ -87,7 +96,7 @@ onMounted(async () => {
               <td>{{ b.type_prise_en_charge }}</td>
               <td class="text-right">
                 <input
-                  type="number" min="0" :value="b.taux_journalier"
+                  type="number" min="0" :value="modifies[b.id] ?? b.taux_journalier"
                   class="w-32 px-3 py-1.5 rounded-lg border border-gray-200 text-right text-sm font-body focus:outline-none focus:border-anatt-500"
                   :class="modifies[b.id] !== undefined ? 'border-gold-400 bg-gold-50' : ''"
                   @input="onEdit(b, ($event.target as HTMLInputElement).value)"

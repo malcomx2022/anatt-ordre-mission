@@ -94,7 +94,7 @@ function changePage(p: number) { currentPage.value = p; load() }
           <input v-model="dateFin" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-body focus:outline-none focus:border-anatt-500">
         </div>
       </div>
-      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date de fin doit être postérieure à la date de début.</p>
+      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date de fin doit être postérieure ou égale à la date de début.</p>
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">

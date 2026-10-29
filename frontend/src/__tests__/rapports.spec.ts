@@ -111,6 +111,6 @@ describe('RapportExportView — garde de plage de dates', () => {
     await flushPromises()
 
     expect(exportFn).not.toHaveBeenCalled()
-    expect(w.text()).toContain('postérieure')
+    expect(w.text()).toContain('postérieure ou égale à « Du »') // une même date est acceptée (after_or_equal côté API)
   })
 })

@@ -68,7 +68,7 @@ function changePage(p: number) { currentPage.value = p; load() }
           <p class="text-xl font-display font-bold text-anatt-700">{{ fmt(totalMontant) }} FCFA</p>
         </div>
       </div>
-      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date « Au » doit être postérieure à « Du ».</p>
+      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date « Au » doit être postérieure ou égale à « Du ».</p>
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">

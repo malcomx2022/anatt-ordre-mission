@@ -65,7 +65,7 @@ watch([dimension, dateDebut, dateFin], load)
 onMounted(load)
 
 async function exporter(format: ExportFormat) {
-  if (plageInvalide.value) { toast.error('La date « Au » doit être postérieure à « Du ».'); return }
+  if (plageInvalide.value) { toast.error('La date « Au » doit être postérieure ou égale à « Du ».'); return }
   exporting.value = format
   try {
     const res = await rapportsService.export({
@@ -108,7 +108,7 @@ const totalMontant = computed(() => lignes.value.reduce((s, r) => s + Number(r.m
           <AppButton size="sm" variant="outline" :disabled="plageInvalide" :loading="exporting === 'pdf'" @click="exporter('pdf')">PDF</AppButton>
         </div>
       </div>
-      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date « Au » doit être postérieure à « Du ».</p>
+      <p v-if="plageInvalide" class="text-xs font-body text-red-500 mt-3">La date « Au » doit être postérieure ou égale à « Du ».</p>
     </AppCard>
 
     <AppCard>

@@ -103,3 +103,19 @@ it('lit aussi un fichier à séparateur « , », produit par Excel en configurat
 
     expect(Agent::where('matricule', 'ANT-3001')->value('categorie'))->toBe('INDICE_SUP_800');
 });
+
+it('motive une ligne sans indice ni salaire brut par l’indice seul, comme la création', function () {
+    $csv = implode("\n", [
+        'nom;prenoms;matricule;ifu;grade;indice;salaire_brut;categorie;telephone;operateur',
+        'TOSSOU;Marc;ANT-4001;;Cadre;;;;0197000002;MTN',
+    ]);
+
+    $reponse = $this->actingAs($this->gestion)
+        ->post('/api/agents/import', ['fichier' => UploadedFile::fake()->createWithContent('agents.csv', $csv)])
+        ->assertStatus(422);
+
+    $motifs = collect($reponse->json('errors'))->pluck('erreurs')->flatten()->all();
+    expect($motifs)->toContain("L'indice ou le salaire brut est requis pour déterminer la catégorie.")
+        ->and($motifs)->not->toContain('Le champ categorie est obligatoire.')
+        ->and(Agent::where('matricule', 'ANT-4001')->exists())->toBeFalse();
+});

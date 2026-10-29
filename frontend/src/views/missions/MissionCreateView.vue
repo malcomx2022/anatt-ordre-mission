@@ -50,8 +50,14 @@ onMounted(async () => {
   }
 })
 
+const MOTIF_DATES = 'La date de retour doit être postérieure ou égale à la date de départ.'
+
 function suivant() {
   erreursApi.value = []
+  if (step.value === 1 && store.datesInversees) {
+    toast.warning(MOTIF_DATES)
+    return
+  }
   if (step.value === 1 && !store.etape1Valide) {
     toast.warning('Complétez le contexte de la mission (objet, destination, zone, dates).')
     return
@@ -83,8 +89,12 @@ async function enregistrer() {
   } catch (e) {
     const errs = getValidationErrors(e)
     erreursApi.value = Object.values(errs).flat()
-    if (!erreursApi.value.length) erreursApi.value = [getErrorMessage(e)]
-    toast.error("Échec de l'enregistrement de la mission.")
+    // Refus motivé (422) : l'encadré liste les motifs, l'avertissement global donne le premier ;
+    // un toast « Échec… » de plus ferait doublon. Sans motif (réseau, 5xx), message de repli.
+    if (!erreursApi.value.length) {
+      erreursApi.value = [getErrorMessage(e, "Échec de l'enregistrement de la mission.")]
+      toast.error(erreursApi.value[0]!)
+    }
   }
 }
 
@@ -142,6 +152,7 @@ function terminer() {
           <div>
             <label class="text-[11px] text-gray-500 font-body block mb-1">Date de retour</label>
             <input v-model="store.contexte.date_retour" type="date" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500">
+            <p v-if="store.datesInversees" class="text-xs font-body text-red-500 mt-1">{{ MOTIF_DATES }}</p>
           </div>
           <div>
             <label class="text-[11px] text-gray-500 font-body block mb-1">Imputation budgétaire</label>
