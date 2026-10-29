@@ -948,7 +948,7 @@ paths:
     post:
       tags: [Agents]
       summary: Créer un agent
-      description: Catégorie déduite de l'indice ou du salaire si cohérente ; cohérence numéro ↔ opérateur contrôlée.
+      description: Catégorie déduite de l'indice ou du salaire brut (l'un des deux est requis) ; cohérence numéro ↔ opérateur contrôlée.
       x-permission: personnel.gerer
       requestBody:
         required: true
@@ -957,7 +957,7 @@ paths:
             schema:
               allOf:
                 - $ref: '#/components/schemas/AgentInput'
-                - required: [nom, prenoms, matricule, categorie, telephone, operateur]
+                - required: [nom, prenoms, matricule, telephone, operateur]
       responses:
         '201':
           description: Agent créé

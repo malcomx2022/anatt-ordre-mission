@@ -81,3 +81,19 @@ it('rédige les messages de succès de l’API avec leurs accents', function () 
         ->assertOk()
         ->assertJsonPath('message', 'Agent désactivé avec succès.');
 });
+
+it('accorde le motif d’une date de retour antérieure au départ', function () {
+    // Le générique « postérieure ou égale au :date » donnait « … égale au date de départ »
+    // (relevé par la recette sur l'API réelle, scripts/recette/recette-api.cjs).
+    $mission = Validator::make(
+        ['date_depart' => '2026-07-01', 'date_retour' => '2026-06-01'],
+        ['date_retour' => 'date|after_or_equal:date_depart'],
+    )->errors()->first('date_retour');
+    $rapport = Validator::make(
+        ['date_debut' => '2026-07-01', 'date_fin' => '2026-06-01'],
+        ['date_fin' => 'date|after_or_equal:date_debut'],
+    )->errors()->first('date_fin');
+
+    expect($mission)->toBe('La date de retour doit être postérieure ou égale à la date de départ.')
+        ->and($rapport)->toBe('La date de fin doit être postérieure ou égale à la date de début.');
+});
