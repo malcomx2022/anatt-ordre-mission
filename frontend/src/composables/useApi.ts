@@ -54,7 +54,8 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<ApiErrorResponse>) => {
     await normaliserErreurBlob(error)
     const status = error.response?.status
-    const message = error.response?.data?.message
+    // Refus (422) : le motif par champ plutôt que « Donnees invalides. ».
+    const message = motifRefus(error.response?.data) ?? error.response?.data?.message
 
     switch (status) {
       case 401: {
@@ -120,6 +121,16 @@ apiClient.interceptors.response.use(
   },
 )
 
+/**
+ * Premier motif d'un refus de validation (422) : l'API répond « Donnees invalides. »
+ * et met la vraie raison par champ dans `errors` (séparation des tâches, numéro
+ * déjà attribué, part d'avance hors bornes…).
+ */
+function motifRefus(data: ApiErrorResponse | undefined): string | undefined {
+  const motifs = data?.errors ? Object.values(data.errors) : []
+  return motifs.find((m) => Array.isArray(m) && m.length > 0)?.[0]
+}
+
 export function useApi() {
   return apiClient
 }
@@ -138,7 +149,7 @@ export function getErrorMessage(error: unknown): string {
     if (error.response?.status === 429) {
       return 'Trop de tentatives en peu de temps : patientez une minute avant de réessayer.'
     }
-    return error.response?.data?.message || 'Une erreur est survenue.'
+    return motifRefus(error.response?.data) || error.response?.data?.message || 'Une erreur est survenue.'
   }
   // Erreur levée par l'application elle-même (ex. assertValidBlobResponse, qui
   // y recopie le message du serveur) : son message est déjà destiné à l'usager.

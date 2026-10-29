@@ -11,6 +11,8 @@ let nextId = 0
 
 export function useToast() {
   function show(message: string, type: Toast['type'] = 'info', duration = 4000) {
+    // Même message déjà affiché (avertissement global d'un refus repris par l'écran) : une seule fois.
+    if (toasts.value.some((t) => t.message === message)) return
     const id = nextId++
     toasts.value.push({ id, message, type })
     setTimeout(() => {

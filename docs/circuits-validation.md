@@ -11,7 +11,8 @@
 >
 > *Complété le 28/10/2026* (réglages de *Paramètres* et de *Messagerie* appliqués) : notification d'une
 > étape coupable, e-mails par le serveur de *Messagerie*, mode maintenance (§1) ; opérateur fermé à la
-> porte de paiement (§3) ; références (§8).
+> porte de paiement (§3) ; références (§8). Puis : un refus du circuit (séparation des tâches, numéro
+> de registre) affiche son **motif** à l'écran, et non plus « Donnees invalides. » (§1).
 
 ---
 
@@ -53,6 +54,16 @@ défaut, `Workflow::separationDesTaches()`) : sur un même état, le DAF ne vise
 qu'il a contrôlé, et le DG ne valide pas un état qu'il a contrôlé **ou** visé. La règle
 vaut aussi pour le SUPER_ADMIN, qui détient pourtant toutes les permissions. Elle ne
 concerne que le circuit par état : le circuit par OM n'a qu'une signature.
+
+**Refus expliqués** (depuis le 28/10/2026) : un refus du serveur (422) affiche son **motif** à
+l'écran — « Vous avez contrôlé cet état : le visa DAF revient à une autre personne. », « Renseignez
+le numéro de l'état avant la validation finale. », « Le numéro « … » est déjà attribué à un autre
+état. », « Cet état (statut « … ») ne peut pas passer à « … ». ». Jusque-là, les écrans du circuit
+n'affichaient que « Donnees invalides. » : l'API met le motif par champ dans `errors`, que
+`getErrorMessage` (et l'avertissement global d'un 422) reprend désormais (`composables/useApi.ts`).
+Les règles génériques (motif de rejet trop court, champ manquant) ont des messages français
+(`backend/resources/lang/fr/validation.php`) : en production (`APP_LOCALE=fr`), elles renvoyaient leur
+clé brute (« validation.required »).
 
 **Le circuit par ÉTAT est le circuit officiel de l'ANaTT.** Une seule signature sur
 l'état (scellée HMAC, avec paraphe archivé et numéro de registre par tranche) vaut
@@ -318,6 +329,7 @@ régénéré (`docs/runbook-mise-a-jour-cron.md`, étape 6). Tests : `tests/Feat
 | Notifications de chaque étape (droits effectifs) | `NotificationService::notifier()` ; tests `tests/Feature/NotificationTest.php` |
 | Réglages qui touchent les circuits (notification coupée, opérateur fermé, mode maintenance) | `App\Support\Parametres`, `LotPaiementService::exigerOperateurActif()`, middleware `MaintenanceApplication` ; tests `tests/Feature/ReglagesExploitationTest.php` |
 | E-mails des notifications (serveur de *Messagerie*) | `App\Support\Messagerie::appliquer()`, `SendNotification` ; tests `tests/Feature/MessagerieSmtpTest.php` |
+| Motif d'un refus à l'écran (422) | `frontend/src/composables/useApi.ts` (`getErrorMessage`, intercepteur) ; test `frontend/src/__tests__/refus-motif.spec.ts` |
 | Endpoints et permission de chaque transition | `backend/docs/openapi.yaml` (tags *États de paiement* et *Validation OM*, extension `x-permission`) |
 | Interface du circuit par OM | `frontend/src/views/missions/MissionDetailView.vue` (Valider / Rejeter) |
 | Solde d'un OM, lot complémentaire | `LotPaiementService::confirmer()`, `LotPaiementService::marquerRecouvre()`, `MissionService::amender()` (règle commune `OrdreMission::solderSiRegle()`), `MissionService::valider()` (exonéré), `frontend/src/components/paiements/PaiementGeneration.vue` ; tests `tests/Feature/SoldeTest.php`, `tests/Feature/RegularisationTest.php`, `tests/Feature/CircuitValidationTest.php`, `frontend/src/__tests__/paiements-async.spec.ts` |
