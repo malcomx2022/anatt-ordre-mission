@@ -5,6 +5,7 @@ import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { baremesService } from '@/services/baremes'
 import { useToast } from '@/composables/useToast'
+import { getErrorMessage } from '@/composables/useApi'
 import { categorieLabel } from '@/types'
 import type { Bareme, ZoneCode } from '@/types'
 
@@ -42,8 +43,8 @@ async function enregistrer() {
     toast.success(`${ids.length} taux mis à jour.`)
     modifies.value = {}
     baremes.value = await baremesService.list()
-  } catch {
-    toast.error("Échec de l'enregistrement.")
+  } catch (e) {
+    toast.error(getErrorMessage(e, "Échec de l'enregistrement."))
   } finally {
     saving.value = false
   }
