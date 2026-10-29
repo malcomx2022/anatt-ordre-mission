@@ -9,6 +9,14 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### README après la dette (29/10/2026)
+
+- `README.md` : encadré « État » (1.4 terminée, ce qui reste côté exploitation) ; refus expliqués complétés
+  (barème, exports, dates inversées, agent sans indice ; message général réservé au serveur injoignable) ;
+  restauration vérifiée en CI sur MySQL 8, sauvegardes rapprochées (suffixe `-2`) ; `scripts/recette/` et
+  `tests/Mysql` dans l'arborescence ; tableau de la documentation (guide, scénario rejoué à chaque PR, revue §8,
+  recette, galerie en Vue 3.5.44).
+
 ### Scénario de démo après la dette (29/10/2026)
 
 - `docs/SCENARIO-DEMO.md` rejoué sur MariaDB (base neuve, `QUEUE_CONNECTION=sync`) avec
