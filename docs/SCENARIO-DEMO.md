@@ -39,6 +39,13 @@
 > refus et leur motif, en français : agent en double (étape B), séparation des tâches et numéro manquant
 > (étape C) ; « Agent créé avec succès. » (étape A, désormais accentué). Corrigé : l'étape A demandait la
 > seule catégorie, que l'application refuse — elle la **déduit** de l'indice ou du salaire brut.
+> **Rejoué automatiquement depuis le 29 octobre 2026** : `scripts/recette/rejeu-scenario.cjs` joue ce
+> scénario (§3 et §7) contre l'API réellement servie, à chaque PR (job CI « Recette · API réelle »),
+> et s'arrête au premier écart. Dernier passage manuel le 29/10 au soir sur MariaDB (base neuve,
+> `QUEUE_CONNECTION=sync`) : **119 contrôles conformes**, montants et fichiers identiques. Ce rejeu a
+> corrigé deux refus : un agent sans indice ni salaire brut affiche bien le motif ci-dessous (étape A) ;
+> une date de retour antérieure au départ a désormais un motif correctement accordé (étape B). Deux
+> sauvegardes prises dans la même seconde ne s'écrasent plus (§8.4).
 
 ---
 
@@ -61,6 +68,10 @@ est nécessaire pour rejouer le scénario, les références SEMO du §3 étant u
 > Pour essayer le seul circuit de validation sur une mission déjà prête, il existe aussi
 > `php artisan db:seed --class=DemoCircuitSeeder` (comptes `demo.controleur@`, `demo.daf@`,
 > `demo.dg@`, mot de passe `CircuitTest2026!`) ; ce scénario-ci part, lui, des comptes ci-dessus.
+>
+> **Vérifier avant la démo** : `node scripts/recette/rejeu-scenario.cjs` rejoue tout le §3 et le §7 sur
+> une base neuve en quatre minutes environ (prérequis et commandes : `scripts/recette/README.md`). Il
+> consomme les références SEMO du scénario : refaire ensuite `migrate:fresh --seed` avant la démo.
 
 > 🔐 **Séparation des tâches** : les trois signataires du circuit (contrôleur, DAF,
 > DG) doivent être **trois personnes distinctes** — d'où les trois comptes dédiés. Le DAF
@@ -104,7 +115,8 @@ catégorie. ». Chaque création confirme « Agent créé avec succès. ».
 Menu `Ordres de Mission › Retranscrire` (`/ordres/nouveau`), assistant en 3 étapes :
 
 1. **Contexte** : objet « Dossiers de passation de marchés », destination BOHICON,
-   dates 18 → 23/05/2026.
+   dates 18 → 23/05/2026. Des dates inversées sont refusées : « La date de retour doit
+   être postérieure ou égale à la date de départ. ».
 2. **Bénéficiaires** : ajouter les 4 ; cocher **« Répartition détaillée par type de
    repas »** → 1 j *un repas* + 6 j *journée complète*. Pour **ATCHA**, saisir
    **Transport = 10 000**.
@@ -434,7 +446,9 @@ Dès qu'un état existe pour la mission, ces boutons disparaissent.
 Menu `Paramètres › Sauvegardes` (`/admin/sauvegardes`) : **Nouvelle sauvegarde**, puis icône
 **Télécharger**. Pour **Restaurer**, recopier le nom exact du fichier : l'application
 crée d'abord une **sauvegarde de sécurité** de l'état courant (opération
-réversible). À ne montrer que sur une base de démonstration.
+réversible). À ne montrer que sur une base de démonstration. Deux sauvegardes prises dans la
+même seconde (deux clics rapides, ou une restauration aussitôt après une sauvegarde) gardent des noms
+distincts : la seconde porte le suffixe `-2` (`backup_…_085345-2.sql.gz`), aucune n'écrase l'autre.
 
 Pour une démonstration parlante : prendre une sauvegarde, retirer une permission à un
 profil dans **Matrice des permissions** (menu *Utilisateurs › Matrice des permissions*), puis restaurer → la matrice revient à son état
