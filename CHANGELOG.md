@@ -9,6 +9,24 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Mise à jour finale de la documentation ; point du restant (29/10/2026)
+
+- **Écart corrigé (n° 47, Matrice des permissions)** : une réinitialisation de profil refusée (séparation
+  ordonnateur/payeur) affichait « La réinitialisation a échoué. » sans le motif ; `RolesView` le reprend comme
+  ses autres actions. Test `roles-matrice.spec.ts` (vu en échec avant) ; Vitest 211.
+- **Guide utilisateur** (`.docx` régénéré) : nouveau §3.5 « Quand une action est refusée » (tableau des motifs) ;
+  nouveauté 1.4 « Refus expliqués » étendue à tous les écrans ; §6.3 (amendement refusé), §7.2 (numéro, séparation
+  des tâches).
+- **Documentation technique** (`.docx` régénéré) : évolutions 1.4 « Refus expliqués » et « Messages de
+  validation », code 422 (§7.6), mise à jour d'une instance (§9.6 : `resources/lang/`), compteurs (Pest 690,
+  Vitest 211), défauts n° 33 à 47.
+- **Point du restant** : `docs/revue-projet-2026-10.md` §8 — défauts n° 33 à 47, état de chaque document, gestes
+  d'exploitation et dette connue ; aucune décision en attente.
+- **Exploitation** : `DEPLOY-CPANEL.md` (note « Refus expliqués » : `resources/lang/fr/validation.php`), runbook
+  (encadré et contrôle de l'étape 8), checklist post-déploiement (§06 : adresse e-mail déjà utilisée).
+- **Autres documents** : `CLAUDE.md` (§7, réponses 422), `AGENTS.md`, README (racine, `backend/`, `frontend/`),
+  `docs/workflows-par-profil.md` (§3), `docs/SCENARIO-DEMO.md` (étape C, point 3).
+
 ### Guide du paramétrage de la part d'avance (29/10/2026)
 
 - `docs/parametrage-part-avance.md` : refus d'une part hors bornes affiché **une seule fois** (avertissement

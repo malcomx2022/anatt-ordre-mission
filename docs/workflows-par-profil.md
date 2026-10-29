@@ -23,7 +23,8 @@
 > **Complété le 28/10/2026** : réglages de *Paramètres* et de *Messagerie* appliqués par le serveur —
 > rôle du SUPER_ADMIN précisé (§2), effet du mode maintenance et de la durée de session sur tous les
 > profils (§7), e-mails envoyés par le serveur de *Messagerie* (§8) ; puis refus expliqués et
-> « Enregistrer tout » (§2), signature jamais bloquée par un e-mail qui ne part pas (§8).
+> « Enregistrer tout » (§2), signature jamais bloquée par un e-mail qui ne part pas (§8) ; le 29/10, motif
+> de tout refus du circuit affiché en français (§3).
 
 ---
 
@@ -281,7 +282,9 @@ Les trois permissions de signature sont **mutuellement exclusives** entre contr�
 et DG : aucun profil métier n'en détient deux. Un **rôle personnalisé** (`docs/rbac-flexible.md`,
 niveau 3) peut aussi porter une clé du circuit : il signe alors sous les mêmes garde-fous, et
 reçoit les mêmes notifications que le profil système qui la détient (§8). Combinées à la séparation des tâches, elles
-rendent le circuit infalsifiable sans complicité entre trois personnes. Le serveur refuse
+rendent le circuit infalsifiable sans complicité entre trois personnes. Un refus du circuit
+s'affiche avec son motif, en français (« Vous avez contrôlé cet état : le visa DAF revient à une autre
+personne. », « Renseignez le numéro de l'état avant la validation finale. »). Le serveur refuse
 aussi qu'un profil — ou un utilisateur, compte tenu de ses droits individuels — cumule
 `om.approuver` (ordonnateur) et `paiements.generer` / `paiements.confirmer` (payeur).
 

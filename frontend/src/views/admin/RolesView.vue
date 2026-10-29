@@ -167,8 +167,8 @@ async function reinitialiser(role: { cle: string; libelle: string }) {
     const ref = roles.value.find((r) => r.cle === role.cle)
     if (ref) ref.personnalise = false
     toast.success(`Profil « ${role.libelle} » réinitialisé au défaut.`)
-  } catch {
-    toast.error('La réinitialisation a échoué.')
+  } catch (e) {
+    toast.error(messageErreur(e, 'La réinitialisation a échoué.'))
   } finally {
     saving.value = false
   }

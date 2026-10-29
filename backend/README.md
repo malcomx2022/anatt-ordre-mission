@@ -69,6 +69,9 @@ Un test de régression doit échouer sans le correctif avant d'être retenu.
   fichiers, déposés à la main sur les plateformes MTN / Moov, puis confirmés manuellement.
 - Toute erreur d'une route `/api/*` répond en JSON, même sans en-tête `Accept`. Un 422 porte le message
   générique « Donnees invalides. » et le motif par champ dans `errors` : c'est ce dernier qu'un écran affiche.
+  Les motifs des règles génériques sont en français (`resources/lang/fr/validation.php`, `ValidationFrancaisTest`) :
+  en production (`APP_LOCALE=fr`, `APP_FALLBACK_LOCALE=fr`), une règle sans traduction renverrait sa clé brute.
+  Une règle ajoutée hors de ce fichier porte son propre message, en français.
 - Les réglages de `settings.json` sont relus par `App\Support\Parametres` (cache 60 s, purgé à l'écriture) ;
   la messagerie est appliquée à chaque envoi par `App\Support\Messagerie::appliquer()` (serveur SMTP de
   l'écran *Messagerie*, sinon le `.env`). Un réglage ajouté doit agir et avoir son test (`AGENTS.md`).

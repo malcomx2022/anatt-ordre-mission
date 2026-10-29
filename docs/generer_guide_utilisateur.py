@@ -292,8 +292,10 @@ tableau(
         ["Erreur passagère", "Un incident momentané du serveur (trop de requêtes, erreur, coupure réseau) "
          "au rechargement d'une page ne vous déconnecte plus : l'écran d'erreur s'affiche et « Réessayer » "
          "vous ramène à la page demandée, toujours connecté.", "3.4"],
-        ["Refus expliqués", "Quand l'écran Paramètres ou Messagerie refuse une valeur (part d'avance hors "
-         "0-100, port invalide…), il indique laquelle et pourquoi, au lieu de « Données invalides ».", "13.2"],
+        ["Refus expliqués", "Quand l'application refuse une action ou une saisie, elle dit pourquoi, en "
+         "français et une seule fois, au lieu de « Données invalides » : signature refusée (« Vous avez contrôlé "
+         "cet état… »), numéro d'état manquant ou déjà attribué, amendement impossible (« fichier en attente "
+         "de dépôt »…), adresse e-mail déjà utilisée, part d'avance hors 0-100, port invalide…", "3.5, 6.3, 7.2, 13.2"],
         ["E-mail qui ne part pas", "Si le serveur de messagerie ne répond pas, valider, signer, rejeter ou "
          "amender n'affiche plus d'erreur : l'action est faite, la notification apparaît dans la cloche, "
          "seul l'e-mail manque (à vérifier avec « Envoyer un e-mail de test »).", "13.2"],
@@ -386,7 +388,8 @@ encadre("Séparation des tâches",
         "confirment les paiements. Les trois signataires d'un même état doivent être TROIS personnes "
         "distinctes : celui qui a contrôlé ne peut pas viser ni valider, et celui qui a visé (DAF) ne "
         "peut pas valider (DG). Un compte cumulant plusieurs droits (ex. super administrateur) est donc "
-        "refusé s'il tente d'enchaîner deux étapes du même dossier.")
+        "refusé s'il tente d'enchaîner deux étapes du même dossier ; le message l'explique (« Vous avez "
+        "contrôlé cet état : le visa DAF revient à une autre personne. »).")
 
 h2("2.1 Matrice détaillée des permissions")
 para("Légende : ✔ = autorisé. Le SUPER_ADMIN dispose implicitement de toutes les permissions.")
@@ -484,6 +487,29 @@ para("Pendant une mise à jour ou lorsque le super administrateur active le mode
      "« Maintenance en cours » s'affiche ; il revient de lui-même à votre page dès que le service reprend. "
      "Seule une session réellement expirée (durée de session dépassée, compte désactivé, mot de passe "
      "réinitialisé) vous renvoie à l'écran de connexion.")
+
+h2("3.5 Quand une action est refusée")
+para("Lorsque l'application refuse une action ou une saisie, un message en haut à droite de l'écran en "
+     "donne la raison, en français, et indique quoi faire. Rien n'est enregistré : corrigez, puis "
+     "recommencez. Exemples :")
+tableau(
+    ["Situation", "Message affiché"],
+    [
+        ["Le DAF tente de viser un état qu'il a lui-même contrôlé",
+         "Vous avez contrôlé cet état : le visa DAF revient à une autre personne."],
+        ["Le DG valide un état sans numéro de registre",
+         "Renseignez le numéro de l'état avant la validation finale."],
+        ["Numéro d'état déjà employé", "Le numéro « … » est déjà attribué à un autre état."],
+        ["Amendement d'un OM dont le fichier de paiement attend son dépôt",
+         "Un fichier de paiement contenant cet ordre de mission est en attente de dépôt : confirmez le lot "
+         "ou passez-le en erreur avant d'amender."],
+        ["Création d'un compte avec une adresse déjà enregistrée", "Cette adresse e-mail est déjà utilisée."],
+        ["Motif trop court", "Le champ motif doit contenir au moins 10 caractères."],
+        ["Part de l'avance hors limites (Paramètres)",
+         "Le pourcentage d'avance doit être un entier entre 0 et 100."],
+    ],
+    largeurs=[7.0, 9.8],
+)
 
 # =========================================================================
 # 4. TABLEAU DE BORD
@@ -604,6 +630,8 @@ bullet("L'amendement est refusé si l'OM est rejeté ou annulé, si un état de 
        "payée, solde l'OM ; une rallonge sur un OM soldé (avance versée à 100 %) le rouvre.")
 bullet("Il est aussi refusé tant qu'un fichier de paiement contenant l'OM attend son dépôt (lot GÉNÉRÉ) : "
        "confirmez d'abord le lot, ou signalez-le en erreur, puis amendez.")
+bullet("Quand un amendement est refusé, le message indique lequel de ces cas s'applique et quoi faire (par "
+       "exemple « rejetez-le avant d'amender » pour un état en cours de signature) ; rien n'est modifié.")
 bullet("Mission sans état de paiement : si l'avance a déjà été confirmée, elle est figée au moment de "
        "l'amendement, exactement comme après la validation d'un état des avances.")
 bullet("La fiche de l'OM, l'aperçu « PDF de l'OM » et le PDF officiel (régénéré après l'amendement) n'affichent plus "
@@ -654,7 +682,8 @@ tableau(
     largeurs=[1.6, 3.2, 8.0, 4.0],
 )
 bullet("Le numéro de l'état est saisi manuellement, suivant le registre de l'agence. Il est requis "
-       "avant la validation finale du DG, puis figé.")
+       "avant la validation finale du DG, puis figé. Sans numéro, ou avec un numéro déjà attribué à un "
+       "autre état, la validation est refusée avec un message qui le dit.")
 bullet("À chaque étape, la signature du titulaire (nom, prénoms, fonction et paraphe scanné) est apposée "
        "sur le document, avec un code de vérification.")
 bullet("Validation de l'état des AVANCES : elle arrête l'état, fait passer les OM de la mission au "

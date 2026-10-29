@@ -34,6 +34,8 @@
 > **Complété le soir du 28 octobre 2026** (base neuve, API réelle, `QUEUE_CONNECTION=sync` comme en
 > production) : refus expliqué d'une part d'avance hors bornes (§8.5) ; validation qui aboutit malgré un
 > serveur de messagerie injoignable (§8.6).
+> **Complété le 29 octobre 2026** (code, sans rejeu) : le refus d'une signature par la séparation des tâches
+> (étape C, point 3) affiche son motif, en français.
 
 ---
 
@@ -134,7 +136,8 @@ porte deux états (avances puis reliquats) ; chacun a son propre circuit.
 2. **Contrôler**  ·  `controle@` — menu `États de paiement` (`/etats`) → ouvrir l'état → **Contrôler**
    → **CONTRÔLÉ**.
 3. **Viser (Vu)**  ·  `daf@` — **Apposer le visa DAF** → **VISÉ DAF** (interdit au contrôleur :
-   séparation des tâches).
+   séparation des tâches ; un compte qui a contrôlé l'état et tente de le viser lit « Vous avez contrôlé
+   cet état : le visa DAF revient à une autre personne. »).
 4. **Numéroter puis valider**  ·  `dg@` — saisir le **numéro** de l'état (registre)
    puis **Valider définitivement** → **VALIDÉ** (interdit au contrôleur et au DAF de cet état).
    Cette validation **arrête l'état**, fait passer les OM de la mission à **VALIDE**
