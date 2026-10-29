@@ -142,14 +142,19 @@ export function getValidationErrors(error: unknown): Record<string, string[]> {
   return {}
 }
 
-export function getErrorMessage(error: unknown): string {
+/**
+ * Message à afficher pour une erreur : motif du refus (422), message du serveur, sinon
+ * `repli` — le message propre de l'écran (« Échec de l'export. »…), qui ne sert donc
+ * plus que lorsque le serveur ne dit rien (réseau coupé, réponse sans message).
+ */
+export function getErrorMessage(error: unknown, repli = 'Une erreur est survenue.'): string {
   if (axios.isAxiosError(error)) {
     // Limite de requêtes (connexion au-delà des tentatives réglées, exports…) :
     // Laravel répond « Too Many Attempts. », en anglais.
     if (error.response?.status === 429) {
       return 'Trop de tentatives en peu de temps : patientez une minute avant de réessayer.'
     }
-    return motifRefus(error.response?.data) || error.response?.data?.message || 'Une erreur est survenue.'
+    return motifRefus(error.response?.data) || error.response?.data?.message || repli
   }
   // Erreur levée par l'application elle-même (ex. assertValidBlobResponse, qui
   // y recopie le message du serveur) : son message est déjà destiné à l'usager.

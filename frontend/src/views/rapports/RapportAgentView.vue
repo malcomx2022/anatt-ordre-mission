@@ -5,6 +5,7 @@ import AppCard from '@/components/shared/AppCard.vue'
 import AppButton from '@/components/shared/AppButton.vue'
 import { rapportsService } from '@/services/rapports'
 import { useToast } from '@/composables/useToast'
+import { getErrorMessage } from '@/composables/useApi'
 import type { RapportDimension, ExportFormat } from '@/types'
 
 const toast = useToast()
@@ -73,8 +74,8 @@ async function exporter(format: ExportFormat) {
     })
     await rapportsService.telechargerExport(res.fichier)
     toast.success(`Export ${format.toUpperCase()} généré.`)
-  } catch {
-    toast.error("Échec de l'export.")
+  } catch (e) {
+    toast.error(getErrorMessage(e, "Échec de l'export."))
   } finally {
     exporting.value = null
   }

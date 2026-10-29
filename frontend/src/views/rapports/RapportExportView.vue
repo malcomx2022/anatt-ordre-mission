@@ -6,6 +6,7 @@ import AppButton from '@/components/shared/AppButton.vue'
 import AppAlert from '@/components/shared/AppAlert.vue'
 import { rapportsService } from '@/services/rapports'
 import { useToast } from '@/composables/useToast'
+import { getErrorMessage } from '@/composables/useApi'
 import type { RapportDimension, ExportFormat } from '@/types'
 
 const toast = useToast()
@@ -39,8 +40,8 @@ async function generer() {
     dernierFichier.value = res.fichier
     await rapportsService.telechargerExport(res.fichier)
     toast.success(`Export ${format.value.toUpperCase()} généré (${res.nb_lignes} ligne(s)).`)
-  } catch {
-    toast.error("Échec de la génération de l'export.")
+  } catch (e) {
+    toast.error(getErrorMessage(e, "Échec de la génération de l'export."))
   } finally {
     generating.value = false
   }
