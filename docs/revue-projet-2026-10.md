@@ -31,7 +31,7 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > le point de ce qui reste.
 >
 > **Point final du 29/10/2026.** La relecture document par document a continué du 27 au 29/10
-> (PR #166 à #191) et fait apparaître dix-sept défauts de plus (n° 33 à 49), tous corrigés avec un test.
+> (PR #166 à #193) et fait apparaître dix-sept défauts de plus (n° 33 à 49), tous corrigés avec un test.
 > Pest compte 691 tests (76 fichiers), Vitest 215, Playwright 3. Le §8 fait le point final : ce qui
 > a été corrigé, l'état de chaque document et **ce qui reste** (gestes d'exploitation, dette connue).
 >
@@ -471,7 +471,8 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 | `docs/SCENARIO-DEMO.md` | Rejoué sur l'API réelle le 29/10 (#192) : montants inchangés ; étape A corrigée (indice ou salaire brut, catégorie déduite) |
 | `docs/parametrage-part-avance.md` | 29/10 (#189) |
 | `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
-| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée »), `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérés le 29/10 (#190, captures et compteurs #191) |
+| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée ») | Régénéré le 29/10 (#190, captures et compteurs #191) |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée le 29/10 (#193) : évolutions du 29/10, création d'un agent, rejeu du scénario, nouveau chapitre 11 « État du projet et reste à faire » |
 | Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 29/10 (#191) après les n° 48 et 49 ; champs de date au format français (`LANG` passé au navigateur de capture) |
 | `backend/docs/openapi.yaml`, `backend/docs/queues.md` | 28/10 ; validés en CI (`OpenApiReponsesTest`) |
 
@@ -507,4 +508,21 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 
 **Aucune décision n'est en attente** : D1 à D4 sont appliquées (§7.1), la règle n° 6 (thème vert) est
 tranchée (`CLAUDE.md` §4).
+
+### 8.4 Clôture (29/10/2026)
+
+Le projet est **terminé côté développement** : une fois la PR #193 fusionnée, rien n'est en cours ; `main` porte la
+version 1.4 complète, CI verte (Lint, Pest 691, Vitest 215 et type-check, Playwright 3, build `frontend-dist`).
+
+| Étape | Qui | Référence |
+|-------|-----|-----------|
+| Mettre à jour l'instance en ligne vers la 1.4 | Exploitation (super administrateur de l'hébergement) | `docs/runbook-mise-a-jour-cron.md` |
+| Contrôler l'instance après la mise à jour | Exploitation, puis un compte de chaque profil | `docs/checklist-post-deploiement.md` §06 |
+| Éprouver la restauration sur une base de recette | Exploitation | §8.3, point 5 |
+| Former les utilisateurs | Responsable fonctionnel | `docs/Guide-Utilisateur-ANaTT.docx`, `docs/SCENARIO-DEMO.md`, galerie des écrans |
+| Décider de l'archivage des deux documents historiques | Client | §8.3, *Dette technique connue* |
+
+Toute évolution ultérieure suit les règles de `CLAUDE.md` et d'`AGENTS.md` (périmètre, réglages appliqués et
+testés, motifs de refus en français, contrat OpenAPI) ; la documentation technique en fait la synthèse
+(chapitre 11).
 

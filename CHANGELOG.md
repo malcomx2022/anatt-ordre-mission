@@ -9,6 +9,13 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Documentation technique finale ; clôture (29/10/2026)
+
+- **Documentation technique** (`.docx` régénéré) : évolutions 1.4 du 29/10 (textes accentués n° 48, pages d'erreur
+  n° 49, galerie recapturée, scénario rejoué) ; PERS-03 (indice ou salaire brut exigé) ; §10 (rejeu du 29/10) ;
+  nouveau **chapitre 11 « État du projet et reste à faire »** (indicateurs, gestes d'exploitation, dette connue).
+- **Point du restant** : `docs/revue-projet-2026-10.md` §8.4 « Clôture » (étapes restantes, responsables, références).
+
 ### Scénario de démo rejoué (29/10/2026)
 
 - `docs/SCENARIO-DEMO.md` rejoué sur l'API réelle (base neuve, `QUEUE_CONNECTION=sync`) : montants inchangés
