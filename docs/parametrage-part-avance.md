@@ -22,7 +22,9 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 > *Complété le 28/10/2026* : les autres réglages de l'écran *Paramètres* sont désormais appliqués par le
 > serveur — « Enregistrer tout » les enregistre **avec** la part d'avance (à relire avant) ; un refus du
 > serveur affiche son motif (« Le pourcentage d'avance doit être un entier entre 0 et 100. ») au lieu du
-> message générique « Donnees invalides. ».
+> message générique « Donnees invalides. ». Puis (#188) : le motif s'affiche **une seule fois** —
+> l'avertissement global d'un refus, qui doublait le message de l'écran par « Donnees invalides. »,
+> donne lui aussi le motif — et les règles génériques du serveur sont rédigées en français.
 
 ## Où se règle-t-il
 
@@ -32,8 +34,11 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 - **Stockage** : clé `partAvance` dans `storage/app/settings.json` (fichier, **pas** la
   base de données).
 - **Validation** : entier de 0 à 100, contrôlé par `SettingsController::update` (422 sinon :
-  hors bornes ou non entier). L'écran affiche le motif du refus (champ `errors` de la réponse) et
-  n'enregistre **rien** : une valeur refusée bloque aussi les autres réglages envoyés avec elle.
+  hors bornes, non entière ou champ vidé). L'écran affiche le motif du refus — « Le pourcentage
+  d'avance doit être un entier entre 0 et 100. » (champ `errors` de la réponse, repris par
+  `getErrorMessage`) — **une seule fois**, et n'enregistre **rien** : une valeur refusée bloque aussi
+  les autres réglages envoyés avec elle. La saisie reste à l'écran : la corriger, puis « Enregistrer
+  tout » à nouveau (ou recharger la page pour retrouver la part enregistrée).
 - **Enregistrer tout** : le bouton envoie **tous** les onglets de l'écran à la fois (part d'avance,
   exercice, opérateurs, notifications, sécurité, maintenance). Depuis le 28/10/2026, chacun est
   appliqué par le serveur : relire les autres onglets avant de changer la part (« Forcer HTTPS »
@@ -178,6 +183,8 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
   repli sur le paramètre pour un OM à montant nul ; libellés après amendement et trop-perçu.
 - `frontend/src/__tests__/settings-refus.spec.ts` — une part d'avance refusée (422) affiche le motif
   du serveur, pas le message générique ; aucun succès annoncé.
+- `frontend/src/__tests__/refus-motif.spec.ts` — un refus 422 donne son motif (et non « Donnees
+  invalides. »), une seule fois, que l'avertissement global et l'écran le reprennent tous deux.
 - `frontend/src/__tests__/part-avance.spec.ts` — pas de mise en cache du défaut sur
   erreur ; pas de chargement pendant le changement de mot de passe imposé, relecture après.
 - `tests/Feature/MissionsIndexTest.php` — distinction état des avances / état des
@@ -199,7 +206,8 @@ est désormais **entièrement paramétrable** par un SUPER_ADMIN. La valeur
 | #167 | Version 1.4 : fiche et aperçu de l'OM aux libellés du PDF (part tirée des montants de l'OM, `utils/repartition.ts`) |
 | #174 | Part de la mission (`Mission::partAvanceReelle`, `part_avance`) sur l'écran de l'état et le sélecteur de tranche ; chaîne des montants vérifiée à 55 % |
 | #175 | Autres réglages de *Paramètres* appliqués par le serveur, enregistrés avec la part d'avance (« Enregistrer tout ») |
-| (28/10) | Motif d'un refus affiché à l'écran *Paramètres* (au lieu de « Donnees invalides. ») |
+| #185 | Motif d'un refus affiché à l'écran *Paramètres* (au lieu de « Donnees invalides. ») |
+| #188 | Motif d'un refus affiché une seule fois, sur tous les écrans ; messages de validation du serveur en français |
 
 ## Exploitation
 

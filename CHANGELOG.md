@@ -9,6 +9,12 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide du paramétrage de la part d'avance (29/10/2026)
+
+- `docs/parametrage-part-avance.md` : refus d'une part hors bornes affiché **une seule fois** (avertissement
+  global et écran donnent le même motif, #188), champ vidé refusé lui aussi, correction puis nouvel
+  « Enregistrer tout » ; test `refus-motif.spec.ts` ; historique (#185, #188).
+
 ### Circuit de validation : motif d'un refus affiché (28/10/2026)
 
 - **Écart corrigé (tous les écrans, circuit en tête)** : un refus du serveur (422) n'affichait que
