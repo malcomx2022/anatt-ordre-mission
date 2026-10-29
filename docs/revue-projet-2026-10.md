@@ -478,7 +478,7 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 | `docs/parametrage-part-avance.md` | 29/10 (#189) |
 | `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
 | `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée ») | Régénéré le 29/10 (#190, captures et compteurs #191 ; après la dette : motifs du barème et des exports, agent sans indice, date de retour, sauvegardes rapprochées — n° 50, 53 à 55) |
-| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée le 29/10 (#193, puis à la clôture de la dette) : chapitre 11 « État du projet et reste à faire », stack Vue 3.5.44, tests MySQL et recette en CI |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée le 29/10 (#193, puis à la clôture de la dette) : chapitre 11 « État du projet et reste à faire », stack Vue 3.5.44, tests MySQL et recette en CI ; puis évolutions « Dette soldée » et « Documents après la dette », arborescence, dates inversées (§4.1), sauvegardes rapprochées et vérification sur MySQL (§4.7) |
 | Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 29/10 (#191) après les n° 48 et 49 ; champs de date au format français (`LANG` passé au navigateur de capture). Recapturée de nouveau après la dette, SPA en Vue 3.5.44 : 46 écrans identiques hormis dates et données du jour ; le script attend désormais les polices Sora et DM Sans avant chaque capture |
 | `backend/docs/openapi.yaml`, `backend/docs/queues.md` | 28/10 ; validés en CI (`OpenApiReponsesTest`) |
 

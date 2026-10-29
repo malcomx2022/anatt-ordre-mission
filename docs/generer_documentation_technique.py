@@ -269,13 +269,22 @@ tableau(
          "invalides. » affiché deux fois ; useToast n'empile plus un message identique. refus-motif.spec.ts.", "§7.6"],
         ["Messages de validation (28/10)", "resources/lang/fr/validation.php : en production (APP_LOCALE=fr, "
          "APP_FALLBACK_LOCALE=fr), une règle générique renvoyait sa clé brute (« validation.unique »). Messages et noms "
-         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests). Pest 690, Vitest 210 (691 / 215 le 29/10).", "§7.6, §9.6"],
+         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests, 21 le 29/10). Pest 690, Vitest 210 (702 / 241 le 29/10, après la dette).", "§7.6, §9.6"],
         ["Textes accentués (29/10)", "Douze écrans (pages 403, 404, 500, maintenance, connexion, mot de passe, utilisateurs, "
          "sauvegardes…) et six messages de l'API (« Agent créé avec succès. »…) rédigés sans accents (n° 48). Sur la page 404, "
          "une même icône tronquée pour les trois raccourcis et « Dashboard » en anglais (n° 49). pages-systeme.spec.ts.", "§3, §10"],
         ["Galerie et scénario (29/10)", "Galerie recapturée (46 écrans ; navigateur de capture en LANG=fr_FR.UTF-8, dates "
          "dd/mm/yyyy) ; scénario de démonstration rejoué sur l'API réelle, montants inchangés, étape A corrigée (indice ou "
          "salaire brut exigé, catégorie déduite).", "§10, §11"],
+        ["Dette soldée (29/10)", "Vue 3.5.44 stable épinglée (sortie de la 3.6 bêta). Tests des correctifs restés sans test "
+         "(minuteurs, maintenance, garde de route : 20 Vitest) ; groupe Pest mysql (9 tests) et job CI sur MySQL 8 ; recette "
+         "sur l'API réelle versionnée (scripts/recette/, 273 contrôles) et exécutée en CI. Défauts relevés en chemin et "
+         "corrigés : barème et exports au message générique (n° 50), start-dev.ps1 non ASCII (n° 51), crochets "
+         "d'AppNavProgress (n° 52), sauvegardes de la même seconde qui s'écrasaient (n° 53), motif d'un agent sans indice "
+         "(n° 54), motif mal accordé des dates (n° 55).", "§4.1, §4.7, §10, §11"],
+        ["Documents après la dette (29/10)", "Guide utilisateur, scénario de démonstration (rejoué sur MariaDB : 119 contrôles) "
+         "et README à jour ; galerie recapturée avec le SPA en Vue 3.5.44 (rendu identique), le script de capture "
+         "attendant désormais les polices Sora et DM Sans.", "§2.3, §10"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -452,6 +461,8 @@ code("anatt-ordre-mission/\n"
      "    app/Console/Commands/  db:backup / db:restore\n"
      "    app/Jobs/              Tâches asynchrones (gros lots, exports de rapports, e-mails)\n"
      "    docs/openapi.yaml      Référence API (verrouillée par tests/Feature/OpenApiTest.php)\n"
+     "    tests/{Feature,Unit,Mysql}  Pest (Mysql : groupe mysql sur un vrai MySQL, ignoré ailleurs)\n"
+     "  scripts/recette/         Rejeu du scénario de démo + recette transverse sur l'API réelle (CI)\n"
      "  docs/                    Documentation (.docx + scripts générateurs)\n"
      "    00_galerie_index.html…  Galerie des écrans réels (captures docs/ecrans/, generer_maquettes.py)\n"
      "  CLAUDE.md                Contexte projet")
@@ -618,7 +629,7 @@ para("Acteur : GESTIONNAIRE_OM (permission om.retranscrire).")
 tableau(
     ["#", "Acteur", "Action", "Résultat / statut"],
     [
-        ["1", "Gestionnaire", "Ouvre l'assistant « Nouvel ordre » et saisit la mission (objet, destination, zone déduite, dates, prise en charge tiers).", "Contexte de mission enregistré"],
+        ["1", "Gestionnaire", "Ouvre l'assistant « Nouvel ordre » et saisit la mission (objet, destination, zone déduite, dates, prise en charge tiers).", "Contexte de mission enregistré ; dates inversées refusées (422 « La date de retour doit être postérieure ou égale à la date de départ. »)"],
         ["2", "Gestionnaire", "Ajoute chaque bénéficiaire (participant ou CAV) : référence SEMO, agent, type de prise en charge.", "Per diem calculé en temps réel par bénéficiaire"],
         ["3", "Système", "Contrôle l'unicité de chaque référence SEMO et la cohérence type ↔ zone.", "Doublons et incohérences signalés immédiatement"],
         ["4", "Gestionnaire", "Vérifie le récapitulatif (totaux avance/reliquat) puis enregistre.", "POST /api/missions : mission + N OM créés"],
@@ -762,7 +773,7 @@ h2("4.7 Sauvegarde et restauration de la base")
 tableau(
     ["#", "Acteur", "Action", "Résultat"],
     [
-        ["1", "Serveur (cron)", "db:backup --compress chaque jour à 02:00 (rétention 30 jours).", "backups/backup_AAAA-MM-JJ_HHMMSS.sql.gz"],
+        ["1", "Serveur (cron)", "db:backup --compress chaque jour à 02:00 (rétention 30 jours).", "backups/backup_AAAA-MM-JJ_HHMMSS.sql.gz (suffixe -2, -3… si le nom est pris : deux sauvegardes de la même seconde ne s'écrasent pas)"],
         ["2", "SUPER_ADMIN", "Consulte la liste (GET /api/admin/backups, triée par date du fichier, la plus récente en tête) et télécharge une sauvegarde (GET /api/admin/backups/:name/download).", "Copie hors serveur"],
         ["3", "SUPER_ADMIN", "Restaure : POST /api/admin/backups/:name/restaurer avec { confirmation: <nom du fichier> }.", "422 si le nom recopié diffère"],
         ["4", "Système", "db:restore prend d'abord une sauvegarde de sécurité de l'état courant, décompresse (.gz) en PHP puis rejoue le dump avec le client mysql (DB_RESTORE_BINARY).", "Base remplacée ; opération réversible"],
@@ -774,6 +785,10 @@ tableau(
 bullet("Hors périmètre du dump : storage/app/settings.json (part d'avance, exercice, SMTP…), paraphes des "
        "signataires et fichiers produits (PDF, fichiers de paiement) sur le disque local. Une restauration ne "
        "les modifie pas ; leur sauvegarde relève de la copie de storage/.")
+bullet("Vérifié en CI sur MySQL 8 (tests/Mysql, job « Backend · Pest MySQL ») : aller-retour db:backup / db:restore "
+       "réel, sauvegarde de sécurité elle-même restaurable, purge de la matrice, dump invalide (erreur du client "
+       "affichée, cache intact), tri des sauvegardes. Reste à l'éprouver une fois avec les binaires et les droits de "
+       "l'hébergeur.")
 
 # =========================================================================
 # 5. RÈGLES MÉTIER
@@ -1165,7 +1180,8 @@ bullet("Purger les caches AVANT migrate (optimize:clear) : avec une configuratio
 bullet("Contrôle : un date_paiement relevé avant la mise à jour a pris une heure en base, et l'écran affiche la "
        "même heure qu'avant (docs/checklist-post-deploiement.md §06, Version 1.4).")
 bullet("vendor/ inchangé ; SPA à redéployer (dépendances retirées, écran de génération, correctifs d'interface).")
-bullet("Correctifs des 27-29/10 (n° 33 à 49) : code seul, aucune migration de plus. Relire storage/app/settings.json "
+bullet("Correctifs des 27-29/10 (n° 33 à 55) : code seul, aucune migration de plus. Le SPA se reconstruit en Vue "
+       "3.5.44 (npm ci ; dist/ à redéployer comme d'habitude). Relire storage/app/settings.json "
        "avant l'envoi du code : les réglages de Paramètres et de Messagerie qu'il contient s'appliquent dès lors. "
        "Le nouveau fichier resources/lang/fr/validation.php part avec resources/, déjà envoyé à chaque mise à jour.")
 
@@ -1228,7 +1244,7 @@ tableau(
         ["Recette sur l'API réelle", "273 contrôles en CI (rejeu du scénario 119 + recette transverse 154)"],
         ["Tests de bout en bout (Playwright)", "3 parcours critiques"],
         ["Scénario de démonstration", "Rejoué automatiquement à chaque PR (scripts/recette/rejeu-scenario.cjs), montants et fichiers inchangés"],
-        ["Galerie des écrans", "46 écrans recapturés le 29/10 ; 53 pages"],
+        ["Galerie des écrans", "46 écrans recapturés le 29/10 avec le SPA en Vue 3.5.44 ; 53 pages"],
         ["Migrations à jouer en 1.4", "Une seule (fuseau horaire), application en maintenance"],
     ],
     largeurs=[5.2, 11.6],
