@@ -296,6 +296,14 @@ tableau(
          "français et une seule fois, au lieu de « Données invalides » : signature refusée (« Vous avez contrôlé "
          "cet état… »), numéro d'état manquant ou déjà attribué, amendement impossible (« fichier en attente "
          "de dépôt »…), adresse e-mail déjà utilisée, part d'avance hors 0-100, port invalide…", "3.5, 6.3, 7.2, 13.2"],
+        ["Refus expliqués (suite)", "Le barème et les exports de rapports donnent eux aussi la raison d'un échec "
+         "(taux refusé, période invalide…), et non plus « Échec de l'enregistrement » / « Échec de l'export » ; "
+         "un agent sans indice ni salaire brut est refusé avec « L'indice ou le salaire brut est requis pour "
+         "déterminer la catégorie. » ; une date de retour antérieure au départ, avec « La date de retour doit "
+         "être postérieure ou égale à la date de départ. ».", "3.5, 5.2, 10, 11"],
+        ["Sauvegardes rapprochées", "Deux sauvegardes prises dans la même seconde (une sauvegarde manuelle puis "
+         "une restauration aussitôt, par exemple) ne s'écrasent plus : la seconde porte un suffixe « -2 ». "
+         "Restaurer une sauvegarde toute récente fonctionne donc toujours.", "13.3"],
         ["E-mail qui ne part pas", "Si le serveur de messagerie ne répond pas, valider, signer, rejeter ou "
          "amender n'affiche plus d'erreur : l'action est faite, la notification apparaît dans la cloche, "
          "seul l'e-mail manque (à vérifier avec « Envoyer un e-mail de test »).", "13.2"],
@@ -507,9 +515,18 @@ tableau(
         ["Motif trop court", "Le champ motif doit contenir au moins 10 caractères."],
         ["Part de l'avance hors limites (Paramètres)",
          "Le pourcentage d'avance doit être un entier entre 0 et 100."],
+        ["Agent créé sans indice ni salaire brut",
+         "L'indice ou le salaire brut est requis pour déterminer la catégorie."],
+        ["Mission dont la date de retour précède le départ",
+         "La date de retour doit être postérieure ou égale à la date de départ."],
+        ["Export de rapport sur une période à l'envers",
+         "La date de fin doit être postérieure ou égale à la date de début."],
     ],
     largeurs=[7.0, 9.8],
 )
+para("Sur chaque écran, y compris le barème et les exports de rapports, c'est la raison donnée par le "
+     "serveur qui s'affiche. Un message général (« Échec de l'enregistrement. », « Échec de l'export. ») "
+     "n'apparaît que si le serveur n'a pas pu répondre (réseau coupé) : réessayez alors un peu plus tard.")
 
 # =========================================================================
 # 4. TABLEAU DE BORD
@@ -541,6 +558,9 @@ etape("Cliquez sur « Nouvel agent » (ou « Modifier » depuis une fiche).")
 etape("Renseignez l'identité, le matricule, l'indice ou le salaire brut (la catégorie en est déduite).")
 etape("Saisissez le téléphone (10 chiffres, commençant par 01) et l'opérateur cohérent avec le numéro.")
 etape("Enregistrez. La catégorie d'indice (≥ 800 / 400-799 / < 400) est calculée automatiquement.")
+bullet("Sans indice ni salaire brut, l'agent n'est pas créé : « L'indice ou le salaire brut est requis pour "
+       "déterminer la catégorie. ». Un numéro qui ne correspond pas à l'opérateur choisi est refusé de même "
+       "(« Le numéro correspond à l'opérateur MTN, pas à MOOV. »).")
 
 h2("5.3 Importer des agents (Excel / CSV)")
 etape("Ouvrez « Import » dans le module Personnel.")
@@ -822,7 +842,8 @@ para("Le rapport « Trop-perçus » (chapitre 11) donne la synthèse des montant
 # =========================================================================
 h1("10. Barème per diem")
 bullet("Consultation : profils disposant de « Barème — consulter » (tous sauf le LECTEUR, par défaut).")
-bullet("Modification des taux : réservée à l'ADMIN (« Barème — modifier »).")
+bullet("Modification des taux : réservée à l'ADMIN (« Barème — modifier »). Un taux refusé (valeur négative, "
+       "par exemple) est signalé avec sa raison ; rien n'est enregistré.")
 para("Le détail complet des taux figure en Annexe B.")
 
 # =========================================================================
@@ -834,7 +855,8 @@ bullet("Rapport mensuel : synthèse par opérateur, par tranche et par statut. U
        "mois de sa confirmation, à l'heure du Bénin.")
 bullet("Par agent, par opérateur, par zone, par imputation budgétaire.")
 bullet("Trop-perçus : synthèse des régularisations (montants à recouvrer vs déjà recouvrés).")
-bullet("Export Excel ou PDF (immédiat ou en arrière-plan pour les gros volumes).")
+bullet("Export Excel ou PDF (immédiat ou en arrière-plan pour les gros volumes). Une période invalide (date "
+       "de fin avant la date de début) est refusée avec sa raison.")
 capture("26_rapport_mensuel", "état mensuel")
 
 # =========================================================================
@@ -925,7 +947,8 @@ bullet("Sauvegardes : création, téléchargement, restauration et suppression d
 h2("13.3 Sauvegardes et restauration")
 para("Réservé au SUPER_ADMIN, écran « Sauvegardes ». Une sauvegarde automatique est faite chaque nuit "
      "(02:00) par le serveur ; le bouton « Nouvelle sauvegarde » en crée une immédiatement.")
-bullet("La liste est classée de la plus récente à la plus ancienne.")
+bullet("La liste est classée de la plus récente à la plus ancienne. Deux sauvegardes prises dans la même "
+       "seconde portent des noms distincts (suffixe « -2 », « -3 »…) : aucune n'en écrase une autre.")
 bullet("Télécharger : survolez une sauvegarde et cliquez sur l'icône de téléchargement pour en garder "
        "une copie hors du serveur.")
 h3("Restaurer une sauvegarde")
