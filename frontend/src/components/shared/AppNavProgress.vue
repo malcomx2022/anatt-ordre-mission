@@ -51,11 +51,15 @@ const stopBefore = router.beforeEach(() => {
   demarrer()
   return true
 })
-router.afterEach(terminer)
-router.onError(terminer)
+// Les trois crochets sont retirés au démontage : sinon chaque navigation suivante
+// réarmerait le minuteur de fin d'un composant qui n'est plus affiché.
+const stopAfter = router.afterEach(terminer)
+const stopError = router.onError(terminer)
 
 onBeforeUnmount(() => {
   stopBefore()
+  stopAfter()
+  stopError()
   if (timer) clearInterval(timer)
   if (fin) clearTimeout(fin)
 })
