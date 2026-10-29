@@ -17,6 +17,8 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 - **Écart corrigé (scénario)** : l'étape A faisait créer les agents avec leur seule catégorie, ce que l'application
   refuse (« L'indice ou le salaire brut est requis pour déterminer la catégorie. ») ; elle indique désormais de
   saisir l'indice (850) ou le salaire brut, dont la catégorie est déduite.
+- **README** (racine, `frontend/`) : catégorie d'agent déduite (indice ou salaire brut exigé), textes et messages
+  accentués, galerie recapturée le 29/10 (46 écrans, navigateur de capture en `LANG=fr_FR.UTF-8`).
 
 ### Galerie des écrans recapturée ; textes accentués (29/10/2026)
 

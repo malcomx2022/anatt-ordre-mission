@@ -88,7 +88,8 @@ npm run dev                     # http://localhost:5173  (terminal C)
 
 ## Concepts métier clés
 
-- **Catégorie** d'agent = `INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400`, déduite de l'indice (ou du salaire brut), reprise de SEMO.
+- **Catégorie** d'agent = `INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400`, déduite de l'indice (ou du salaire brut), reprise de SEMO :
+  la fiche d'un agent exige l'un des deux, la catégorie ne se choisit pas.
 - **Per diem** = `taux_journalier(catégorie × zone × type) × nb_jours` selon le **barème officiel ANaTT**
   (4 zones : `INTERIEUR`, `EXT_ZONE_I`, `EXT_ZONE_II`, `EXT_ZONE_III` — II = III ; règle des 12 h).
   Répartition : **avance 70 %** / **reliquat 30 %** (part de l'avance **paramétrable** par le SUPER_ADMIN, 70 % par défaut ; le reliquat absorbe l'arrondi). Exonération si prise en charge par un tiers.
@@ -130,7 +131,8 @@ npm run dev                     # http://localhost:5173  (terminal C)
   enregistré ; « Enregistrer tout » applique **tous** les onglets de *Paramètres* à la fois.
 - **Refus expliqués** : tout refus du serveur affiche son motif, une fois et en français — signature refusée
   par la séparation des tâches, numéro d'état manquant ou déjà attribué, amendement impossible, adresse
-  e-mail déjà utilisée… (`resources/lang/fr/validation.php` pour les règles génériques).
+  e-mail déjà utilisée… (`resources/lang/fr/validation.php` pour les règles génériques). Textes de l'interface et
+  messages de l'API sont accentués (« Accès interdit », « Agent créé avec succès. »), y compris sur les pages d'erreur.
 - **E-mails** : un e-mail de notification qui ne part pas (serveur SMTP injoignable) est journalisé et
   **n'empêche jamais** l'action qui notifie — validation, signature, rejet, amendement, confirmation d'un lot ;
   la notification reste dans la cloche.
@@ -253,6 +255,6 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
 | `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, correctifs, suites à donner) |
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
-| `docs/00_galerie_index.html` … | Galerie des écrans réels : captures par `docs/capturer_ecrans.cjs`, pages par `docs/generer_maquettes.py` |
+| `docs/00_galerie_index.html` … | Galerie des écrans réels (46 écrans, recapturée le 29/10/2026) : captures par `docs/capturer_ecrans.cjs` (base de démonstration neuve, build de production, navigateur en `LANG=fr_FR.UTF-8`), pages par `docs/generer_maquettes.py` |
 | `backend/README.md`, `frontend/README.md` | Prise en main de l'API et du SPA (commandes, repères dans le code) |
 | `backend/docs/queues.md`, `backend/docs/openapi.yaml` | Files et worker ; description OpenAPI 3.0 de toutes les routes (verrouillée par `OpenApiTest` ; réponses réelles vérifiées par `OpenApiReponsesTest`) |
