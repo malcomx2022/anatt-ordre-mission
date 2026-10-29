@@ -44,7 +44,7 @@ async function handleSubmit() {
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div class="flex gap-3">
               <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-              <p class="text-sm text-blue-700">Entrez votre adresse e-mail. Un lien de reinitialisation vous sera envoye.</p>
+              <p class="text-sm text-blue-700">Entrez votre adresse e-mail. Un lien de réinitialisation vous sera envoyé.</p>
             </div>
           </div>
 
@@ -75,8 +75,8 @@ async function handleSubmit() {
           <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
             <svg class="w-7 h-7 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
-          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">E-mail envoye !</h3>
-          <p class="text-gray-500 text-sm mb-6">Un lien de reinitialisation a ete envoye a votre adresse e-mail. Verifiez votre boite de reception.</p>
+          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">E-mail envoyé !</h3>
+          <p class="text-gray-500 text-sm mb-6">Un lien de réinitialisation a été envoyé à votre adresse e-mail. Vérifiez votre boîte de réception.</p>
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
             <p class="text-sm text-amber-700">Le lien expire dans 60 minutes</p>
           </div>

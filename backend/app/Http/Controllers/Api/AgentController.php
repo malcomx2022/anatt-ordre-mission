@@ -51,7 +51,7 @@ class AgentController extends Controller
     {
         $agent = $this->agentService->creer($request->validated());
 
-        return $this->created(new AgentResource($agent), 'Agent cree avec succes.');
+        return $this->created(new AgentResource($agent), 'Agent créé avec succès.');
     }
 
     public function show(Agent $agent): JsonResponse
@@ -63,14 +63,14 @@ class AgentController extends Controller
     {
         $agent = $this->agentService->modifier($agent, $request->validated());
 
-        return $this->success(new AgentResource($agent), 'Agent mis a jour avec succes.');
+        return $this->success(new AgentResource($agent), 'Agent mis à jour avec succès.');
     }
 
     public function destroy(Agent $agent): JsonResponse
     {
         $this->agentService->desactiver($agent);
 
-        return $this->success(null, 'Agent desactive avec succes.');
+        return $this->success(null, 'Agent désactivé avec succès.');
     }
 
     public function import(Request $request): JsonResponse

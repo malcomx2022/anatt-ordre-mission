@@ -65,7 +65,7 @@ const availableRoles = computed<OptionRole[]>(() => [
 ])
 
 
-const directions = ['Direction Generale', 'Direction Technique', 'Direction Administrative', 'Direction Financiere', 'Service Informatique', 'Comptabilite']
+const directions = ['Direction Générale', 'Direction Technique', 'Direction Administrative', 'Direction Financiere', 'Service Informatique', 'Comptabilite']
 
 const passwordStrength = computed(() => {
   const p = form.value.password
@@ -109,7 +109,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AppLayout title="Nouvel Utilisateur" subtitle="Creer un nouveau compte d'acces au systeme">
+  <AppLayout title="Nouvel Utilisateur" subtitle="Créer un nouveau compte d'accès au système">
     <template #header-actions>
       <AppButton variant="outline" @click="router.push('/admin/utilisateurs')">
         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
@@ -138,8 +138,8 @@ async function handleSubmit() {
             <input v-model="form.nom" type="text" placeholder="Nom de famille" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
           </div>
           <div>
-            <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Prenom(s) <span class="text-red-500">*</span></label>
-            <input v-model="form.prenom" type="text" placeholder="Prenom(s)" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
+            <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Prénom(s) <span class="text-red-500">*</span></label>
+            <input v-model="form.prenom" type="text" placeholder="Prénom(s)" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
           </div>
           <div>
             <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Email professionnel <span class="text-red-500">*</span></label>
@@ -147,19 +147,19 @@ async function handleSubmit() {
             <p v-if="errors.email" class="text-xs text-red-500 mt-1">{{ errors.email[0] }}</p>
           </div>
           <div>
-            <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Telephone</label>
+            <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Téléphone</label>
             <input v-model="form.telephone" type="tel" placeholder="+229 XX XX XX XX" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
           </div>
           <div>
             <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Direction</label>
             <select v-model="form.direction" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body text-gray-700 focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500">
-              <option value="">Selectionner...</option>
+              <option value="">Sélectionner…</option>
               <option v-for="d in directions" :key="d" :value="d">{{ d }}</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-display font-medium text-gray-600 mb-1.5">Fonction</label>
-            <input v-model="form.fonction" type="text" placeholder="Intitule du poste" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
+            <input v-model="form.fonction" type="text" placeholder="Intitulé du poste" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
           </div>
         </div>
       </div>
@@ -209,7 +209,7 @@ async function handleSubmit() {
             <div class="relative">
               <input v-model="form.password" type="password" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body pr-24 focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 transition-all">
               <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-display hover:bg-gray-200 transition-colors" @click="generatePassword">
-                Generer
+                Générer
               </button>
             </div>
             <div class="flex items-center gap-4 mt-2">
@@ -221,7 +221,7 @@ async function handleSubmit() {
           </div>
           <label class="flex items-center gap-3">
             <input v-model="form.forceChange" type="checkbox" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
-            <span class="text-sm text-gray-700 font-body">Forcer le changement de mot de passe a la premiere connexion</span>
+            <span class="text-sm text-gray-700 font-body">Forcer le changement de mot de passe à la première connexion</span>
           </label>
           <label class="flex items-center gap-3">
             <input v-model="form.sendEmail" type="checkbox" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
@@ -229,7 +229,7 @@ async function handleSubmit() {
           </label>
           <label class="flex items-center gap-3">
             <input v-model="form.activateNow" type="checkbox" class="w-4 h-4 text-anatt-500 rounded border-gray-300">
-            <span class="text-sm text-gray-700 font-body">Activer le compte immediatement</span>
+            <span class="text-sm text-gray-700 font-body">Activer le compte immédiatement</span>
           </label>
         </div>
       </div>
@@ -239,7 +239,7 @@ async function handleSubmit() {
         <AppButton variant="outline" @click="router.push('/admin/utilisateurs')">Annuler</AppButton>
         <div class="flex gap-3">
           <AppButton variant="outline">Enregistrer en brouillon</AppButton>
-          <AppButton :loading="loading" @click="handleSubmit">Creer l'utilisateur</AppButton>
+          <AppButton :loading="loading" @click="handleSubmit">Créer l'utilisateur</AppButton>
         </div>
       </div>
     </div>
@@ -251,11 +251,11 @@ async function handleSubmit() {
           <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
             <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
-          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Utilisateur cree !</h3>
-          <p class="text-sm font-body text-gray-500 mb-6">Le compte a ete cree avec succes.</p>
+          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Utilisateur créé !</h3>
+          <p class="text-sm font-body text-gray-500 mb-6">Le compte a été créé avec succès.</p>
           <div class="flex gap-3">
             <button class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-display font-medium text-gray-700 hover:bg-gray-50" @click="router.push('/admin/utilisateurs')">Liste</button>
-            <button class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600" @click="showSuccess = false; form = { nom: '', prenom: '', email: '', telephone: '', direction: '', fonction: '', role: '', password: '', forceChange: true, sendEmail: true, activateNow: true }">Creer un autre</button>
+            <button class="flex-1 px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-medium hover:bg-anatt-600" @click="showSuccess = false; form = { nom: '', prenom: '', email: '', telephone: '', direction: '', fonction: '', role: '', password: '', forceChange: true, sendEmail: true, activateNow: true }">Créer un autre</button>
           </div>
         </div>
       </div>

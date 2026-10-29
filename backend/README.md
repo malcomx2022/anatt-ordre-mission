@@ -32,7 +32,7 @@ Comptes de démonstration (local et tests uniquement, mot de passe `password`) :
 ## Vérifier
 
 ```bash
-./vendor/bin/pest                                   # 690 tests, 76 fichiers — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pest                                   # 691 tests, 76 fichiers — sans .env (APP_KEY de test dans phpunit.xml)
 ./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
 ./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php   # filets RBAC et OpenAPI
 ```

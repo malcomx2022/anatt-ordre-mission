@@ -30,10 +30,10 @@ const strengthColor = computed(() => ['', 'bg-red-500', 'bg-orange-500', 'bg-yel
 const passwordsMatch = computed(() => password.value === passwordConfirm.value && passwordConfirm.value.length > 0)
 
 const rules = computed(() => [
-  { label: 'Au moins 8 caracteres', ok: password.value.length >= 8 },
+  { label: 'Au moins 8 caractères', ok: password.value.length >= 8 },
   { label: 'Une lettre majuscule', ok: /[A-Z]/.test(password.value) },
   { label: 'Un chiffre', ok: /[0-9]/.test(password.value) },
-  { label: 'Un caractere special (@#$...)', ok: /[^A-Za-z0-9]/.test(password.value) },
+  { label: 'Un caractère spécial (@#$…)', ok: /[^A-Za-z0-9]/.test(password.value) },
 ])
 
 async function handleSubmit() {
@@ -54,7 +54,7 @@ async function handleSubmit() {
     done.value = true
   } catch (e) {
     const err = e as { response?: { data?: { message?: string } } }
-    errorMsg.value = err.response?.data?.message || 'Erreur lors de la reinitialisation.'
+    errorMsg.value = err.response?.data?.message || 'Erreur lors de la réinitialisation.'
   } finally {
     loading.value = false
   }
@@ -119,7 +119,7 @@ async function handleSubmit() {
 
             <button type="submit" :disabled="loading || !passwordsMatch" class="w-full bg-anatt-500 hover:bg-anatt-600 text-white font-display font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-anatt-500/30 disabled:opacity-60">
               <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              <span>Reinitialiser</span>
+              <span>Réinitialiser</span>
             </button>
           </form>
         </div>
@@ -128,7 +128,7 @@ async function handleSubmit() {
           <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
             <svg class="w-7 h-7 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
-          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Mot de passe modifie !</h3>
+          <h3 class="text-lg font-display font-bold text-gray-800 mb-2">Mot de passe modifié !</h3>
           <p class="text-gray-500 text-sm mb-6">Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
           <router-link to="/login" class="inline-flex items-center gap-2 bg-anatt-500 hover:bg-anatt-600 text-white font-display font-semibold py-3 px-6 rounded-xl transition-all">
             Se connecter

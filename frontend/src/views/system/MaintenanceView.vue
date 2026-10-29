@@ -140,7 +140,7 @@ onBeforeUnmount(arreter)
         </div>
 
         <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Maintenance en cours</h1>
-        <p class="text-gray-500 font-body mb-6 max-w-sm mx-auto">Notre bus est au garage pour une revision ! Le systeme est temporairement indisponible pour amelioration. Merci de reessayer dans quelques instants.</p>
+        <p class="text-gray-500 font-body mb-6 max-w-sm mx-auto">Notre bus est au garage pour une révision ! Le système est temporairement indisponible pour amélioration. Merci de réessayer dans quelques instants.</p>
 
         <!-- Compte à rebours -->
         <div class="mb-8 space-y-2" role="status" aria-live="polite">

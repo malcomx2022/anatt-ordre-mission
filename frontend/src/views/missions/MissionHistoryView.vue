@@ -86,7 +86,7 @@ function formatDate(iso: string): string {
 <template>
   <AppLayout title="Historique des actions" :subtitle="missionNumero">
     <template #header-actions>
-      <AppButton variant="outline" @click="router.push(`/ordres/${route.params.id}`)">Retour au detail</AppButton>
+      <AppButton variant="outline" @click="router.push(`/ordres/${route.params.id}`)">Retour au détail</AppButton>
     </template>
 
     <div class="max-w-3xl">

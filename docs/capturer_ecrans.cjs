@@ -182,7 +182,11 @@ async function nouveauContexte(navigateur, compte) {
 async function main() {
   fs.mkdirSync(SORTIE, { recursive: true })
   const ids = await preparer()
-  const navigateur = await chromium.launch({ args: ['--lang=fr-FR'] })
+  // LANG / LANGUAGE : sans eux, le Chromium sans écran ignore --lang pour les champs date (« mm/dd/yyyy »).
+  const navigateur = await chromium.launch({
+    args: ['--lang=fr-FR'],
+    env: { ...process.env, LANG: 'fr_FR.UTF-8', LANGUAGE: 'fr' },
+  })
   const index = []
 
   for (const [fichier, route, compte, action] of ecrans(ids)) {

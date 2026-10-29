@@ -55,7 +55,7 @@ async function handleLogin() {
       <div class="bg-white rounded-2xl shadow-2xl p-8">
         <div class="mb-6">
           <h2 class="text-xl font-display font-bold text-gray-800">Connexion</h2>
-          <p class="text-gray-500 text-sm mt-1">Accedez a votre espace de travail</p>
+          <p class="text-gray-500 text-sm mt-1">Accédez à votre espace de travail</p>
         </div>
 
         <!-- Alert error -->

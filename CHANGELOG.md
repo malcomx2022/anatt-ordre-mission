@@ -9,6 +9,22 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Galerie des écrans recapturée ; textes accentués (29/10/2026)
+
+- **Écart corrigé (n° 48)** : textes sans accents relevés à la recapture — pages 403 (« Acces interdit »), 404
+  (« Page non trouvee »), 500 (« Incident en cours de resolution ») et maintenance, connexion, mot de passe oublié
+  et réinitialisation, création et gestion des utilisateurs, sauvegardes, historique d'un OM, messages de repli des
+  erreurs (`useApi`) ; et six messages de l'API (« Agent cree avec succes. », « Mot de passe reinitialise avec
+  succes. », « Ressource creee avec succes. »…). Tests `pages-systeme.spec.ts`, `ValidationFrancaisTest` (vus en
+  échec avant) ; `forbidden.spec.ts` mis à jour.
+- **Écart corrigé (n° 49)** : sur la page 404, les trois raccourcis partageaient une icône tronquée (un carré) ; ils
+  reprennent les icônes du menu latéral. « Dashboard » devient « Tableau de bord » (pages 403, 404, 500).
+- **Galerie** recapturée sur une base de démonstration neuve (46 écrans, 53 pages régénérées) ; le navigateur de
+  capture reçoit `LANG=fr_FR.UTF-8` : les champs de date suivent l'ordre français, `dd/mm/yyyy` et non `mm/dd/yyyy`
+  (`docs/capturer_ecrans.cjs`). Guide utilisateur et documentation technique régénérés (captures, compteurs).
+- Compteurs : Pest 691 (76 fichiers), Vitest 215 (42 fichiers), Playwright 3 ; `docs/revue-projet-2026-10.md` §8
+  (n° 48 et 49, galerie).
+
 ### Mise à jour finale de la documentation ; point du restant (29/10/2026)
 
 - **Écart corrigé (n° 47, Matrice des permissions)** : une réinitialisation de profil refusée (séparation

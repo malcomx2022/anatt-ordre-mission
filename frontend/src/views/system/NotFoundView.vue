@@ -3,10 +3,11 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// Mêmes icônes que le menu latéral (AppSidebar : grid, credit-card, users).
 const suggestions = [
-  { label: 'Dashboard', route: '/' },
-  { label: 'Paiements', route: '/paiements' },
-  { label: 'Personnel', route: '/agents' },
+  { label: 'Tableau de bord', route: '/', icon: 'grid' },
+  { label: 'Paiements', route: '/paiements', icon: 'credit-card' },
+  { label: 'Personnel', route: '/agents', icon: 'users' },
 ]
 </script>
 
@@ -51,14 +52,18 @@ const suggestions = [
           <span class="text-7xl font-display font-extrabold text-anatt-500">4</span>
         </div>
 
-        <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Page non trouvee</h1>
-        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Le bus a pris un mauvais virage ! La page que vous recherchez n'existe pas ou a ete deplacee.</p>
+        <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Page non trouvée</h1>
+        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Le bus a pris un mauvais virage ! La page que vous recherchez n'existe pas ou a été déplacée.</p>
 
         <!-- Suggestion Cards -->
         <div class="grid grid-cols-3 gap-3 mb-8 max-w-md mx-auto">
           <router-link v-for="s in suggestions" :key="s.label" :to="s.route" class="bg-white border border-gray-100 rounded-xl p-4 hover:border-anatt-200 hover:shadow-md transition-all group">
             <div class="w-10 h-10 bg-anatt-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-anatt-100 transition-colors">
-              <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6z" /></svg>
+              <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+                <template v-if="s.icon === 'grid'"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></template>
+                <template v-else-if="s.icon === 'credit-card'"><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></template>
+                <template v-else><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></template>
+              </svg>
             </div>
             <p class="text-xs font-display font-semibold text-gray-700">{{ s.label }}</p>
           </router-link>
@@ -68,11 +73,11 @@ const suggestions = [
         <div class="flex items-center justify-center gap-4">
           <button @click="router.back()" class="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-display font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-            Page precedente
+            Page précédente
           </button>
           <router-link to="/" class="px-5 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
-            Retour a l'accueil
+            Retour à l'accueil
           </router-link>
         </div>
 

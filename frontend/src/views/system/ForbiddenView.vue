@@ -48,8 +48,8 @@ const requises = computed<string[]>(() => {
           <span class="text-7xl font-display font-extrabold text-benin-red">3</span>
         </div>
 
-        <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Acces interdit</h1>
-        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Ce secteur est verrouille ! Vous n'avez pas les permissions necessaires pour acceder a cette ressource.</p>
+        <h1 class="text-2xl font-display font-extrabold text-gray-800 mb-3">Accès interdit</h1>
+        <p class="text-gray-500 font-body mb-8 max-w-sm mx-auto">Ce secteur est verrouillé ! Vous n'avez pas les permissions nécessaires pour accéder à cette ressource.</p>
 
         <!-- Suggestion Cards -->
         <div class="grid grid-cols-3 gap-3 mb-8 max-w-md mx-auto">
@@ -57,7 +57,7 @@ const requises = computed<string[]>(() => {
             <div class="w-10 h-10 bg-anatt-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-anatt-100 transition-colors">
               <svg class="w-5 h-5 text-anatt-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg>
             </div>
-            <p class="text-xs font-display font-semibold text-gray-700">Dashboard</p>
+            <p class="text-xs font-display font-semibold text-gray-700">Tableau de bord</p>
           </router-link>
           <router-link to="/login" class="bg-white border border-gray-100 rounded-xl p-4 hover:border-gold-400 hover:shadow-md transition-all group">
             <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-amber-100 transition-colors">
@@ -77,11 +77,11 @@ const requises = computed<string[]>(() => {
         <div class="flex items-center justify-center gap-4">
           <button @click="router.back()" class="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-display font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-            Page precedente
+            Page précédente
           </button>
           <router-link to="/" class="px-5 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 transition-colors shadow-lg shadow-anatt-500/20 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
-            Retour a l'accueil
+            Retour à l'accueil
           </router-link>
         </div>
 

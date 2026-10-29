@@ -143,7 +143,7 @@ class AuthController extends Controller
         Messagerie::appliquer(); // serveur et expéditeur de Paramètres › Messagerie
         Password::sendResetLink($request->only('email'));
 
-        return $this->success(null, 'Si un compte existe pour cet email, un lien de reinitialisation a ete envoye.');
+        return $this->success(null, 'Si un compte existe pour cette adresse e-mail, un lien de réinitialisation a été envoyé.');
     }
 
     public function resetPassword(Request $request): JsonResponse
@@ -174,7 +174,7 @@ class AuthController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return $this->success(null, 'Mot de passe reinitialise avec succes.');
+            return $this->success(null, 'Mot de passe réinitialisé avec succès.');
         }
 
         throw ValidationException::withMessages([

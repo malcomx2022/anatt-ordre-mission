@@ -19,7 +19,7 @@ class DatabaseRestore extends Command
                             {--force : Ne pas demander de confirmation}
                             {--sans-sauvegarde : Ne pas sauvegarder l\'état courant avant (déconseillé)}';
 
-    protected $description = 'Restaurer la base de donnees ANaTT depuis une sauvegarde';
+    protected $description = 'Restaurer la base de données ANaTT depuis une sauvegarde';
 
     public function handle(): int
     {

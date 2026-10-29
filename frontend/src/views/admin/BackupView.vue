@@ -28,8 +28,8 @@ interface BackupEntry {
 const backups = ref<BackupEntry[]>([])
 
 const stats = computed(() => [
-  { label: 'Derniere sauvegarde', value: backups.value[0]?.date ?? '--', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  { label: 'Sauvegardes stockees', value: String(backups.value.length), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
+  { label: 'Dernière sauvegarde', value: backups.value[0]?.date ?? '--', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { label: 'Sauvegardes stockées', value: String(backups.value.length), iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
   { label: 'Sauvegarde auto (serveur)', value: '02:00', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
 ])
 
@@ -51,7 +51,7 @@ async function createBackup() {
   creatingBackup.value = true
   try {
     await api.post('/api/admin/backups')
-    toastSuccess('Sauvegarde creee avec succes.')
+    toastSuccess('Sauvegarde créée avec succès.')
     await loadBackups()
   } catch {
     // Geree par useApi
@@ -103,12 +103,12 @@ async function deleteBackup(name: string) {
 </script>
 
 <template>
-  <AppLayout title="Sauvegardes" subtitle="Gestion des sauvegardes de la base de donnees">
+  <AppLayout title="Sauvegardes" subtitle="Gestion des sauvegardes de la base de données">
     <template #header-actions>
       <button @click="createBackup" :disabled="creatingBackup" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2 disabled:opacity-50">
         <svg v-if="!creatingBackup" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
         <svg v-else class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
-        {{ creatingBackup ? 'Sauvegarde en cours...' : 'Nouvelle sauvegarde' }}
+        {{ creatingBackup ? 'Sauvegarde en cours…' : 'Nouvelle sauvegarde' }}
       </button>
     </template>
 
