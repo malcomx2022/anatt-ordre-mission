@@ -15,9 +15,8 @@ use Tests\Support\MysqlReel;
  * (DB_DUMP_BINARY / DB_RESTORE_BINARY) — défaut n° 10, jusqu'ici couvert par un
  * client « mysql » factice sous SQLite (BackupControllerTest).
  *
- * Chaque test avance l'horloge avant de restaurer : db:backup nomme ses fichiers
- * à la seconde, et la sauvegarde de sécurité prise par db:restore écraserait
- * sinon une sauvegarde de la même seconde.
+ * db:backup nomme ses fichiers à la seconde ; une sauvegarde de la même seconde
+ * prend un suffixe (-2, -3…) au lieu d'écraser la précédente (dernier test).
  */
 
 beforeEach(function () {
@@ -126,4 +125,20 @@ it('un dump invalide fait échouer db:restore avec le message du client mysql, s
         ->assertFailed();
 
     expect(Cache::has('rbac.matrice'))->toBeTrue();
+});
+
+it('restaure une sauvegarde prise dans la même seconde : la sauvegarde de sécurité ne l’écrase pas', function () {
+    // Jusqu'au 29/10/2026, la sauvegarde de sécurité prenait le même nom que la sauvegarde
+    // choisie, l'écrasait avec l'état courant puis la supprimait (gzip) : restauration en échec.
+    $this->freezeSecond();
+    Agent::factory()->create(['nom' => 'ORIGINE']);
+    expect(Artisan::call('db:backup'))->toBe(0);
+    [$sauvegarde] = MysqlReel::sauvegardes();
+    Agent::factory()->create(['nom' => 'INTRUS']);
+
+    expect(Artisan::call('db:restore', ['fichier' => $sauvegarde, '--force' => true]))->toBe(0);
+
+    expect(Agent::pluck('nom')->all())->toBe(['ORIGINE'])
+        ->and(MysqlReel::sauvegardes())->toHaveCount(2)
+        ->and(MysqlReel::lireSauvegarde($sauvegarde))->not->toContain('INTRUS');
 });
