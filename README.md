@@ -245,7 +245,7 @@ npm run test:e2e                  # Playwright — parcours critique (API mocké
 | `CHANGELOG.md` | Historique des modifications |
 | `docs/Guide-Utilisateur-ANaTT.docx` | Guide utilisateur (v1.4) — généré par `docs/generer_guide_utilisateur.py` |
 | `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Documentation technique et fonctionnelle (v1.4) — générée par `docs/generer_documentation_technique.py` |
-| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5 avec refus expliqué, configuration e-mail §8.6 avec validation malgré un SMTP en panne, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10 |
+| `docs/SCENARIO-DEMO.md` | Scénario de démonstration (fichiers réels MTN / Moov ; variantes : part d'avance §8.5 avec refus expliqué, configuration e-mail §8.6 avec validation malgré un SMTP en panne, maintenance §8.7), rejoué le 27/10/2026, complété sur l'API réelle le 28/10, rejoué le 29/10 |
 | `DEPLOY-CPANEL.md`, `UPLOAD-VENDOR.md` | Déploiement sur cPanel, mise à jour, restauration |
 | `docs/checklist-post-deploiement.md`, `docs/runbook-mise-a-jour-cron.md` | Vérifications et déroulé du jour J |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |

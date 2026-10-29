@@ -9,6 +9,15 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Scénario de démo rejoué (29/10/2026)
+
+- `docs/SCENARIO-DEMO.md` rejoué sur l'API réelle (base neuve, `QUEUE_CONNECTION=sync`) : montants inchangés
+  (état des avances 805 000, aperçus MTN 406 000 et Moov 399 000) ; refus vérifiés avec leur motif en français
+  (agent en double, séparation des tâches, numéro manquant) et « Agent créé avec succès. ».
+- **Écart corrigé (scénario)** : l'étape A faisait créer les agents avec leur seule catégorie, ce que l'application
+  refuse (« L'indice ou le salaire brut est requis pour déterminer la catégorie. ») ; elle indique désormais de
+  saisir l'indice (850) ou le salaire brut, dont la catégorie est déduite.
+
 ### Galerie des écrans recapturée ; textes accentués (29/10/2026)
 
 - **Écart corrigé (n° 48)** : textes sans accents relevés à la recapture — pages 403 (« Acces interdit »), 404

@@ -467,7 +467,8 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 | `README.md`, `backend/README.md`, `frontend/README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | 29/10 (#190) |
 | `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | 29/10 (#190) |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | 28/10 (#188) |
-| `docs/workflows-par-profil.md`, `docs/SCENARIO-DEMO.md` | 29/10 (#190) |
+| `docs/workflows-par-profil.md` | 29/10 (#190) |
+| `docs/SCENARIO-DEMO.md` | Rejoué sur l'API réelle le 29/10 (#192) : montants inchangés ; étape A corrigée (indice ou salaire brut, catégorie déduite) |
 | `docs/parametrage-part-avance.md` | 29/10 (#189) |
 | `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
 | `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée »), `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérés le 29/10 (#190, captures et compteurs #191) |
