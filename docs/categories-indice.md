@@ -6,6 +6,10 @@
 > *Relu le 24/10/2026 contre le code* : seuils, appels de `normaliser()` et de `regleIn()`,
 > migration et tests conformes. Ajouté : **quand** la catégorie d'un agent est déduite ou
 > recalculée (§1), et la catégorie portée par l'OM.
+>
+> *Révisé le 29/10/2026 (après la dette)* : un agent créé sans indice ni salaire brut est refusé par le
+> motif « L'indice ou le salaire brut est requis pour déterminer la catégorie. », et non plus par « Le
+> champ categorie est obligatoire. » (§1, §6).
 
 ---
 
@@ -33,9 +37,9 @@ aucun écran ne l'appelle aujourd'hui.
 
 | Moment | Règle | Où |
 |---|---|---|
-| Création d'un agent | catégorie transmise retenue (ancien code traduit) ; **absente**, elle est déduite de l'indice ou du salaire | `StoreAgentRequest::prepareForValidation` |
+| Création d'un agent | catégorie transmise retenue (ancien code traduit) ; **absente**, elle est déduite de l'indice ou du salaire. L'indice ou le salaire brut est **exigé** dans tous les cas : sans l'un ni l'autre, refus 422 « L'indice ou le salaire brut est requis pour déterminer la catégorie. » (champ `indice`) ; la catégorie elle-même n'est plus réclamée (`required_with:indice,salaire_brut`) | `StoreAgentRequest::prepareForValidation`, `withValidator` |
 | Modification d'un agent | **recalculée d'office** dès que l'indice ou le salaire brut figure dans la requête, même si une catégorie est envoyée ; sinon la catégorie transmise est retenue | `UpdateAgentRequest::prepareForValidation` |
-| Import CSV/XLSX | colonne `categorie` retenue (ancien code traduit) ; vide, elle est déduite | `AgentService::normaliserLigne` |
+| Import CSV/XLSX | colonne `categorie` retenue (ancien code traduit) ; vide, elle est déduite. Sans indice ni salaire brut, la ligne est rejetée avec le même motif ; le rapport d'import liste aussi « Le champ categorie est obligatoire. » si la colonne est vide | `AgentService::normaliserLigne`, `validerLigne` |
 | Formulaire d'agent (écran) | suggestion en temps réel depuis l'indice ou le salaire (`categorieDeduite`), modifiable avant l'enregistrement | `components/agents/AgentForm.vue` |
 | Retranscription d'un OM | catégorie de l'OM **reprise de SEMO** si elle est saisie pour ce bénéficiaire, sinon celle de l'agent ; elle est ensuite **figée sur l'OM** | `MissionService` (`ordres.*.categorie`) |
 
@@ -157,6 +161,7 @@ cd frontend && npm run test:unit -- --run && npm run type-check && npm run lint:
 | `backend/tests/Feature/CategorieIndiceTransitionTest.php` | vocabulaire produit, anciens codes acceptés (création, filtres agents et barème, import CSV), code inconnu rejeté |
 | `backend/tests/Unit/CategorieTest.php` | normalisation, libellés, plages, seuils |
 | `backend/tests/Feature/ImportModeleAgentsTest.php` | modèles d'import distribués (3 catégories, 2 opérateurs) |
+| `backend/tests/Feature/AgentTest.php` | indice ou salaire brut exigé ; sans l'un ni l'autre, motif porté par l'indice, pas par la catégorie |
 | `frontend/src/__tests__/benin.spec.ts` | seuils d'indice prioritaires sur le salaire, champ indice vidé ignoré |
 
 Vérifications manuelles après déploiement :

@@ -25,6 +25,11 @@
 > profils (§7), e-mails envoyés par le serveur de *Messagerie* (§8) ; puis refus expliqués et
 > « Enregistrer tout » (§2), signature jamais bloquée par un e-mail qui ne part pas (§8) ; le 29/10, motif
 > de tout refus du circuit affiché en français (§3).
+>
+> **Révisé le 29/10/2026 (après la dette)** : refus expliqués à la création d'un agent (indice ou salaire
+> brut manquant) et à la retranscription (dates inversées) pour le gestionnaire, à l'enregistrement du
+> barème pour l'ADMIN, à l'export d'un rapport pour tous les profils (§2) ; deux sauvegardes prises dans la
+> même seconde ne s'écrasent plus (SUPER_ADMIN, §2).
 
 ---
 
@@ -94,6 +99,17 @@ qui crée de la donnée métier.
 **Son geste quotidien** : `/ordres/nouveau` → mission + participants + CAV → le per diem
 se calcule en temps réel → les OM naissent en `IMPORTE` → sur la mission, **Établir le
 récapitulatif** de l'état des avances, qui part au contrôle.
+
+**Refus expliqués** (depuis le 29/10/2026) :
+
+- **Nouvel agent sans indice ni salaire brut** : la catégorie se déduit de l'un ou de l'autre, la création
+  est donc refusée, avec sous le champ *Indice* le motif « L'indice ou le salaire brut est requis pour
+  déterminer la catégorie. ». Le premier motif affiché réclamait jusque-là la catégorie (« Le champ
+  categorie est obligatoire. »), que l'écran ne fait pas saisir (`StoreAgentRequest`, test `AgentTest`).
+- **Retranscription aux dates inversées** (retour avant le départ) : l'assistant laisse passer l'étape
+  *Contexte*, mais l'enregistrement est refusé et l'encadré « Corrigez les points suivants » donne « La
+  date de retour doit être postérieure ou égale à la date de départ. » (le message générique disait
+  « … égale au date de départ » ; `resources/lang/fr/validation.php`, test `ValidationFrancaisTest`).
 
 **Amendement** : refusé pour un reliquat déjà payé ou un trop-perçu déjà recouvré (avenant formel,
 hors application), un état en cours de signature ou un fichier en attente de dépôt. Un amendement
@@ -202,6 +218,13 @@ Supervise sans jamais exécuter ni signer.
 | Consulter le journal d'audit, les paiements, les rapports | Modifier la matrice, les paramètres système, les sauvegardes |
 | Changer le rôle d'un compte, l'activer ou le désactiver (sessions révoquées) | |
 
+**Barème refusé** (`/taux/configurer`, depuis le 29/10/2026) : un taux que le serveur refuse affiche son
+motif, par exemple « Le champ taux journalier doit être supérieur ou égal à 0. ». « Échec de
+l'enregistrement. » ne s'affiche plus qu'en repli, quand le serveur ne répond pas (réseau coupé) —
+`getErrorMessage(e, repli)`, test `echec-motif-ecrans.spec.ts`. Chaque taux modifié part dans sa propre
+requête : ceux que le serveur a acceptés restent enregistrés, et un nouveau clic renvoie l'ensemble des
+saisies, corrigées.
+
 Il est notifié de chaque **lot confirmé**.
 
 ---
@@ -215,6 +238,14 @@ Lecture seule, périmètre volontairement étroit.
 | Consulter le tableau de bord, les missions, les OM, les états, les rapports | Voir le référentiel agents |
 | — | Voir les paiements, le barème, l'audit |
 | — | Toute action d'écriture |
+
+**Export d'un rapport refusé** (`/rapports/agents`, `/rapports/export` ; vaut pour **tous les profils**,
+qui détiennent tous `rapports.consulter`) : depuis le 29/10/2026, l'écran donne le motif du serveur. Au-delà
+de 10 exports par minute, c'est « Trop de tentatives en peu de temps : patientez une minute avant de
+réessayer. » (limite `throttle:export`). « Échec de l'export. » / « Échec de la génération de l'export. »
+ne s'affichent plus qu'en repli, serveur muet. Une période inversée est arrêtée par l'écran avant tout
+envoi (bouton grisé, « La date « Au » doit être postérieure à « Du ». ») ; l'API, appelée directement,
+répond « La date de fin doit être postérieure ou égale à la date de début. ».
 
 ---
 
@@ -244,6 +275,13 @@ n'est enregistré.
 Il n'est jamais notifié (§8) : c'est à lui de vérifier, après un changement de *Messagerie*,
 que l'e-mail de test arrive. Un serveur faux ne bloque personne (§8) : seuls les e-mails
 manquent, et l'e-mail de test est le seul à le lui signaler.
+
+**Sauvegardes** (`/admin/sauvegardes`) : une restauration se confirme en recopiant le nom du fichier, et
+`db:restore` prend juste avant une sauvegarde de sécurité de l'état courant. Les fichiers sont nommés à la
+seconde (`backup_AAAA-MM-JJ_HHMMSS.sql.gz`) ; depuis le 29/10/2026, une sauvegarde prise dans la même
+seconde qu'une autre reçoit le suffixe `-2`, `-3`… au lieu de l'écraser. Jusque-là, restaurer une sauvegarde
+dans la seconde de sa création faisait écrire la sauvegarde de sécurité sur le fichier choisi : il était perdu et la
+restauration échouait (`DatabaseBackup`, vérifié sur un vrai MySQL : `tests/Mysql/SauvegardeRestaurationTest.php`).
 
 **Une exception à son omnipotence** : la séparation des tâches s'applique aussi à lui. Il
 ne peut pas porter deux signatures du même état.
