@@ -230,7 +230,7 @@ tableau(
         ["Fuseau horaire (D2)", "config/app.php : APP_TIMEZONE, défaut Africa/Porto-Novo (UTC+1). Migration "
          "2026_10_26_090000_passer_horodatages_au_fuseau_applicatif : +1 h sur toutes les colonnes DATETIME / "
          "TIMESTAMP (même instant, scellés inchangés), down() −1 h. L'API sérialise toujours en UTC.", "§2.2, §9.2, §9.6"],
-        ["Dépendances (D3)", "vue-pdf-embed, lucide-vue-next et @vueuse/core retirés (inutilisés) ; Vue reste en 3.6.0-beta.9.", "§2.2"],
+        ["Dépendances (D3)", "vue-pdf-embed, lucide-vue-next et @vueuse/core retirés (inutilisés) ; Vue passée le 29/10 de 3.6.0-beta.9 à 3.5.44 stable, épinglée.", "§2.2"],
         ["Écran de génération (D4)", "PaiementGeneration.vue recharge le lot après l'échec d'une génération.", "§4.3"],
         ["Interface", "AppAlert : contenu du slot en un seul bloc (bandeau de l'écran Signatures). Fiche et aperçu d'un "
          "OM : libellés de la répartition alignés sur le PDF (utils/repartition.ts, miroir de "
@@ -1177,8 +1177,10 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "691 tests au total (76 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "215 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "702 tests (79 fichiers) : 693 sur SQLite + 9 sur MySQL réel"],
+        ["Intégrité MySQL", "Pest — tests/Mysql (groupe mysql)", "db:backup / db:restore réels (aller-retour, sauvegarde de sécurité, purge de la matrice, dump invalide), tri des sauvegardes, verrou lockForUpdate de l'amendement", "9 tests (job CI sur MySQL 8)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions, minuteurs, page de maintenance", "241 tests"],
+        ["Recette API réelle", "scripts/recette (Node, sans dépendance)", "Rejeu du scénario de démonstration (119 contrôles) puis recette transverse : RBAC, erreurs JSON, fichiers MTN/Moov octet par octet, idempotence, lots complémentaires, régularisations (154)", "273 contrôles (job CI)"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
@@ -1199,30 +1201,33 @@ bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTI
        "maintenance du scénario rejouées sur l'API réelle (MariaDB, base neuve) : elles ont révélé l'affichage du "
        "message générique des 422 à l'écran Messagerie, corrigé. Le 29/10, scénario complet rejoué de nouveau (MariaDB, base "
        "neuve, QUEUE_CONNECTION=sync) : état des avances 805 000, aperçus MTN 406 000 et Moov 399 000 ; refus vérifiés avec "
-       "leur motif en français (agent en double, séparation des tâches, numéro manquant).")
-bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 17 de plus du 27 au 29/10 (n° 33 à 49, en "
-       "confrontant la documentation au code et à l'interface), tous corrigés avec un test vu en échec sans le "
+       "leur motif en français (agent en double, séparation des tâches, numéro manquant). Depuis le 29/10, ce rejeu et la recette transverse sont versionnés (scripts/recette/) et exécutés à chaque PR (job « Recette · API réelle », API servie par php artisan serve sur une base neuve).")
+bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 23 de plus du 27 au 29/10 (n° 33 à 55, en "
+       "confrontant la documentation au code et à l'interface, puis en soldant la dette technique), tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3 et §8). Les quatre décisions du §7.1 "
        "sont appliquées depuis la 1.4.")
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
        "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
-bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")
+bullet("CI GitHub Actions (.github/workflows) : Lint, Pest (SQLite), Pest MySQL, Vitest + type-check, Playwright, "
+       "Recette · API réelle, build dist.")
 
 # =========================================================================
 # 11. ÉTAT DU PROJET ET RESTE À FAIRE
 # =========================================================================
 doc.add_page_break()
 h1("11. État du projet et reste à faire (29/10/2026)")
-para("Le développement est terminé : 49 défauts relevés par la revue d'octobre 2026 et la relecture des documents "
-     "(n° 1 à 49), tous corrigés avec un test ; quatre décisions (D1 à D4) appliquées ; aucune décision en attente. "
+para("Le développement est terminé : 55 défauts relevés par la revue d'octobre 2026, la relecture des documents "
+     "et la résorption de la dette (n° 1 à 55), tous corrigés avec un test ; quatre décisions (D1 à D4) appliquées ; "
+     "dette technique soldée ; aucune décision en attente. "
      "Tous les documents sont confrontés au code (détail et cartographie : docs/revue-projet-2026-10.md §8).")
 tableau(
     ["Indicateur", "Valeur au 29/10/2026"],
     [
-        ["Tests backend (Pest)", "691 tests, 76 fichiers — API complète sur SQLite, contrat OpenAPI vérifié"],
-        ["Tests frontend (Vitest)", "215 tests, 42 fichiers — vues, services, stores, navigation ↔ permissions"],
+        ["Tests backend (Pest)", "702 tests, 79 fichiers — API complète sur SQLite (693), contrat OpenAPI vérifié ; sauvegarde, restauration et verrous sur MySQL réel (9)"],
+        ["Tests frontend (Vitest)", "241 tests, 48 fichiers — vues, services, stores, navigation ↔ permissions"],
+        ["Recette sur l'API réelle", "273 contrôles en CI (rejeu du scénario 119 + recette transverse 154)"],
         ["Tests de bout en bout (Playwright)", "3 parcours critiques"],
-        ["Scénario de démonstration", "Rejoué sur l'API réelle le 29/10, montants et fichiers inchangés"],
+        ["Scénario de démonstration", "Rejoué automatiquement à chaque PR (scripts/recette/rejeu-scenario.cjs), montants et fichiers inchangés"],
         ["Galerie des écrans", "46 écrans recapturés le 29/10 ; 53 pages"],
         ["Migrations à jouer en 1.4", "Une seule (fuseau horaire), application en maintenance"],
     ],
@@ -1236,23 +1241,27 @@ for t in [
     "SMTP…) s'appliquent dès lors.",
     "Contrôler avec docs/checklist-post-deploiement.md §06 (lecture seule en production, création de données en recette).",
     "Vider le cache des PDF d'OM (storage/app/private/ordres/) et envoyer un e-mail de test depuis Messagerie.",
-    "Éprouver la restauration d'une sauvegarde sur une base MySQL de recette.",
+    "Éprouver une fois la restauration sur la base MySQL de l'hébergement (mécanisme vérifié en CI sur MySQL 8).",
     "Sauvegarder storage/ avec la base (réglages, paraphes et fichiers produits ne sont pas dans le dump).",
     "Si la file passe en QUEUE_CONNECTION=database : tâche Cron queue:work nommant les trois files.",
 ]:
     bullet(t)
-h2("11.2 Dette technique connue (sans effet sur le fonctionnement)")
-for t in [
-    "Correctifs sans test automatisé : minuteurs, page de maintenance, garde de route au rechargement, "
-    "lockForUpdate sous MySQL.",
-    "Restauration et tri des sauvegardes couverts seulement par Pest (SQLite, simulation).",
-    "Scripts de recette (83 contrôles) et de rejeu de la démonstration non versionnés.",
-    "Trois écrans (barème, exports de rapports) affichent un message d'échec générique à côté du motif réel.",
-    "Vue reste en 3.6.0-beta.9 (figée par le lock) : passer à la 3.6 stable à sa sortie, CI rejouée.",
-    "Deux documents historiques (docs/deploiement-circuit-validation.md, docs/plan-validation-daf-dg.md) à "
-    "archiver si le client le souhaite.",
-]:
-    bullet(t)
+h2("11.2 Dette technique : soldée le 29/10/2026")
+tableau(
+    ["Point relevé", "Résolution"],
+    [
+        ["Correctifs sans test automatisé (minuteurs, maintenance, garde de route, design system)",
+         "20 tests Vitest vus en échec sans leur correctif ; défaut n° 52 (crochets d'AppNavProgress) corrigé"],
+        ["Restauration, tri et lockForUpdate testés seulement sous SQLite",
+         "Groupe Pest mysql et job « Backend · Pest MySQL » (MySQL 8) ; défaut n° 53 (sauvegardes de la même seconde) corrigé"],
+        ["Scripts de recette non versionnés", "scripts/recette/ et job « Recette · API réelle » ; défauts n° 54 et 55 corrigés"],
+        ["Trois écrans au message d'échec générique", "Motif du serveur, message de l'écran en repli (n° 50)"],
+        ["Vue 3.6.0-beta.9", "Vue 3.5.44 stable, épinglée (la 3.6 stable n'est pas parue)"],
+    ],
+    largeurs=[6.4, 10.4],
+)
+bullet("Reste au choix du client : archiver les deux documents historiques (docs/deploiement-circuit-validation.md, "
+       "docs/plan-validation-daf-dg.md). Passer à Vue 3.6 stable à sa sortie relève d'une évolution ordinaire.")
 
 # =========================================================================
 # ANNEXE — BARÈME

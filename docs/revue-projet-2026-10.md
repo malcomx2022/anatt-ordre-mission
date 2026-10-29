@@ -32,7 +32,7 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 >
 > **Point final du 29/10/2026.** La relecture document par document a continué du 27 au 29/10
 > (PR #166 à #193) et fait apparaître dix-sept défauts de plus (n° 33 à 49), tous corrigés avec un test.
-> Pest compte 691 tests (76 fichiers), Vitest 215, Playwright 3. Le §8 fait le point final : ce qui
+> Pest compte 702 tests (79 fichiers : 693 sur SQLite + 9 sur un vrai MySQL), Vitest 241, Playwright 3, recette sur l'API réelle 273 contrôles. Le §8 fait le point final : ce qui
 > a été corrigé, l'état de chaque document et **ce qui reste** (gestes d'exploitation, dette connue).
 >
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
@@ -433,7 +433,7 @@ mise à jour couvre désormais les correctifs n° 1 à 32, sans autre migration 
 
 ## 8. Point final (29/10/2026)
 
-### 8.1 Défauts n° 33 à 49 (27-29/10)
+### 8.1 Défauts n° 33 à 55 (27-29/10)
 
 Relevés en confrontant les documents, les captures et le scénario de démo au code ; chacun est
 corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
@@ -457,6 +457,12 @@ corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
 | 47 | 29/10 | *Matrice des permissions* : réinitialisation refusée (ordonnateur-payeur) affichée « La réinitialisation a échoué. » sans motif (#190) | `RolesView.vue` (`messageErreur`) ; `roles-matrice.spec.ts` |
 | 48 | 29/10 | *(relevé à la recapture de la galerie)* Textes sans accents sur douze écrans (pages 403, 404, 500 et maintenance, connexion, mot de passe oublié et réinitialisation, utilisateurs, sauvegardes, historique d'un OM) et dans six messages de l'API (« Agent cree avec succes. », « Mot de passe reinitialise avec succes. »…) (#191) | Textes corrigés ; `pages-systeme.spec.ts`, `forbidden.spec.ts`, `ValidationFrancaisTest` |
 | 49 | 29/10 | Page 404 : une même icône tronquée (un carré) pour les trois raccourcis ; raccourci « Dashboard » en anglais sur les pages 403, 404 et 500 (#191) | Icônes du menu latéral, « Tableau de bord » ; `pages-systeme.spec.ts` |
+| 50 | 29/10 | *Barème* et exports de rapports : « Échec de l'enregistrement. » / « Échec de l'export. » à côté du motif réel (#195) | `getErrorMessage(e, repli)` : motif du serveur, message de l'écran en repli seulement ; `echec-motif-ecrans.spec.ts` |
+| 51 | 29/10 | `start-dev.ps1` : trois tirets cadratins, illisibles sous Windows PowerShell 5.1 (#196) | Script en ASCII ; `scripts-dev-ascii.spec.ts` |
+| 52 | 29/10 | *(relevé en écrivant les tests de la dette)* `AppNavProgress` : crochets `afterEach` / `onError` laissés branchés au démontage, minuteur réarmé à chaque navigation (#197) | Les trois crochets retirés ; `minuteurs-demontage.spec.ts` |
+| 53 | 29/10 | *(relevé par la suite MySQL)* `db:backup` nommait ses fichiers à la seconde : restaurer une sauvegarde de la même seconde la faisait écraser par la sauvegarde de sécurité, puis supprimer (#198) | Suffixe `-2`, `-3`… ; `tests/Mysql/SauvegardeRestaurationTest.php` |
+| 54 | 29/10 | *(relevé par la recette versionnée)* Agent sans indice ni salaire brut : premier motif « Le champ categorie est obligatoire. » au lieu de « L'indice ou le salaire brut est requis… » (#199) | Catégorie exigée seulement avec un indice ou un salaire ; `AgentTest` |
+| 55 | 29/10 | *(idem)* « … postérieure ou égale au date de départ » (accord du message générique) (#199) | Messages propres à `date_retour` / `date_fin` ; `ValidationFrancaisTest` |
 
 ### 8.2 État de la documentation
 
@@ -464,15 +470,15 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 
 | Document | Dernière mise à jour |
 |----------|----------------------|
-| `README.md`, `backend/README.md`, `frontend/README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | 29/10 (#190) |
+| `README.md`, `backend/README.md`, `frontend/README.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGELOG.md` | 29/10 (clôture de la dette : Vue 3.5.44, compteurs, jobs CI, `scripts/recette/`) |
 | `DEPLOY-CPANEL.md`, `docs/runbook-mise-a-jour-cron.md`, `docs/checklist-post-deploiement.md` | 29/10 (#190) |
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | 28/10 (#188) |
 | `docs/workflows-par-profil.md` | 29/10 (#190) |
-| `docs/SCENARIO-DEMO.md` | Rejoué sur l'API réelle le 29/10 (#192) : montants inchangés ; étape A corrigée (indice ou salaire brut, catégorie déduite) |
+| `docs/SCENARIO-DEMO.md` | Rejoué sur l'API réelle le 29/10 (#192) : montants inchangés ; étape A corrigée (indice ou salaire brut, catégorie déduite). Rejeu désormais versionné et exécuté en CI (`scripts/recette/rejeu-scenario.cjs`, #199) |
 | `docs/parametrage-part-avance.md` | 29/10 (#189) |
 | `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
 | `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée ») | Régénéré le 29/10 (#190, captures et compteurs #191) |
-| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée le 29/10 (#193) : évolutions du 29/10, création d'un agent, rejeu du scénario, nouveau chapitre 11 « État du projet et reste à faire » |
+| `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérée le 29/10 (#193, puis à la clôture de la dette) : chapitre 11 « État du projet et reste à faire », stack Vue 3.5.44, tests MySQL et recette en CI |
 | Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 29/10 (#191) après les n° 48 et 49 ; champs de date au format français (`LANG` passé au navigateur de capture) |
 | `backend/docs/openapi.yaml`, `backend/docs/queues.md` | 28/10 ; validés en CI (`OpenApiReponsesTest`) |
 
@@ -489,30 +495,33 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
    contrôles qui créent des données sur une instance de recette).
 4. **Vider le cache des PDF d'OM** (`storage/app/private/ordres/`) et **envoyer un e-mail de test** depuis
    *Messagerie*.
-5. **Éprouver la restauration sur une base MySQL de recette** (`db:restore`, n° 10 et 14).
+5. **Éprouver la restauration sur la base MySQL de l'hébergement** (`db:restore`, n° 10 et 14) : le
+   mécanisme est vérifié en CI sur MySQL 8 depuis le 29/10, reste à le faire une fois avec les binaires et les droits de l'hébergeur.
 6. **Sauvegarder `storage/` avec la base** : réglages, paraphes et fichiers produits ne sont pas dans le dump.
 7. Si la file passe en `QUEUE_CONNECTION=database` : tâche Cron `queue:work` nommant les trois files.
 
-**Dette technique connue** (sans effet sur le fonctionnement) :
+**Dette technique** : **soldée le 29/10** (PR #195 à #199) ; chaque point est désormais vérifié en CI.
 
-- Correctifs sans test automatisé : minuteurs, page de maintenance, garde de route au rechargement,
-  `lockForUpdate` sous MySQL.
-- Restauration et tri des sauvegardes couverts seulement par Pest (SQLite, simulation).
-- Scripts de recette (83 contrôles) et de rejeu de la démo non versionnés : seuls Pest, Vitest et
-  Playwright tournent en CI.
-- Trois écrans (barème, exports de rapports) gardent un message d'échec générique à côté du motif ; depuis
-  le n° 45, l'avertissement global donne le motif réel, rien ne se perd.
-- Vue reste en `3.6.0-beta.9` (figée par le lock) : passer à la 3.6 stable quand elle paraîtra, CI rejouée.
-- `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md` sont historiques (marqués comme
-  tels) : à archiver si le client le souhaite.
+| Point (relevé au §8.3 initial) | Résolution |
+|--------------------------------|------------|
+| Correctifs sans test automatisé (minuteurs, page de maintenance, garde de route au rechargement, design system) | 20 tests Vitest, chacun vu en échec sans son correctif (#197) ; défaut n° 52 trouvé en chemin |
+| `lockForUpdate` et restauration testés seulement sous SQLite | Groupe Pest `mysql` (9 tests) et job **Backend · Pest MySQL** sur MySQL 8 : aller-retour `db:backup` / `db:restore` réel, sauvegarde de sécurité restaurable, purge de la matrice (n° 10), dump invalide, tri (n° 14), verrou réellement bloquant (erreur 1205) (#198) ; défaut n° 53 |
+| Scripts de recette et de rejeu non versionnés | `scripts/recette/` (119 + 154 contrôles) et job **Recette · API réelle** (#199) ; défauts n° 54 et 55 |
+| Trois écrans avec un message d'échec générique | Défaut n° 50 (#195) |
+| Vue `3.6.0-beta.9` | Vue **3.5.44 stable**, épinglée (dépendance et `overrides` des `@vue/*`) : la 3.6 stable n'est pas parue, la 3.5 est la dernière stable ; aucune fonctionnalité 3.6 n'était utilisée (#196) |
+
+Reste au seul choix du client : `docs/deploiement-circuit-validation.md` et `docs/plan-validation-daf-dg.md`
+sont historiques (marqués comme tels), à archiver s'il le souhaite. Passer à Vue 3.6 quand elle sera stable
+relève d'une évolution ordinaire (CI rejouée), non d'une dette.
 
 **Aucune décision n'est en attente** : D1 à D4 sont appliquées (§7.1), la règle n° 6 (thème vert) est
 tranchée (`CLAUDE.md` §4).
 
 ### 8.4 Clôture (29/10/2026)
 
-Le projet est **terminé côté développement** : une fois la PR #193 fusionnée, rien n'est en cours ; `main` porte la
-version 1.4 complète, CI verte (Lint, Pest 691, Vitest 215 et type-check, Playwright 3, build `frontend-dist`).
+Le projet est **terminé côté développement** : la dette technique est soldée (§8.3, PR #195 à #199), rien n'est en
+cours ; `main` porte la version 1.4 complète, CI verte sur sept jobs (Lint, Pest 693 sur SQLite, Pest MySQL 9,
+Vitest 241 et type-check, Playwright 3, Recette · API réelle 273 contrôles, build `frontend-dist`).
 
 | Étape | Qui | Référence |
 |-------|-----|-----------|
@@ -520,7 +529,7 @@ version 1.4 complète, CI verte (Lint, Pest 691, Vitest 215 et type-check, Playw
 | Contrôler l'instance après la mise à jour | Exploitation, puis un compte de chaque profil | `docs/checklist-post-deploiement.md` §06 |
 | Éprouver la restauration sur une base de recette | Exploitation | §8.3, point 5 |
 | Former les utilisateurs | Responsable fonctionnel | `docs/Guide-Utilisateur-ANaTT.docx`, `docs/SCENARIO-DEMO.md`, galerie des écrans |
-| Décider de l'archivage des deux documents historiques | Client | §8.3, *Dette technique connue* |
+| Décider de l'archivage des deux documents historiques | Client | §8.3, *Dette technique* |
 
 Toute évolution ultérieure suit les règles de `CLAUDE.md` et d'`AGENTS.md` (périmètre, réglages appliqués et
 testés, motifs de refus en français, contrat OpenAPI) ; la documentation technique en fait la synthèse

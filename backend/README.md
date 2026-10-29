@@ -32,8 +32,9 @@ Comptes de démonstration (local et tests uniquement, mot de passe `password`) :
 ## Vérifier
 
 ```bash
-./vendor/bin/pest                                   # 691 tests, 76 fichiers — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pest                                   # 693 tests sur SQLite, 79 fichiers (groupe mysql : 9 tests, ignorés hors MySQL) — sans .env (APP_KEY de test dans phpunit.xml)
 ./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
+DB_CONNECTION=mysql DB_DATABASE=anatt_test_mysql ./vendor/bin/pest --group=mysql   # 9 tests sur un vrai MySQL (base dont le nom contient « test », remise à zéro)
 ./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php   # filets RBAC et OpenAPI
 ```
 

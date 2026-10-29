@@ -9,6 +9,31 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Dette technique soldée (29/10/2026)
+
+- **Vue 3.5.44 stable** (#196) : sortie de la `3.6.0-beta.9` ; version épinglée (dépendance et `overrides` des
+  `@vue/*`), `npm ci`. La 3.6 stable n'est pas parue ; aucune fonctionnalité 3.6 n'était utilisée.
+- **Écart corrigé (n° 50)** (#195) : barème et exports de rapports affichaient « Échec de l'enregistrement. » /
+  « Échec de l'export. » à côté du motif ; `getErrorMessage(e, repli)` donne le motif du serveur, le message de
+  l'écran n'est plus qu'un repli. `echec-motif-ecrans.spec.ts`.
+- **Écart corrigé (n° 51)** (#196) : `start-dev.ps1` en ASCII (Windows PowerShell 5.1). `scripts-dev-ascii.spec.ts`.
+- **Correctifs restés sans test, couverts** (#197) : minuteurs annulés au démontage, page de maintenance
+  (compte à rebours, revérification, retour à la page demandée), garde de route au rechargement (mot de passe à
+  changer), design system de la connexion et des matrices — 20 tests Vitest vus en échec sans leur correctif.
+  **Écart corrigé (n° 52)** : `AppNavProgress` laissait ses crochets `afterEach` / `onError` branchés au démontage.
+- **Pest sur un vrai MySQL** (#198) : groupe `mysql` (`tests/Mysql`, 9 tests) et job CI **Backend · Pest MySQL**
+  (MySQL 8) — aller-retour `db:backup` / `db:restore` réel, sauvegarde de sécurité restaurable, purge de la matrice,
+  dump invalide, tri des sauvegardes, verrou `lockForUpdate` réellement bloquant. **Écart corrigé (n° 53)** : deux
+  sauvegardes de la même seconde ne s'écrasent plus (suffixe `-2`, `-3`…) ; restaurer une sauvegarde toute fraîche
+  la faisait perdre.
+- **Recette versionnée** (#199) : `scripts/recette/` — rejeu du scénario de démo (119 contrôles) et recette
+  transverse (154) contre l'API réellement servie ; job CI **Recette · API réelle**. **Écarts corrigés (n° 54, 55)** :
+  agent sans indice ni salaire brut, premier motif « Le champ categorie est obligatoire. » au lieu du motif utile ;
+  « … postérieure ou égale au date de départ » (messages propres à `date_retour` / `date_fin`).
+- Documentation : `docs/revue-projet-2026-10.md` §8 (défauts n° 50 à 55, dette soldée, clôture), documentation
+  technique régénérée (chapitres 10 et 11), CLAUDE.md, README (compteurs : Pest 702 dont 9 sur MySQL, Vitest 241 ;
+  recette 273 contrôles ; sept jobs CI).
+
 ### Checklist post-déploiement (29/10/2026)
 
 - `docs/checklist-post-deploiement.md` §06 : contrôles des pages d'erreur et des textes accentués (404 et ses trois
