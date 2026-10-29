@@ -41,13 +41,13 @@ function beneficiaireVierge(): BeneficiaireForm {
   }
 }
 
-/** Décompte de jours inclusif (jour de départ + jour de retour comptés). */
+/** Décompte de jours inclusif (jour de départ + jour de retour comptés) ; 0 si le retour précède le départ. */
 function joursInclusifs(depart: string, retour: string): number {
   if (!depart || !retour) return 0
   const d = new Date(depart).getTime()
   const r = new Date(retour).getTime()
-  if (Number.isNaN(d) || Number.isNaN(r)) return 0
-  return Math.max(1, Math.round((r - d) / 86_400_000) + 1)
+  if (Number.isNaN(d) || Number.isNaN(r) || r < d) return 0
+  return Math.round((r - d) / 86_400_000) + 1
 }
 
 export interface PerDiem {
@@ -146,6 +146,13 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
     }
     return new Set([...vus.entries()].filter(([, n]) => n > 1).map(([id]) => id))
   })
+
+  // Dates inversées : refusées par le serveur (date_retour after_or_equal:date_depart) ; signalées
+  // dès l'étape 1 plutôt qu'à l'enregistrement, avec le même motif.
+  const datesInversees = computed(() =>
+    !!contexte.value.date_depart && !!contexte.value.date_retour
+    && contexte.value.date_retour < contexte.value.date_depart,
+  )
 
   const etape1Valide = computed(() =>
     !!contexte.value.objet.trim()
@@ -254,7 +261,7 @@ export const useOrdresMissionStore = defineStore('ordres-mission', () => {
   return {
     contexte, beneficiaires, baremes, submitting,
     nbJoursMission, totalMission, referencesEnDoublon, agentsEnDoublon,
-    etape1Valide, etape2Valide, beneficiairesIncomplets, champsManquants,
+    datesInversees, etape1Valide, etape2Valide, beneficiairesIncomplets, champsManquants,
     chargerBaremes, taux, calculer, beneficiaireValide,
     ajouterBeneficiaire, retirerBeneficiaire, reset, construirePayload, enregistrer,
   }

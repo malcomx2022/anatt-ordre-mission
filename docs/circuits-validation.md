@@ -13,6 +13,9 @@
 > étape coupable, e-mails par le serveur de *Messagerie*, mode maintenance (§1) ; opérateur fermé à la
 > porte de paiement (§3) ; références (§8). Puis : un refus du circuit (séparation des tâches, numéro
 > de registre) affiche son **motif** à l'écran, et non plus « Donnees invalides. » (§1).
+>
+> *Révisé le 29/10/2026 (après la dette)* : le verrou entre un amendement et une signature de l'état
+> (`lockForUpdate`) est désormais éprouvé sur un vrai MySQL, en CI (§6, §8). Circuits inchangés.
 
 ---
 
@@ -259,7 +262,11 @@ flowchart TD
 **Intégrité garantie :**
 
 - l'amendement verrouille l'OM puis les états de la mission (`lockForUpdate`) : un
-  contrôle concurrent ne peut pas signer l'état entre la garde et la resynchronisation ;
+  contrôle concurrent ne peut pas signer l'état entre la garde et la resynchronisation.
+  SQLite n'émettant aucun verrou, c'est éprouvé sur un vrai MySQL (job CI *Backend · Pest MySQL*,
+  `tests/Mysql/VerrouAmendementTest.php`) : pendant un amendement, une signature qui prend l'état
+  attend ; une signature en cours fait attendre l'amendement, qui, à l'expiration de l'attente,
+  échoue sans rien écrire, puis passe une fois la signature terminée ;
 - un état des reliquats en `BROUILLON` (ou `REJETE`) est **resynchronisé
   automatiquement** sur les montants amendés (`OrdreMissionObserver` →
   `EtatPaiementService::synchroniser`). Son total est le montant **payable** : la somme
@@ -341,6 +348,7 @@ régénéré (`docs/runbook-mise-a-jour-cron.md`, étape 6). Tests : `tests/Feat
 | Tests — séparation des tâches | `tests/Feature/SeparationTachesTest.php` |
 | Tests — signatures de l'état sur le PDF de l'OM | `tests/Feature/OmPdfSignaturesEtatTest.php` |
 | Tests — amendement & intégrité de l'état | `tests/Feature/AmendementOmTest.php`, `tests/Feature/AmendementIntegriteEtatTest.php` |
+| Tests — verrou amendement ↔ signature (vrai MySQL, groupe `mysql`) | `tests/Mysql/VerrouAmendementTest.php` |
 | Tests — trop-perçus / régularisations (solde après recouvrement) | `tests/Feature/RegularisationTest.php` |
 | Tests — avance engagée | `tests/Feature/AvanceEngageeTest.php` (circuit par état), `tests/Feature/AmendementOmTest.php` (circuit par OM) |
 | Tests — OM rejeté jamais repêché, versements annulés | `tests/Feature/EtatPaiementTest.php`, `tests/Feature/MissionTest.php` |

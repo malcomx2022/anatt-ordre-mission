@@ -66,7 +66,7 @@ class BackupController extends Controller
             ], 500);
         }
 
-        return response()->json(['message' => 'Sauvegarde creee.', 'details' => $sortie]);
+        return response()->json(['message' => 'Sauvegarde créée.', 'details' => $sortie]);
     }
 
     /** Télécharge une sauvegarde (copie hors serveur). */
@@ -152,6 +152,6 @@ class BackupController extends Controller
             unlink($path);
         }
 
-        return response()->json(['message' => 'Sauvegarde supprimee.']);
+        return response()->json(['message' => 'Sauvegarde supprimée.']);
     }
 }

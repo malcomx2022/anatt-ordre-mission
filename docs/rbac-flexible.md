@@ -15,6 +15,10 @@
 > de signature est corrigée (ils peuvent signer s'ils portent les clés, mais ne sont pas
 > notifiés), une section **Limites connues** est ajoutée, et les comptes désactivés ne reçoivent
 > plus de notifications (défaut n° 27).
+>
+> *Révisé le 29/10/2026 (après la dette)* : la purge de la matrice après `db:restore` est désormais
+> éprouvée par une vraie restauration MySQL (table revenue à l'état sauvegardé, cache purgé ; dump
+> invalide : échec sans purge), en CI (§ Composants, § Tests).
 
 ## Principe
 
@@ -57,7 +61,8 @@ fonctionnelle.
 La matrice est **mise en cache sans expiration** (`rbac.matrice`, `Cache::rememberForever`) :
 une lecture BDD, puis **purge à chaque écriture** (`remplacer` / `reinitialiser` / rôles
 personnalisés) et après une **restauration de sauvegarde** (`db:restore`), qui remplace
-`role_permissions` sous l'application.
+`role_permissions` sous l'application. Une restauration en échec (le client `mysql` refuse le dump)
+s'arrête avant la purge : le cache n'est pas vidé.
 
 > **Exploitation.** Toute modification de `role_permissions` **hors de l'application**
 > (import SQL dans phpMyAdmin, réimport d'un dump) laisse l'ancienne matrice en cache :
@@ -351,6 +356,6 @@ nouveaux droits à sa prochaine connexion (login + `/auth/me/permissions`).
 | Accès par profil sur les routes réelles (SUPER_ADMIN, ADMIN, gestionnaire…) | `tests/Feature/RoleMiddlewareTest.php` |
 | Aucune route API sans permission | `tests/Feature/RoutesPermissionsTest.php` |
 | Permission annoncée (`x-permission`) = permission exigée, pour chaque route, dont `/admin/roles*` et `/admin/users/{user}/permissions` | `tests/Feature/OpenApiTest.php` (`backend/docs/openapi.yaml`) |
-| Purge de la matrice après `db:restore` | `tests/Feature/BackupControllerTest.php` |
+| Purge de la matrice après `db:restore` | `tests/Feature/BackupControllerTest.php` ; vraie restauration MySQL (groupe `mysql`, job CI *Backend · Pest MySQL*) : `tests/Mysql/SauvegardeRestaurationTest.php` |
 | Notifications : destinataires actifs seulement, e-mail non envoyé à un compte désactivé | `tests/Feature/NotificationTest.php` |
 | Cohérence menu ↔ routes ↔ API | `frontend/src/__tests__/navigation.spec.ts` |

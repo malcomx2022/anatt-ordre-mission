@@ -9,6 +9,24 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Relecture finale de tous les documents ; trois derniers écarts (29/10/2026)
+
+- **Écarts corrigés**, chacun avec un test vu en échec avant le correctif :
+  - n° 56 : l'assistant de retranscription admettait des dates inversées à l'étape 1 (« 1 j ») et le refus de
+    l'enregistrement s'affichait deux fois ; l'étape 1 refuse désormais avec le motif du serveur, et un refus
+    motivé ne s'affiche qu'une fois (`mission-create.spec.ts`) ;
+  - n° 57 : barème, enregistrement partiel : taux enregistrés rechargés, taux refusés conservés avec leur motif
+    (`echec-motif-ecrans.spec.ts`) ;
+  - n° 58 : import d'agents sans indice ni salaire brut : le seul motif utile, sans « Le champ categorie est
+    obligatoire. » en plus (`ImportModeleAgentsTest`).
+  - Libellés « postérieure ou égale » sur les filtres de période (une même date est acceptée) ; « Sauvegarde
+    créée. » / « Sauvegarde supprimée. » accentués.
+- **Documents** : checklist post-déploiement (contrôles des n° 50 à 58, restauration chez l'hébergeur, recette
+  facultative sur une instance de recette), runbook et DEPLOY-CPANEL (cinq fichiers de l'API) ; workflows par
+  profil, circuits de validation, amendement d'un OM, catégories d'indice, RBAC ; README backend, frontend et
+  recette (HTTP seulement), files d'attente, en-tête de la CI ; audit de cohérence de tout le dépôt (compteurs
+  mesurés : Pest 703 dont 9 sur MySQL, Vitest 245). Revue §8 et documentation technique à jour.
+
 ### Documentation technique après la dette (29/10/2026)
 
 - `.docx` régénéré : évolutions 1.4 « Dette soldée (29/10) » (Vue 3.5.44, tests MySQL et recette en CI, n° 50 à 55)

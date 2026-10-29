@@ -4,7 +4,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 
 > **Règle d'or** — l'application **ne crée pas** les OM (SEMO les émet) et **ne réalise pas** les paiements (faits sur les plateformes MTN/Moov). Elle **retranscrit** les OM et **génère** les fichiers de paiement à déposer manuellement. Aucune API SEMO, aucune API opérateur, aucun réimport de fichier résultat.
 
-> **État (29/10/2026)** — version 1.4 terminée côté développement : 55 défauts relevés par la revue d'octobre
+> **État (29/10/2026)** — version 1.4 terminée côté développement : 58 défauts relevés par la revue d'octobre
 > corrigés avec un test, dette technique soldée, CI verte sur sept jobs (dont Pest sur MySQL réel et recette sur
 > l'API réelle). Reste l'exploitation : mettre l'instance à jour ([runbook](docs/runbook-mise-a-jour-cron.md)), la
 > contrôler ([checklist](docs/checklist-post-deploiement.md) §06), éprouver une restauration chez l'hébergeur —
@@ -18,7 +18,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
 | Frontend | Vue **3.5.44 stable** (Composition API, TypeScript), épinglée · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
-| Tests | Pest / PHPUnit (702 tests, 79 fichiers, dont 9 sur MySQL réel) · Vitest (241 tests) · recette sur l'API réelle (273 contrôles, `scripts/recette/`) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (703 tests, 79 fichiers, dont 9 sur MySQL réel) · Vitest (245 tests) · recette sur l'API réelle (273 contrôles, `scripts/recette/`) · Playwright (parcours critique e2e) |
 
 ---
 
@@ -206,7 +206,7 @@ anatt-ordre-mission/
 ├── CLAUDE.md            # contexte/spec détaillée du projet
 ├── AGENTS.md            # consignes pour les contributeurs (humains et assistants)
 ├── DEPLOY-CPANEL.md     # déploiement et mise à jour en production
-├── .github/workflows/   # CI (Lint, Pest, Vitest, Playwright, build)
+├── .github/workflows/   # CI (Lint, Pest SQLite, Pest MySQL, Vitest, Playwright, Recette · API réelle, build)
 ├── start-dev.ps1        # démarre l'env de dev (Windows)
 ├── stop-dev.ps1         # arrête l'env de dev
 ├── backend/             # API Laravel
@@ -273,7 +273,7 @@ node scripts/recette/recette-api.cjs      # recette transverse (rejouable sur la
 | `docs/circuits-validation.md`, `docs/amendement-om.md` | Circuits de validation, amendement et trop-perçus |
 | `docs/rbac-flexible.md`, `docs/workflows-par-profil.md` | Droits d'accès et parcours par profil |
 | `docs/parametrage-part-avance.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | Paramétrages métier |
-| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, défauts n° 1 à 55 corrigés, dette soldée, ce qui reste côté exploitation : §8) |
+| `docs/revue-projet-2026-10.md` | Revue complète d'octobre 2026 (couverture par module, défauts n° 1 à 58 corrigés, dette soldée, ce qui reste côté exploitation : §8) |
 | `scripts/recette/README.md` | Recette sur l'API réelle : prérequis, commandes, sortie attendue (119 + 154 contrôles) |
 | `docs/deploiement-circuit-validation.md`, `docs/plan-validation-daf-dg.md` | Documents **historiques** (circuit par OM retiré), conservés pour mémoire |
 | `docs/00_galerie_index.html` … | Galerie des écrans réels (46 écrans, recapturée le 29/10/2026 avec le SPA en Vue 3.5.44) : captures par `docs/capturer_ecrans.cjs` (base de démonstration neuve, build de production, navigateur en `LANG=fr_FR.UTF-8`, polices Sora et DM Sans attendues), pages par `docs/generer_maquettes.py` |

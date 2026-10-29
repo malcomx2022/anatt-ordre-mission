@@ -54,6 +54,6 @@ describe('MissionListView — filtres', () => {
 
     const appelInvalide = list.mock.calls.some((c) => (c[0] as Record<string, unknown>)?.date_fin)
     expect(appelInvalide).toBe(false)
-    expect(w.text()).toContain('postérieure')
+    expect(w.text()).toContain('postérieure ou égale à la date de début')
   })
 })

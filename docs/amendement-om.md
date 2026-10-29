@@ -1,7 +1,7 @@
 # Amendement d'un ordre de mission après paiement de l'avance
 
 > **Statut : fonctionnalité complète — Phases 1 à 6 livrées, document de retenue RH inclus,
-> durcie par la revue d'octobre 2026 (version 1.3), relue en version 1.4 (27/10/2026), complétée le 28/10/2026.**
+> durcie par la revue d'octobre 2026 (version 1.3), relue en version 1.4 (27/10/2026), complétée le 28/10/2026, révisée le 29/10/2026.**
 > Ce document cadre le
 > besoin, la règle de gestion, l'implémentation et le planning. Décisions métier
 > tranchées (§7) : trop-perçu = **retenue sur salaire** (constat + trace, recouvrement
@@ -138,6 +138,20 @@
 >   donne désormais le **motif** du serveur (`getErrorMessage`, §4.3), et les règles génériques (motif
 >   trop court, nombre de jours invalide) sont rédigées en français (`resources/lang/fr/validation.php`) —
 >   en production, elles renvoyaient jusque-là leur clé brute (« validation.min.string »).
+>
+> **Révisé le 29/10/2026 (après la dette)** :
+> - **verrou éprouvé sur un vrai MySQL** : sous SQLite (suite Pest habituelle), `lockForUpdate`
+>   n'émet rien ; le verrou de l'amendement n'était donc vérifié que par lecture du code. Le groupe
+>   `mysql` (`tests/Mysql/VerrouAmendementTest.php`, job CI *Backend · Pest MySQL*, MySQL 8) le prouve
+>   avec une seconde session InnoDB qui joue la signature concurrente : pendant l'amendement, le contrôle
+>   de l'état attend ; une signature en cours fait attendre l'amendement, qui échoue à l'expiration de
+>   l'attente **sans rien écrire** (OM, versement RELIQUAT et journal intacts), puis passe une fois la
+>   signature terminée. Une lecture sans verrou ne bloquerait pas : c'est bien la lecture verrouillante
+>   des états (`… for update`) qui attend (§4.3) ;
+> - **recette sur l'API réelle** : `scripts/recette/` rejoue en CI l'avenant de `docs/SCENARIO-DEMO.md` §7
+>   (refus tant qu'un fichier attend son dépôt, motif trop court, rallonge, réduction en trop-perçu
+>   −54 000, régularisation, recouvrement) et le circuit par OM (avance confirmée engagée, trop-perçu
+>   → `RECOUVRE`).
 
 ---
 
@@ -239,7 +253,9 @@ Body: { nb_jours? , lignes? , motif }
 - Recalcule `montant_total` au barème, applique la règle §4.2, met à jour le
   **versement RELIQUAT** (si non `CONFIRME`), journalise `AMEND_OM`, écrit dans
   `om_amendements`. Le tout dans une transaction qui verrouille l'OM puis les états de la
-  mission (`lockForUpdate`).
+  mission (`lockForUpdate`) ; le verrou des états, que prend aussi chaque signature
+  (`EtatPaiementService::transition`), est éprouvé sur un vrai MySQL
+  (`tests/Mysql/VerrouAmendementTest.php`).
 - **Garde-fous** :
   - refus si l'OM est `REJETE` ou `ANNULE` ;
   - refus si un état de tranche est **en cours de signature** (`CONTROLE` / `VISA_DAF`,
@@ -414,5 +430,6 @@ Questions de gestion posées au cadrage, et la réponse retenue :
 | PDF de l'OM amendé | `PdfGenerator::donnees()`, `PdfGenerator::libellesRepartition()`, gabarit `pdf.ordre-mission` |
 | Motif d'un refus à l'écran | `frontend/src/composables/useApi.ts` (`getErrorMessage`), tests `refus-motif.spec.ts` ; messages génériques en français `backend/resources/lang/fr/validation.php`, tests `ValidationFrancaisTest` |
 | Endpoints et permissions | `backend/docs/openapi.yaml` (`POST /ordres/{ordre}/amender`, tag *Paiements* pour les régularisations) |
-| Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest`, `OmPdfAmendementTest` |
+| Tests | `AmendementOmTest`, `AmendementIntegriteEtatTest`, `AvanceEngageeTest`, `RegularisationTest`, `RapportTropPercusTest`, `OmPdfAmendementTest` ; verrou sur un vrai MySQL : `tests/Mysql/VerrouAmendementTest.php` (groupe `mysql`) |
+| Recette sur l'API réelle | `scripts/recette/rejeu-scenario.cjs` (avenant du scénario de démo §7), `scripts/recette/recette-api.cjs` (circuit par OM, trop-perçu → `RECOUVRE`) |
 | Revue d'octobre 2026 | `docs/revue-projet-2026-10.md` (§3 n° 3, §4 *Intégrité des paiements*) |

@@ -231,7 +231,9 @@ class AgentService
             'grade' => 'nullable|string|max:255',
             'indice' => 'nullable|integer|min:0',
             'salaire_brut' => 'nullable|integer|min:0',
-            'categorie' => 'required|'.CategorieIndice::regleIn(),
+            // Comme à la création (StoreAgentRequest) : sans indice ni salaire brut, le seul motif utile
+            // est « L'indice ou le salaire brut est requis… » ; réclamer aussi la catégorie ferait doublon.
+            'categorie' => 'required_with:indice,salaire_brut|nullable|'.CategorieIndice::regleIn(),
             'telephone' => ['required', 'string', 'regex:'.config('benin.telephone.regex'), 'unique:agents,telephone'],
             'operateur' => 'required|in:MTN,MOOV',
         ]);

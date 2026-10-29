@@ -32,13 +32,23 @@ Comptes de démonstration (local et tests uniquement, mot de passe `password`) :
 ## Vérifier
 
 ```bash
-./vendor/bin/pest                                   # 693 tests sur SQLite, 79 fichiers (groupe mysql : 9 tests, ignorés hors MySQL) — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pest                                   # 703 tests en 79 fichiers : 694 passent sur SQLite, les 9 du groupe mysql sont ignorés (« skipped ») — sans .env (APP_KEY de test dans phpunit.xml)
 ./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
-DB_CONNECTION=mysql DB_DATABASE=anatt_test_mysql ./vendor/bin/pest --group=mysql   # 9 tests sur un vrai MySQL (base dont le nom contient « test », remise à zéro)
-./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php   # filets RBAC et OpenAPI
+DB_CONNECTION=mysql DB_DATABASE=anatt_test_mysql ./vendor/bin/pest --group=mysql   # 9 tests sur un vrai MySQL / MariaDB (base dont le nom contient « test », remise à zéro)
+./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php tests/Feature/OpenApiReponsesTest.php   # filets RBAC et OpenAPI
 ```
 
+Répartition : `tests/Unit` 129 tests (5 fichiers), `tests/Feature` 565 (71 fichiers), `tests/Mysql` 9 (3 fichiers :
+aller-retour réel `db:backup` / `db:restore`, tri des sauvegardes, verrou `lockForUpdate` de l'amendement). La suite
+`mysql` exige `mysqldump` / `mysql` dans le `PATH` (ou `DB_DUMP_BINARY` / `DB_RESTORE_BINARY`) ; garde-fou et mode
+d'emploi dans `tests/Support/MysqlReel.php`. La CI la joue dans le job **Backend · Pest MySQL** (MySQL 8).
+
 Un test de régression doit échouer sans le correctif avant d'être retenu.
+
+**Recette sur l'API servie** : `../scripts/recette/` rejoue le scénario de démonstration (119 contrôles) puis une
+recette transverse (154 contrôles) contre `php artisan serve` sur une base neuve, `QUEUE_CONNECTION=sync` — job CI
+**Recette · API réelle** ; commandes et prérequis dans [`../scripts/recette/README.md`](../scripts/recette/README.md).
+Un message d'API, un montant ou un format de fichier que montre le scénario ne change pas sans ces scripts.
 
 ## Repères dans le code
 
@@ -48,11 +58,12 @@ Un test de régression doit échouer sans le correctif avant d'être retenu.
 | `app/Services/` | Logique métier : `MissionService` (retranscription, amendement), `EtatPaiementService` (circuit), `LotPaiementService`, `CalculIndemniteService`, `Paiement/` (fichiers MTN / Moov) |
 | `app/Support/` | `Permissions`, `PermissionRepository` (matrice RBAC en cache), `CategorieIndice`, `Parametres`, `Workflow` |
 | `app/Jobs/` | `GenererLotPaiementJob` (file `paiements`), `GenererEtatJob` (file `etats`), `SendNotification` |
-| `app/Console/Commands/` | `db:backup`, `db:restore` |
+| `app/Console/Commands/` | `db:backup` (n'écrase jamais un fichier : deux sauvegardes de la même seconde prennent le suffixe `-2`, `-3`…), `db:restore` (sauvegarde de sécurité préalable, purge de la matrice des permissions) |
 | `routes/api.php` | Routes, chacune protégée par `permission:{clé}` (verrouillé par `RoutesPermissionsTest`) |
 | `routes/console.php` | Planification : `db:backup` à 02:00, purge des jetons Sanctum |
 | `database/seeders/` | Socle toujours seedé ; démo en `local`/`testing` ; `ComptesCircuitSeeder` pour les signataires en production |
-| `tests/Feature`, `tests/Unit` | Pest |
+| `tests/Feature`, `tests/Unit` | Pest (SQLite en mémoire) |
+| `tests/Mysql`, `tests/Support` | Groupe `mysql` (vrai MySQL, ignoré ailleurs) ; `MysqlReel` (garde-fou de la suite) et `OpenApiSchema` (validateur des réponses contre `docs/openapi.yaml`) |
 
 ## Documentation de l'API
 

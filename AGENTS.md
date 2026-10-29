@@ -5,7 +5,7 @@ High-signal notes for OpenCode sessions in this repo.
 ## First reads
 - Read `CLAUDE.md` first for business constraints and design-system rules; then verify against executable sources when in doubt.
 - Treat code/config as source of truth over prose. Example: the avance/reliquat split is NOT a hard-coded 70/30 — it reads `Parametres::partAvance()` (default 70) in `backend/app/Services/CalculIndemniteService.php`.
-- `docs/revue-projet-2026-10.md` lists what the October 2026 review fixed and why (defects n° 1–32); §7.1 records the four decisions D1–D4, all applied in version 1.4 (26/10/2026), and §7.2 the known debt. Read it before touching payments, états or amendments.
+- `docs/revue-projet-2026-10.md` lists what the October 2026 review fixed and why (defects n° 1–58, §3 and §8.1); §7.1 records the four decisions D1–D4, all applied in version 1.4 (26/10/2026); §8 is the final status (technical debt cleared on 29/10, only operations steps remain). Read it before touching payments, états or amendments.
 - Repo language is French: user-facing text, code comments, commit messages, CHANGELOG entries and docs are written in French.
 
 ## Repo shape (easy to guess wrong)
@@ -35,7 +35,7 @@ High-signal notes for OpenCode sessions in this repo.
   - frontend: `npm run dev`
 
 ## Verification commands agents should run
-- Backend full tests: `cd backend && php artisan test` (Pest, ~670 tests)
+- Backend full tests: `cd backend && php artisan test` (Pest, 703 tests in 79 files: 694 on SQLite, the 9 `mysql`-group tests are skipped)
 - Backend style: `cd backend && vendor/bin/pint --test` (CI runs it in check mode)
 - Backend focused RBAC safety net: `cd backend && php artisan test tests/Feature/RoutesPermissionsTest.php`
 - Frontend quality checks:
@@ -59,7 +59,7 @@ High-signal notes for OpenCode sessions in this repo.
   - backend middleware returns HTTP 423: `backend/app/Http/Middleware/ForcePasswordChange.php`
   - frontend handles 423 and redirects in `frontend/src/composables/useApi.ts`; the router guard must also redirect after a page reload (`router/index.ts`).
 - Every `/api/*` error is JSON, even without an `Accept` header: 401 (there is no `login` route), and also 405, 404, 403, 422 and 500 (n° 29). All renderers in `bootstrap/app.php` share one predicate, `$enJson` (`expectsJson()` or path `api/*`); a new renderer must use it too.
-- 422 bodies are `{message: "Donnees invalides.", errors: {field: [reason]}}`. The SPA shows the first reason (`getErrorMessage` + the 422 interceptor, deduplicated by `useToast`); never surface the generic message alone. Generic rule messages live in `backend/resources/lang/fr/validation.php` (production runs with `APP_LOCALE=fr` and `APP_FALLBACK_LOCALE=fr`: without it, raw keys like `validation.unique` reach the screen) — a new rule must be covered there or carry its own French message (`ValidationFrancaisTest`, `refus-motif.spec.ts`).
+- 422 bodies are `{message: "Donnees invalides.", errors: {field: [reason]}}`. The SPA shows the first reason (`getErrorMessage` + the 422 interceptor, deduplicated by `useToast`); never surface the generic message alone. Screens with their own failure message pass it as fallback, `getErrorMessage(e, "Échec de l'export.")`: the server's reason always wins (n° 50, `echec-motif-ecrans.spec.ts`); when a form already lists the 422 reasons, do not add a generic error toast on top (n° 56). Generic rule messages live in `backend/resources/lang/fr/validation.php` (production runs with `APP_LOCALE=fr` and `APP_FALLBACK_LOCALE=fr`: without it, raw keys like `validation.unique` reach the screen) — a new rule must be covered there or carry its own French message (`ValidationFrancaisTest`, `refus-motif.spec.ts`).
 - A controller returning a PHP associative array that may be empty must cast it (`(object) $array`), or it serializes as `[]` instead of `{}` (n° 32, `SettingsController`).
 - API base URL precedence is runtime-first: `window.__ANATT_CONFIG__.apiUrl` from `frontend/public/runtime-config.js` overrides `VITE_API_URL`.
 - The axios instance sends `Content-Type: application/json` by default: any `FormData` upload must pass `headers: { 'Content-Type': 'multipart/form-data' }` or axios serializes the file to `{}`.

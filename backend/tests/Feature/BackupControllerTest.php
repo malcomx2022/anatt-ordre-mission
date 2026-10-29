@@ -65,7 +65,7 @@ it('supprime une sauvegarde existante', function () {
 
     $this->actingAs($this->su)->deleteJson('/api/admin/backups/a_supprimer.sql')
         ->assertOk()
-        ->assertJsonPath('message', 'Sauvegarde supprimee.');
+        ->assertJsonPath('message', 'Sauvegarde supprimée.');
 
     expect(file_exists($this->dir.'/a_supprimer.sql'))->toBeFalse();
 });
@@ -75,7 +75,7 @@ it('reste idempotent sur la suppression d’une sauvegarde absente', function ()
 
     $this->actingAs($this->su)->deleteJson('/api/admin/backups/inexistante.sql')
         ->assertOk()
-        ->assertJsonPath('message', 'Sauvegarde supprimee.');
+        ->assertJsonPath('message', 'Sauvegarde supprimée.');
 });
 
 it('refuse de supprimer un fichier qui n’est pas une sauvegarde', function () {

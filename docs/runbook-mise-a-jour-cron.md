@@ -35,6 +35,11 @@
 > tout refus affiche son motif, une fois et en français — nouveau fichier `resources/lang/fr/validation.php`,
 > envoyé avec `resources/` à l'étape 4 (rien à ajouter) ; contrôle à l'étape 8.
 >
+> **Dette technique soldée (29/10/2026, n° 50 à 58)** : code seul, **aucune migration**, rien à changer en
+> base ni dans le `.env`, `vendor/` inchangé. Trois fichiers de l'API changent (liste à l'étape 4) ; le SPA est
+> **à redéployer** (reconstruit avec Vue 3.5.44 stable, motif du serveur sur les refus du barème et des
+> exports). Pas de maintenance obligatoire, pas de cache de PDF à vider. Contrôles à l'étape 8.
+>
 > *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
 > `vendor/composer/platform_check.php`. *Relu le 27/10/2026 (version 1.4)* : fuseau dans le `.env`,
 > SPA servi pendant la maintenance, sortie de maintenance vérifiée, recette et retour arrière 1.4.
@@ -59,6 +64,11 @@
       serait perdu en cas de retour arrière (la base revient à l'étape 1, pas le fichier).
 
 > **1.3 et 1.4** : `composer.lock` n'a pas changé depuis la 1.2 → **ne pas** réenvoyer `vendor/`.
+> Il n'a pas changé non plus avec les correctifs du 29/10 (dette technique).
+>
+> **29/10 (dette technique)** : `frontend/package.json` épingle désormais Vue **3.5.44** (au lieu de la
+> 3.6 bêta). Pour un build local, installez avec `npm ci`, qui respecte le `package-lock.json`, et non
+> `npm install`. L'artefact CI `frontend-dist` est construit de la même façon.
 >
 > **1.4** : prévenez les utilisateurs de l'heure de l'opération. Pendant la maintenance, c'est encore
 > le SPA 1.3 qui est servi : il ne connaît pas l'écran *Maintenance* (apparu en 1.4) et ses écrans
@@ -193,6 +203,13 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
       `anatt-api/app/Http/Requests/StoreOrdreMissionRequest.php` et `UpdateOrdreMissionRequest.php`.
       Ces fichiers ont été retirés du dépôt, mais un envoi FTP écrase sans jamais rien effacer.
       Laissés en place, ils restent inertes : aucune route ne les charge.
+- [ ] **29/10 (dette technique)** : l'envoi des dossiers ci-dessus comprend les cinq fichiers modifiés :
+      `app/Console/Commands/DatabaseBackup.php` (n° 53 : deux sauvegardes de la même seconde ne
+      s'écrasent plus, la seconde prend le suffixe `-2`), `app/Http/Requests/StoreAgentRequest.php`
+      (n° 54 : motif d'un agent sans indice ni salaire brut), `resources/lang/fr/validation.php`
+      (n° 55 : motifs des dates inversées), `app/Services/AgentService.php` (n° 58 : même motif à
+      l'import) et `app/Http/Controllers/Api/BackupController.php` (messages accentués). Sur une
+      instance déjà à jour du code précédent, envoyer ces cinq fichiers seuls suffit ; en cas de doute, envoyer les dossiers entiers. Rien d'autre côté API.
 
 > Le code doit être en place **avant** de migrer : les fichiers de migration que vous venez
 > d'envoyer sont précisément ce que l'étape 5 exécutera.
@@ -235,6 +252,9 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
 > `--force` remplace la confirmation interactive, impossible en Cron. La purge **avant** `migrate`
 > fait lire la configuration à jour (fuseau de la 1.4 compris) même si elle était en cache.
 > **Aucun `%` dans la commande** : Cron l'interprète comme un saut de ligne et tronque la tâche.
+>
+> **29/10 (dette technique)** : aucune migration attendue. Jouez la commande quand même : le log affiche
+> `Nothing to migrate` puis `Application is already up.`, et les caches sont purgés sur le nouveau code.
 
 ---
 
@@ -329,6 +349,17 @@ FTP vers `/home/anatt/anatt-api/` — écraser :
         déjà utilisée. » (une clé `validation.unique` à l'écran : `resources/lang/` n'a pas été envoyé).
 
       Les autres contrôles sont dans la section *06 › Réglages de Paramètres et part de la mission* de la checklist.
+- [ ] **Dette technique (29/10, contrôles en lecture seule)** :
+      - *Personnel › Nouvel agent* sans indice ni salaire brut → « L'indice ou le salaire brut est requis pour
+        déterminer la catégorie. » ; rien n'est créé ;
+      - *Rapports › Export* avec « Du » postérieur à « Au » → « La date « Au » doit être postérieure ou égale à « Du ». »
+        et bouton grisé ;
+      - le parcours de fumée de la checklist (§05) passe sans page blanche (SPA reconstruit en Vue 3.5.44).
+
+      Ne testez ni le barème, ni la retranscription, ni les sauvegardes en production : ces contrôles (taux
+      négatif, mission aux dates inversées, deux sauvegardes rapprochées, restauration avec les binaires de
+      l'hébergeur, recette automatisée `scripts/recette/recette-api.cjs`) se font sur l'instance de recette,
+      section *06 › Dette technique soldée* de la checklist.
 - [ ] Console navigateur sans erreur rouge, ni CORS ni Mixed-Content.
 - [ ] La fonctionnalité livrée par cette version se comporte comme attendu
       (voir la section *06* de la checklist et les *Notes de version* 1.3 / 1.4 de `DEPLOY-CPANEL.md`).
@@ -385,3 +416,9 @@ Si la recette échoue et que le correctif n'est pas immédiat :
 > **Réglages appliqués (28/10)** : aucune migration à défaire. Revenir au code précédent rend les réglages
 > de *Paramètres* et de *Messagerie* de nouveau sans effet ; `settings.json` n'est pas modifié (le restaurer
 > depuis la copie de l'étape 1 seulement si une valeur a été changée pendant la recette).
+>
+> **Dette technique (29/10)** : aucune migration à défaire, base inchangée. Réenvoyer les cinq fichiers de
+> l'étape 4 dans leur version précédente et réextraire le SPA précédent suffit. L'ancien `db:backup` reprend
+> alors le défaut n° 53 (une sauvegarde prise dans la même seconde qu'une autre l'écrase) : évitez d'enchaîner
+> sauvegardes et restaurations tant que le correctif n'est pas revenu. Les sauvegardes suffixées `-2` créées
+> entre-temps restent restaurables : `db:restore` accepte tout fichier `.sql` ou `.sql.gz` du dossier.

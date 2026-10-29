@@ -269,7 +269,7 @@ tableau(
          "invalides. » affiché deux fois ; useToast n'empile plus un message identique. refus-motif.spec.ts.", "§7.6"],
         ["Messages de validation (28/10)", "resources/lang/fr/validation.php : en production (APP_LOCALE=fr, "
          "APP_FALLBACK_LOCALE=fr), une règle générique renvoyait sa clé brute (« validation.unique »). Messages et noms "
-         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests, 21 le 29/10). Pest 690, Vitest 210 (702 / 241 le 29/10, après la dette).", "§7.6, §9.6"],
+         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests, 21 le 29/10). Pest 690, Vitest 210 (703 / 245 le 29/10, après la dette).", "§7.6, §9.6"],
         ["Textes accentués (29/10)", "Douze écrans (pages 403, 404, 500, maintenance, connexion, mot de passe, utilisateurs, "
          "sauvegardes…) et six messages de l'API (« Agent créé avec succès. »…) rédigés sans accents (n° 48). Sur la page 404, "
          "une même icône tronquée pour les trois raccourcis et « Dashboard » en anglais (n° 49). pages-systeme.spec.ts.", "§3, §10"],
@@ -281,7 +281,9 @@ tableau(
          "sur l'API réelle versionnée (scripts/recette/, 273 contrôles) et exécutée en CI. Défauts relevés en chemin et "
          "corrigés : barème et exports au message générique (n° 50), start-dev.ps1 non ASCII (n° 51), crochets "
          "d'AppNavProgress (n° 52), sauvegardes de la même seconde qui s'écrasaient (n° 53), motif d'un agent sans indice "
-         "(n° 54), motif mal accordé des dates (n° 55).", "§4.1, §4.7, §10, §11"],
+         "(n° 54), motif mal accordé des dates (n° 55) ; puis, en confrontant les guides au code : dates inversées "
+         "admises par l'assistant et refus affiché deux fois (n° 56), enregistrement partiel du barème (n° 57), "
+         "catégorie réclamée en plus à l'import d'agents (n° 58).", "§4.1, §4.7, §10, §11"],
         ["Documents après la dette (29/10)", "Guide utilisateur, scénario de démonstration (rejoué sur MariaDB : 119 contrôles) "
          "et README à jour ; galerie recapturée avec le SPA en Vue 3.5.44 (rendu identique), le script de capture "
          "attendant désormais les polices Sora et DM Sans.", "§2.3, §10"],
@@ -629,7 +631,7 @@ para("Acteur : GESTIONNAIRE_OM (permission om.retranscrire).")
 tableau(
     ["#", "Acteur", "Action", "Résultat / statut"],
     [
-        ["1", "Gestionnaire", "Ouvre l'assistant « Nouvel ordre » et saisit la mission (objet, destination, zone déduite, dates, prise en charge tiers).", "Contexte de mission enregistré ; dates inversées refusées (422 « La date de retour doit être postérieure ou égale à la date de départ. »)"],
+        ["1", "Gestionnaire", "Ouvre l'assistant « Nouvel ordre » et saisit la mission (objet, destination, zone déduite, dates, prise en charge tiers).", "Contexte de mission enregistré ; dates inversées arrêtées dès cette étape (n° 56) et refusées par l'API (422 « La date de retour doit être postérieure ou égale à la date de départ. »)"],
         ["2", "Gestionnaire", "Ajoute chaque bénéficiaire (participant ou CAV) : référence SEMO, agent, type de prise en charge.", "Per diem calculé en temps réel par bénéficiaire"],
         ["3", "Système", "Contrôle l'unicité de chaque référence SEMO et la cohérence type ↔ zone.", "Doublons et incohérences signalés immédiatement"],
         ["4", "Gestionnaire", "Vérifie le récapitulatif (totaux avance/reliquat) puis enregistre.", "POST /api/missions : mission + N OM créés"],
@@ -1180,7 +1182,7 @@ bullet("Purger les caches AVANT migrate (optimize:clear) : avec une configuratio
 bullet("Contrôle : un date_paiement relevé avant la mise à jour a pris une heure en base, et l'écran affiche la "
        "même heure qu'avant (docs/checklist-post-deploiement.md §06, Version 1.4).")
 bullet("vendor/ inchangé ; SPA à redéployer (dépendances retirées, écran de génération, correctifs d'interface).")
-bullet("Correctifs des 27-29/10 (n° 33 à 55) : code seul, aucune migration de plus. Le SPA se reconstruit en Vue "
+bullet("Correctifs des 27-29/10 (n° 33 à 58) : code seul, aucune migration de plus. Le SPA se reconstruit en Vue "
        "3.5.44 (npm ci ; dist/ à redéployer comme d'habitude). Relire storage/app/settings.json "
        "avant l'envoi du code : les réglages de Paramètres et de Messagerie qu'il contient s'appliquent dès lors. "
        "Le nouveau fichier resources/lang/fr/validation.php part avec resources/, déjà envoyé à chaque mise à jour.")
@@ -1193,9 +1195,9 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "702 tests (79 fichiers) : 693 sur SQLite + 9 sur MySQL réel"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "565 tests (71 fichiers) ; total Pest 703 tests (79 fichiers) : 694 sur SQLite + 9 sur MySQL réel"],
         ["Intégrité MySQL", "Pest — tests/Mysql (groupe mysql)", "db:backup / db:restore réels (aller-retour, sauvegarde de sécurité, purge de la matrice, dump invalide), tri des sauvegardes, verrou lockForUpdate de l'amendement", "9 tests (job CI sur MySQL 8)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions, minuteurs, page de maintenance", "241 tests"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions, minuteurs, page de maintenance", "245 tests"],
         ["Recette API réelle", "scripts/recette (Node, sans dépendance)", "Rejeu du scénario de démonstration (119 contrôles) puis recette transverse : RBAC, erreurs JSON, fichiers MTN/Moov octet par octet, idempotence, lots complémentaires, régularisations (154)", "273 contrôles (job CI)"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
@@ -1209,7 +1211,7 @@ bullet("Garde-fous croisés : RoutesPermissionsTest (aucune route API sans permi
        "navigation.spec.ts (menu ↔ routes ↔ API cohérents).")
 bullet("Fuseau : FuseauHoraireTest (heure du Bénin, rapport du 1er du mois à 0 h 30, sérialisation UTC, "
        "migration aller-retour) ; migration éprouvée sur MariaDB avec les données de démonstration.")
-bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
+bullet("Recette sur l'API réelle (23/10/2026, recette alors hors dépôt, base SQLite neuve, QUEUE_CONNECTION=sync) : 83/83 contrôles "
        "conformes ; scénario de démonstration (docs/SCENARIO-DEMO.md) rejoué, conforme, puis de nouveau le "
        "27/10 en version 1.4 (mêmes fichiers et montants, notifications de chaque signataire). Le 25/10, réponses "
        "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32 ; "
@@ -1218,7 +1220,7 @@ bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTI
        "message générique des 422 à l'écran Messagerie, corrigé. Le 29/10, scénario complet rejoué de nouveau (MariaDB, base "
        "neuve, QUEUE_CONNECTION=sync) : état des avances 805 000, aperçus MTN 406 000 et Moov 399 000 ; refus vérifiés avec "
        "leur motif en français (agent en double, séparation des tâches, numéro manquant). Depuis le 29/10, ce rejeu et la recette transverse sont versionnés (scripts/recette/) et exécutés à chaque PR (job « Recette · API réelle », API servie par php artisan serve sur une base neuve).")
-bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 23 de plus du 27 au 29/10 (n° 33 à 55, en "
+bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 26 de plus du 27 au 29/10 (n° 33 à 58, en "
        "confrontant la documentation au code et à l'interface, puis en soldant la dette technique), tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3 et §8). Les quatre décisions du §7.1 "
        "sont appliquées depuis la 1.4.")
@@ -1232,15 +1234,15 @@ bullet("CI GitHub Actions (.github/workflows) : Lint, Pest (SQLite), Pest MySQL,
 # =========================================================================
 doc.add_page_break()
 h1("11. État du projet et reste à faire (29/10/2026)")
-para("Le développement est terminé : 55 défauts relevés par la revue d'octobre 2026, la relecture des documents "
-     "et la résorption de la dette (n° 1 à 55), tous corrigés avec un test ; quatre décisions (D1 à D4) appliquées ; "
+para("Le développement est terminé : 58 défauts relevés par la revue d'octobre 2026, la relecture des documents "
+     "et la résorption de la dette (n° 1 à 58), tous corrigés avec un test ; quatre décisions (D1 à D4) appliquées ; "
      "dette technique soldée ; aucune décision en attente. "
      "Tous les documents sont confrontés au code (détail et cartographie : docs/revue-projet-2026-10.md §8).")
 tableau(
     ["Indicateur", "Valeur au 29/10/2026"],
     [
-        ["Tests backend (Pest)", "702 tests, 79 fichiers — API complète sur SQLite (693), contrat OpenAPI vérifié ; sauvegarde, restauration et verrous sur MySQL réel (9)"],
-        ["Tests frontend (Vitest)", "241 tests, 48 fichiers — vues, services, stores, navigation ↔ permissions"],
+        ["Tests backend (Pest)", "703 tests, 79 fichiers — API complète sur SQLite (694), contrat OpenAPI vérifié ; sauvegarde, restauration et verrous sur MySQL réel (9)"],
+        ["Tests frontend (Vitest)", "245 tests, 48 fichiers — vues, services, stores, navigation ↔ permissions"],
         ["Recette sur l'API réelle", "273 contrôles en CI (rejeu du scénario 119 + recette transverse 154)"],
         ["Tests de bout en bout (Playwright)", "3 parcours critiques"],
         ["Scénario de démonstration", "Rejoué automatiquement à chaque PR (scripts/recette/rejeu-scenario.cjs), montants et fichiers inchangés"],
