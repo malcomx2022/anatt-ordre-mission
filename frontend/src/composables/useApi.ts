@@ -68,7 +68,7 @@ apiClient.interceptors.response.use(
 
       case 403: {
         const { error: toastError } = useToast()
-        toastError(message || 'Acces refuse. Vous n\'avez pas les permissions necessaires.')
+        toastError(message || 'Accès refusé. Vous n\'avez pas les permissions nécessaires.')
         router.push('/403')
         break
       }
@@ -81,7 +81,7 @@ apiClient.interceptors.response.use(
 
       case 422: {
         const { warning } = useToast()
-        warning(message || 'Donnees invalides. Verifiez le formulaire.')
+        warning(message || 'Données invalides. Vérifiez le formulaire.')
         break
       }
 
@@ -95,7 +95,7 @@ apiClient.interceptors.response.use(
 
       case 500: {
         const { error: toastError } = useToast()
-        toastError(message || 'Erreur interne du serveur. Veuillez reessayer.')
+        toastError(message || 'Erreur interne du serveur. Veuillez réessayer.')
         break
       }
 
@@ -112,7 +112,7 @@ apiClient.interceptors.response.use(
       default: {
         if (!error.response) {
           const { error: toastError } = useToast()
-          toastError('Erreur de connexion. Verifiez votre reseau.')
+          toastError('Erreur de connexion. Vérifiez votre réseau.')
         }
       }
     }

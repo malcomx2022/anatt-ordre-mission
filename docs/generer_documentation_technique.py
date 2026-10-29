@@ -269,7 +269,7 @@ tableau(
          "invalides. » affiché deux fois ; useToast n'empile plus un message identique. refus-motif.spec.ts.", "§7.6"],
         ["Messages de validation (28/10)", "resources/lang/fr/validation.php : en production (APP_LOCALE=fr, "
          "APP_FALLBACK_LOCALE=fr), une règle générique renvoyait sa clé brute (« validation.unique »). Messages et noms "
-         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests). Pest 690, Vitest 210 (211 le 29/10).", "§7.6, §9.6"],
+         "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests). Pest 690, Vitest 210 (691 / 215 le 29/10).", "§7.6, §9.6"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -1158,7 +1158,7 @@ bullet("Purger les caches AVANT migrate (optimize:clear) : avec une configuratio
 bullet("Contrôle : un date_paiement relevé avant la mise à jour a pris une heure en base, et l'écran affiche la "
        "même heure qu'avant (docs/checklist-post-deploiement.md §06, Version 1.4).")
 bullet("vendor/ inchangé ; SPA à redéployer (dépendances retirées, écran de génération, correctifs d'interface).")
-bullet("Correctifs des 27-29/10 (n° 33 à 47) : code seul, aucune migration de plus. Relire storage/app/settings.json "
+bullet("Correctifs des 27-29/10 (n° 33 à 49) : code seul, aucune migration de plus. Relire storage/app/settings.json "
        "avant l'envoi du code : les réglages de Paramètres et de Messagerie qu'il contient s'appliquent dès lors. "
        "Le nouveau fichier resources/lang/fr/validation.php part avec resources/, déjà envoyé à chaque mise à jour.")
 
@@ -1170,8 +1170,8 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "690 tests au total (76 fichiers)"],
-        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "211 tests"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "691 tests au total (76 fichiers)"],
+        ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions", "215 tests"],
         ["Fonctionnel UI", "Playwright (e2e/parcours-critique)", "Connexion → mission → fichier MTN → confirmation ; régularisation", "3 tests"],
         ["Statique", "Pint, vue-tsc, ESLint, oxlint", "Style et typage", "0 erreur"],
     ],
@@ -1191,7 +1191,7 @@ bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTI
        "vérification automatisée en CI depuis le 28/10 (OpenApiReponsesTest). Le 28/10, variantes messagerie et "
        "maintenance du scénario rejouées sur l'API réelle (MariaDB, base neuve) : elles ont révélé l'affichage du "
        "message générique des 422 à l'écran Messagerie, corrigé.")
-bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 15 de plus du 27 au 29/10 (n° 33 à 47, en "
+bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 17 de plus du 27 au 29/10 (n° 33 à 49, en "
        "confrontant la documentation au code et à l'interface), tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3 et §8). Les quatre décisions du §7.1 "
        "sont appliquées depuis la 1.4.")

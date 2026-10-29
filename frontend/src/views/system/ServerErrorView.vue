@@ -82,7 +82,7 @@ function reload() {
             <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-amber-100 transition-colors">
               <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /></svg>
             </div>
-            <p class="text-xs font-display font-semibold text-gray-700">Dashboard</p>
+            <p class="text-xs font-display font-semibold text-gray-700">Tableau de bord</p>
           </router-link>
           <a href="mailto:support@anatt.bj" class="bg-white border border-gray-100 rounded-xl p-4 hover:border-blue-200 hover:shadow-md transition-all group">
             <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-100 transition-colors">
@@ -107,7 +107,7 @@ function reload() {
         <!-- Status Info -->
         <div class="mt-8 inline-flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-full px-4 py-2">
           <span class="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
-          <span class="text-xs text-amber-700 font-display font-medium">Incident en cours de resolution</span>
+          <span class="text-xs text-amber-700 font-display font-medium">Incident en cours de résolution</span>
         </div>
       </div>
     </div>

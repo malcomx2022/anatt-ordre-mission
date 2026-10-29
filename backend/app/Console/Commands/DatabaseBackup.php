@@ -9,7 +9,7 @@ class DatabaseBackup extends Command
 {
     protected $signature = 'db:backup {--compress : Compresser le fichier avec gzip (si disponible)}';
 
-    protected $description = 'Sauvegarder la base de donnees ANaTT';
+    protected $description = 'Sauvegarder la base de données ANaTT';
 
     public function handle(): int
     {

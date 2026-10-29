@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Agent;
 use App\Models\OrdreMission;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
@@ -66,4 +67,17 @@ it('explique un motif d’amendement trop court', function () {
         ->postJson("/api/ordres/{$om->id}/amender", ['nb_jours' => 2, 'motif' => 'court'])
         ->assertStatus(422)
         ->assertJsonPath('errors.motif.0', 'Le champ motif doit contenir au moins 10 caractères.');
+});
+
+it('rédige les messages de succès de l’API avec leurs accents', function () {
+    // Affichés tels quels à l'écran (toasts) : « Agent cree avec succes. » jusqu'au 29/10/2026.
+    $this->postJson('/api/auth/mot-de-passe/email', ['email' => 'inconnu@anatt.bj'])
+        ->assertOk()
+        ->assertJsonPath('message', 'Si un compte existe pour cette adresse e-mail, un lien de réinitialisation a été envoyé.');
+
+    $agent = Agent::factory()->create();
+    $this->actingAs(User::factory()->gestionnaireOm()->create())
+        ->deleteJson("/api/agents/{$agent->id}")
+        ->assertOk()
+        ->assertJsonPath('message', 'Agent désactivé avec succès.');
 });

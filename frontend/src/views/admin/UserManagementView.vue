@@ -183,7 +183,7 @@ function copier(texte: string) {
 </script>
 
 <template>
-  <AppLayout title="Gestion des Utilisateurs" subtitle="Comptes d'acces et permissions du systeme">
+  <AppLayout title="Gestion des Utilisateurs" subtitle="Comptes d'accès et permissions du système">
     <template #header-actions>
       <router-link to="/admin/utilisateurs/nouveau" class="px-4 py-2.5 bg-anatt-500 text-white rounded-xl text-sm font-display font-semibold hover:bg-anatt-600 flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -209,7 +209,7 @@ function copier(texte: string) {
       <div class="flex items-center gap-4">
         <div class="flex-1 relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-          <input v-model="searchQuery" type="text" placeholder="Rechercher par nom, email, role..." class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 outline-none transition-all duration-200">
+          <input v-model="searchQuery" type="text" placeholder="Rechercher par nom, e-mail, rôle…" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm font-body focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500 outline-none transition-all duration-200">
         </div>
         <div class="w-56">
           <AppCombobox
@@ -233,9 +233,9 @@ function copier(texte: string) {
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
             <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Utilisateur</th>
-            <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Role</th>
+            <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Rôle</th>
             <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Statut</th>
-            <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Derniere connexion</th>
+            <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Dernière connexion</th>
             <th class="px-5 py-3.5 text-left text-xs font-display font-semibold text-gray-500 uppercase">Actions (30j)</th>
             <th class="px-5 py-3.5 text-center text-xs font-display font-semibold text-gray-500 uppercase">Actions</th>
           </tr>
@@ -247,7 +247,7 @@ function copier(texte: string) {
             </td>
           </tr>
           <tr v-else-if="users.length === 0">
-            <td colspan="6" class="px-5 py-12 text-center text-sm text-gray-400 font-body">Aucun utilisateur trouve.</td>
+            <td colspan="6" class="px-5 py-12 text-center text-sm text-gray-400 font-body">Aucun utilisateur trouvé.</td>
           </tr>
           <tr v-for="u in users" :key="u.id" class="group hover:bg-anatt-50/30 transition-colors">
             <td class="px-5 py-4">

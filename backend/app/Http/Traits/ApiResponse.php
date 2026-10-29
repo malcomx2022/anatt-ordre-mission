@@ -29,7 +29,7 @@ trait ApiResponse
         return response()->json($response, $code);
     }
 
-    protected function created($data = null, string $message = 'Ressource creee avec succes.'): JsonResponse
+    protected function created($data = null, string $message = 'Ressource créée avec succès.'): JsonResponse
     {
         return $this->success($data, $message, 201);
     }

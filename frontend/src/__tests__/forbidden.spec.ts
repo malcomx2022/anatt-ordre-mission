@@ -49,6 +49,6 @@ describe('ForbiddenView', () => {
     query = {}
     const w = await monter()
     expect(w.text()).not.toContain('Permission requise')
-    expect(w.text()).toContain('Acces interdit')
+    expect(w.text()).toContain('Accès interdit')
   })
 })

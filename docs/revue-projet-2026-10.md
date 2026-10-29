@@ -31,8 +31,8 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > le point de ce qui reste.
 >
 > **Point final du 29/10/2026.** La relecture document par document a continué du 27 au 29/10
-> (PR #166 à #190) et fait apparaître quinze défauts de plus (n° 33 à 47), tous corrigés avec un test.
-> Pest compte 690 tests (76 fichiers), Vitest 211, Playwright 3. Le §8 fait le point final : ce qui
+> (PR #166 à #191) et fait apparaître dix-sept défauts de plus (n° 33 à 49), tous corrigés avec un test.
+> Pest compte 691 tests (76 fichiers), Vitest 215, Playwright 3. Le §8 fait le point final : ce qui
 > a été corrigé, l'état de chaque document et **ce qui reste** (gestes d'exploitation, dette connue).
 >
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
@@ -433,7 +433,7 @@ mise à jour couvre désormais les correctifs n° 1 à 32, sans autre migration 
 
 ## 8. Point final (29/10/2026)
 
-### 8.1 Défauts n° 33 à 47 (27-29/10)
+### 8.1 Défauts n° 33 à 49 (27-29/10)
 
 Relevés en confrontant les documents, les captures et le scénario de démo au code ; chacun est
 corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
@@ -455,6 +455,8 @@ corrigé avec un test vu en échec sans le correctif (détail : `CHANGELOG.md`).
 | 45 | 28/10 | Tous les écrans : motif d'un refus 422 perdu, « Donnees invalides. » affiché deux fois (#188) | `getErrorMessage`, intercepteur, `useToast` sans doublon ; `refus-motif.spec.ts` |
 | 46 | 28/10 | Règles de validation génériques : clé brute (`validation.unique`) en production (#188) | `resources/lang/fr/validation.php` ; `ValidationFrancaisTest` |
 | 47 | 29/10 | *Matrice des permissions* : réinitialisation refusée (ordonnateur-payeur) affichée « La réinitialisation a échoué. » sans motif (#190) | `RolesView.vue` (`messageErreur`) ; `roles-matrice.spec.ts` |
+| 48 | 29/10 | *(relevé à la recapture de la galerie)* Textes sans accents sur douze écrans (pages 403, 404, 500 et maintenance, connexion, mot de passe oublié et réinitialisation, utilisateurs, sauvegardes, historique d'un OM) et dans six messages de l'API (« Agent cree avec succes. », « Mot de passe reinitialise avec succes. »…) (#191) | Textes corrigés ; `pages-systeme.spec.ts`, `forbidden.spec.ts`, `ValidationFrancaisTest` |
+| 49 | 29/10 | Page 404 : une même icône tronquée (un carré) pour les trois raccourcis ; raccourci « Dashboard » en anglais sur les pages 403, 404 et 500 (#191) | Icônes du menu latéral, « Tableau de bord » ; `pages-systeme.spec.ts` |
 
 ### 8.2 État de la documentation
 
@@ -468,8 +470,8 @@ Chaque document a été confronté au code entre le 27 et le 29/10 ; aucun n'a d
 | `docs/workflows-par-profil.md`, `docs/SCENARIO-DEMO.md` | 29/10 (#190) |
 | `docs/parametrage-part-avance.md` | 29/10 (#189) |
 | `docs/rbac-flexible.md`, `docs/annee-fiscale.md`, `docs/categories-indice.md` | 27-28/10 (inchangés depuis : rien ne les touche) |
-| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée »), `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérés le 29/10 (#190) |
-| Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 28/10 ; les correctifs n° 45 à 47 ne changent que des messages éphémères, non capturés |
+| `docs/Guide-Utilisateur-ANaTT.docx` (§3.5 « Quand une action est refusée »), `docs/ANaTT_Documentation_Technique_Fonctionnelle.docx` | Régénérés le 29/10 (#190, captures et compteurs #191) |
+| Galerie des écrans (`docs/00_galerie_index.html` …) | Recapturée le 29/10 (#191) après les n° 48 et 49 ; champs de date au format français (`LANG` passé au navigateur de capture) |
 | `backend/docs/openapi.yaml`, `backend/docs/queues.md` | 28/10 ; validés en CI (`OpenApiReponsesTest`) |
 
 ### 8.3 Ce qui reste
