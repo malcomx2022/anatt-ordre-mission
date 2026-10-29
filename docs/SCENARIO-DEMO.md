@@ -34,8 +34,11 @@
 > **Complété le soir du 28 octobre 2026** (base neuve, API réelle, `QUEUE_CONNECTION=sync` comme en
 > production) : refus expliqué d'une part d'avance hors bornes (§8.5) ; validation qui aboutit malgré un
 > serveur de messagerie injoignable (§8.6).
-> **Complété le 29 octobre 2026** (code, sans rejeu) : le refus d'une signature par la séparation des tâches
-> (étape C, point 3) affiche son motif, en français.
+> **Rejoué le 29 octobre 2026** (base neuve, API réelle, `QUEUE_CONNECTION=sync`) : montants identiques
+> (§3 : 285 000 / 295 000, état des avances 805 000, aperçus MTN 406 000 et Moov 399 000). Vérifiés les
+> refus et leur motif, en français : agent en double (étape B), séparation des tâches et numéro manquant
+> (étape C) ; « Agent créé avec succès. » (étape A, désormais accentué). Corrigé : l'étape A demandait la
+> seule catégorie, que l'application refuse — elle la **déduit** de l'indice ou du salaire brut.
 
 ---
 
@@ -90,6 +93,10 @@ est nécessaire pour rejouer le scénario, les références SEMO du §3 étant u
 
 ### ÉTAPE A — Créer les employés  ·  compte `gestion@`
 Menu `Personnel › Nouvel agent` (`/agents/nouveau`) — créer les 4 agents ci-dessus.
+La catégorie n'est pas choisie : saisir l'**indice** (par exemple **850**) ou le **salaire brut**
+(≥ 372 000), et l'app en **déduit** la catégorie « Indice ≥ 800 » (INDICE_SUP_800). Sans l'un ni
+l'autre, l'enregistrement est refusé : « L'indice ou le salaire brut est requis pour déterminer la
+catégorie. ». Chaque création confirme « Agent créé avec succès. ».
 À la saisie du numéro, l'app affiche en temps réel le badge **MTN** ou **MOOV**
 (contrôle de cohérence numéro ↔ opérateur).
 

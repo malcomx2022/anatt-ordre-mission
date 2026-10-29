@@ -68,4 +68,5 @@ Sans écran, pointez sur le binaire *headless shell* et ajoutez `--project=chrom
   le premier motif et l'intercepteur l'affiche une fois (`useToast` n'empile pas deux messages identiques) ;
   `getValidationErrors` sert aux erreurs par champ d'un formulaire (`refus-motif.spec.ts`).
 - Les pages d'écran de `../docs/` (`00_galerie_index.html` …) sont tirées de captures de l'application réelle
-  (`docs/capturer_ecrans.cjs`) ; à refaire quand un écran change.
+  (`docs/capturer_ecrans.cjs`, sur une base de démonstration neuve et un build de production ; le script lance
+  Chromium en `LANG=fr_FR.UTF-8` pour des champs de date au format français) ; à refaire quand un écran change.
