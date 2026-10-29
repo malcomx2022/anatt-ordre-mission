@@ -217,7 +217,7 @@ doc.add_page_break()
 # =========================================================================
 # ÉVOLUTIONS
 # =========================================================================
-h1("Évolutions de la version 1.4 (26-28 octobre 2026)")
+h1("Évolutions de la version 1.4 (26-29 octobre 2026)")
 para("Cette version applique les quatre décisions du §7.1 de la revue (docs/revue-projet-2026-10.md), corrige "
      "trois défauts d'interface et remplace les maquettes d'août 2026 par les écrans réels.")
 tableau(
@@ -270,6 +270,12 @@ tableau(
         ["Messages de validation (28/10)", "resources/lang/fr/validation.php : en production (APP_LOCALE=fr, "
          "APP_FALLBACK_LOCALE=fr), une règle générique renvoyait sa clé brute (« validation.unique »). Messages et noms "
          "de champs en français, déployés avec resources/. ValidationFrancaisTest (19 tests). Pest 690, Vitest 210 (691 / 215 le 29/10).", "§7.6, §9.6"],
+        ["Textes accentués (29/10)", "Douze écrans (pages 403, 404, 500, maintenance, connexion, mot de passe, utilisateurs, "
+         "sauvegardes…) et six messages de l'API (« Agent créé avec succès. »…) rédigés sans accents (n° 48). Sur la page 404, "
+         "une même icône tronquée pour les trois raccourcis et « Dashboard » en anglais (n° 49). pages-systeme.spec.ts.", "§3, §10"],
+        ["Galerie et scénario (29/10)", "Galerie recapturée (46 écrans ; navigateur de capture en LANG=fr_FR.UTF-8, dates "
+         "dd/mm/yyyy) ; scénario de démonstration rejoué sur l'API réelle, montants inchangés, étape A corrigée (indice ou "
+         "salaire brut exigé, catégorie déduite).", "§10, §11"],
     ],
     largeurs=[3.6, 10.6, 2.6],
 )
@@ -550,7 +556,8 @@ para("Réservé en écriture aux profils disposant de « personnel.gerer ». Le 
      "téléphone et l'opérateur utilisés au paiement (jamais l'OM).")
 bullet("PERS-01 — Liste : recherche (nom/matricule/IFU), filtres catégorie/opérateur/statut.")
 bullet("PERS-02 — Fiche : informations complètes + historique des missions.")
-bullet("PERS-03 — Création : la catégorie d'indice (INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400) est déduite de l'indice ou du salaire.")
+bullet("PERS-03 — Création : la catégorie d'indice (INDICE_SUP_800 / INDICE_400_799 / INDICE_INF_400) est déduite de l'indice ou du "
+       "salaire ; l'un des deux est exigé (422 sinon : « L'indice ou le salaire brut est requis pour déterminer la catégorie. »).")
 bullet("PERS-04 — Modification ; PERS-05 — Mon profil ; PERS-06 — Import Excel/CSV.")
 
 h2("3.4 Module Ordres de mission")
@@ -1190,7 +1197,9 @@ bullet("Recette sur l'API réelle (23/10/2026, base SQLite neuve, QUEUE_CONNECTI
        "réelles de l'API confrontées aux schémas d'openapi.yaml (openapi-core) : conformes après le n° 32 ; "
        "vérification automatisée en CI depuis le 28/10 (OpenApiReponsesTest). Le 28/10, variantes messagerie et "
        "maintenance du scénario rejouées sur l'API réelle (MariaDB, base neuve) : elles ont révélé l'affichage du "
-       "message générique des 422 à l'écran Messagerie, corrigé.")
+       "message générique des 422 à l'écran Messagerie, corrigé. Le 29/10, scénario complet rejoué de nouveau (MariaDB, base "
+       "neuve, QUEUE_CONNECTION=sync) : état des avances 805 000, aperçus MTN 406 000 et Moov 399 000 ; refus vérifiés avec "
+       "leur motif en français (agent en double, séparation des tâches, numéro manquant).")
 bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 17 de plus du 27 au 29/10 (n° 33 à 49, en "
        "confrontant la documentation au code et à l'interface), tous corrigés avec un test vu en échec sans le "
        "correctif (index : CHANGELOG.md ; détail : docs/revue-projet-2026-10.md §3 et §8). Les quatre décisions du §7.1 "
@@ -1198,6 +1207,52 @@ bullet("Défauts relevés par la revue d'octobre 2026 : 32, puis 17 de plus du 2
 bullet("phpunit.xml fournit une APP_KEY de test : la suite s'exécute sans .env. Playwright accepte "
        "PLAYWRIGHT_CHROMIUM_EXECUTABLE pour un Chromium déjà installé.")
 bullet("CI GitHub Actions (.github/workflows) : Lint, Pest, Vitest + type-check, Playwright, build dist.")
+
+# =========================================================================
+# 11. ÉTAT DU PROJET ET RESTE À FAIRE
+# =========================================================================
+doc.add_page_break()
+h1("11. État du projet et reste à faire (29/10/2026)")
+para("Le développement est terminé : 49 défauts relevés par la revue d'octobre 2026 et la relecture des documents "
+     "(n° 1 à 49), tous corrigés avec un test ; quatre décisions (D1 à D4) appliquées ; aucune décision en attente. "
+     "Tous les documents sont confrontés au code (détail et cartographie : docs/revue-projet-2026-10.md §8).")
+tableau(
+    ["Indicateur", "Valeur au 29/10/2026"],
+    [
+        ["Tests backend (Pest)", "691 tests, 76 fichiers — API complète sur SQLite, contrat OpenAPI vérifié"],
+        ["Tests frontend (Vitest)", "215 tests, 42 fichiers — vues, services, stores, navigation ↔ permissions"],
+        ["Tests de bout en bout (Playwright)", "3 parcours critiques"],
+        ["Scénario de démonstration", "Rejoué sur l'API réelle le 29/10, montants et fichiers inchangés"],
+        ["Galerie des écrans", "46 écrans recapturés le 29/10 ; 53 pages"],
+        ["Migrations à jouer en 1.4", "Une seule (fuseau horaire), application en maintenance"],
+    ],
+    largeurs=[5.2, 11.6],
+)
+h2("11.1 Reste à faire — exploitation (instance en ligne)")
+for t in [
+    "Mettre à jour l'instance vers la 1.4 avec docs/runbook-mise-a-jour-cron.md (maintenance, une migration, "
+    "vendor/ inchangé, SPA à redéployer ; resources/lang/fr/validation.php part avec resources/).",
+    "Relire storage/app/settings.json avant d'envoyer le code : ses réglages (HTTPS forcé, maintenance, serveur "
+    "SMTP…) s'appliquent dès lors.",
+    "Contrôler avec docs/checklist-post-deploiement.md §06 (lecture seule en production, création de données en recette).",
+    "Vider le cache des PDF d'OM (storage/app/private/ordres/) et envoyer un e-mail de test depuis Messagerie.",
+    "Éprouver la restauration d'une sauvegarde sur une base MySQL de recette.",
+    "Sauvegarder storage/ avec la base (réglages, paraphes et fichiers produits ne sont pas dans le dump).",
+    "Si la file passe en QUEUE_CONNECTION=database : tâche Cron queue:work nommant les trois files.",
+]:
+    bullet(t)
+h2("11.2 Dette technique connue (sans effet sur le fonctionnement)")
+for t in [
+    "Correctifs sans test automatisé : minuteurs, page de maintenance, garde de route au rechargement, "
+    "lockForUpdate sous MySQL.",
+    "Restauration et tri des sauvegardes couverts seulement par Pest (SQLite, simulation).",
+    "Scripts de recette (83 contrôles) et de rejeu de la démonstration non versionnés.",
+    "Trois écrans (barème, exports de rapports) affichent un message d'échec générique à côté du motif réel.",
+    "Vue reste en 3.6.0-beta.9 (figée par le lock) : passer à la 3.6 stable à sa sortie, CI rejouée.",
+    "Deux documents historiques (docs/deploiement-circuit-validation.md, docs/plan-validation-daf-dg.md) à "
+    "archiver si le client le souhaite.",
+]:
+    bullet(t)
 
 # =========================================================================
 # ANNEXE — BARÈME
