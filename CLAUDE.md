@@ -195,7 +195,7 @@ Clés de permission : `dashboard.consulter` · `personnel.consulter|gerer` · `o
 - **Cache/Queue** : Redis **facultatif** — en mutualisé `CACHE_STORE=file`, `QUEUE_CONNECTION=sync` (ou `database`)
 - **PDF** : DomPDF (barryvdh/laravel-dompdf 3.1)
 - **Excel** : Maatwebsite/Laravel-Excel 3.1
-- **Tests** : Pest 3 + PHPUnit 11 (703 tests, 79 fichiers : 694 sur SQLite + groupe `mysql` de 9 tests sur un vrai MySQL ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
+- **Tests** : Pest 3 + PHPUnit 11 (713 tests, 79 fichiers : 704 sur SQLite + groupe `mysql` de 9 tests sur un vrai MySQL ; s'exécute sans `.env`, `APP_KEY` de test dans `phpunit.xml`)
 - **Debug** : Laravel Telescope (require-dev), enregistré **uniquement** en `local` et s'il est installé (`AppServiceProvider`)
 
 ### DevOps
@@ -1194,7 +1194,8 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 29 octobre 2026 (dette technique soldée : Vue 3.5.44 stable, tests Pest sur MySQL réel et recette
+*Dernière mise à jour : 3 novembre 2026 (compteurs de tests après la revue fonctionnelle : Pest 713, dont 9 sur MySQL ;
+Playwright 1.64.1, compatible avec Ubuntu 26.04) — 29 octobre 2026 (dette technique soldée : Vue 3.5.44 stable, tests Pest sur MySQL réel et recette
 `scripts/recette/` exécutés en CI, défauts n° 50 à 58 ; motif de tout refus affiché une fois et en français ; point final de la
 revue d'octobre, `docs/revue-projet-2026-10.md` §8 ; textes accentués et galerie recapturée) — 28 octobre 2026 (réglages de Paramètres appliqués par le serveur, part d'avance de la
 mission sur ses écrans, thème vert confirmé, contrat OpenAPI vérifié en CI) — 27 octobre 2026 (version 1.4 : notifications par droits effectifs, heure du Bénin, libellés d'un
