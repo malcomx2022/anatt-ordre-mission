@@ -9,6 +9,27 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Revue fonctionnelle : mot de passe, lots en échec, récapitulatif des états (03/11/2026)
+
+- **Lot de paiement asynchrone en échec** : `GenererLotPaiementJob::failed()` passe en `ERREUR` le lot **visé par
+  le job** (consigné dans le cache `lot_job:{id}:lot` au début du traitement) et non plus le dernier lot de la clé :
+  un lot complémentaire généré entre-temps par un autre agent n'est plus touché (`AsyncGenerationTest`).
+- **Marquer un lot en erreur** : `LotPaiementService::marquerErreur` relit le lot sous verrou (`lockForUpdate`) avant
+  la garde `CONFIRME`, comme `confirmer()` ; un lot confirmé entre-temps n'est plus rouvert (`PaiementTest`).
+- **Récapitulatif d'un état** : un rafraîchissement sans effet (montants, tableau et bénéficiaires inchangés) ne
+  produit plus d'audit `RECAP_ETAT` ni de notification au contrôleur ; la reprise d'un état rejeté reste signalée.
+  Un état `REJETE` recalé par un amendement garde son motif jusqu'au récapitulatif suivant, qui l'efface
+  (comportement documenté dans `EtatPaiementService::synchroniser`, `EtatAutoSyncTest`).
+- **Mot de passe** (changement forcé et réinitialisation par e-mail) : la valeur en clair est confiée au cast
+  `hashed` du modèle, comme dans `UserController`. Alignement préventif : le cast acceptait déjà le hachage
+  préalable (aucune erreur reproduite) ; le parcours login, changement forcé et nouvelle connexion est désormais
+  couvert de bout en bout (`AuthTest`).
+- **Vérifications sans correction** : expiration de la session par la durée réglée sur un jeton issu du login
+  (`ReglagesExploitationTest`) ; destinataires des notifications résolus en une requête `users` et un chargement
+  groupé des droits individuels (`NotificationTest`) ; filtres des listes OM, agents et paiements limités à des
+  colonnes fixées dans le code.
+- `docs/queues.md` mis à jour (échec définitif d'un lot). Pest : 713 tests.
+
 ### Relecture finale de tous les documents ; trois derniers écarts (29/10/2026)
 
 - **Écarts corrigés**, chacun avec un test vu en échec avant le correctif :
