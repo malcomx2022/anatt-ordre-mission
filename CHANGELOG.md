@@ -9,6 +9,12 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Playwright 1.64.1, compatible Ubuntu 26.04 (03/11/2026)
+
+- `@playwright/test` passe de 1.59.1 à **1.64.1** (dernière version stable), qui prend en charge Ubuntu 26.04,
+  l'image désormais fournie par `ubuntu-latest`. Le job « Frontend · Playwright » retrouve `ubuntu-latest`
+  (épinglage provisoire sur `ubuntu-24.04` retiré). Seuls les trois paquets Playwright changent dans le lock.
+
 ### Revue fonctionnelle : mot de passe, lots en échec, récapitulatif des états (03/11/2026)
 
 - **Lot de paiement asynchrone en échec** : `GenererLotPaiementJob::failed()` passe en `ERREUR` le lot **visé par
