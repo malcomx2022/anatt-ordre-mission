@@ -53,11 +53,14 @@ Rien n'est écrit en base si la génération échoue.
 
 **Échec définitif** (`failed()`, après les 3 tentatives — ou dès le premier échec en `sync`) :
 - le suivi passe `ERREUR` avec le message ;
-- le **dernier lot** de la clé (mission × tranche × opérateur), s'il est `GENERE` ou
-  `ERREUR`, passe en `ERREUR` **par `LotPaiementService::marquerErreur`**, comme l'action
+- le **lot visé par ce job** — le dernier lot de la clé (mission × tranche × opérateur) au
+  début du traitement, s'il n'était pas confirmé, consigné dans le cache (`lot_job:{id}:lot`) —
+  s'il est encore `GENERE` ou `ERREUR`, passe en `ERREUR` **par `LotPaiementService::marquerErreur`**
+  (statut relu sous verrou), comme l'action
   manuelle « Marquer en erreur » : ses versements redeviennent `EN_ATTENTE` avec les
   coordonnées courantes de l'agent (OM de nouveau amendable), action auditée `ERROR_LOT` ;
-- un lot `CONFIRME` n'est **jamais** touché (anti-double-paiement).
+- un lot `CONFIRME` n'est **jamais** touché (anti-double-paiement), ni un lot complémentaire
+  généré entre-temps par un autre agent : il n'appartient pas au job.
 
 > Conséquence pratique : après un échec, un fichier précédemment généré pour ce lot est
 > considéré comme **non déposé**. S'il a déjà été déposé sur la plateforme opérateur,
