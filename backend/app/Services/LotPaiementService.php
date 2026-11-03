@@ -143,13 +143,18 @@ class LotPaiementService
     /** Marque un lot en ERREUR (autorise une régénération ultérieure). */
     public function marquerErreur(LotPaiement $lot, User $user): LotPaiement
     {
-        if ($lot->statut === 'CONFIRME') {
-            throw ValidationException::withMessages([
-                'lot' => ['Un lot confirmé ne peut pas être marqué en erreur.'],
-            ]);
-        }
+        $lot = DB::transaction(function () use ($lot) {
+            // Garde relue sous verrou, comme confirmer() : l'instance reçue peut être
+            // périmée (lot confirmé entre-temps par un autre agent) ; écrire ERREUR
+            // sur un lot CONFIRME rouvrirait un paiement déjà effectué.
+            $lot = LotPaiement::lockForUpdate()->findOrFail($lot->id);
 
-        DB::transaction(function () use ($lot) {
+            if ($lot->statut === 'CONFIRME') {
+                throw ValidationException::withMessages([
+                    'lot' => ['Un lot confirmé ne peut pas être marqué en erreur.'],
+                ]);
+            }
+
             $lot->update(['statut' => 'ERREUR']);
 
             // Le dépôt a échoué : rien n'a été payé. Les versements du lot redeviennent
@@ -168,6 +173,8 @@ class LotPaiementService
                         'operateur' => $agent->operateur ?? $v->operateur,
                     ]);
                 });
+
+            return $lot;
         });
 
         AuditService::log($user, 'ERROR_LOT', 'lot_paiement', $lot->id, [

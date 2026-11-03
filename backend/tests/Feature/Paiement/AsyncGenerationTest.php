@@ -8,6 +8,7 @@ use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
 use App\Services\LotPaiementService;
+use App\Services\Paiement\MtnFileGenerator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +86,21 @@ it('expose le suivi via l’endpoint dédié', function () {
         ->assertJsonPath('data.statut', 'TERMINE');
 });
 
+/**
+ * Fait échouer la génération du prochain job : `$avant` simule ce qui se passe
+ * pendant le traitement (autre agent), puis le service lève.
+ */
+function echouerGeneration(?Closure $avant = null): void
+{
+    app()->instance(LotPaiementService::class, Mockery::mock(LotPaiementService::class, function ($m) use ($avant) {
+        $m->shouldReceive('generer')->andReturnUsing(function () use ($avant) {
+            $avant && $avant();
+            throw new RuntimeException('disque plein');
+        });
+        $m->shouldReceive('marquerErreur')->passthru();
+    })->makePartial());
+}
+
 it('remet les versements EN_ATTENTE quand le job échoue sur un lot déjà généré', function () {
     // Un premier fichier a été produit (lot GENERE, versement GENERE).
     GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
@@ -93,8 +109,12 @@ it('remet les versements EN_ATTENTE quand le job échoue sur un lot déjà gén�
     expect($versement->statut)->toBe('GENERE');
 
     // L'échec définitif d'une régénération suit le même chemin que « Marquer en erreur ».
-    $job = new GenererLotPaiementJob($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
-    $job->failed(new RuntimeException('disque plein'));
+    echouerGeneration();
+    try {
+        GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    } catch (RuntimeException) {
+        // sync : l'exception remonte après failed()
+    }
 
     expect($lot->fresh()->statut)->toBe('ERREUR')
         ->and($versement->fresh()->statut)->toBe('EN_ATTENTE');
@@ -106,11 +126,66 @@ it('ne touche jamais un lot confirmé quand le job échoue', function () {
     $lot->update(['statut' => 'CONFIRME']);
     Versement::query()->update(['statut' => 'CONFIRME']);
 
-    (new GenererLotPaiementJob($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid()))
-        ->failed(new RuntimeException('échec'));
+    echouerGeneration();
+    try {
+        GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    } catch (RuntimeException) {
+    }
 
     expect($lot->fresh()->statut)->toBe('CONFIRME')
         ->and(Versement::first()->statut)->toBe('CONFIRME');
+});
+
+it('failed() marque le lot du job et non un lot complémentaire généré entre-temps', function () {
+    // Lot 1 (séquence 1) généré : le job qui échoue le vise.
+    GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    $lot1 = LotPaiement::first();
+
+    // Un second bénéficiaire devient payable plus tard.
+    $agent2 = Agent::factory()->mtn()->create();
+    $om2 = OrdreMission::factory()->statut('VALIDE')->create(['mission_id' => $this->mission->id, 'agent_id' => $agent2->id]);
+    $v2 = Versement::factory()->create([
+        'ordre_mission_id' => $om2->id, 'type' => 'AVANCE',
+        'operateur' => 'MTN', 'telephone' => $agent2->telephone, 'montant' => 30000, 'statut' => 'EN_ATTENTE',
+    ]);
+
+    // Pendant le traitement du job : un autre agent confirme le lot 1 et génère
+    // le lot complémentaire (séquence 2) ; puis le job échoue.
+    echouerGeneration(function () use ($lot1) {
+        $lot1->update(['statut' => 'CONFIRME']);
+        Versement::where('lot_id', $lot1->id)->update(['statut' => 'CONFIRME']);
+        app(MtnFileGenerator::class)->generer($this->mission->id, 'AVANCE', $this->finance);
+    });
+
+    $trackingId = (string) Str::uuid();
+    try {
+        GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, $trackingId);
+    } catch (RuntimeException) {
+    }
+
+    $lot2 = LotPaiement::where('sequence', 2)->firstOrFail();
+    expect(Cache::get("lot_job:{$trackingId}")['statut'])->toBe('ERREUR')
+        ->and($lot1->fresh()->statut)->toBe('CONFIRME')
+        // Le lot complémentaire n'appartient pas au job : il reste GENERE.
+        ->and($lot2->statut)->toBe('GENERE')
+        ->and($v2->fresh()->statut)->toBe('GENERE');
+});
+
+it('failed() marque le lot visé même si le job est rechargé depuis sa charge utile', function () {
+    // En worker, failed() tourne sur une instance désérialisée à neuf : le lot visé
+    // doit survivre hors de l'instance (cache), pas dans une propriété.
+    GenererLotPaiementJob::dispatchSync($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    $lot = LotPaiement::first();
+
+    echouerGeneration();
+    $job = new GenererLotPaiementJob($this->mission->id, 'AVANCE', 'MTN', $this->finance->id, (string) Str::uuid());
+    try {
+        $job->handle(app(LotPaiementService::class));
+    } catch (RuntimeException $e) {
+        unserialize(serialize($job))->failed($e);
+    }
+
+    expect($lot->fresh()->statut)->toBe('ERREUR');
 });
 
 it('en mode sync, un gros lot réussi répond 202 et son suivi est déjà TERMINE', function () {

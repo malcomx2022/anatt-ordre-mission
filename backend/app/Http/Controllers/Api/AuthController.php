@@ -103,8 +103,11 @@ class AuthController extends Controller
             ]);
         }
 
+        // Valeur en clair : le cast 'hashed' du modèle User se charge du hachage
+        // (même convention que UserController). Un Hash::make préalable ferait
+        // dépendre l'enregistrement de la tolérance du cast aux valeurs déjà hachées.
         $user->forceFill([
-            'password' => Hash::make($request->input('password')),
+            'password' => $request->input('password'),
             'must_change_password' => false,
         ])->save();
 
@@ -157,8 +160,9 @@ class AuthController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
+                // Valeur en clair : le cast 'hashed' du modèle hache (pas de double hachage).
                 $user->forceFill([
-                    'password' => Hash::make($password),
+                    'password' => $password,
                     // L'utilisateur vient de choisir son mot de passe : le verrou de
                     // changement forcé (posé à une réinitialisation admin) est levé.
                     'must_change_password' => false,

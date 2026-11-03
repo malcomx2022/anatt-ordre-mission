@@ -12,6 +12,7 @@ use App\Models\Versement;
 use App\Services\MissionService;
 use App\Services\NotificationService;
 use App\Support\PermissionRepository;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
@@ -169,4 +170,26 @@ it('ne notifie qu’une fois un compte visé à deux titres (lot confirmé)', fu
 
     expect(Notification::pour($this->gestion->id)->where('type', 'lot_confirme')->count())->toBe(1)
         ->and(Notification::pour($admin->id)->where('type', 'lot_confirme')->count())->toBe(1);
+});
+
+it('résout les destinataires en une requête users et un chargement groupé des overrides (pas de N+1)', function () {
+    // Plusieurs profils, droits individuels accordés et retirés : le nombre de
+    // requêtes de résolution ne dépend ni du nombre de comptes ni des profils.
+    User::factory()->count(3)->agentFinancier()->create();
+    User::factory()->count(2)->lecteur()->create()
+        ->each(fn (User $u) => UserPermission::create(['user_id' => $u->id, 'permission' => 'paiements.generer', 'granted' => true]));
+    $retire = User::factory()->agentFinancier()->create();
+    UserPermission::create(['user_id' => $retire->id, 'permission' => 'paiements.generer', 'granted' => false]);
+    $om = OrdreMission::factory()->create(['statut' => 'VALIDE'])->load('agent');
+    app(PermissionRepository::class)->matrice(); // matrice en cache, comme en exploitation
+
+    DB::enableQueryLog();
+    app(NotificationService::class)->omValide($om);
+    $selects = collect(DB::getQueryLog())->pluck('query')->filter(fn ($q) => str_starts_with(strtolower($q), 'select'));
+    DB::disableQueryLog();
+
+    expect($selects->filter(fn ($q) => preg_match('/from\s+"?users"?/i', $q))->count())->toBe(1)
+        ->and($selects->filter(fn ($q) => preg_match('/from\s+"?user_permissions"?/i', $q))->count())->toBe(1)
+        // 3 financiers + 2 lecteurs avec accord ; le financier avec retrait est exclu.
+        ->and(Notification::where('type', 'om_valide')->count())->toBe(5);
 });

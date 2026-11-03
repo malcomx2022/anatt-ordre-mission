@@ -5,6 +5,8 @@ use App\Models\EtatPaiement;
 use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
+use App\Models\AuditLog;
+use App\Models\Notification;
 use App\Services\EtatPaiementService;
 use App\Services\MissionService;
 use Database\Seeders\BaremeSeeder;
@@ -142,4 +144,60 @@ it('ne crée pas d\'état par accident quand aucun état n\'existe pour la missi
     $mission->ordresMission()->first()->update(['statut' => 'REJETE']);
 
     expect(EtatPaiement::where('mission_id', $mission->id)->exists())->toBeFalse();
+});
+
+it('ne duplique ni l’audit ni la notification sur un récapitulatif sans effet', function () {
+    User::factory()->controleur()->create(); // destinataire de « l'état attend signature »
+    $mission = missionAvecOrdres($this->gestion, 2);
+    $service = app(EtatPaiementService::class);
+
+    $service->recapituler($mission, $this->gestion);
+    $audits = AuditLog::where('action', 'RECAP_ETAT')->count();
+    $notifications = Notification::count();
+    expect($audits)->toBe(1)->and($notifications)->toBeGreaterThan(0);
+
+    // « Rafraîchir » sans aucun changement d'OM : rien de neuf à signaler.
+    $etat = $service->recapituler($mission, $this->gestion);
+    expect($etat->statut)->toBe('BROUILLON')
+        ->and(AuditLog::where('action', 'RECAP_ETAT')->count())->toBe($audits)
+        ->and(Notification::count())->toBe($notifications);
+});
+
+it('signale de nouveau un récapitulatif qui reprend un état REJETE', function () {
+    User::factory()->controleur()->create();
+    $mission = missionAvecOrdres($this->gestion, 2);
+    $service = app(EtatPaiementService::class);
+    $etat = $service->recapituler($mission, $this->gestion);
+    $notifications = Notification::count();
+
+    $etat->update(['statut' => 'REJETE', 'commentaire_rejet' => 'Montants a verifier']);
+
+    // Mêmes montants, mais l'état repasse REJETE → BROUILLON : le circuit repart.
+    $etat = $service->recapituler($mission, $this->gestion);
+    expect($etat->statut)->toBe('BROUILLON')
+        ->and($etat->commentaire_rejet)->toBeNull()
+        ->and(AuditLog::where('action', 'RECAP_ETAT')->count())->toBe(2)
+        ->and(Notification::count())->toBeGreaterThan($notifications);
+});
+
+it('conserve le motif d’un état REJETE recalé par un amendement, jusqu’au récapitulatif', function () {
+    $mission = missionAvecOrdres($this->gestion, 2);
+    $service = app(EtatPaiementService::class);
+    $etat = $service->recapituler($mission, $this->gestion);
+    $etat->update(['statut' => 'REJETE', 'commentaire_rejet' => 'Nombre de jours a corriger']);
+    $totalAvant = $etat->montant_total;
+
+    // Les montants changent réellement (réduction d'un OM) : l'observer recale.
+    $om = $mission->ordresMission()->first();
+    $om->update(['montant_total' => 0, 'avance' => 0, 'reliquat' => 0]);
+
+    $etat->refresh();
+    expect($etat->montant_total)->toBeLessThan($totalAvant)
+        // Comportement retenu : le rejet reste un fait, motif compris.
+        ->and($etat->statut)->toBe('REJETE')
+        ->and($etat->commentaire_rejet)->toBe('Nombre de jours a corriger');
+
+    // Le récapitulatif relance le circuit et efface le motif.
+    $etat = $service->recapituler($mission, $this->gestion);
+    expect($etat->statut)->toBe('BROUILLON')->and($etat->commentaire_rejet)->toBeNull();
 });

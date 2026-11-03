@@ -62,7 +62,7 @@ class EtatPaiementService
      */
     public function recapituler(Mission $mission, User $user, string $tranche = EtatPaiement::TRANCHE_AVANCE): EtatPaiement
     {
-        $etat = DB::transaction(function () use ($mission, $user, $tranche) {
+        [$etat, $change] = DB::transaction(function () use ($mission, $user, $tranche) {
             if ($tranche === EtatPaiement::TRANCHE_RELIQUAT) {
                 $avance = EtatPaiement::where('mission_id', $mission->id)
                     ->where('tranche', EtatPaiement::TRANCHE_AVANCE)
@@ -96,29 +96,38 @@ class EtatPaiementService
                 ]);
             }
 
-            $etat = EtatPaiement::updateOrCreate(
-                ['mission_id' => $mission->id, 'tranche' => $tranche],
-                array_merge([
-                    'statut' => 'BROUILLON',
-                    'nb_beneficiaires' => $ordres->count(),
-                    // Le tableau tel qu'il sera imprimé : figé avec les totaux.
-                    'lignes' => LignesEtatPaiement::pourMission($mission->id),
-                    'commentaire_rejet' => null,
-                ], $this->montantsTranche($ordres, $tranche)),
-            );
+            $etat ??= new EtatPaiement(['mission_id' => $mission->id, 'tranche' => $tranche]);
+            $etat->fill(array_merge([
+                'statut' => 'BROUILLON',
+                'nb_beneficiaires' => $ordres->count(),
+                // Le tableau tel qu'il sera imprimé : figé avec les totaux.
+                'lignes' => LignesEtatPaiement::pourMission($mission->id),
+                'commentaire_rejet' => null,
+            ], $this->montantsTranche($ordres, $tranche)));
 
-            AuditService::log($user, 'RECAP_ETAT', 'etat_paiement', $etat->id, [
-                'mission' => $mission->objet,
-                'tranche' => $tranche,
-                'nb_beneficiaires' => $etat->nb_beneficiaires,
-                'montant_total' => $etat->montant_total,
-            ]);
+            // Rafraîchissement sans effet (brouillon déjà à jour : mêmes montants, même
+            // tableau, mêmes bénéficiaires) : ni audit ni notification dupliqués. Une
+            // création, un état REJETE repris ou un brouillon recalé restent signalés.
+            $change = ! $etat->exists || $etat->isDirty();
+            $etat->save();
 
-            return $etat->fresh();
+            if ($change) {
+                AuditService::log($user, 'RECAP_ETAT', 'etat_paiement', $etat->id, [
+                    'mission' => $mission->objet,
+                    'tranche' => $tranche,
+                    'nb_beneficiaires' => $etat->nb_beneficiaires,
+                    'montant_total' => $etat->montant_total,
+                ]);
+            }
+
+            return [$etat->fresh(), $change];
         });
 
-        // Le circuit commence : le contrôleur est avisé qu'un brouillon l'attend.
-        $this->notifications->etatAttendSignature($etat->loadMissing('mission'), User::ROLE_CONTROLEUR);
+        // Le circuit commence : le contrôleur est avisé qu'un brouillon l'attend
+        // (hors transaction). Pas de nouvel avis pour un rafraîchissement sans effet.
+        if ($change) {
+            $this->notifications->etatAttendSignature($etat->loadMissing('mission'), User::ROLE_CONTROLEUR);
+        }
 
         return $etat;
     }
@@ -170,6 +179,14 @@ class EtatPaiementService
      * L'appel est protégé par un verrou pessimiste pour éviter qu'un
      * enchaînement rapide de saves d'OM ne fasse diverger deux processus
      * concurrents.
+     *
+     * État REJETE : les montants se recalent, mais le statut ET le motif du
+     * rejet sont conservés, même si un amendement change les montants. Le rejet
+     * reste un fait : l'écran (EtatDetailView) et le PDF présentent un état
+     * rejeté comme « un nouveau récapitulatif est nécessaire » en citant le
+     * motif — c'est la consigne que le gestionnaire traite en amendant. Purger
+     * le motif ici laisserait un état REJETE sans motif ; il est effacé par
+     * recapituler(), qui remet l'état en BROUILLON et relance le circuit.
      */
     public function synchroniser(int $missionId): void
     {

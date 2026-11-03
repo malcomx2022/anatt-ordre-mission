@@ -1,12 +1,15 @@
 <?php
 
 use App\Models\Agent;
+use App\Models\AuditLog;
 use App\Models\LotPaiement;
 use App\Models\Mission;
 use App\Models\OrdreMission;
 use App\Models\User;
 use App\Models\Versement;
+use App\Services\LotPaiementService;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -72,6 +75,36 @@ it('marque un lot en erreur puis le régénère', function () {
 
     $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
     expect(LotPaiement::find($lot->id)->statut)->toBe('GENERE');
+});
+
+it('refuse de marquer en erreur un lot confirmé entre-temps (garde relue sous verrou)', function () {
+    // Concurrence simulée : l'appelant tient une instance lue avant la confirmation.
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+    $perime = LotPaiement::first();
+    expect($perime->statut)->toBe('GENERE');
+
+    $service = app(LotPaiementService::class);
+    $service->confirmer($perime->fresh(), $this->finance);
+
+    expect(fn () => $service->marquerErreur($perime, $this->finance))
+        ->toThrow(ValidationException::class, 'Un lot confirmé ne peut pas être marqué en erreur.');
+
+    expect($perime->fresh()->statut)->toBe('CONFIRME')
+        ->and(Versement::find($this->versement->id)->statut)->toBe('CONFIRME')
+        ->and(AuditLog::where('action', 'ERROR_LOT')->exists())->toBeFalse();
+});
+
+it('refuse de confirmer un lot passé en erreur entre-temps', function () {
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection);
+    $perime = LotPaiement::first();
+
+    $service = app(LotPaiementService::class);
+    $service->marquerErreur($perime->fresh(), $this->finance);
+
+    expect(fn () => $service->confirmer($perime, $this->finance))->toThrow(ValidationException::class);
+
+    expect($perime->fresh()->statut)->toBe('ERREUR')
+        ->and(Versement::find($this->versement->id)->statut)->toBe('EN_ATTENTE');
 });
 
 it('liste les lots de paiement', function () {

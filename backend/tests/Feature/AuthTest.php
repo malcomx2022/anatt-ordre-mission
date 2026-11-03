@@ -109,6 +109,57 @@ it('permet à l’utilisateur de changer son mot de passe et lève le verrou', f
     $this->actingAs($user->fresh())->getJson('/api/agents')->assertOk();
 });
 
+it('changement forcé de bout en bout : login, changement, re-login avec le nouveau mot de passe', function () {
+    // Régression : le mot de passe était haché avant d'être confié au cast 'hashed'
+    // du modèle (double hachage potentiel). Le flux complet passe par de vrais tokens Sanctum.
+    $user = User::factory()->admin()->create([
+        'password' => 'AncienMotDePasse1!', // le cast 'hashed' hache
+        'must_change_password' => true,
+    ]);
+    $autreSession = $user->createToken('autre-appareil');
+
+    $token = $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'AncienMotDePasse1!',
+    ])->assertOk()->json('data.token');
+    $idCourant = (int) explode('|', $token)[0];
+
+    // Verrou 423 tant que le mot de passe n'est pas changé.
+    $this->withToken($token)->getJson('/api/agents')->assertStatus(423);
+
+    $this->withToken($token)->postJson('/api/auth/mot-de-passe/changer', [
+        'current_password' => 'AncienMotDePasse1!',
+        'password' => 'NouveauMotDePasse9@',
+        'password_confirmation' => 'NouveauMotDePasse9@',
+    ])->assertOk();
+
+    $frais = $user->fresh();
+    expect(Hash::check('NouveauMotDePasse9@', $frais->password))->toBeTrue()
+        ->and(Hash::check('AncienMotDePasse1!', $frais->password))->toBeFalse()
+        ->and($frais->must_change_password)->toBeFalse()
+        // Autres sessions révoquées, session courante conservée.
+        ->and($frais->tokens()->pluck('id')->all())->toBe([$idCourant])
+        ->and($frais->tokens()->whereKey($autreSession->accessToken->id)->exists())->toBeFalse();
+
+    $log = AuditLog::where('action', 'PWD_CHANGE')->where('entite', 'session')->first();
+    expect($log)->not->toBeNull()->and((int) $log->user_id)->toBe($user->id);
+
+    // La session courante reste valide et l'API est déverrouillée.
+    $this->app['auth']->forgetGuards();
+    $this->withToken($token)->getJson('/api/agents')->assertOk();
+
+    // Re-login : l'ancien mot de passe est refusé, le nouveau accepté.
+    $this->app['auth']->forgetGuards();
+    $this->withHeaders(['Authorization' => ''])->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'AncienMotDePasse1!',
+    ])->assertStatus(422);
+    $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'NouveauMotDePasse9@',
+    ])->assertOk()->assertJsonStructure(['data' => ['token']]);
+});
+
 it('refuse le changement si le mot de passe actuel est incorrect', function () {
     $user = User::factory()->admin()->create([
         'password' => bcrypt('AncienMotDePasse1!'),
@@ -175,9 +226,17 @@ it('réinitialise le mot de passe, lève le verrou, révoque les sessions et aud
     ])->assertOk();
 
     $frais = $user->fresh();
+    // Un seul hachage : le mot de passe en clair se vérifie contre la valeur stockée.
     expect(Hash::check('NouveauMotDePasse9@', $frais->password))->toBeTrue()
+        ->and(Hash::check('AncienMotDePasse1!', $frais->password))->toBeFalse()
         ->and($frais->must_change_password)->toBeFalse()
         ->and($frais->tokens()->count())->toBe(0);
+
+    // Le nouveau mot de passe ouvre bien une session.
+    $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'NouveauMotDePasse9@',
+    ])->assertOk();
 
     $log = AuditLog::where('action', 'PWD_RESET')->where('entite', 'session')->first();
     expect($log)->not->toBeNull()->and((int) $log->user_id)->toBe($user->id);
