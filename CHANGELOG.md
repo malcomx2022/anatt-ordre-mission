@@ -29,6 +29,8 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
   groupé des droits individuels (`NotificationTest`) ; filtres des listes OM, agents et paiements limités à des
   colonnes fixées dans le code.
 - `docs/queues.md` mis à jour (échec définitif d'un lot). Pest : 713 tests.
+- **CI** : le job Playwright tourne sur `ubuntu-24.04` (image épinglée) ; `ubuntu-latest` est passé à Ubuntu 26.04,
+  que Playwright 1.59 ne prend pas en charge.
 
 ### Relecture finale de tous les documents ; trois derniers écarts (29/10/2026)
 
