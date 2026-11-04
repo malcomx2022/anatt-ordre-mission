@@ -9,6 +9,15 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Repli compatible PHP 8.4.0 (04/11/2026)
+
+- Le serveur de production tourne en **PHP 8.4.0** ; cinq composants Symfony 8.1 du lock exigeaient `>=8.4.1`.
+  `composer.json` fixe désormais `config.platform.php` à `8.4.0` : `symfony/clock`, `css-selector`, `event-dispatcher`,
+  `string` et `translation` redescendent en **8.0.x** ; `symfony/yaml` (dev seulement, via Sail) en **7.4.22**, la
+  branche 8.0 n'ayant pas reçu le correctif de CVE-2026-109413. Laravel 12.71 et les autres correctifs du 04/11 sont
+  conservés ; `composer audit` : aucune faille. **Provisoire** : la branche Symfony 8.0 n'est plus maintenue — retirer
+  `config.platform` et relancer `composer update "symfony/*"` dès que l'hébergeur passe en 8.4.1 ou plus.
+
 ### Guide de mise à jour de l'instance en ligne (04/11/2026)
 
 - Nouveau `docs/mise-a-jour-2026-11-04.md` : déroulé pas à pas de la mise à jour vers `main` du 04/11
