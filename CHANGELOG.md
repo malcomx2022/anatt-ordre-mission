@@ -9,6 +9,24 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Maintenance : failles des dépendances, actions GitHub, point de clôture (04/11/2026)
+
+- **Backend** : `composer.lock` mis à jour dans les versions majeures en place pour corriger les failles publiées
+  depuis le 30/10 (Laravel 12.71, dont un contournement critique d'authentification du `TokenGuard` ; Guzzle 7.16,
+  PSR-7 2.13, PhpSpreadsheet 1.30.7, Symfony 7.4.22 / 8.1, DomPDF 3.1.6, Laravel Excel 3.1.70, CommonMark,
+  Flysystem). `composer.json` inchangé ; `composer audit` : aucune faille. **À la prochaine mise en production,
+  renvoyer `vendor/`** (`UPLOAD-VENDOR.md`).
+- **Frontend** : `overrides` `minimatch` ^11.0.4 et `glob` ^14.0.3 (outils de lint et de test, absents du build) ;
+  `npm audit` : 0 vulnérabilité.
+- **CI** : `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` v7 et `actions/cache` v6 (Node 24).
+- **Documents** : PhpSpreadsheet 1.30.7 dans `AGENTS.md`, `DEPLOY-CPANEL.md` et `UPLOAD-VENDOR.md` (borne
+  `php <8.5.0` inchangée) ; point de clôture dans `docs/revue-projet-2026-10.md` §8.5.
+
+### Compteurs de tests dans les documents (03-04/11/2026)
+
+- `CLAUDE.md`, `AGENTS.md`, `README.md`, `backend/README.md` et documentation technique (`.docx` régénéré) :
+  Pest 713 tests (79 fichiers : 704 sur SQLite, dont 575 dans `tests/Feature`, et 9 sur MySQL réel).
+
 ### Playwright 1.64.1, compatible Ubuntu 26.04 (03/11/2026)
 
 - `@playwright/test` passe de 1.59.1 à **1.64.1** (dernière version stable), qui prend en charge Ubuntu 26.04,

@@ -70,6 +70,8 @@
     "@vue/runtime-dom": "3.5.44",
     "@vue/server-renderer": "3.5.44",
     "@vue/shared": "3.5.44",
-    "@vue/compat": "3.5.44"
+    "@vue/compat": "3.5.44",
+    "minimatch": "^11.0.4",
+    "glob": "^14.0.3"
   }
 }

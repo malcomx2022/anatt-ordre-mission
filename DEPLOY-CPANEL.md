@@ -158,7 +158,7 @@ Dans les deux cas, `dist/` contient : `index.html`, `assets/`, les favicons,
 > un **500 sur tous les appels**, avec le message « Your Composer dependencies require a PHP
 > version ">= 8.4.0" ». Ce n'est pas un avertissement que l'on peut ignorer.
 >
-> **Ni 8.3 ni 8.5.** `phpoffice/phpspreadsheet` 1.30.2 (fichiers Moov `.xlsx`, imports,
+> **Ni 8.3 ni 8.5.** `phpoffice/phpspreadsheet` 1.30.7 (fichiers Moov `.xlsx`, imports,
 > exports) déclare `php <8.5.0`. Sous PHP 8.5, `composer install` refuse le lock ; un site passé
 > en 8.5 démarrerait quand même, car `platform_check.php` ne contrôle que le minimum 8.4 et le
 > 64 bits, mais il sortirait de la plage supportée. Gardez **PHP 8.4.x, 64 bits**
