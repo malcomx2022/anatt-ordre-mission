@@ -9,6 +9,14 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Guide de mise à jour de l'instance en ligne (04/11/2026)
+
+- Nouveau `docs/mise-a-jour-2026-11-04.md` : déroulé pas à pas de la mise à jour vers `main` du 04/11
+  (quatre fichiers de l'API, `vendor/` à renvoyer, aucune migration, SPA inchangé : build vérifié identique
+  à celui du 30/10), recette en lecture seule et sur l'instance de recette, retour arrière.
+- Renvois ajoutés dans `docs/runbook-mise-a-jour-cron.md`, `UPLOAD-VENDOR.md`, `docs/checklist-post-deploiement.md`
+  (section *06 › Maintenance du 04/11/2026*) et `docs/revue-projet-2026-10.md` §8.5.
+
 ### Maintenance : failles des dépendances, actions GitHub, point de clôture (04/11/2026)
 
 - **Backend** : `composer.lock` mis à jour dans les versions majeures en place pour corriger les failles publiées

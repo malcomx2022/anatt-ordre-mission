@@ -295,7 +295,7 @@ anatt-ordre-mission/
     ├── SCENARIO-DEMO.md · revue-projet-2026-10.md
     ├── circuits-validation.md · amendement-om.md · rbac-flexible.md · workflows-par-profil.md
     ├── parametrage-part-avance.md · annee-fiscale.md · categories-indice.md
-    ├── checklist-post-deploiement.md · runbook-mise-a-jour-cron.md
+    ├── checklist-post-deploiement.md · runbook-mise-a-jour-cron.md · mise-a-jour-2026-11-04.md (déroulé du 04/11)
     ├── 00_galerie_index.html … 53_moov.html  ← pages d'écran tirées des CAPTURES de l'app réelle (ecrans/*.jpg),
     │                                           générées par generer_maquettes.py (refonte du 26/10/2026)
     └── capturer_ecrans.cjs · ecrans/        ← captures Playwright (API + SPA sur les données de démonstration)

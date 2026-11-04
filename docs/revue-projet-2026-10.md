@@ -567,7 +567,7 @@ MySQL réel), Vitest 245, Playwright 3, recette sur l'API réelle 273 contrôles
 
 | Étape | Qui | Référence |
 |-------|-----|-----------|
-| Mettre l'instance en ligne à jour (code **et** `vendor/`, puisque `composer.lock` a changé) | Exploitation | `docs/runbook-mise-a-jour-cron.md`, `UPLOAD-VENDOR.md` |
+| Mettre l'instance en ligne à jour (code **et** `vendor/`, puisque `composer.lock` a changé) | Exploitation | `docs/mise-a-jour-2026-11-04.md` (déroulé dédié), `docs/runbook-mise-a-jour-cron.md`, `UPLOAD-VENDOR.md` |
 | Contrôler l'instance après la mise à jour | Exploitation, puis un compte de chaque profil | `docs/checklist-post-deploiement.md` |
 | Éprouver la restauration sur une base de recette, former les utilisateurs, décider de l'archivage des deux documents historiques | Exploitation, responsable fonctionnel, client | §8.4 |
 

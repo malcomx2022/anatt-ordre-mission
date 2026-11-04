@@ -40,6 +40,11 @@
 > **à redéployer** (reconstruit avec Vue 3.5.44 stable, motif du serveur sur les refus du barème et des
 > exports). Pas de maintenance obligatoire, pas de cache de PDF à vider. Contrôles à l'étape 8.
 >
+> **Maintenance du 04/11/2026** (PR #206 et #211) : quatre fichiers de l'API, **`vendor/` à renvoyer**
+> (`composer.lock` a changé : correctifs de sécurité, dont Laravel 12.71), **aucune migration**, `.env` inchangé,
+> **SPA inchangé** (build identique : ne rien envoyer dans `public_html/`). Maintenance **obligatoire** avec
+> `--render` (étape 3 bis). Déroulé dédié, pas à pas : [`mise-a-jour-2026-11-04.md`](mise-a-jour-2026-11-04.md).
+>
 > *Relu le 24/10/2026 contre le code* : 34 migrations, `routes/console.php`, `bootstrap/app.php`,
 > `vendor/composer/platform_check.php`. *Relu le 27/10/2026 (version 1.4)* : fuseau dans le `.env`,
 > SPA servi pendant la maintenance, sortie de maintenance vérifiée, recette et retour arrière 1.4.
