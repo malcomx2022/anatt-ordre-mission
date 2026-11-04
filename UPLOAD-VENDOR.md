@@ -29,6 +29,10 @@ git diff --stat <commit-deploye> HEAD -- backend/composer.lock
 Aucune ligne affichée → `vendor/` est inchangé : **ne rien envoyer**, passez directement au
 déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 
+> **Maintenance du 04/11/2026** : `composer.lock` **a changé** (correctifs de sécurité : Laravel 12.71, Guzzle,
+> PhpSpreadsheet 1.30.7, Symfony…) → **renvoyer `vendor/`**. Même nombre de paquets (95 de production, 51 de
+> développement). Déroulé : `docs/mise-a-jour-2026-11-04.md`.
+>
 > **Versions 1.3 et 1.4** : `composer.lock` n'a pas changé depuis la 1.2 → **pas de ré-upload de
 > `vendor/`** (cf. *Notes de version* de `DEPLOY-CPANEL.md`). La 1.4 ne retire des dépendances que
 > **côté SPA** (`@vueuse/core`, `lucide-vue-next`, `vue-pdf-embed` dans `frontend/package.json`) :
