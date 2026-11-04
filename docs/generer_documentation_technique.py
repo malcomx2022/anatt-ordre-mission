@@ -1195,7 +1195,7 @@ tableau(
     ["Suite", "Outil", "Périmètre", "Volume (oct. 2026)"],
     [
         ["Unitaires backend", "Pest — tests/Unit", "Calcul per diem, barème, catégories, montant en lettres", "129 tests"],
-        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "565 tests (71 fichiers) ; total Pest 703 tests (79 fichiers) : 694 sur SQLite + 9 sur MySQL réel"],
+        ["Intégrité backend", "Pest — tests/Feature (SQLite)", "API complète : circuits, scellés, idempotence, RBAC, amendement, paiements, sauvegardes, PDF", "575 tests (71 fichiers) ; total Pest 713 tests (79 fichiers) : 704 sur SQLite + 9 sur MySQL réel"],
         ["Intégrité MySQL", "Pest — tests/Mysql (groupe mysql)", "db:backup / db:restore réels (aller-retour, sauvegarde de sécurité, purge de la matrice, dump invalide), tri des sauvegardes, verrou lockForUpdate de l'amendement", "9 tests (job CI sur MySQL 8)"],
         ["Unitaires frontend", "Vitest + Vue Test Utils", "Vues, services, stores, navigation ↔ permissions, minuteurs, page de maintenance", "245 tests"],
         ["Recette API réelle", "scripts/recette (Node, sans dépendance)", "Rejeu du scénario de démonstration (119 contrôles) puis recette transverse : RBAC, erreurs JSON, fichiers MTN/Moov octet par octet, idempotence, lots complémentaires, régularisations (154)", "273 contrôles (job CI)"],
@@ -1241,7 +1241,7 @@ para("Le développement est terminé : 58 défauts relevés par la revue d'octob
 tableau(
     ["Indicateur", "Valeur au 29/10/2026"],
     [
-        ["Tests backend (Pest)", "703 tests, 79 fichiers — API complète sur SQLite (694), contrat OpenAPI vérifié ; sauvegarde, restauration et verrous sur MySQL réel (9)"],
+        ["Tests backend (Pest)", "713 tests, 79 fichiers — API complète sur SQLite (704), contrat OpenAPI vérifié ; sauvegarde, restauration et verrous sur MySQL réel (9)"],
         ["Tests frontend (Vitest)", "245 tests, 48 fichiers — vues, services, stores, navigation ↔ permissions"],
         ["Recette sur l'API réelle", "273 contrôles en CI (rejeu du scénario 119 + recette transverse 154)"],
         ["Tests de bout en bout (Playwright)", "3 parcours critiques"],
