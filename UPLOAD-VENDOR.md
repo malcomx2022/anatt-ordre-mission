@@ -44,7 +44,7 @@ déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 > l'encadre des deux côtés :
 > - **minimum 8.4** : Symfony 8 (`clock`, `css-selector`, `event-dispatcher`, `string`,
 >   `translation`) et `spatie/laravel-activitylog` exigent PHP ≥ 8.4 ;
-> - **maximum 8.4.x** : `phpoffice/phpspreadsheet` 1.30.2 (fichiers Moov `.xlsx`, import Excel des
+> - **maximum 8.4.x** : `phpoffice/phpspreadsheet` 1.30.7 (fichiers Moov `.xlsx`, import Excel des
 >   agents, exports) déclare `php <8.5.0`.
 >
 > Ce que cela provoque :

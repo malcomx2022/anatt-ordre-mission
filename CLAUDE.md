@@ -1194,7 +1194,8 @@ PAIEMENT_ASYNC_SEUIL=50    # au-delà, génération en file (202 + tracking_id)
 ---
 
 *Ce fichier est maintenu par l'équipe développement ANaTT.*  
-*Dernière mise à jour : 3 novembre 2026 (compteurs de tests après la revue fonctionnelle : Pest 713, dont 9 sur MySQL ;
+*Dernière mise à jour : 4 novembre 2026 (failles des dépendances corrigées — Laravel 12.71, `composer audit` et `npm audit` à 0 ;
+actions GitHub en Node 24 ; point de clôture `docs/revue-projet-2026-10.md` §8.5) — 3 novembre 2026 (compteurs de tests après la revue fonctionnelle : Pest 713, dont 9 sur MySQL ;
 Playwright 1.64.1, compatible avec Ubuntu 26.04) — 29 octobre 2026 (dette technique soldée : Vue 3.5.44 stable, tests Pest sur MySQL réel et recette
 `scripts/recette/` exécutés en CI, défauts n° 50 à 58 ; motif de tout refus affiché une fois et en français ; point final de la
 revue d'octobre, `docs/revue-projet-2026-10.md` §8 ; textes accentués et galerie recapturée) — 28 octobre 2026 (réglages de Paramètres appliqués par le serveur, part d'avance de la

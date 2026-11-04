@@ -36,6 +36,8 @@ Environnement de test : PHP 8.4.27, Node 22, Chromium.
 > Pest compte 703 tests (79 fichiers : 694 sur SQLite + 9 sur un vrai MySQL), Vitest 245, Playwright 3, recette sur l'API réelle 273 contrôles. Le §8 fait le point final : ce qui
 > a été corrigé, l'état de chaque document et **ce qui reste** (gestes d'exploitation, dette connue).
 >
+> **Revue fonctionnelle et maintenance des 03-04/11/2026** (PR #206 à #211) : §8.5, avec l'état mesuré et ce qui reste.
+>
 > Tout est fusionné sur `main` (cf. §6). La colonne « Fin de revue » est mesurée après la PR #131, la
 > colonne « 23/10 » après la PR #152. La recette et le scénario de démo ont été rejoués sur ce dernier
 > état, avec 9 sondes supplémentaires sur les correctifs n° 19 et 22.
@@ -540,4 +542,35 @@ Vitest 245 et type-check, Playwright 3, Recette · API réelle 273 contrôles, b
 Toute évolution ultérieure suit les règles de `CLAUDE.md` et d'`AGENTS.md` (périmètre, réglages appliqués et
 testés, motifs de refus en français, contrat OpenAPI) ; la documentation technique en fait la synthèse
 (chapitre 11).
+
+### 8.5 Revue fonctionnelle et maintenance (03-04/11/2026)
+
+Après la clôture, une revue fonctionnelle a demandé quatre points (PR #206), puis la maintenance a été soldée
+(PR #207 à #211). Chaque correction porte son test ; les compteurs ont été mesurés, pas recopiés.
+
+| Point | Résultat | Référence |
+|-------|----------|-----------|
+| Mot de passe (changement forcé, réinitialisation) | Valeur en clair confiée au cast `hashed` ; double hachage **non reproduit** (le cast accepte un hachage de la configuration courante), parcours complet testé | #206, `AuthTest` |
+| Échec d'un lot asynchrone | `failed()` marque le lot **visé par le job** (cache `lot_job:{id}:lot`), plus un lot complémentaire généré entre-temps | #206, `AsyncGenerationTest` |
+| `marquerErreur()` | Lot relu sous verrou avant la garde `CONFIRME` | #206, `PaiementTest` |
+| Récapitulatif d'un état | Rafraîchissement sans effet : ni audit ni notification ; motif d'un état `REJETE` conservé jusqu'au récapitulatif | #206, `EtatAutoSyncTest` |
+| Session, filtres, notifications | Déjà conformes, verrouillés par un test | #206 |
+| Playwright sur Ubuntu 26.04 | Playwright 1.64.1, job de nouveau sur `ubuntu-latest` | #207 |
+| Compteurs des documents | `CLAUDE.md`, `AGENTS.md`, README, documentation technique | #208 à #210 |
+| Dépendances | Failles publiées depuis le 30/10 corrigées sans changement de version majeure : backend (Laravel 12.71, dont un contournement d'authentification critique du `TokenGuard` ; Guzzle 7.16, PhpSpreadsheet 1.30.7, Symfony, DomPDF, Laravel Excel…) et frontend (`minimatch` et `glob` des outils de lint, par `overrides`). `composer audit` et `npm audit` : 0 | #211 |
+| Actions GitHub | `checkout`, `setup-node`, `upload-artifact` v7 et `cache` v6 (Node 24 ; Node 20 est déprécié sur les runners) | #211 |
+
+État mesuré le 04/11/2026 : Pest **713** tests (79 fichiers : 704 sur SQLite, dont 575 dans `tests/Feature`, et 9 sur
+MySQL réel), Vitest 245, Playwright 3, recette sur l'API réelle 273 contrôles ; CI verte sur ses sept jobs.
+
+**Ce qui reste**, uniquement côté exploitation (aucun développement en attente) :
+
+| Étape | Qui | Référence |
+|-------|-----|-----------|
+| Mettre l'instance en ligne à jour (code **et** `vendor/`, puisque `composer.lock` a changé) | Exploitation | `docs/runbook-mise-a-jour-cron.md`, `UPLOAD-VENDOR.md` |
+| Contrôler l'instance après la mise à jour | Exploitation, puis un compte de chaque profil | `docs/checklist-post-deploiement.md` |
+| Éprouver la restauration sur une base de recette, former les utilisateurs, décider de l'archivage des deux documents historiques | Exploitation, responsable fonctionnel, client | §8.4 |
+
+Les dépendances reçoivent de nouveaux avis de sécurité au fil du temps : relancer `composer audit` et `npm audit`
+avant chaque mise en production, et corriger dans les versions majeures en place.
 

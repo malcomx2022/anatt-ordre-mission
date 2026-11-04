@@ -20,7 +20,7 @@ High-signal notes for OpenCode sessions in this repo.
 ## Environment requirements
 - PHP **8.4.x, 64-bit** is mandatory, neither 8.3 nor 8.5:
   - `composer.lock` pins Symfony 8 / spatie (≥ 8.4), so under 8.3 Composer's platform check fails and every API call returns 500;
-  - `phpoffice/phpspreadsheet` 1.30.2 declares `php <8.5.0`, so `composer install` refuses the lock under 8.5;
+  - `phpoffice/phpspreadsheet` 1.30.7 declares `php <8.5.0`, so `composer install` refuses the lock under 8.5;
   - `platform_check.php` only checks the minimum and 64-bit, so a server on 8.5 would boot outside the supported range.
 - Node **20.19+ or 22.12+** (Vite 8 `engines`; CI uses Node 22).
 - Install frontend deps with **`npm ci`**, never `npm install`: Vue is pinned to `3.5.44` stable (dependency and `@vue/*` overrides, no dist-tag) and `package-lock.json` is the reference; do not reintroduce the `beta` dist-tag nor `@vue/*-vapor` packages. `start-dev.ps1 -Install` runs `npm ci` too (keep that script ASCII-only: Windows PowerShell 5.1 reads it as ANSI).
