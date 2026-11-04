@@ -233,6 +233,26 @@ Sans création de données :
 - [ ] **Restauration chez l'hébergeur** (n° 53) : créer une sauvegarde puis la **restaurer aussitôt** → la restauration réussit, le fichier restauré est toujours dans la liste (re-téléchargeable) et la sauvegarde de sécurité y figure sous un autre nom (suffixe `-2` si elle a été prise dans la même seconde). Avant ce correctif, une sauvegarde de sécurité prise dans la même seconde écrasait le fichier choisi puis le supprimait : la restauration échouait. Le mécanisme (aller-retour `mysqldump` / `mysql`, sauvegarde de sécurité restaurable, même seconde, purge de la matrice) est vérifié en CI sur MySQL 8.0 (job « Backend · Pest MySQL », `backend/tests/Mysql`) ; reste à l'éprouver ici avec les binaires de l'hébergeur (`DB_DUMP_BINARY`, `DB_RESTORE_BINARY`), `exec()` et `gzip`. Une sauvegarde en `.sql` (et non `.sql.gz`) signale l'absence de `gzip` : elle reste valide. Échec ou délai dépassé : `DEPLOY-CPANEL.md` §9.1 et §10.
 - [ ] *(Facultatif)* **Recette automatisée** : `API_URL=<racine de l'API, sans /api> node scripts/recette/recette-api.cjs` (Node ≥ 22) → « Recette de l'API : 154 contrôles conformes. », en 4 minutes environ (attentes sur les limites de débit comprises). **Jamais contre la production** : le script crée des agents, des missions, des lots et leurs fichiers, et change le numéro d'agents qu'il a lui-même créés. Il est rejouable sur une même base ; `rejeu-scenario.cjs`, lui, exige une base neuve. Prérequis (`scripts/recette/README.md`) : les **8 comptes de démonstration** (`superadmin@` … `lecteur@anatt.bj`) avec un même mot de passe (`password`, ou `RECETTE_PASSWORD`), qui n'existent que si la base a été seedée en `APP_ENV=local` ; `QUEUE_CONNECTION=sync` ; réglages et matrice des permissions par défaut (part d'avance 70, compte MTN `SARALY`, MTN et Moov ouverts, « Forcer HTTPS » inactif). Le script contrôle aussi l'absence d'en-tête HSTS : l'API en envoie un dès qu'elle est servie en HTTPS, et il s'arrête alors à ce contrôle, avant les contrôles métier. Il se joue donc contre une API servie en **HTTP**, comme en CI : en pratique une copie de la base de recette sur un poste (`php artisan serve`, commandes du README).
 
+### Maintenance du 04/11/2026 (revue fonctionnelle et sécurité des dépendances)
+
+Quatre fichiers de l'API changent (`app/Http/Controllers/Api/AuthController.php`, `app/Jobs/GenererLotPaiementJob.php`,
+`app/Services/EtatPaiementService.php`, `app/Services/LotPaiementService.php`) et **`vendor/` est renvoyé**
+(`composer.lock` : Laravel 12.71, Guzzle, PhpSpreadsheet 1.30.7, Symfony, DomPDF, Laravel Excel…). Aucune
+migration, `.env` inchangé, **SPA inchangé** (build identique). Déroulé : [`mise-a-jour-2026-11-04.md`](mise-a-jour-2026-11-04.md).
+
+Sans création de données :
+
+- [ ] **`vendor/` à jour** : `anatt-api/vendor/laravel/framework/src/Illuminate/Foundation/Application.php` contient `const VERSION = '12.71.0';` ; `anatt-api/vendor_old/` supprimé après la recette.
+- [ ] **PDF** (DomPDF) : le PDF d'un OM existant et celui d'un état de paiement se téléchargent et s'ouvrent, avec la même mise en page.
+- [ ] **Excel** (PhpSpreadsheet, Laravel Excel) : un export `.xlsx` de *Rapports › Export* et un lot Moov existant re-téléchargé depuis `/paiements` s'ouvrent.
+- [ ] **E-mail** (Symfony Mailer) : *Messagerie › Envoyer un e-mail de test* → reçu.
+
+#### Sur l'instance de recette uniquement
+
+- [ ] **Changement forcé de mot de passe** : créer un compte de test, s'y connecter, changer le mot de passe à l'écran imposé, puis se reconnecter : ancien mot de passe refusé, nouveau accepté. Même contrôle avec « Mot de passe oublié » (lien reçu par e-mail).
+- [ ] **Récapitulatif sans effet** : sur un état en brouillon, « Rafraîchir » sans rien changer n'ajoute aucune notification au contrôleur ; après un nouvel OM retranscrit dans la mission, « Rafraîchir » le notifie de nouveau.
+- [ ] **Lot confirmé entre-temps** : ouvrir la génération d'un lot `GENERE` dans deux onglets, confirmer dans le premier, puis « Marquer en erreur » dans le second → « Un lot confirmé ne peut pas être marqué en erreur. » ; le lot reste `CONFIRME`.
+
 ---
 
 ## 07 · Filet de sécurité
