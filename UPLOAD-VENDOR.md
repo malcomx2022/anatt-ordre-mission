@@ -56,6 +56,9 @@ déploiement du code (`DEPLOY-CPANEL.md` § *Mise à jour*).
 >   32 bits, l'API répond 500 sur tous les appels (`DEPLOY-CPANEL.md` §4) ;
 > - ce contrôle ne vérifie **pas** le maximum : un site en PHP 8.5 démarrerait, mais hors de la
 >   plage que déclare PhpSpreadsheet. Restez en 8.4.
+> - **8.4.0 accepté (provisoire, 04/11/2026)** : `composer.json` fixe `config.platform.php` à `8.4.0`,
+>   le serveur de production n'ayant pas de 8.4.1+. Composer résout donc les composants Symfony en 8.0.x.
+>   À retirer dès que l'hébergeur passe en 8.4.1 ou plus (`CHANGELOG.md`, *Repli compatible PHP 8.4.0*).
 
 ```powershell
 cd C:\wamp64\www\anatt-ordre-mission\backend
