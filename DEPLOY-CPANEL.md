@@ -644,6 +644,9 @@ plus sûr — un `rollback` ne rend pas les données qu'une migration a transfor
 | Le SPA affiche **404** sur une route (ex. /agents) au rafraîchissement | `.htaccess` SPA absent | Vérifier `public_html/.htaccess` (fourni dans dist) |
 | Appels API en **http** bloqués (mixed content) | API pas en HTTPS | AutoSSL sur le sous-domaine + `apiUrl` en `https://` |
 | Connexion impossible / « Network error » | mauvaise `apiUrl` | Corriger `public_html/runtime-config.js` |
+| Écran de connexion : « L'adresse de l'API n'est pas configurée (http://localhost:8000) » | `runtime-config.js` écrasé par celui de `dist/` (`apiUrl: ""`) | Remettre `apiUrl: "https://api-omsemo.anatt.bj"`, puis <kbd>Ctrl</kbd>+<kbd>F5</kbd> |
+| « Erreur de connexion » alors que l'API répond (curl OK) | SPA ouvert en `http://` ou en `www.` : origine refusée par `CORS_ALLOWED_ORIGINS` | Ouvrir `https://omsemo.anatt.bj` ; redéployer `public_html/.htaccess` (redirige `http://` et `www.` vers HTTPS) |
+| Écran de connexion : « Le serveur de l'API (…) ne répond pas » | API arrêtée, certificat, CORS, ou erreur PHP fatale (réponse sans en-têtes CORS) | Ouvrir `https://api-omsemo.anatt.bj/up` : page d'erreur → `storage/logs/laravel.log` ; OK → vérifier `CORS_ALLOWED_ORIGINS` puis `php artisan config:clear` |
 | `Class ... not found` au chargement | `vendor/` incomplet | Re-uploader `vendor/` (composer install --no-dev en local) |
 | Sauvegarde « Échec » | mysqldump introuvable | Renseigner `DB_DUMP_BINARY` (chemin fourni par le support de l'hébergeur) |
 | Restauration « Échec » … *client mysql introuvable* | `mysql` hors du PATH | Renseigner `DB_RESTORE_BINARY` (ex. `/usr/bin/mysql`) |
