@@ -22,6 +22,30 @@ const apiClient: AxiosInstance = axios.create({
   },
 })
 
+/** Adresse de l'API effectivement appelée (runtime-config.js > VITE_API_URL > défaut local). */
+export const API_BASE_URL: string = apiClient.defaults.baseURL ?? ''
+
+/**
+ * Motif lisible quand l'API ne répond pas du tout (aucune réponse HTTP) : le
+ * navigateur ne distingue pas une adresse erronée, un refus CORS, un certificat
+ * invalide ou une erreur PHP fatale (réponse sans en-têtes CORS). On nomme donc
+ * l'adresse appelée et, cas le plus fréquent après un déploiement, on signale
+ * un `runtime-config.js` resté vide (repli sur http://localhost:8000).
+ */
+export function diagnosticApiInjoignable(
+  baseUrl: string = API_BASE_URL,
+  pageHost: string = typeof window !== 'undefined' ? window.location.hostname : '',
+): string {
+  const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(baseUrl)
+  const pageLocale = pageHost === 'localhost' || pageHost === '127.0.0.1' || pageHost === ''
+  if (local && !pageLocale) {
+    return `L'adresse de l'API n'est pas configurée (${baseUrl}) : renseignez apiUrl dans runtime-config.js `
+      + 'à la racine du site, puis rechargez la page (Ctrl+F5).'
+  }
+  return `Le serveur de l'API (${baseUrl}) ne répond pas. Vérifiez votre réseau, l'adresse de l'API `
+    + '(runtime-config.js), son certificat HTTPS et l\'origine autorisée (CORS_ALLOWED_ORIGINS).'
+}
+
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token')
   if (token) {

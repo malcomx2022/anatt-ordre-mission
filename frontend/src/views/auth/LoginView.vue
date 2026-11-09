@@ -2,7 +2,8 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
-import { getErrorMessage } from '@/composables/useApi'
+import axios from 'axios'
+import { getErrorMessage, diagnosticApiInjoignable } from '@/composables/useApi'
 import AppLogo from '@/components/shared/AppLogo.vue'
 
 const router = useRouter()
@@ -27,7 +28,11 @@ async function handleLogin() {
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)
   } catch (e: unknown) {
-    errorMsg.value = getErrorMessage(e)
+    // Aucune réponse de l'API (adresse non configurée, CORS, certificat, erreur
+    // PHP fatale) : on nomme l'adresse appelée plutôt qu'un « réseau » générique.
+    errorMsg.value = axios.isAxiosError(e) && !e.response
+      ? diagnosticApiInjoignable()
+      : getErrorMessage(e)
   } finally {
     loading.value = false
   }
