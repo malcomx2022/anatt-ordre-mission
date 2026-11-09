@@ -3,6 +3,20 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # Une seule origine : https://omsemo.anatt.bj. L'API n'autorise que celle-ci
+  # (CORS_ALLOWED_ORIGINS) : ouvert en http:// ou en www., le SPA verrait sa
+  # connexion bloquée par le navigateur (« Erreur de connexion »). On redirige
+  # donc vers HTTPS sans www, sauf la validation AutoSSL (.well-known).
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
