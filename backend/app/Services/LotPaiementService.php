@@ -110,8 +110,11 @@ class LotPaiementService
             // OM concernés par ce lot, avant la mise à jour des statuts.
             $omIds = Versement::where('lot_id', $lot->id)->pluck('ordre_mission_id')->unique();
 
+            // Seuls les versements GENERE figurent dans le fichier déposé : un versement
+            // remis EN_ATTENTE (lot passé en erreur, opérateur changé) ou passé en
+            // A_RECOUVRER depuis n'a pas été payé et ne doit pas être confirmé.
             Versement::where('lot_id', $lot->id)
-                ->where('statut', '!=', 'CONFIRME')
+                ->where('statut', 'GENERE')
                 ->update(['statut' => 'CONFIRME', 'date_paiement' => $now]);
 
             foreach ($omIds as $omId) {

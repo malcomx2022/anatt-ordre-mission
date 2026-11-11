@@ -131,6 +131,17 @@ abstract class FileGenerator
                 ],
             );
 
+            // Un versement rattaché à ce lot mais absent du nouveau fichier (opérateur
+            // changé, trop-perçu…) est détaché : sinon la confirmation du lot le rendrait
+            // inéligible à vie (seconde barrière de scopeEligiblesLot).
+            Versement::where('lot_id', $lot->id)
+                ->whereNotIn('id', $versements->pluck('id'))
+                ->where('statut', '!=', 'CONFIRME')
+                ->update([
+                    'lot_id' => null,
+                    'statut' => DB::raw("CASE WHEN statut = 'GENERE' THEN 'EN_ATTENTE' ELSE statut END"),
+                ]);
+
             Versement::whereIn('id', $versements->pluck('id'))
                 ->update(['lot_id' => $lot->id, 'statut' => 'GENERE']);
 

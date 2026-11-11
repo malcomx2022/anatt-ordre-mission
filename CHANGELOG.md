@@ -9,6 +9,19 @@ Versionnement : dates ISO (l'application n'a pas encore de release taguée).
 
 ## [Non publié]
 
+### Revue du 11/11/2026 : trois défauts de paiement, failles Symfony
+
+- **Confirmation d'un lot** : seuls les versements `GENERE` (présents dans le fichier déposé) passent `CONFIRME`.
+  Un versement remis `EN_ATTENTE` après une erreur de dépôt puis sorti du fichier régénéré (opérateur changé,
+  trop-perçu) était confirmé sans avoir été payé, et l'OM soldé à tort. La régénération détache désormais du lot
+  les versements absents du nouveau fichier (`FileGenerator::generer`).
+- **Amendement d'un OM retranscrit à montant nul** : l'amendement crée les versements manquants (coordonnées du
+  référentiel agent) ; le montant signé n'était jamais payable.
+- **Amendement d'un OM à plusieurs types de prise en charge** : la fiche OM propose un champ par ligne et envoie
+  `lignes` ; elle n'envoyait que `nb_jours`, ce qui ramenait tout l'OM au type principal.
+- **Dépendances** : Symfony 7.4.23 (`http-foundation`, `http-kernel`, `routing`, `console`, `finder`) et
+  `symfony/yaml` 7.4.23 (dev) ; `composer audit` : aucune faille. Pest 716, Vitest 249.
+
 ### Repli compatible PHP 8.4.0 (04/11/2026)
 
 - Le serveur de production tourne en **PHP 8.4.0** ; cinq composants Symfony 8.1 du lock exigeaient `>=8.4.1`.

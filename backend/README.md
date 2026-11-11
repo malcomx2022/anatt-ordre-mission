@@ -32,7 +32,7 @@ Comptes de démonstration (local et tests uniquement, mot de passe `password`) :
 ## Vérifier
 
 ```bash
-./vendor/bin/pest                                   # 713 tests en 79 fichiers : 704 passent sur SQLite, les 9 du groupe mysql sont ignorés (« skipped ») — sans .env (APP_KEY de test dans phpunit.xml)
+./vendor/bin/pest                                   # 716 tests en 79 fichiers : 707 passent sur SQLite, les 9 du groupe mysql sont ignorés (« skipped ») — sans .env (APP_KEY de test dans phpunit.xml)
 ./vendor/bin/pint --test                            # style (la CI l'exécute en vérification)
 DB_CONNECTION=mysql DB_DATABASE=anatt_test_mysql ./vendor/bin/pest --group=mysql   # 9 tests sur un vrai MySQL / MariaDB (base dont le nom contient « test », remise à zéro)
 ./vendor/bin/pest tests/Feature/RoutesPermissionsTest.php tests/Feature/OpenApiTest.php tests/Feature/OpenApiReponsesTest.php   # filets RBAC et OpenAPI

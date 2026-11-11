@@ -574,3 +574,24 @@ MySQL réel), Vitest 245, Playwright 3, recette sur l'API réelle 273 contrôles
 Les dépendances reçoivent de nouveaux avis de sécurité au fil du temps : relancer `composer audit` et `npm audit`
 avant chaque mise en production, et corriger dans les versions majeures en place.
 
+### 8.6 Revue du 11/11/2026
+
+Revue complète refaite sur `main` à `db361a9` (PR #214 comprise) : contrôles automatiques, puis trois relectures
+parallèles (intégrité des paiements, sécurité et RBAC, frontend et cohérence documentation ↔ code).
+
+| Point | Résultat |
+|-------|----------|
+| Confirmation d'un lot | Confirmait aussi un versement remis `EN_ATTENTE` et sorti du fichier régénéré : **corrigé** (seuls les `GENERE` ; détachement à la régénération), test `PaiementTest` |
+| OM à montant nul amendé | Aucun versement créé : **corrigé**, test `AmendementOmTest` |
+| Amendement d'un OM à plusieurs types | L'écran ramenait tout au type principal : **corrigé** (saisie par ligne), test `mission-detail.spec.ts` |
+| Dépendances | 7 avis Symfony publiés après le 04/11 : **corrigés** (7.4.23) ; `composer audit` et `npm audit` : 0 |
+| Documentation | Versions, compteurs et 98 routes conformes ; registre des écrans incomplet (42 annoncés, 50 vues) |
+
+État mesuré : Pest **716** (707 sur SQLite + 9 MySQL), Vitest **249** (49 fichiers), Pint, ESLint, oxlint, `vue-tsc` conformes.
+
+**Restent ouverts** (relevés, non corrigés) : course génération/confirmation sous MySQL (lecture de la mission avant
+le verrou du lot), séparation des tâches lue hors verrou, sélection périmée confirmable sur l'écran de génération,
+réinitialisation de mot de passe par un ADMIN sur les comptes du circuit (décision attendue), énumération des comptes
+par la route de réinitialisation, limite de connexion par compte absente, export Excel des rapports sans neutralisation
+des formules, scellé HMAC limité aux totaux. Le dump `backend/database/anatt_prod.sql` reste dans l'historique Git
+(`purge-dump-historique.sh` non exécuté) : changer le mot de passe du super admin en production.

@@ -179,3 +179,36 @@ it('remet les versements d’un lot en erreur EN_ATTENTE avec le numéro corrig�
     $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
     expect(Storage::disk('local')->get(LotPaiement::first()->nom_fichier))->toContain('2290197000001');
 });
+
+it('ne confirme pas un versement sorti du fichier régénéré (opérateur changé après l’erreur)', function () {
+    // Second bénéficiaire MTN : le lot régénéré n'est pas vide.
+    $autre = Agent::factory()->mtn()->create();
+    $omB = OrdreMission::factory()->statut('VALIDE')->create(['mission_id' => $this->mission->id, 'agent_id' => $autre->id]);
+    $vB = Versement::factory()->create([
+        'ordre_mission_id' => $omB->id, 'type' => 'AVANCE',
+        'operateur' => 'MTN', 'telephone' => $autre->telephone, 'montant' => 30000, 'statut' => 'EN_ATTENTE',
+    ]);
+
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
+    $lot = LotPaiement::first();
+
+    // Dépôt échoué ; l'agent A passe chez Moov : son versement quitte le périmètre MTN.
+    $this->om->agent->update(['operateur' => 'MOOV', 'telephone' => '0145000001']);
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$lot->id}/erreur")->assertOk();
+
+    $this->actingAs($this->finance)->postJson('/api/paiements/lots/generer', $this->selection)->assertOk();
+    $this->actingAs($this->finance)->postJson("/api/paiements/lots/{$lot->id}/confirmer")->assertOk();
+
+    $vA = $this->versement->fresh();
+    expect($vA->statut)->toBe('EN_ATTENTE')
+        ->and($vA->date_paiement)->toBeNull()
+        ->and($vA->lot_id)->toBeNull()
+        ->and($vB->fresh()->statut)->toBe('CONFIRME')
+        ->and($this->om->fresh()->statut)->not->toBe('SOLDE');
+
+    // Toujours payable, cette fois dans un fichier Moov.
+    $this->actingAs($this->finance)
+        ->getJson('/api/paiements/lots/previsualiser?'.http_build_query([...$this->selection, 'operateur' => 'MOOV']))
+        ->assertOk()
+        ->assertJsonPath('data.nb_lignes', 1);
+});
