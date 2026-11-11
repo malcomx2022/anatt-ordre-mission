@@ -290,3 +290,36 @@ it('expose l’avance engagée et le journal des amendements sur la fiche OM', f
         ->assertJsonPath('data.amendements.0.nb_jours_apres', 8)
         ->assertJsonPath('data.amendements.0.delta_montant', 90000);
 });
+
+it('crée les versements d’un OM retranscrit à montant nul quand l’amendement lui donne un montant', function () {
+    $om = OrdreMission::factory()->create([
+        'mission_id' => $this->mission->id, 'statut' => 'IMPORTE',
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR', 'type_prise_en_charge' => 'JOURNEE_COMPLETE',
+        'nb_jours' => 0, 'montant_total' => 0, 'avance' => 0, 'reliquat' => 0,
+    ]);
+    expect($om->versements()->count())->toBe(0);
+
+    $this->actingAs($this->gestionnaire)
+        ->postJson("/api/ordres/{$om->id}/amender", ['nb_jours' => 2, 'motif' => 'Jours oubliés à la retranscription.'])
+        ->assertOk();
+
+    $agent = $om->agent;
+    expect(montantVersement($om->id, 'AVANCE'))->toBe(63000)   // 70 % de 90 000
+        ->and(montantVersement($om->id, 'RELIQUAT'))->toBe(27000)
+        ->and($om->versements()->where('statut', 'EN_ATTENTE')->where('operateur', $agent->operateur)
+            ->where('telephone', $agent->telephone)->count())->toBe(2);
+});
+
+it('amende un OM à plusieurs types ligne par ligne sans tout ramener au type principal', function () {
+    Bareme::factory()->create([
+        'categorie' => 'INDICE_SUP_800', 'zone_code' => 'INTERIEUR',
+        'type_prise_en_charge' => 'UN_REPAS', 'taux_journalier' => 10000,
+    ]);
+
+    amenderOm($this, ['lignes' => [
+        ['type' => 'JOURNEE_COMPLETE', 'nb_jours' => 2],
+        ['type' => 'UN_REPAS', 'nb_jours' => 1],
+    ], 'motif' => 'Retour avancé, un seul repas le dernier jour.'])->assertOk();
+
+    expect($this->om->fresh()->montant_total)->toBe(100000);   // 2 × 45 000 + 10 000
+});

@@ -12,12 +12,13 @@ import { defineComponent, h, ref } from 'vue'
 const get = vi.fn()
 const valider = vi.fn()
 const rejeter = vi.fn()
+const amender = vi.fn()
 vi.mock('@/services/ordres', () => ({
   ordresService: {
     get: (...a: unknown[]) => get(...a),
     valider: (...a: unknown[]) => valider(...a),
     rejeter: (...a: unknown[]) => rejeter(...a),
-    amender: vi.fn(),
+    amender: (...a: unknown[]) => amender(...a),
     telechargerBrouillon: vi.fn(),
     telechargerPdf: vi.fn(),
   },
@@ -221,5 +222,33 @@ describe('Répartition affichée après un amendement (libellés du PDF officiel
     expect(texte.text()).toContain('Avance engagée')
     expect(texte.text()).toContain('Trop-perçu (à recouvrer par retenue sur salaire)')
     expect(texte.text()).not.toContain('Reliquat (30 %)')
+  })
+})
+
+describe('MissionDetailView — amendement d’un OM à plusieurs types', () => {
+  it('envoie les lignes détaillées au lieu de tout ramener au type principal', async () => {
+    permissions = ['om.consulter', 'om.retranscrire']
+    get.mockResolvedValue({
+      ...ordre('VALIDE', null),
+      lignes_per_diem: [
+        { type: 'JOURNEE_COMPLETE', taux: 30000, nb_jours: 2, montant: 60000 },
+        { type: 'UN_REPAS', taux: 10000, nb_jours: 1, montant: 10000 },
+      ],
+    })
+    amender.mockResolvedValue({})
+    const w = await monter()
+
+    await w.findAll('button').find((b) => b.text().includes('Amender'))!.trigger('click')
+    const champs = w.findAll('input[type="number"]')
+    expect(champs).toHaveLength(2)
+    await champs[1]!.setValue(0)
+    await w.find('textarea').setValue('Repas pris en charge par l’organisateur.')
+    await bouton(w, 'Enregistrer l’amendement')!.trigger('click')
+    await flushPromises()
+
+    expect(amender).toHaveBeenCalledWith(10, {
+      lignes: [{ type: 'JOURNEE_COMPLETE', nb_jours: 2 }, { type: 'UN_REPAS', nb_jours: 0 }],
+      motif: 'Repas pris en charge par l’organisateur.',
+    })
   })
 })

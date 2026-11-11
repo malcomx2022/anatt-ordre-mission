@@ -17,6 +17,7 @@ import { libellesRepartition } from '@/utils/repartition'
 import { numeroEtat } from '@/utils/etats'
 import { categorieLabel } from '@/types'
 import type { OrdreMission } from '@/types'
+import type { LignePerDiemInput } from '@/types/mission'
 
 const route = useRoute()
 const toast = useToast()
@@ -40,7 +41,17 @@ const fmt = (v: number) => v.toLocaleString('fr-FR')
 // Une fois l'avance engagée (état des avances validé), seul le reliquat bouge et
 // peut devenir négatif : c'est un trop-perçu à récupérer par retenue sur salaire.
 const showAmend = ref(false)
-const amendForm = ref<{ nb_jours: number | null; motif: string }>({ nb_jours: null, motif: '' })
+const amendForm = ref<{ nb_jours: number | null; lignes: LignePerDiemInput[]; motif: string }>({ nb_jours: null, lignes: [], motif: '' })
+// OM à plusieurs types de prise en charge : on amende ligne par ligne, sinon le
+// serveur recalculerait tout au type principal (répartition détaillée perdue).
+const amendParLignes = computed(() => amendForm.value.lignes.length > 1)
+const amendValide = computed(() =>
+  amendForm.value.motif.trim().length >= 10 &&
+  (amendParLignes.value
+    ? amendForm.value.lignes.every(l => Number.isInteger(l.nb_jours) && l.nb_jours >= 0) &&
+      amendForm.value.lignes.some(l => l.nb_jours > 0)
+    : !!amendForm.value.nb_jours),
+)
 
 const avanceEngagee = computed(() => ordre.value?.avance_engagee != null)
 const reliquatNegatif = computed(() => (ordre.value?.reliquat ?? 0) < 0)
@@ -65,7 +76,11 @@ const peutAmender = computed(
 )
 
 function ouvrirAmend() {
-  amendForm.value = { nb_jours: ordre.value?.nb_jours ?? null, motif: '' }
+  amendForm.value = {
+    nb_jours: ordre.value?.nb_jours ?? null,
+    lignes: (ordre.value?.lignes_per_diem ?? []).map(l => ({ type: l.type, nb_jours: l.nb_jours })),
+    motif: '',
+  }
   showAmend.value = true
 }
 
@@ -73,10 +88,9 @@ async function soumettreAmend() {
   if (!ordre.value) return
   action.value = true
   try {
-    await ordresService.amender(id, {
-      nb_jours: amendForm.value.nb_jours,
-      motif: amendForm.value.motif,
-    })
+    await ordresService.amender(id, amendParLignes.value
+      ? { lignes: amendForm.value.lignes, motif: amendForm.value.motif }
+      : { nb_jours: amendForm.value.nb_jours, motif: amendForm.value.motif })
     showAmend.value = false
     toast.success('Ordre de mission amendé.')
     await load()
@@ -428,7 +442,20 @@ onMounted(load)
             L’avance n’est pas encore engagée : avance et reliquat sont recalculés ({{ avancePct }} / {{ reliquatPct }} %).
           </template>
         </p>
-        <div>
+        <div v-if="amendParLignes" class="space-y-2">
+          <p class="text-sm font-display font-medium text-gray-700">Jours par type de prise en charge</p>
+          <div v-for="(l, i) in amendForm.lignes" :key="l.type" class="flex items-center gap-3">
+            <label :for="`amend-ligne-${i}`" class="flex-1 text-sm font-body text-gray-700">{{ l.type }}</label>
+            <input
+              :id="`amend-ligne-${i}`"
+              v-model.number="l.nb_jours"
+              type="number" min="0"
+              class="w-28 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-body
+                     focus:outline-none focus:ring-2 focus:ring-anatt-500/30 focus:border-anatt-500"
+            >
+          </div>
+        </div>
+        <div v-else>
           <label class="block text-sm font-display font-medium text-gray-700 mb-1">Nombre de jours</label>
           <input
             v-model.number="amendForm.nb_jours"
@@ -451,7 +478,7 @@ onMounted(load)
         <button class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-display font-medium text-gray-700 hover:bg-gray-50" @click="showAmend = false">Annuler</button>
         <AppButton
           :loading="action"
-          :disabled="!amendForm.nb_jours || amendForm.motif.trim().length < 10"
+          :disabled="!amendValide"
           @click="soumettreAmend"
         >Enregistrer l’amendement</AppButton>
       </template>

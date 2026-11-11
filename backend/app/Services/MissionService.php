@@ -311,6 +311,21 @@ class MissionService
      */
     private function reventilerVersements(OrdreMission $ordre, int $avance, int $reliquat): void
     {
+        // Un OM retranscrit à montant nul n'a reçu aucun versement : l'amendement qui
+        // lui donne un montant crée les tranches manquantes (coordonnées du référentiel
+        // agent), faute de quoi le montant signé ne serait jamais payable.
+        if ($avance + $reliquat > 0) {
+            $agent = $ordre->agent;
+            foreach (['AVANCE', 'RELIQUAT'] as $type) {
+                $ordre->versements()->firstOrCreate(['type' => $type], [
+                    'montant' => 0,
+                    'operateur' => $agent->operateur,
+                    'telephone' => $agent->telephone,
+                    'statut' => 'EN_ATTENTE',
+                ]);
+            }
+        }
+
         // Un reliquat négatif (trop-perçu) bascule le versement en A_RECOUVRER :
         // il sort du périmètre payable et rejoint les régularisations. Un reliquat
         // redevenu ≥ 0 (nouvel amendement) repasse EN_ATTENTE.

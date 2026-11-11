@@ -47,3 +47,8 @@ credentials.json
 # Outillage plateforme / dev — résidus non liés à l'application
 .emergent/
 .gitconfig
+
+# Paquets de livraison (archives et copies générées pour le serveur — régénérables)
+livraison-*/
+# Fichiers de verrou Office (document ouvert dans Word)
+~$*

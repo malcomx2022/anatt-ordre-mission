@@ -18,7 +18,7 @@ Application de suivi des **ordres de mission émis par SEMO** et de **générati
 |---|---|
 | Backend | Laravel 12 · **PHP 8.4.x (64 bits)** · Sanctum · MySQL 8 · (Redis facultatif) · heure du Bénin (`Africa/Porto-Novo`) |
 | Frontend | Vue **3.5.44 stable** (Composition API, TypeScript), épinglée · Vite 8 · Tailwind (thème **vert ANaTT**) · Pinia |
-| Tests | Pest / PHPUnit (713 tests, 79 fichiers, dont 9 sur MySQL réel) · Vitest (245 tests) · recette sur l'API réelle (273 contrôles, `scripts/recette/`) · Playwright (parcours critique e2e) |
+| Tests | Pest / PHPUnit (716 tests, 79 fichiers, dont 9 sur MySQL réel) · Vitest (249 tests) · recette sur l'API réelle (273 contrôles, `scripts/recette/`) · Playwright (parcours critique e2e) |
 
 ---
 
